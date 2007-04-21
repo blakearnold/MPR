@@ -83,7 +83,7 @@ Description: Linux Kernel Headers for development
  libraries.
 
 Package: linux-image-2.6.21-1-386
-Architecture: control.d
+Architecture: i386
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9
@@ -108,7 +108,7 @@ Description: Linux kernel image for version 2.6.21 on i386
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-386
-Architecture: control.d
+Architecture: i386
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -121,7 +121,7 @@ Description: Linux kernel headers for version 2.6.21 on i386
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-386
-Architecture: control.d
+Architecture: i386
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -187,7 +187,7 @@ Description: Linux kernel debug image for version 2.6.21 on x86/x86_64
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-hppa32
-Architecture: control.d
+Architecture: hppa
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -212,7 +212,7 @@ Description: Linux kernel image for version 2.6.21 on 32-bit HP PA-RISC SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-hppa32
-Architecture: control.d
+Architecture: hppa
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -225,7 +225,7 @@ Description: Linux kernel headers for version 2.6.21 on 32-bit HP PA-RISC SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-hppa32
-Architecture: control.d
+Architecture: hppa
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -239,7 +239,7 @@ Description: Linux kernel debug image for version 2.6.21 on 32-bit HP PA-RISC SM
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-hppa64
-Architecture: control.d
+Architecture: hppa
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -264,7 +264,7 @@ Description: Linux kernel image for version 2.6.21 on 64-bit HP PA-RISC SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-hppa64
-Architecture: control.d
+Architecture: hppa
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -277,7 +277,7 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit HP PA-RISC SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-hppa64
-Architecture: control.d
+Architecture: hppa
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -291,7 +291,7 @@ Description: Linux kernel debug image for version 2.6.21 on 64-bit HP PA-RISC SM
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-itanium
-Architecture: control.d
+Architecture: ia64
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -316,7 +316,7 @@ Description: Linux kernel image for version 2.6.21 on Itanium SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-itanium
-Architecture: control.d
+Architecture: ia64
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -329,7 +329,7 @@ Description: Linux kernel headers for version 2.6.21 on Itanium SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-itanium
-Architecture: control.d
+Architecture: ia64
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -343,7 +343,7 @@ Description: Linux kernel debug image for version 2.6.21 on Itanium SMP
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-mckinley
-Architecture: control.d
+Architecture: ia64
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -368,7 +368,7 @@ Description: Linux kernel image for version 2.6.21 on Itanium II SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-mckinley
-Architecture: control.d
+Architecture: ia64
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -381,7 +381,7 @@ Description: Linux kernel headers for version 2.6.21 on Itanium II SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-mckinley
-Architecture: control.d
+Architecture: ia64
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -395,7 +395,7 @@ Description: Linux kernel debug image for version 2.6.21 on Itanium II SMP
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-powerpc
-Architecture: control.d
+Architecture: powerpc
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -420,7 +420,7 @@ Description: Linux kernel image for version 2.6.21 on 32-bit PowerPC
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-powerpc
-Architecture: control.d
+Architecture: powerpc
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -433,7 +433,7 @@ Description: Linux kernel headers for version 2.6.21 on 32-bit PowerPC
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-powerpc
-Architecture: control.d
+Architecture: powerpc
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -447,7 +447,7 @@ Description: Linux kernel debug image for version 2.6.21 on 32-bit PowerPC
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-powerpc64-smp
-Architecture: control.d
+Architecture: powerpc
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -472,7 +472,7 @@ Description: Linux kernel image for version 2.6.21 on 64-bit PowerPC SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-powerpc64-smp
-Architecture: control.d
+Architecture: powerpc
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -485,7 +485,7 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit PowerPC SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-powerpc64-smp
-Architecture: control.d
+Architecture: powerpc
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -499,7 +499,7 @@ Description: Linux kernel debug image for version 2.6.21 on 64-bit PowerPC SMP
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-powerpc-smp
-Architecture: control.d
+Architecture: powerpc
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -524,7 +524,7 @@ Description: Linux kernel image for version 2.6.21 on 32-bit PowerPC SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-powerpc-smp
-Architecture: control.d
+Architecture: powerpc
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -537,7 +537,7 @@ Description: Linux kernel headers for version 2.6.21 on 32-bit PowerPC SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-powerpc-smp
-Architecture: control.d
+Architecture: powerpc
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -603,7 +603,7 @@ Description: Linux kernel debug image for version 2.6.21 on x86/x86_64
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-server-bigiron
-Architecture: control.d
+Architecture: i386
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9
@@ -628,7 +628,7 @@ Description: Linux kernel image for version 2.6.21 on BigIron Server Equipment
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-server-bigiron
-Architecture: control.d
+Architecture: i386
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -641,7 +641,7 @@ Description: Linux kernel headers for version 2.6.21 on BigIron Server Equipment
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-server-bigiron
-Architecture: control.d
+Architecture: i386
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -655,7 +655,7 @@ Description: Linux kernel debug image for version 2.6.21 on BigIron Server Equip
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-sparc64
-Architecture: control.d
+Architecture: sparc
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -680,7 +680,7 @@ Description: Linux kernel image for version 2.6.21 on 64-bit UltraSPARC
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-sparc64
-Architecture: control.d
+Architecture: sparc
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -693,7 +693,7 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit UltraSPARC
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-sparc64
-Architecture: control.d
+Architecture: sparc
 Section: devel
 Priority: optional
 Provides: linux-debug
@@ -707,7 +707,7 @@ Description: Linux kernel debug image for version 2.6.21 on 64-bit UltraSPARC
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-sparc64-smp
-Architecture: control.d
+Architecture: sparc
 Section: base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
@@ -732,7 +732,7 @@ Description: Linux kernel image for version 2.6.21 on 64-bit UltraSPARC SMP
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.21-1-sparc64-smp
-Architecture: control.d
+Architecture: sparc
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
@@ -745,7 +745,7 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit UltraSPARC SMP
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
 Package: linux-image-debug-2.6.21-1-sparc64-smp
-Architecture: control.d
+Architecture: sparc
 Section: devel
 Priority: optional
 Provides: linux-debug
