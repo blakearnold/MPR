@@ -33,10 +33,10 @@ then
 	exit 1
 fi
 
-if [ "`diff -u $abidir/$flavour $prev_abidir/$flavour | grep ^+[^+] | wc -l`" != "0" ]
+if [ "`diff -u $prev_abidir/$flavour $abidir/$flavour | grep ^+[^+] | wc -l`" != "0" ]
 then
 	echo "new symbols in ABI (continuing reluctantly)"
-	diff -u $abidir/$flavour $prev_abidir/$flavour
+	diff -u $prev_abidir/$flavour $abidir/$flavour || true
 	exit
 fi
 
