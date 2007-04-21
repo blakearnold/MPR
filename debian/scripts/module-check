@@ -30,12 +30,12 @@ then
 	exit 1
 fi
 
-new="`diff -u $abidir/$flavour.modules \
-	$prev_abidir/$flavour.modules | grep ^-[^-] | wc -l`"
+new="`diff -u $prev_abidir/$flavour.modules \
+	$abidir/$flavour.modules | grep ^+[^+] | wc -l`"
 if [ "$new" != "0" ]
 then
 	echo "new modules (got a little frisky this release, huh?)"
-	diff -u $abidir/$flavour.modules $prev_abidir/$flavour.modules
+	diff -u $prev_abidir/$flavour.modules $abidir/$flavour.modules || true
 	exit
 fi
 
