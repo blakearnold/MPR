@@ -164,4 +164,8 @@ ifneq ($(do_debug_image),)
 	dh_builddeb -p$(dbgpkg) -- -Zbzip2 -z9
 endif
 
-binary-arch: $(addprefix binary-,$(flavours)) binary-arch-headers
+$(stampdir)/stamp-flavours:
+	@echo $(flavours) > $@
+
+binary-arch: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
+	     binary-arch-headers
