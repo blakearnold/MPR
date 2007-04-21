@@ -27,7 +27,10 @@ abi_suffix = -$(gitverpre)$(gitverpost)
 endif
 
 ifneq ($(NOKERNLOG),)
-ubuntu_log_opts = --no-kern-log
+ubuntu_log_opts += --no-kern-log
+endif
+ifneq ($(PRINTSHAS),)
+ubuntu_log_opts += --print-shas
 endif
 
 abinum		:= $(shell echo $(revision) | sed -e 's/\..*//')$(abisuffix)

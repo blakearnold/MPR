@@ -8,11 +8,20 @@ my $kernel_auth = "Upstream Kernel Changes";
 my (%map, @reverts);
 my $pstate = 1;
 my $no_kern_log = 0;
+my $print_shas = 0;
 my $first_print = 1;
 
-if (defined($ARGV[0]) and $ARGV[0] eq "--no-kern-log") {
-	$no_kern_log = 1;
+while (@ARGV) {
+	my $opt = $ARGV[0];
 	shift;
+	if ($opt eq "--no-kern-log") {
+		$no_kern_log = 1;
+	} elsif ($opt eq "--print-shas") {
+		$print_shas = 1;
+	} else {
+		print STDERR "Unknown options: $opt\n";
+		exit(1);
+	}
 }
 
 sub check_reverts($) {
@@ -104,8 +113,10 @@ sub shortlog_output {
 			print wrap("  * ", "    ", $entry->{'desc'}) . "\n";
 			# For non upstream changes, add other info.
 			if ($key ne $kernel_auth) {
-				print "    - GIT-SHA " . $entry->{'commit'} .
-					"\n";
+				if ($print_shas) {
+					print "    - GIT-SHA " . $entry->{'commit'} .
+						"\n";
+				}
 				if (defined($entry->{'bugno'})) {
 					print "    - Bug #" .
 						$entry->{'bugno'} . "\n";
