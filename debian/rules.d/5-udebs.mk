@@ -1,4 +1,4 @@
-binary-udebs: binary-debs
+binary-udebs: binary-debs debian/control
 	dh_testdir
 	dh_testroot
 
@@ -7,7 +7,7 @@ binary-udebs: binary-debs
 
 	imagelist=$$(cat kernel-versions | grep ^${arch} | awk '{print $$4}') && \
 	for i in $$imagelist; do \
-	  dpkg -x $$(ls debian/build/$(stem)-image-$$i\_*${arch}.deb) \
+	  dpkg -x $$(ls ../linux-image-$$i\_*${arch}.deb) \
 		debian/d-i-${arch}; \
 	done
 
