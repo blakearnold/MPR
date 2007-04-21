@@ -1,0 +1,43 @@
+#!/bin/bash -e
+
+flavour="$1"
+prev_abidir="$2"
+abidir="$3"
+skipmodule="$4"
+
+echo -n "Checking modules for $flavour..."
+
+if [ -f "$abidir/ignore.modules" -o -f "$abidir/$flavour.ignore.modules" \
+     -o -n "$skipmodule" ]; then
+	echo "explicitly asked to ignore modules (probably not good)"
+	exit
+fi
+
+if [ ! -f "$abidir/$flavour.modules" -o ! -f "$prev_abidir/$flavour.modules" ]
+then
+	echo "previous or current modules file missing!"
+	echo "   $abidir/$flavour.modules"
+	echo "   $prev_abidir/$flavour.modules"
+	exit 1
+fi
+
+miss="`diff -u $prev_abidir/$flavour.modules \
+	$abidir/$flavour.modules | grep ^-[^-] | wc -l`"
+if [ "$miss" != "0" ]
+then
+	echo "check FAILED (oh boy, you've done it now)"
+	diff -u $prev_abidir/$flavour.modules $abidir/$flavour.modules
+	exit 1
+fi
+
+new="`diff -u $abidir/$flavour.modules \
+	$prev_abidir/$flavour.modules | grep ^-[^-] | wc -l`"
+if [ "$new" != "0" ]
+then
+	echo "new modules (got a little frisky this release, huh?)"
+	diff -u $abidir/$flavour.modules $prev_abidir/$flavour.modules
+	exit
+fi
+
+echo "check PASSED (no new hw support, hope you're happy)"
+exit

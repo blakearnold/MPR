@@ -1,0 +1,51 @@
+# Rip some version information from our changelog
+release	:= $(shell sed -n '1s/^.*(\(.*\)-.*).*$$/\1/p' debian/changelog)
+pkgversion := $(shell sed -n '1s/^linux-source-\([^ ]*\) .*/\1/p' debian/changelog)
+revisions := $(shell sed -n 's/^linux-source-$(pkgversion)\ .*($(release)-\(.*\)).*$$/\1/p' debian/changelog | tac)
+revision ?= $(word $(words $(revisions)),$(revisions))
+prev_revisions := $(filter-out $(revision),0.0 $(revisions))
+prev_revision := $(word $(words $(prev_revisions)),$(prev_revisions))
+
+# This is an internally used mechanism for the daily kernel builds. It
+# creates packages who's ABI is suffixed with a minimal representation of
+# the current git HEAD sha. If .git/HEAD is not present, then it uses the
+# uuidgen program,
+#
+# AUTOBUILD can also be used by anyone wanting to build a custom kernel
+# image, or rebuild the entire set of Ubuntu packages using custom patches
+# or configs.
+export AUTOBUILD
+ifeq ($(AUTOBUILD),)
+abi_suffix	=
+else
+skipabi		= true
+skipmodule	= true
+gitver=$(shell if test -f .git/HEAD; then cat .git/HEAD; else uuidgen; fi)
+gitverpre=$(shell echo $(gitver) | cut -b -3)
+gitverpost=$(shell echo $(gitver) | cut -b 38-40)
+abi_suffix = -$(gitverpre)$(gitverpost)
+endif
+
+ifneq ($(NOKERNLOG),)
+ubuntu_log_opts = --no-kern-log
+endif
+
+abinum		:= $(shell echo $(revision) | sed -e 's/\..*//')$(abisuffix)
+prev_abinum	:= $(shell echo $(prev_revision) | sed -e 's/\..*//')$(abisuffix)
+version		:= $(release)
+debnum		:= -$(abinum)
+
+export abinum debnum version
+
+arch		:= $(shell dpkg-architecture -qDEB_HOST_ARCH_CPU)
+abidir		:= $(CURDIR)/debian/abi/$(release)-$(revision)/$(arch)
+prev_abidir	:= $(CURDIR)/debian/abi/$(release)-$(prev_revision)/$(arch)
+confdir		:= $(CURDIR)/debian/config/$(arch)
+builddir	:= $(CURDIR)/debian/build
+stampdir	:= $(CURDIR)/debian/stamps
+
+CONCURRENCY_LEVEL	= 1
+conc_level		= -j$(CONCURRENCY_LEVEL)
+
+# taget_flavour is filled in for each step
+kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour)

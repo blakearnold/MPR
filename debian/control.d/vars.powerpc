@@ -1,0 +1,5 @@
+supported="32-bit PowerPC"
+target="Geared toward desktop or server systems."
+desc="32-bit PowerPC"
+bootloader="yaboot"
+provides="rhcs-modules2-1"

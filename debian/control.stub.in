@@ -1,0 +1,83 @@
+Source: linux-source-PKGVER
+Section: devel
+Priority: optional
+Maintainer: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>
+Standards-Version: 3.6.1
+Build-Depends: debhelper (>= 3), module-init-tools, kernel-wedge (>= 2.24ubuntu1), gcc-3.4-hppa64 [hppa], binutils-hppa64 [hppa], gcc-3.4 [hppa], device-tree-compiler [powerpc]
+Build-Depends-Indep: xmlto, docbook-utils, gs, transfig, bzip2, sharutils
+
+Package: linux-kernel-devel
+Architecture: all
+Section: devel
+Priority: optional
+Depends: build-essential, git-core, gitk, rsync, curl, openssh-client, debhelper, kernel-package, kernel-wedge
+Description: Linux kernel hacking dependencies
+ This is a dummy package that will install all possible packages
+ required to hack comfortably on the kernel.
+
+Package: linux-source-PKGVER
+Architecture: all
+Section: devel
+Priority: optional
+Provides: linux-source, linux-source-2.6
+Depends: binutils, bzip2, coreutils | fileutils (>= 4.0)
+Recommends: libc-dev, gcc, make
+Suggests: libncurses-dev | ncurses-dev, kernel-package, libqt3-dev
+Description: Linux kernel source for version PKGVER with Ubuntu patches
+ This package provides the source code for the Linux kernel version PKGVER.
+ .
+ You may configure the kernel to your setup by typing "make config" and
+ following instructions, but you could get ncursesX.X-dev and try "make
+ menuconfig" for a jazzier, and easier to use interface. There are options
+ to use QT or GNOME based configuration interfaces, but they need
+ additional packages to be installed. Also, please read the detailed
+ documentation in the file
+ /usr/share/doc/linux-source-PKGVER/README.headers.gz.
+ .
+ If you wish to use this package to create a custom Linux kernel, then it
+ is suggested that you investigate the package kernel-package, which has
+ been designed to ease the task of creating kernel image packages.
+ .
+ If you are simply trying to build third-party modules for your kernel,
+ you do not want this package. Install the appropriate linux-headers
+ package instead.
+
+Package: linux-doc-PKGVER
+Architecture: all
+Section: doc
+Priority: optional
+Provides: linux-doc-2.6
+Conflicts: linux-doc-2.6
+Replaces: linux-doc-2.6
+Depends: coreutils | fileutils (>= 4.0)
+Description: Linux kernel specific documentation for version PKGVER
+ This package provides the various readme's in the PKGVER kernel
+ Documentation/ subdirectory: these typically contain kernel-specific
+ installation notes for some drivers for example. See
+ /usr/share/doc/linux-doc-PKGVER/Documentation/00-INDEX for a list of what
+ is contained in each file.  Please read the Changes file, as it contains
+ information about the problems, which may result by upgrading your
+ kernel.
+
+Package: linux-headers-PKGVER-ABINUM
+Architecture: all
+Section: devel
+Priority: optional
+Depends: coreutils | fileutils (>= 4.0)
+Provides: linux-headers, linux-headers-2.6
+Description: Header files related to Linux kernel version PKGVER
+ This package provides kernel header files for version PKGVER, for sites
+ that want the latest kernel headers. Please read
+ /usr/share/doc/linux-headers-PKGVER-ABINUM/debian.README.gz for details
+
+Package: linux-libc-dev
+Architecture: amd64 i386 powerpc sparc ia64 hppa
+Conflicts: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6), amd64-libs-dev (<= 1.1)
+Replaces: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6)
+Provides: linux-kernel-headers
+Conflicts: linux-kernel-headers
+Replaces: linux-kernel-headers
+Description: Linux Kernel Headers for development
+ This package provides headers from the Linux kernel.  These headers
+ are used by the installed headers for GNU glibc and other system
+ libraries.

@@ -1,0 +1,5 @@
+supported="Alternate x86 (486 and better)"
+target="Geared toward desktop systems."
+desc="i386"
+bootloader="lilo (>= 19.1) | grub"
+provides="ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9"
