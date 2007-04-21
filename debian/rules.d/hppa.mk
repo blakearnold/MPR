@@ -7,3 +7,5 @@ kernel_file	= $(build_image)
 install_file	= $(build_image)
 
 no_image_strip	= true
+
+loader		= palo

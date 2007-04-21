@@ -5,3 +5,5 @@ flavours	= powerpc powerpc-smp powerpc64-smp
 build_image	= vmlinux
 kernel_file	= $(build_image)
 install_file	= $(build_image)
+
+loader		= yaboot

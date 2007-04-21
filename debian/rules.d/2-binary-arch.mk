@@ -44,8 +44,12 @@ install-%: $(stampdir)/stamp-build-% checks-%
 		$(pkgdir)/boot/config-$(release)$(debnum)-$*
 	install -m644 $(abidir)/$* \
 		$(pkgdir)/boot/abi-$(release)$(debnum)-$*
+	install -m644 $(builddir)/build-$*/System.map \
+		$(pkgdir)/boot/System.map-$(release)$(debnum)-$*
 	$(kmake) -C $(builddir)/build-$* modules_install \
 		INSTALL_MOD_PATH=$(pkgdir)/
+	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/build
+	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/source
 ifeq ($(no_image_strip),)
 	find $(pkgdir)/ -name \*.ko -print | xargs strip --strip-debug
 endif
@@ -56,6 +60,15 @@ endif
 		$(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd/
 	# ln -f kernel/drivers/video/vesafb.ko \
 	#	$(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd/
+
+	# Now the image scripts
+	install -d $(pkgdir)/DEBIAN
+	for script in postinst postrm preinst prerm; do				\
+	  sed -e 's/=V/$(release)$(debnum)-$*/g' -e 's/=K/$(install_file)/g'	\
+	      -e 's/=L/$(loader)/g'		-e 's@=B@$(build_arch)@g'	\
+	       debian/control-scripts/$$script > $(pkgdir)/DEBIAN/$$script;	\
+	  chmod 755 $(pkgdir)/DEBIAN/$$script;					\
+	done
 
 	# Debug image is simple
 ifneq ($(do_debug_image),)
@@ -148,6 +161,7 @@ binary-%: install-%
 	dh_installdocs -p$(pkghdr)
 	dh_compress -p$(pkghdr)
 	dh_fixperms -p$(pkghdr)
+	dh_shlibdeps -p$(pkghdr)
 	dh_installdeb -p$(pkghdr)
 	dh_gencontrol -p$(pkghdr)
 	dh_md5sums -p$(pkghdr)
