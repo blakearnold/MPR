@@ -44,7 +44,13 @@ confdir		:= $(CURDIR)/debian/config/$(arch)
 builddir	:= $(CURDIR)/debian/build
 stampdir	:= $(CURDIR)/debian/stamps
 
+ifeq ($(CONCURRENCY_LEVEL),)
+CONCURRENCY_LEVEL	= $(shell echo $$CONCURRENCY_LEVEL)
+ifeq ($(CONCURRENCY_LEVEL),)
 CONCURRENCY_LEVEL	= 1
+endif
+endif
+
 conc_level		= -j$(CONCURRENCY_LEVEL)
 
 # taget_flavour is filled in for each step
