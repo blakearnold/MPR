@@ -1,0 +1,41 @@
+#!/bin/bash -e
+
+hdrdir="$1"
+symdir="$2"
+build_arch="$3"
+flavour="$4"
+
+# Explanation:
+#
+# 1) The first find grabs all of our known build related files.
+# 2) Second we get the dirs we know were created by prepare, linking all
+#    files.
+# 3) Then we go back and get just the directories under include.
+
+echo "Symlinking headers for $flavour..."
+
+(
+find . -path './debian/*' -prune -o -path '.git/*' -o -type f \
+	\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
+	-name '*.sh' -o -name '*.pl' \) -print
+find ./include/asm-$build_arch ./include/linux ./scripts  -type f
+find ./include -mindepth 1 -maxdepth 1 -type d
+) | (
+while read file; do
+	dir=$file
+	lastdir=$file
+	while [ ! -e "$hdrdir/$dir" -a ! -L "$hdrdir/$dir" ]; do
+		lastdir=$dir
+		dir=`dirname $dir`
+	done
+	# If the last item to exist is a symlink we assume all is good
+	if [ ! -L "$hdrdir/$dir" ]; then
+		# Turns things like "./foo" into "../"
+		deref="`echo -n $lastdir | sed -e 's/^\.//' -e's,/[^/]*,../,g'`"
+		item="`echo -n $lastdir | sed -e 's/^\.\///'`"
+		ln -s $deref$symdir/$item $hdrdir/$item
+	fi
+done
+)
+
+exit
