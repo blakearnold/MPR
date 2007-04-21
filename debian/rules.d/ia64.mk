@@ -5,3 +5,5 @@ flavours	= itanium mckinley
 build_image	= vmlinux
 kernel_file	= $(build_image)
 install_file	= $(build_image)
+
+loader		= elilo
