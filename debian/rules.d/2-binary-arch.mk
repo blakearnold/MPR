@@ -181,5 +181,7 @@ endif
 $(stampdir)/stamp-flavours:
 	@echo $(flavours) > $@
 
-binary-arch: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
-	     binary-arch-headers
+binary-debs: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
+		binary-arch-headers
+
+binary-arch: binary-debs binary-udebs

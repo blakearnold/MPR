@@ -1,0 +1,12 @@
+# Windows filesystems ?
+ntfs ?
+
+# UFS (Unix SysV)
+ufs ?
+
+# Mac HFS
+hfs ?
+hfsplus ?
+
+# Amiga fs ?
+affs ?

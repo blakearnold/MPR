@@ -31,14 +31,23 @@ clean: debian/control
 	dh_testroot
 	dh_clean
 
+	# d-i stuff
+	rm -rf firmware modules kernel-versions package-list
+	rm -rf debian/d-i-$(arch)
+
+	# normal build junk
 	rm -rf debian/abi/$(release)-$(revision)
 	rm -rf $(builddir)
 	rm -f $(stampdir)/stamp-*
 
+	# This gets rid of the d-i packages in control
 	cp -f debian/control.stub debian/control
 
 # Builds the image, arch headers and debug packages
 include debian/rules.d/2-binary-arch.mk
+
+# Rules for building the udebs (debian-install)
+include debian/rules.d/5-udebs.mk
 
 # Builds the source, doc and linux-headers indep packages
 include debian/rules.d/3-binary-indep.mk
@@ -65,5 +74,43 @@ debian/control.stub: debian/d-i/kernel-versions.in	\
 	done
 	cp debian/control.stub debian/control
 
+.PHONY: debian/control
 debian/control: debian/control.stub
-	cp -f $< $@
+	rm -rf firmware modules kernel-versions package-list
+	mkdir -p modules/$(arch)/ firmware/$(arch)/
+	cp debian/d-i/modules/* modules/$(arch)/
+	cp debian/d-i/firmware/* firmware/$(arch)/
+	cp debian/d-i/package-list debian/d-i/kernel-versions .
+	touch modules/$(arch)/kernel-image
+
+	# Per flavour module lists
+	flavour_modules=`ls debian/d-i/modules.$(arch)-* 2>/dev/null`	\
+		|| true;						\
+	if [ "$$flavour_modules" != "" ]; then				\
+	    for flav in $$flavour_modules; do				\
+		name=`echo $$flav | sed 's/.*\/modules.$(arch)-//'`;	\
+		mkdir modules/$(arch)-$$name;				\
+		(cd debian/d-i/modules/; tar cf - `cat ../../../$$flav`) |\
+		    (cd modules/$(arch)-$$name/; tar xf -);		\
+		touch modules/$(arch)-$$name/kernel-image;		\
+	    done;							\
+	fi
+
+	# Remove unwanted stuff
+	if [ -r "debian/d-i/exclude-modules.$(arch)" ]; then	\
+	    (cat debian/d-i/exclude-modules.$(arch);		\
+	     ls modules/$(arch)/) | sort | uniq -d |		\
+		(cd modules/$(arch)/; xargs rm -f);		\
+	fi
+	if [ -r "debian/d-i/exclude-firmware.$(arch)" ]; then	\
+	    (cat debian/d-i/exclude-firmware.$(arch);		\
+	     ls firmware/$(arch)/) | sort | uniq -d |		\
+		(cd firmware/$(arch)/; xargs rm -f);		\
+	fi
+
+	if [ ! -d modules/$(build_arch) ]; then			\
+		mkdir -p modules/$(build_arch);			\
+		cp modules/$(arch)/* modules/$(build_arch);	\
+	fi
+
+	kernel-wedge gen-control > debian/control
