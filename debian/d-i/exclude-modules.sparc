@@ -1,0 +1,11 @@
+firmware-modules
+nic-pcmcia-modules
+pcmcia-modules
+pcmcia-storage-modules
+speakup-modules
+socket-modules
+irda-modules
+floppy-modules
+fb-modules
+acpi-modules
+cdrom-modules

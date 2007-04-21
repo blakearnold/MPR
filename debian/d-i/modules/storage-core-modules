@@ -1,0 +1,33 @@
+# For SATA and PATA
+libata ?
+
+# For SCSI (and for ATA and USB)
+scsi_mod ?
+
+# IDE Core is built-in ?
+
+# USB Core for usb-storage ?
+usbcore ?
+
+## Block level modules for each bus type ?
+
+# Generic cdrom support ?
+cdrom ?
+
+# IDE Block devices ?
+ide-cd ?
+ide-disk ?
+ide-floppy ?
+ide-tape ?
+
+# SCSI Block devices ?
+sd_mod ?
+sr_mod ?
+st ?
+
+# USB Storage modull ?
+usb-storage ?
+
+# Loop modules (loop is built-in on sparc64)
+loop ?
+cloop ?

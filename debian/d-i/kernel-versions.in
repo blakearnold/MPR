@@ -1,0 +1,15 @@
+# arch	version		flavour		installedname			suffix	bdep
+amd64	PKGVER-ABINUM	generic		PKGVER-ABINUM-generic		-	
+
+hppa	PKGVER-ABINUM	hppa32		PKGVER-ABINUM-hppa32		y	
+hppa	PKGVER-ABINUM	hppa64		PKGVER-ABINUM-hppa64		y	
+
+i386	PKGVER-ABINUM	386		PKGVER-ABINUM-386		-	
+i386	PKGVER-ABINUM	generic		PKGVER-ABINUM-generic		-	
+
+ia64	PKGVER-ABINUM	itanium		PKGVER-ABINUM-itanium		-	
+
+powerpc	PKGVER-ABINUM	powerpc		PKGVER-ABINUM-powerpc		-	
+powerpc	PKGVER-ABINUM	powerpc64-smp	PKGVER-ABINUM-powerpc64-smp	-	
+
+sparc	PKGVER-ABINUM	sparc64		PKGVER-ABINUM-sparc64		-	
