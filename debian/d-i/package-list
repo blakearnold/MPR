@@ -132,11 +132,6 @@ Depends: kernel-image
 Priority: standard
 Description: Unix socket support
 
-Package: speakup-modules
-Depends: kernel-image, serial-modules
-Priority: standard
-Description: SpeakUP voice synthesizer support
-
 Package: storage-core-modules
 Depends: kernel-image
 Priority: standard
