@@ -98,6 +98,14 @@ endif
 	install -m644 $(builddir)/build-$*/Module.symvers \
 		$(hdrdir)/Module.symvers
 
+	# At the end of the, call the tests
+	DPKG_ARCH="$(arch)" KERN_ARCH="$(build_arch)" FLAVOUR="$*"	\
+	 VERSION="$(release)$(debnum)" REVISION="$(revision)"		\
+	 PREV_REVISION="$(prev_revision)" ABI_NUM="$(abinum)"		\
+	 PREV_ABI_NUM="$(prev_abinum)" BUILD_DIR="$(builddir)/build-$*"	\
+	 INSTALL_DIR="$(pkgdir)" SOURCE_DIR="$(CURDIR)"			\
+	 run-parts -v debian/tests
+
 
 headers_tmp := $(CURDIR)/debian/tmp-headers
 headers_dir := $(CURDIR)/debian/linux-libc-dev
