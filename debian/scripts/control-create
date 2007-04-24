@@ -1,6 +1,7 @@
 #!/bin/bash
 
 stub=debian/control.d/flavour-control.stub
+dstub=debian/control.d/flavour-control-debug.stub
 vars=$1
 
 # Defaults
@@ -9,11 +10,15 @@ section_headers=devel
 
 . $vars
 
-
-if [ "$arch" = "" ]; then
-	arch=$(basename `dirname $vars`)
-fi
 flavour=$(basename $vars | sed 's/.*\.//')
+# Custom is a little different
+if [ "$flavour" = "vars" ]; then
+	flavour=$(basename $vars .vars)
+fi
+
+if [ -n "$do_debug" ]; then
+	stub="$stub $dstub"
+fi
 
 cat $stub | grep -v '^#' | sed			\
 	-e "s#FLAVOUR#$flavour#g"		\

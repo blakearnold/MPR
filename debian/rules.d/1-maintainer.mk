@@ -34,17 +34,18 @@ updateconfigs:
 
 printenv:
 	dh_testdir
-	@echo release        = $(release)
-	@echo pkgversion     = $(pkgversion)
-	@echo revisions      = $(revisions)
-	@echo revision       = $(revision)
-	@echo prev_revisions = $(prev_revisions)
-	@echo prev_revision  = $(prev_revision)
-	@echo version        = $(version)
-	@echo debnum         = $(debnum)
-	@echo abinum         = $(abinum)
-	@echo gitver         = $(gitver)
-	@echo flavours       = $(flavours)
+	@echo release         = $(release)
+	@echo pkgversion      = $(pkgversion)
+	@echo revisions       = $(revisions)
+	@echo revision        = $(revision)
+	@echo prev_revisions  = $(prev_revisions)
+	@echo prev_revision   = $(prev_revision)
+	@echo version         = $(version)
+	@echo debnum          = $(debnum)
+	@echo abinum          = $(abinum)
+	@echo gitver          = $(gitver)
+	@echo flavours        = $(flavours)
+	@echo custom_flavours = $(custom_flavours)
 
 printchanges:
 	@git-log --pretty=short Ubuntu-$(release)-$(prev_revision)..HEAD | \

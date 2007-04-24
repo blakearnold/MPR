@@ -46,7 +46,7 @@ clean: debian/control
 # Builds the image, arch headers and debug packages
 include debian/rules.d/2-binary-arch.mk
 
-# Rules for building the udebs (debian-install)
+# Rules for building the udebs (debian-installer)
 include debian/rules.d/5-udebs.mk
 
 # Builds the source, doc and linux-headers indep packages
@@ -55,18 +55,23 @@ include debian/rules.d/3-binary-indep.mk
 # Various checks to be performed on builds
 include debian/rules.d/4-checks.mk
 
+# Custom binary images (universe/unsupported)
+include debian/rules.d/6-binary-custom.mk \
+	$(patsubst %,debian/binary-custom.d/rules.$.mk,$(custom_flvaours))
+
 # Misc stuff
 debian/control.stub: debian/d-i/kernel-versions.in	\
 		debian/scripts/control-create		\
 		debian/control.stub.in			\
 		debian/changelog			\
-		$(wildcard debian/control.d/*)
+		$(wildcard debian/control.d/*)		\
+		$(wildcard debian/binary-custom.d/*.vars)
 	for i in debian/d-i/kernel-versions.in debian/control.stub.in; do \
 	  new=`echo $$i | sed 's/\.in$$//'`;					\
 	  cat $$i | sed -e 's/PKGVER/$(pkgversion)/g' -e 's/ABINUM/$(abinum)/g' > \
 		$$new;								\
 	done
-	flavours="$(shell ls -d debian/control.d/vars.*)";			\
+	flavours="$(wildcard debian/control.d/vars.* debian/binary-custom.d/*.vars)";\
 	for i in $$flavours; do							\
 	  $(SHELL) debian/scripts/control-create $$i |				\
 		sed -e 's/PKGVER/$(pkgversion)/g' -e 's/ABINUM/$(abinum)/g' >>	\
