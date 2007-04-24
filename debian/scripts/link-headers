@@ -2,8 +2,9 @@
 
 hdrdir="$1"
 symdir="$2"
-build_arch="$3"
-flavour="$4"
+srcdir="$3"
+build_arch="$4"
+flavour="$5"
 
 # Explanation:
 #
@@ -12,18 +13,49 @@ flavour="$4"
 #    files.
 # 3) Then we go back and get just the directories under include.
 
-echo "Symlinking headers for $flavour..."
+echo "Symlinking and copying headers for custom $flavour..."
 
-(
-find . -path './debian/*' -prune -o -path '.git/*' -o -type f \
+excludes='( -path ./debian -prune -o -path ./.git ) -prune -o'
+
+# First, check for files that are not the same
+if [ -n "$srcdir" ]; then
+  (
+  find . $excludes  -type f \
 	\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
 	-name '*.sh' -o -name '*.pl' \) -print
-find ./include/asm-$build_arch ./include/linux ./scripts  -type f
-find ./include -mindepth 1 -maxdepth 1 -type d
+  find ./include ./scripts -name .gitignore -prune -o -type f -print
+  ) | (
+  while read file; do
+	if [ -e "$hdrdir/$file" ]; then
+		continue
+	fi
+
+	# If the files are not the same, copy it
+	if ! cmp -s "$file" "$srcdir/$file"; then
+		echo $file
+	fi
+  done
+  ) | (
+	cd $srcdir
+	cpio -pd --preserve-modification-time "$hdrdir"
+  )
+fi
+
+(
+find . $excludes  -type f \
+	\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
+	-name '*.sh' -o -name '*.pl' \) -print
+find ./include ./scripts -name .gitignore -prune -o -type f -print
+find ./include -mindepth 1 -maxdepth 1 $excludes -type d -print
 ) | (
 while read file; do
 	dir=$file
 	lastdir=$file
+
+	if [ -f "$hdrdir/$file" ]; then
+		continue
+	fi
+
 	while [ ! -e "$hdrdir/$dir" -a ! -L "$hdrdir/$dir" ]; do
 		lastdir=$dir
 		dir=`dirname $dir`

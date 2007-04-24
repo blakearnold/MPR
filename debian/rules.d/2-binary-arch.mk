@@ -54,12 +54,9 @@ ifeq ($(no_image_strip),)
 	find $(pkgdir)/ -name \*.ko -print | xargs strip --strip-debug
 endif
 	# Some initramfs-tools specific modules
-	# XXX: vesafb
 	install -d $(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd
 	ln -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/kernel/security/capability.ko \
 		$(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd/
-	# ln -f kernel/drivers/video/vesafb.ko \
-	#	$(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd/
 
 	# Now the image scripts
 	install -d $(pkgdir)/DEBIAN
@@ -86,7 +83,7 @@ endif
 	rm -rf $(hdrdir)/include2
 	# Script to symlink everything up
 	$(SHELL) debian/scripts/link-headers "$(hdrdir)" "$(basepkg)" \
-		"$(build_arch)"  "$*"
+		"" "$(build_arch)"  "$*"
 	# Setup the proper asm symlink
 	rm -f $(hdrdir)/include/asm
 	ln -s asm-$(build_arch) $(hdrdir)/include/asm
@@ -187,9 +184,9 @@ ifneq ($(do_debug_image),)
 endif
 
 $(stampdir)/stamp-flavours:
-	@echo $(flavours) > $@
+	@echo $(flavours) $(custom_flavours > $@
 
 binary-debs: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
 		binary-arch-headers
 
-binary-arch: binary-debs binary-udebs
+binary-arch: binary-debs binary-udebs binary-custom

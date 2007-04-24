@@ -224,20 +224,6 @@ Description: Linux kernel headers for version 2.6.21 on 32-bit HP PA-RISC SMP
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.21-1-hppa32
-Architecture: hppa
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 32-bit HP PA-RISC SMP
- This package provides a kernel debug image for version 2.6.21 on
- 32-bit HP PA-RISC SMP.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
-
 Package: linux-image-2.6.21-1-hppa64
 Architecture: hppa
 Section: base
@@ -275,20 +261,6 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit HP PA-RISC SMP
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
-
-Package: linux-image-debug-2.6.21-1-hppa64
-Architecture: hppa
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 64-bit HP PA-RISC SMP
- This package provides a kernel debug image for version 2.6.21 on
- 64-bit HP PA-RISC SMP.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-itanium
 Architecture: ia64
@@ -328,20 +300,6 @@ Description: Linux kernel headers for version 2.6.21 on Itanium SMP
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.21-1-itanium
-Architecture: ia64
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on Itanium SMP
- This package provides a kernel debug image for version 2.6.21 on
- Itanium SMP.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
-
 Package: linux-image-2.6.21-1-mckinley
 Architecture: ia64
 Section: base
@@ -379,20 +337,6 @@ Description: Linux kernel headers for version 2.6.21 on Itanium II SMP
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
-
-Package: linux-image-debug-2.6.21-1-mckinley
-Architecture: ia64
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on Itanium II SMP
- This package provides a kernel debug image for version 2.6.21 on
- Itanium II SMP.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-powerpc
 Architecture: powerpc
@@ -432,20 +376,6 @@ Description: Linux kernel headers for version 2.6.21 on 32-bit PowerPC
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.21-1-powerpc
-Architecture: powerpc
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 32-bit PowerPC
- This package provides a kernel debug image for version 2.6.21 on
- 32-bit PowerPC.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
-
 Package: linux-image-2.6.21-1-powerpc64-smp
 Architecture: powerpc
 Section: base
@@ -484,20 +414,6 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit PowerPC SMP
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.21-1-powerpc64-smp
-Architecture: powerpc
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 64-bit PowerPC SMP
- This package provides a kernel debug image for version 2.6.21 on
- 64-bit PowerPC SMP.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
-
 Package: linux-image-2.6.21-1-powerpc-smp
 Architecture: powerpc
 Section: base
@@ -535,20 +451,6 @@ Description: Linux kernel headers for version 2.6.21 on 32-bit PowerPC SMP
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
-
-Package: linux-image-debug-2.6.21-1-powerpc-smp
-Architecture: powerpc
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 32-bit PowerPC SMP
- This package provides a kernel debug image for version 2.6.21 on
- 32-bit PowerPC SMP.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
 
 Package: linux-image-2.6.21-1-server
 Architecture: i386 amd64
@@ -692,20 +594,6 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit UltraSPARC
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.21-1-sparc64
-Architecture: sparc
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 64-bit UltraSPARC
- This package provides a kernel debug image for version 2.6.21 on
- 64-bit UltraSPARC.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
-
 Package: linux-image-2.6.21-1-sparc64-smp
 Architecture: sparc
 Section: base
@@ -744,16 +632,40 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit UltraSPARC SMP
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.21-1-sparc64-smp
-Architecture: sparc
+Package: linux-image-2.6.21-1-schedcfs
+Architecture: i386 amd64
+Section: base
+Priority: optional
+Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9, rhcs-modules2-1
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Conflicts: hotplug (<< 0.0.20040105-1)
+Recommends: lilo (>= 19.1) | grub
+Suggests: fdutils, linux-doc-2.6.21 | linux-source-2.6.21
+Description: Linux kernel image for version 2.6.21 on x86/x86_64
+ This package contains the Linux kernel image for version 2.6.21 on
+ x86/x86_64.
+ .
+ Also includes the corresponding System.map file, the modules built by the
+ packager, and scripts that try to ensure that the system is not left in an
+ unbootable state after an update.
+ .
+ Supports Generic processors.
+ .
+ Completely Fair Scheduler (CFS)
+ .
+ You likely do not want to install this package directly. Instead, install
+ the linux-schedcfs meta-package, which will ensure that upgrades work
+ correctly, and that supporting packages are also installed.
+
+Package: linux-headers-2.6.21-1-schedcfs
+Architecture: i386 amd64
 Section: devel
 Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.21 on 64-bit UltraSPARC SMP
- This package provides a kernel debug image for version 2.6.21 on
- 64-bit UltraSPARC SMP.
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.21-1, ${shlibs:Depends}
+Provides: linux-headers, linux-headers-2.6
+Description: Linux kernel headers for version 2.6.21 on x86/x86_64
+ This package provides kernel header files for version 2.6.21 on
+ x86/x86_64.
  .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
+ This is for sites that want the latest kernel headers.  Please read
+ /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
