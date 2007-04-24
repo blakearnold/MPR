@@ -10,17 +10,17 @@ kernel. Each file is named FLAV.type (types defined below). The flavour
 needs to be package-name-safe (e.g. no underscores, and preferably no
 dashes).
 
-	FLAV.config.ARCH : The kernel .config used to build the kernel
+	FLAV/config.ARCH : The kernel .config used to build the kernel
 	                   (one for each architecture this flavour will
 	                   build on).
 
-	FLAV.diff        : The patch for this flavour, to be applied with
+	FLAV/diff        : The patch for this flavour, to be applied with
 	                   -p1.
 
-	FLAV.mk          : A make file snippet for any target overrides
+	FLAV/rules       : A make file snippet for any target overrides
 	                   (usually empty).
 
-	FLAV.vars        : Template for control file generation.
+	FLAV/vars        : Template for control file generation.
 
 To add your custom kernel to the normal build, add it to the
 custom_flavours var for each architecture it will build on in the
