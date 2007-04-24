@@ -184,7 +184,7 @@ ifneq ($(do_debug_image),)
 endif
 
 $(stampdir)/stamp-flavours:
-	@echo $(flavours) $(custom_flavours > $@
+	@echo $(flavours) $(custom_flavours) > $@
 
 binary-debs: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
 		binary-arch-headers
