@@ -42,6 +42,7 @@ ifeq ($(compress_file),)
 	install -m644 -D $(builddir)/build-$*/$(kernel_file) \
 		$(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
 else
+	install -d $(pkgdir)/boot/
 	gzip -c9v $(builddir)/build-$*/$(kernel_file) > \
 		$(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
 	chmod 644 $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
