@@ -38,8 +38,14 @@ install-%: $(stampdir)/stamp-build-% checks-%
 	dh_clean -k -plinux-image-debug-$(release)$(debnum)-$*
 
 	# The main image
+ifeq ($(compress_file),)
 	install -m644 -D $(builddir)/build-$*/$(kernel_file) \
 		$(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
+else
+	gzip -c9v $(builddir)/build-$*/$(kernel_file) > \
+		$(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
+	chmod 644 $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
+endif
 	install -m644 $(builddir)/build-$*/.config \
 		$(pkgdir)/boot/config-$(release)$(debnum)-$*
 	install -m644 $(abidir)/$* \
