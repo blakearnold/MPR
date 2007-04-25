@@ -4,6 +4,7 @@ defconfig	= defconfig
 flavours	= sparc64 sparc64-smp
 build_image	= image
 kernel_file     = arch/$(build_arch)/boot/image
-install_file	= vmlinux
+install_file	= vmlinuz
+compress_file	= Yes
 
 loader		= silo
