@@ -114,7 +114,7 @@ endif
 headers_tmp := $(CURDIR)/debian/tmp-headers
 headers_dir := $(CURDIR)/debian/linux-libc-dev
 
-header_make_args := -C $(CURDIR) O=$(headers_tmp) \
+header_make_args := -C $(CURDIR) O=$(headers_tmp) SUBLEVEL=$(SUBLEVEL) \
 	EXTRAVERSION=$(debnum) INSTALL_HDR_PATH=$(headers_tmp)/install
 
 install-arch-headers:
