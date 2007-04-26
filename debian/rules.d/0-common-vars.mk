@@ -64,6 +64,7 @@ conc_level		= -j$(CONCURRENCY_LEVEL)
 kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour) \
 	SUBLEVEL=$(SUBLEVEL)
 
-# Checks if a var is overriden by the custom rules
+# Checks if a var is overriden by the custom rules. Called with var and
+# flavour as arguments.
 custom_override = \
  $(shell if [ -n "$($(1)_$(2))" ]; then echo "$($(1)_$(2))"; else echo "$($(1))"; fi)

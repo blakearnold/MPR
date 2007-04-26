@@ -10,4 +10,4 @@ do_debug_image	= true
 
 loader		= grub
 
-custom_flavours	= schedcfs xen
+custom_flavours	= rt xen
