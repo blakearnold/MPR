@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.21-rc7
-# Mon Apr 23 19:36:59 2007
+# Linux kernel version: 2.6.21-rc7-cfs-v6
+# Wed Apr 25 20:37:39 2007
 #
 CONFIG_X86_64=y
 CONFIG_64BIT=y
@@ -141,7 +141,7 @@ CONFIG_SCHED_MC=y
 CONFIG_PREEMPT_VOLUNTARY=y
 # CONFIG_PREEMPT is not set
 CONFIG_PREEMPT_BKL=y
-CONFIG_RENICE_X=y
+CONFIG_BOOST_X=y
 CONFIG_NUMA=y
 CONFIG_K8_NUMA=y
 CONFIG_NODES_SHIFT=6
@@ -2589,7 +2589,7 @@ CONFIG_FB_MODE_HELPERS=y
 CONFIG_FB_TILEBLITTING=y
 
 #
-# Frambuffer hardware drivers
+# Frame buffer hardware drivers
 #
 CONFIG_FB_CIRRUS=m
 CONFIG_FB_PM2=m

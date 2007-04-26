@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.21-1-sched_cfs
-# Mon Apr 23 17:50:15 2007
+# Linux kernel version: 2.6.21-1-schedcfs
+# Wed Apr 25 20:34:15 2007
 #
 CONFIG_X86_32=y
 CONFIG_GENERIC_TIME=y
@@ -171,7 +171,7 @@ CONFIG_SCHED_MC=y
 CONFIG_PREEMPT_VOLUNTARY=y
 # CONFIG_PREEMPT is not set
 CONFIG_PREEMPT_BKL=y
-CONFIG_RENICE_X=y
+CONFIG_BOOST_X=y
 CONFIG_X86_LOCAL_APIC=y
 CONFIG_X86_IO_APIC=y
 # CONFIG_X86_MCE is not set
@@ -2875,7 +2875,7 @@ CONFIG_FB_MODE_HELPERS=y
 CONFIG_FB_TILEBLITTING=y
 
 #
-# Frambuffer hardware drivers
+# Frame buffer hardware drivers
 #
 CONFIG_FB_CIRRUS=m
 CONFIG_FB_PM2=m
