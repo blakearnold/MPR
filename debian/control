@@ -632,7 +632,7 @@ Description: Linux kernel headers for version 2.6.22 on 64-bit UltraSPARC SMP
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-schedcfs
+Package: linux-image-2.6.22-1-rt
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -651,13 +651,13 @@ Description: Linux kernel image for version 2.6.22 on x86/x86_64
  .
  Supports Generic processors.
  .
- Completely Fair Scheduler (CFS)
+ Ingo's real time patch (2.6.21-rt1)
  .
  You likely do not want to install this package directly. Instead, install
- the linux-schedcfs meta-package, which will ensure that upgrades work
+ the linux-rt meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-schedcfs
+Package: linux-headers-2.6.22-1-rt
 Architecture: i386 amd64
 Section: devel
 Priority: optional
