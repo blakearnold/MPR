@@ -5,10 +5,12 @@ kernels that would otherwise not be allowed in our tree. The way this is
 achieved is to disaccociate the normal build process and patches required
 for these kernels.
 
-In this directory, you will need to create 4 files for your customer
-kernel. Each file is named FLAV.type (types defined below). The flavour
-needs to be package-name-safe (e.g. no underscores, and preferably no
-dashes).
+In this directory, you will need to create 4 files for your custom
+kernel. All files are placed in a subdirectory. This subdirectory is the
+name of your flavour (IOW, what will be appended to 2.6.X-ABI- to get the
+package name). So the subdirectory name should be package name safe (e.g.,
+no underscores). There are currently at least four files required in each
+subdirectory:
 
 	FLAV/config.ARCH : The kernel .config used to build the kernel
 	                   (one for each architecture this flavour will
@@ -18,9 +20,16 @@ dashes).
 	                   -p1.
 
 	FLAV/rules       : A make file snippet for any target overrides
-	                   (usually empty).
+	                   (usually empty). See below for what can be here.
 
 	FLAV/vars        : Template for control file generation.
+
+The rules file can contain overrides for some variables used during the
+build. Here is a list of what can be defined in this make file snippet:
+
+	build_image_FLAV : The image make target (e.g. bzImage).
+
+	kernel_file_FLAV : The resulting kernel image from the build.
 
 To add your custom kernel to the normal build, add it to the
 custom_flavours var for each architecture it will build on in the
