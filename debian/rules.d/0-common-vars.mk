@@ -63,3 +63,7 @@ conc_level		= -j$(CONCURRENCY_LEVEL)
 # taget_flavour is filled in for each step
 kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour) \
 	SUBLEVEL=$(SUBLEVEL)
+
+# Checks if a var is overriden by the custom rules
+custom_override = \
+ $(shell if [ -n "$($(1)_$(2))" ]; then echo "$($(1)_$(2))"; else echo "$($(1))"; fi)

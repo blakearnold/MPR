@@ -26,9 +26,10 @@ custom-build-%: $(stampdir)/stamp-custom-build-%
 	@# Empty for make to be happy
 $(stampdir)/stamp-custom-build-%: target_flavour = $*
 $(stampdir)/stamp-custom-build-%: srcdir = $(builddir)/custom-build-$*
+$(stampdir)/stamp-custom-build-%: bimage = $(call custom_override,build_image,$*)
 $(stampdir)/stamp-custom-build-%: $(stampdir)/stamp-custom-prepare-%
 	@echo "Building custom $*..."
-	$(kmake) -C $(srcdir) $(conc_level) $(build_image)
+	$(kmake) -C $(srcdir) $(conc_level) $(bimage)
 	$(kmake) -C $(srcdir) $(conc_level) modules
 	@touch $@
 
@@ -38,6 +39,7 @@ custom-install-%: hdrdir = $(CURDIR)/debian/$(basepkg)-$*/usr/src/$(basepkg)-$*
 custom-install-%: target_flavour = $*
 custom-install-%: origsrc = $(builddir)/custom-source-$*
 custom-install-%: srcdir = $(builddir)/custom-build-$*
+custom-install-%: kfile = $(call custom_override,kernel_file,$*)
 custom-install-%: $(stampdir)/stamp-custom-build-%
 	dh_testdir
 	dh_testroot
@@ -45,7 +47,7 @@ custom-install-%: $(stampdir)/stamp-custom-build-%
 	dh_clean -k -plinux-headers-$(release)$(debnum)-$*
 
 	# The main image
-	install -m644 -D $(srcdir)/$(kernel_file) \
+	install -m644 -D $(srcdir)/$(kfile) \
 		$(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
 	install -m644 $(srcdir)/.config \
 		$(pkgdir)/boot/config-$(release)$(debnum)-$*
