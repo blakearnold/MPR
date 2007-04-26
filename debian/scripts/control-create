@@ -13,7 +13,7 @@ section_headers=devel
 flavour=$(basename $vars | sed 's/.*\.//')
 # Custom is a little different
 if [ "$flavour" = "vars" ]; then
-	flavour=$(basename $vars .vars)
+	flavour=$(basename `dirname $vars`)
 fi
 
 if [ -n "$do_debug" ]; then
