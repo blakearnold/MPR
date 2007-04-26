@@ -35,8 +35,12 @@ endif
 
 abinum		:= $(shell echo $(revision) | sed -e 's/\..*//')$(abisuffix)
 prev_abinum	:= $(shell echo $(prev_revision) | sed -e 's/\..*//')$(abisuffix)
-version		:= $(release)
 debnum		:= -$(abinum)
+
+# We force the sublevel to be exactly what we want. The actual source may
+# be an in development git tree. We want to force it here instead of
+# committing changes to the top level Makefile
+SUBLEVEL	:= $(shell echo $(release) | awk -F. '{print $$3}')
 
 export abinum debnum version
 
@@ -57,4 +61,5 @@ endif
 conc_level		= -j$(CONCURRENCY_LEVEL)
 
 # taget_flavour is filled in for each step
-kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour)
+kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour) \
+	SUBLEVEL=$(SUBLEVEL)
