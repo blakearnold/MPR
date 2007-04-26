@@ -86,7 +86,7 @@ Package: linux-image-2.6.22-1-386
 Architecture: i386
 Section: base
 Priority: optional
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9
+Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -138,7 +138,7 @@ Package: linux-image-2.6.22-1-generic
 Architecture: i386 amd64
 Section: base
 Priority: optional
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -456,7 +456,7 @@ Package: linux-image-2.6.22-1-server
 Architecture: i386 amd64
 Section: base
 Priority: optional
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -508,7 +508,7 @@ Package: linux-image-2.6.22-1-server-bigiron
 Architecture: i386
 Section: base
 Priority: optional
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -636,7 +636,7 @@ Package: linux-image-2.6.22-1-schedcfs
 Architecture: i386 amd64
 Section: base
 Priority: optional
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-9, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -666,6 +666,44 @@ Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on x86/x86_64
  This package provides kernel header files for version 2.6.22 on
  x86/x86_64.
+ .
+ This is for sites that want the latest kernel headers.  Please read
+ /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+
+Package: linux-image-2.6.22-1-xen
+Architecture: i386
+Section: base
+Priority: optional
+Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Conflicts: hotplug (<< 0.0.20040105-1)
+Recommends: grub
+Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
+Description: Linux kernel image for version 2.6.22 on This kernel can be used for Xen dom0 and domU
+ This package contains the Linux kernel image for version 2.6.22 on
+ This kernel can be used for Xen dom0 and domU.
+ .
+ Also includes the corresponding System.map file, the modules built by the
+ packager, and scripts that try to ensure that the system is not left in an
+ unbootable state after an update.
+ .
+ Supports Generic processors.
+ .
+ Xen domO/domU
+ .
+ You likely do not want to install this package directly. Instead, install
+ the linux-xen meta-package, which will ensure that upgrades work
+ correctly, and that supporting packages are also installed.
+
+Package: linux-headers-2.6.22-1-xen
+Architecture: i386
+Section: devel
+Priority: optional
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Provides: linux-headers, linux-headers-2.6
+Description: Linux kernel headers for version 2.6.22 on This kernel can be used for Xen dom0 and domU
+ This package provides kernel header files for version 2.6.22 on
+ This kernel can be used for Xen dom0 and domU.
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.

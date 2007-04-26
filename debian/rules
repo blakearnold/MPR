@@ -57,7 +57,7 @@ include debian/rules.d/4-checks.mk
 
 # Custom binary images (universe/unsupported)
 include debian/rules.d/6-binary-custom.mk \
-	$(patsubst %,debian/binary-custom.d/%/rules,$(custom_flvaours))
+	$(patsubst %,debian/binary-custom.d/%/rules,$(custom_flavours))
 
 # Misc stuff
 debian/control.stub: debian/d-i/kernel-versions.in	\
