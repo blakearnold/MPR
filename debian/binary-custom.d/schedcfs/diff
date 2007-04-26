@@ -166,19 +166,6 @@ Index: linux/Documentation/sched-design-CFS.txt
 +more than welcome,
 +
 +	Ingo
-Index: linux/Makefile
-===================================================================
---- linux.orig/Makefile
-+++ linux/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 21
--EXTRAVERSION = -rc7
-+EXTRAVERSION = -rc7-cfs-v6
- NAME = Nocturnal Monster Puppy
- 
- # *DOCUMENTATION*
 Index: linux/arch/i386/kernel/ioport.c
 ===================================================================
 --- linux.orig/arch/i386/kernel/ioport.c
