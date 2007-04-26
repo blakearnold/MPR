@@ -634,7 +634,7 @@ Description: Linux kernel headers for version 2.6.22 on 64-bit UltraSPARC SMP
 
 Package: linux-image-2.6.22-1-rt
 Architecture: i386 amd64
-Section: base
+Section: universe/base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
@@ -672,7 +672,7 @@ Description: Linux kernel headers for version 2.6.22 on x86/x86_64
 
 Package: linux-image-2.6.22-1-xen
 Architecture: i386
-Section: base
+Section: universe/base
 Priority: optional
 Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
