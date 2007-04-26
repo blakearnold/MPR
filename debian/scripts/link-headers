@@ -6,14 +6,7 @@ srcdir="$3"
 build_arch="$4"
 flavour="$5"
 
-# Explanation:
-#
-# 1) The first find grabs all of our known build related files.
-# 2) Second we get the dirs we know were created by prepare, linking all
-#    files.
-# 3) Then we go back and get just the directories under include.
-
-echo "Symlinking and copying headers for custom $flavour..."
+echo "Symlinking and copying headers for $flavour..."
 
 excludes='( -path ./debian -prune -o -path ./.git ) -prune -o'
 
