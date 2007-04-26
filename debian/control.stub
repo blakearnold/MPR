@@ -632,7 +632,7 @@ Description: Linux kernel headers for version 2.6.21 on 64-bit UltraSPARC SMP
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.21-1/debian.README.gz for details.
 
-Package: linux-image-2.6.21-1-vars
+Package: linux-image-2.6.21-1-schedcfs
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -654,10 +654,10 @@ Description: Linux kernel image for version 2.6.21 on x86/x86_64
  Completely Fair Scheduler (CFS)
  .
  You likely do not want to install this package directly. Instead, install
- the linux-vars meta-package, which will ensure that upgrades work
+ the linux-schedcfs meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.21-1-vars
+Package: linux-headers-2.6.21-1-schedcfs
 Architecture: i386 amd64
 Section: devel
 Priority: optional
