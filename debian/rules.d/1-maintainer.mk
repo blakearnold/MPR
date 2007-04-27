@@ -37,20 +37,21 @@ updateconfigs:
 
 printenv:
 	dh_testdir
-	@echo release         = $(release)
-	@echo pkgversion      = $(pkgversion)
-	@echo revisions       = $(revisions)
-	@echo revision        = $(revision)
-	@echo prev_revisions  = $(prev_revisions)
-	@echo prev_revision   = $(prev_revision)
-	@echo debnum          = $(debnum)
-	@echo abinum          = $(abinum)
-	@echo gitver          = $(gitver)
-	@echo flavours        = $(flavours)
-	@echo custom_flavours = $(custom_flavours)
+	@echo "release           = $(release)"
+	@echo "pkgversion        = $(pkgversion)"
+	@echo "revisions         = $(revisions)"
+	@echo "revision          = $(revision)"
+	@echo "prev_revisions    = $(prev_revisions)"
+	@echo "prev_revision     = $(prev_revision)"
+	@echo "debnum            = $(debnum)"
+	@echo "abinum            = $(abinum)"
+	@echo "gitver            = $(gitver)"
+	@echo "flavours          = $(flavours)"
+	@echo "custom_flavours   = $(custom_flavours)"
 ifneq ($(SUBLEVEL),)
-	@echo SUBLEVEL        = $(SUBLEVEL)
+	@echo "SUBLEVEL          = $(SUBLEVEL)"
 endif
+	@echo "CONCURRENCY_LEVEL = $(CONCURRENCY_LEVEL)"
 
 printchanges:
 	@git-log --pretty=short Ubuntu-$(release)-$(prev_revision)..HEAD | \
