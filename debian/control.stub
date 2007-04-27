@@ -87,7 +87,7 @@ Architecture: i386
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -140,7 +140,7 @@ Architecture: i386 amd64
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -466,7 +466,7 @@ Architecture: i386 amd64
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -519,7 +519,7 @@ Architecture: i386
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -650,7 +650,7 @@ Architecture: i386 amd64
 Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -689,7 +689,7 @@ Architecture: i386
 Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, ndiswrapper-modules-1.9, ivtv-modules, kvm-api-4, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: grub
