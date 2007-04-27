@@ -1,6 +1,7 @@
 # This could be somewhere else, but we stub this file so that the include
 # in debian/rules doesn't have an empty list.
 binary-custom: $(addprefix custom-binary-,$(custom_flavours))
+build-custom: $(addprefix custom-build-,$(custom_flavours))
 
 # Custom targets can dep on these targets to help things along. They can
 # also override it with a :: target for addition processing.
