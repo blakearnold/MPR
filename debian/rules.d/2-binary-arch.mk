@@ -151,7 +151,7 @@ binary-arch-headers: install-arch-headers
 	dh_installdeb -plinux-libc-dev
 	dh_gencontrol -plinux-libc-dev
 	dh_md5sums -plinux-libc-dev
-	dh_builddeb -plinux-libc-dev -- -Zbzip2 -z9
+	dh_builddeb -plinux-libc-dev
 
 binary-%: pkgimg = linux-image-$(release)$(debnum)-$*
 binary-%: pkghdr = linux-headers-$(release)$(debnum)-$*
@@ -177,7 +177,7 @@ binary-%: install-%
 	dh_installdeb -p$(pkghdr)
 	dh_gencontrol -p$(pkghdr)
 	dh_md5sums -p$(pkghdr)
-	dh_builddeb -p$(pkghdr) -- -Zbzip2 -z9
+	dh_builddeb -p$(pkghdr)
 
 ifneq ($(do_debug_image),)
 	dh_installchangelogs -p$(dbgpkg)
@@ -187,7 +187,7 @@ ifneq ($(do_debug_image),)
 	dh_installdeb -p$(dbgpkg)
 	dh_gencontrol -p$(dbgpkg)
 	dh_md5sums -p$(dbgpkg)
-	dh_builddeb -p$(dbgpkg) -- -Zbzip2 -z9
+	dh_builddeb -p$(dbgpkg)
 endif
 
 $(stampdir)/stamp-flavours:

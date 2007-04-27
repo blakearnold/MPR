@@ -120,4 +120,4 @@ custom-binary-%: custom-install-%
 	dh_installdeb -p$(pkghdr)
 	dh_gencontrol -p$(pkghdr)
 	dh_md5sums -p$(pkghdr)
-	dh_builddeb -p$(pkghdr) -- -Zbzip2 -z9
+	dh_builddeb -p$(pkghdr)

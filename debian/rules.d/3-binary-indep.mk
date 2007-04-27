@@ -61,4 +61,4 @@ binary-indep: install-indep
 	dh_installdeb -i
 	dh_gencontrol -i
 	dh_md5sums -i
-	dh_builddeb -i -- -Zbzip2 -z9
+	dh_builddeb -i

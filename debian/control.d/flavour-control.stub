@@ -15,6 +15,7 @@ Package: linux-image-PKGVER-ABINUM-FLAVOUR
 Architecture: ARCH
 Section: SECTION_IMAGE
 Priority: optional
+Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, =PROVIDES=
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
