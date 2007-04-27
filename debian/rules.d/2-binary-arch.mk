@@ -196,4 +196,8 @@ $(stampdir)/stamp-flavours:
 binary-debs: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
 		binary-arch-headers
 
+build-debs: $(addprefix build-,$(flavours))
+
+build-arch: build-debs build-custom
+
 binary-arch: binary-debs binary-udebs binary-custom
