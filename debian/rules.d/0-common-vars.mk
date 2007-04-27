@@ -52,10 +52,18 @@ builddir	:= $(CURDIR)/debian/build
 stampdir	:= $(CURDIR)/debian/stamps
 
 ifeq ($(CONCURRENCY_LEVEL),)
-CONCURRENCY_LEVEL	= $(shell echo $$CONCURRENCY_LEVEL)
-ifeq ($(CONCURRENCY_LEVEL),)
-CONCURRENCY_LEVEL	= 1
-endif
+  # Check the environment
+  CONCURRENCY_LEVEL := $(shell echo $$CONCURRENCY_LEVEL)
+  # No? Check if this is on a buildd
+  ifeq ($(CONCURRENCY_LEVEL),)
+    ifneq ($(wildcard /CurrentlyBuilding),)
+      CONCURRENCY_LEVEL := $(shell expr `getconf _NPROCESSORS_ONLN` \* 2)
+    endif
+  endif
+  # Oh hell, give 'em one
+  ifeq ($(CONCURRENCY_LEVEL),)
+    CONCURRENCY_LEVEL := 1
+  endif
 endif
 
 conc_level		= -j$(CONCURRENCY_LEVEL)
