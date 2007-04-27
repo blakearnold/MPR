@@ -32,7 +32,7 @@ clean: debian/control
 	dh_clean
 
 	# d-i stuff
-	rm -rf firmware modules kernel-versions package-list
+	rm -rf modules kernel-versions package-list
 	rm -rf debian/d-i-$(arch)
 
 	# normal build junk
@@ -81,10 +81,9 @@ debian/control.stub: debian/d-i/kernel-versions.in	\
 
 .PHONY: debian/control
 debian/control: debian/control.stub
-	rm -rf firmware modules kernel-versions package-list
-	mkdir -p modules/$(arch)/ firmware/$(arch)/
+	rm -rf modules kernel-versions package-list
+	mkdir -p modules/$(arch)/
 	cp debian/d-i/modules/* modules/$(arch)/
-	cp debian/d-i/firmware/* firmware/$(arch)/
 	cp debian/d-i/package-list debian/d-i/kernel-versions .
 	touch modules/$(arch)/kernel-image
 
@@ -106,11 +105,6 @@ debian/control: debian/control.stub
 	    (cat debian/d-i/exclude-modules.$(arch);		\
 	     ls modules/$(arch)/) | sort | uniq -d |		\
 		(cd modules/$(arch)/; xargs rm -f);		\
-	fi
-	if [ -r "debian/d-i/exclude-firmware.$(arch)" ]; then	\
-	    (cat debian/d-i/exclude-firmware.$(arch);		\
-	     ls firmware/$(arch)/) | sort | uniq -d |		\
-		(cd firmware/$(arch)/; xargs rm -f);		\
 	fi
 
 	if [ ! -d modules/$(build_arch) ]; then			\
