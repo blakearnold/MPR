@@ -1,4 +1,10 @@
-linux-source-2.6.22 (2.6.22-1.2) gutsy; urgency=low
+linux-source-2.6.22 (2.6.22-1.3) gutsy; urgency=low
+
+  [Ben Collins]
+
+  * build: Only use bzip2 for linux-image, and pre-depend on proper dpkg
+
+  [2.6.22-1.2]
 
   [Ben Collins]
 
@@ -46,4 +52,4 @@ linux-source-2.6.22 (2.6.22-1.2) gutsy; urgency=low
   * build/custom: Add 2.6.21-rt1 patch for -rt custom flavour
   * build/link-headers: Make sure to copy new files for custom
 
- -- Ben Collins <bcollins@ubuntu.com>  Thu, 26 Apr 2007 19:07:13 -0400
+ -- Ben Collins <bcollins@ubuntu.com>  Fri, 27 Apr 2007 08:29:00 -0400
