@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.22-1-rt
-# Sat Apr 28 12:36:49 2007
+# Linux kernel version: 2.6.22-2-rt
+# Sat Apr 28 17:26:33 2007
 #
 CONFIG_X86_32=y
 CONFIG_GENERIC_TIME=y
@@ -1165,7 +1165,6 @@ CONFIG_CDROM_PKTCDVD=m
 CONFIG_CDROM_PKTCDVD_BUFFERS=8
 # CONFIG_CDROM_PKTCDVD_WCACHE is not set
 CONFIG_ATA_OVER_ETH=m
-# CONFIG_KVM_BLOCK is not set
 
 #
 # Misc devices
@@ -3562,10 +3561,8 @@ CONFIG_CFAG12864B_RATE=20
 # Virtualization
 #
 CONFIG_KVM=m
-CONFIG_HYPERVISOR=y
 CONFIG_KVM_INTEL=m
 CONFIG_KVM_AMD=m
-# CONFIG_KVM_NET is not set
 
 #
 # File systems
