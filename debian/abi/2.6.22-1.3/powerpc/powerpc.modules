@@ -42,6 +42,7 @@ adv7175
 aec62xx
 aedsp16
 aes
+af-rxrpc
 af_key
 af_packet
 affs
@@ -1078,7 +1079,6 @@ rtc-test
 rtc-v3020
 rtc-x1205
 rtl8150
-af-rxrpc
 s1d13xxxfb
 s2io
 s3fb
