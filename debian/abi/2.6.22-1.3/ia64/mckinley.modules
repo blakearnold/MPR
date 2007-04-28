@@ -637,7 +637,6 @@ ldusb
 led-class
 legousbtower
 lgdt330x
-lgh06xf
 libata
 libcrc32c
 libiscsi
@@ -1009,7 +1008,7 @@ rtc-test
 rtc-v3020
 rtc-x1205
 rtl8150
-rxrpc
+af-rxrpx
 s1d13xxxfb
 s2io
 s3fb
