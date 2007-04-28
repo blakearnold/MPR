@@ -114,7 +114,7 @@ endif
 headers_tmp := $(CURDIR)/debian/tmp-headers
 headers_dir := $(CURDIR)/debian/linux-libc-dev
 
-header_make_args := -C $(CURDIR) O=$(headers_tmp) SUBLEVEL=$(SUBLEVEL) \
+hmake := $(MAKE) -C $(CURDIR) O=$(headers_tmp) SUBLEVEL=$(SUBLEVEL) \
 	EXTRAVERSION=$(debnum) INSTALL_HDR_PATH=$(headers_tmp)/install
 
 install-arch-headers:
@@ -125,13 +125,13 @@ install-arch-headers:
 	rm -rf $(headers_tmp)
 	install -d $(headers_tmp) $(headers_dir)/usr/include/
 
-	make $(header_make_args) ARCH=$(header_arch) $(defconfig)
+	$(hmake) ARCH=$(header_arch) $(defconfig)
 	mv $(headers_tmp)/.config $(headers_tmp)/.config.old
 	sed -e 's/^# \(CONFIG_MODVERSIONS\) is not set$$/\1=y/' \
 	  -e 's/.*CONFIG_LOCALVERSION_AUTO.*/# CONFIG_LOCALVERSION_AUTO is not set/' \
 	  $(headers_tmp)/.config.old > $(headers_tmp)/.config
-	make $(header_make_args) ARCH=$(header_arch) silentoldconfig
-	make $(header_make_args) ARCH=$(header_arch) headers_install
+	$(hmake) ARCH=$(header_arch) silentoldconfig
+	$(hmake) ARCH=$(header_arch) headers_install
 
 	mv $(headers_tmp)/install/include/asm* \
 		$(headers_dir)/usr/include/
