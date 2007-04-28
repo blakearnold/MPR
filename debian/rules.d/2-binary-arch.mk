@@ -115,7 +115,8 @@ headers_tmp := $(CURDIR)/debian/tmp-headers
 headers_dir := $(CURDIR)/debian/linux-libc-dev
 
 hmake := $(MAKE) -C $(CURDIR) O=$(headers_tmp) SUBLEVEL=$(SUBLEVEL) \
-	EXTRAVERSION=$(debnum) INSTALL_HDR_PATH=$(headers_tmp)/install
+	EXTRAVERSION=$(debnum) INSTALL_HDR_PATH=$(headers_tmp)/install \
+	SHELL=/bin/bash
 
 install-arch-headers:
 	dh_testdir
