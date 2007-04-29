@@ -22005,7 +22005,7 @@ diff -urN -x .mailmap -x .git -x .gitignore -x debian linux-source-2.6.22-2.6.22
 diff -urN -x .mailmap -x .git -x .gitignore -x debian linux-source-2.6.22-2.6.22/include/linux/seqlock.h linux-source-2.6.22-2.6.22-rt/include/linux/seqlock.h
 --- linux-source-2.6.22-2.6.22/include/linux/seqlock.h	2007-04-28 16:39:09.000000000 -0400
 +++ linux-source-2.6.22-2.6.22-rt/include/linux/seqlock.h	2007-04-28 17:22:03.000000000 -0400
-@@ -32,46 +32,69 @@
+@@ -32,46 +32,71 @@
  typedef struct {
  	unsigned sequence;
  	spinlock_t lock;
@@ -22050,9 +22050,11 @@ diff -urN -x .mailmap -x .git -x .gitignore -x debian linux-source-2.6.22-2.6.22
 -		(x)->sequence = 0;			\
 -		spin_lock_init(&(x)->lock);		\
 -	} while (0)
-+#define raw_seqlock_init(x) \+       do { *(x) = (raw_seqlock_t) __RAW_SEQLOCK_UNLOCKED(x); spin_lock_init(&(x)->lock); } while (0)
++#define raw_seqlock_init(x) \
++	do { *(x) = (raw_seqlock_t) __RAW_SEQLOCK_UNLOCKED(x); spin_lock_init(&(x)->lock); } while (0)
 +
-+#define seqlock_init(x) \+               do { *(x) = (seqlock_t) __SEQLOCK_UNLOCKED(x); spin_lock_init(&(x)->lock); } while (0)
++#define seqlock_init(x) \
++	do { *(x) = (seqlock_t) __SEQLOCK_UNLOCKED(x); spin_lock_init(&(x)->lock); } while (0)
  
  #define DEFINE_SEQLOCK(x) \
  		seqlock_t x = __SEQLOCK_UNLOCKED(x)
