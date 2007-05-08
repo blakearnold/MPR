@@ -17,9 +17,6 @@
 #
 # 
 #use strict;
-use Debconf::Client::ConfModule qw(:all);
-version('2.0');
-my $capb=capb("backup");
 
 $|=1;
 # Predefined values:
@@ -172,33 +169,7 @@ $ENV{KERNEL_ARCH}=$kernel_arch if $kernel_arch;
 # if so we abort right now.
 chop($running=`uname -r`);
 if ($running eq $version) {
-  my $question = "${package_name}/prerm/removing-running-kernel-$version";
-
-  ($ret,$seen) = fset ("$question", 'seen', 'false');
-  die "Error setting debconf flags in $question: $seen" if $ret;
-
-  $ret = subst("$question", 'running', "$running");
-  die "Error setting debconf substitutions in $question: $seen" if $ret;
-
-  ($ret,$seen) = input('critical', "$question");
-  if ($ret && $ret != 30 ) {
-    die "Error setting debconf question $question: $seen";
-  }
-
-  ($ret,$seen) = go ();
-  if ($ret && $ret != 30 ) {
-    die "Error asking debconf question $question: $seen";
-  }
-
-  ($ret,$answer) = get("$question");
-  die "Error retreiving answer for $question: $answer" if $ret;
-
-  if ($answer =~ /^(y|t)/i) {
-    exit 1; #Operation not permitted
-  }
-  else {
-     print STDERR "Ok, proceeding with removing running kernel image.\n";
-  }
+  print STDERR "WARN: Proceeding with removing running kernel image.\n";
 }
 
 #Now, they have an alternate kernel which they are currently running
@@ -231,38 +202,8 @@ if (-f "/etc/$loader.conf") { #I know, could be a link, but ..
   }
   close (LILO);
   if ($WouldInvalidate) {
-    my $question = "${package_name}/prerm/would-invalidate-boot-loader-$version";
-
-    ($ret,$seen) = fset ("$question", 'seen', 'false');
-    die "Error setting debconf flags in $question: $seen" if $ret;
-
-    $ret = subst("$question", 'loader', "$loader");
-    die "Error setting debconf substitutions in $question: $seen" if $ret;
-
-    $ret = subst("$question", 'kimage', "$kimage");
-    die "Error setting debconf substitutions in $question: $seen" if $ret;
-
-    ($ret,$seen) = input('critical', "$question");
-    if ($ret && $ret != 30 ) {
-      die "Error setting debconf question $question: $seen";
-    }
-
-    ($ret,$seen) = go ();
-    if ($ret && $ret != 30 ) {
-      die "Error asking debconf question $question: $seen";
-    }
-
-    ($ret,$answer) = get("$question");
-    die "Error retreiving answer for $question: $answer" if $ret;
-
-    if ($answer =~ /^(y|t)/i) {
-      print STDERR "\nNot removing linux-image-$version.\n";
-      exit 1; #Operation not permitted
-    }
-    else {
-      print STFERR "Ok, proceeding with removing running kernel image.\n";
-      &success();
-    }
+    print STFERR "WARN: Proceeding with removing running kernel image.\n";
+    &success();
   }
 }
 
