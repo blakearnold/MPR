@@ -4,6 +4,7 @@ defconfig	= defconfig
 flavours	= itanium mckinley
 build_image	= vmlinux
 kernel_file	= $(build_image)
-install_file	= $(build_image)
+install_file	= vmlinuz
+compress_file	= yes
 
 loader		= elilo
