@@ -50,6 +50,18 @@ install-headers:
 
 install-indep: install-source install-headers install-doc
 
+binary-headers: install-headers
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs -p$(indep_hdrpkg)
+	dh_installdocs -p$(indep_hdrpkg)
+	dh_compress -p$(indep_hdrpkg)
+	dh_fixperms -p$(indep_hdrpkg)
+	dh_installdeb -p$(indep_hdrpkg)
+	dh_gencontrol -p$(indep_hdrpkg)
+	dh_md5sums -p$(indep_hdrpkg)
+	dh_builddeb -p$(indep_hdrpkg)
+
 binary-indep: install-indep
 	dh_testdir
 	dh_testroot
