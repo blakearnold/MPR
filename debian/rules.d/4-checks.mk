@@ -20,7 +20,7 @@ $(abidir)/%.modules: $(stampdir)/stamp-build-%
 
 module-check-%: $(abidir)/%.modules
 	@perl -f debian/scripts/module-check "$*" \
-		"$(prev_abidir)" "$(abidir)" "$(skipmodule)"
+		"$(prev_abidir)" "$(abidir)" $(skipmodule)
 
 checks-%: abi-check-% module-check-%
 	@# Will be calling more stuff later

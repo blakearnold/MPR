@@ -100,6 +100,10 @@ if ($errors) {
 	exit 1
 }
 
-print "II: Successful (no new hw support, hope you're happy)\n";
+if ($missing) {
+	print "II: Successful (new hw support, you've been busy)\n";
+} else {
+	print "II: Successful (no new hw support, hope you're happy)\n";
+}
 
 exit(0);
