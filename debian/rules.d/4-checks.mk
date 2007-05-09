@@ -19,7 +19,7 @@ $(abidir)/%.modules: $(stampdir)/stamp-build-%
 		sed -e 's/.*\/\([^\/]*\)\.ko/\1/' | sort > $@
 
 module-check-%: $(abidir)/%.modules
-	@$(SHELL) debian/scripts/module-check "$*" \
+	@perl -f debian/scripts/module-check "$*" \
 		"$(prev_abidir)" "$(abidir)" "$(skipmodule)"
 
 checks-%: abi-check-% module-check-%
