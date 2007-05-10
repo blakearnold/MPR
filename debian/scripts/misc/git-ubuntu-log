@@ -118,7 +118,7 @@ sub shortlog_output {
 						"\n";
 				}
 				if (defined($entry->{'bugno'})) {
-					print "    - Bug #" .
+					print "    - LP: #" .
 						$entry->{'bugno'} . "\n";
 				}
 			}
