@@ -3,6 +3,7 @@ btaudio
 cs4232
 generic
 i2c_ec
+i2c-pca-isa
 i810_audio
 ibm_acpi
 kahlua
