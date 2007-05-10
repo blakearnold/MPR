@@ -6,6 +6,11 @@ i2c_ec
 i810_audio
 ibm_acpi
 kahlua
+mxser
+orinoco_cs
+orinoco_pci
+orinoco_plx
+orinoco_tmd
 padlock
 pas2
 rtc-dev
@@ -13,6 +18,7 @@ rtc-proc
 rtc-sysfs
 sb
 siimage
+sk98lin
 trident
 tvmixer
 via82cxxx_audio
