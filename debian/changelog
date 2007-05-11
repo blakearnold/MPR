@@ -1,4 +1,9 @@
-linux-source-2.6.22 (2.6.22-2.6) gutsy; urgency=low
+linux-source-2.6.22 (2.6.22-2.7) gutsy; urgency=low
+
+  [Changes for 2.7]
+
+  * Added some more modules going missing to ignore.
+  * Disable ADB_PMU_LED on powerpc64. FTBFS.
 
   [Ben Collins]
 
