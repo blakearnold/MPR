@@ -2,6 +2,7 @@ ac97_codec
 btaudio
 cs4232
 dtlk
+esp
 generic
 i2c_ec
 i2c-pca-isa
