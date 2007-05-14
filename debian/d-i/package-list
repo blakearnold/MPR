@@ -3,6 +3,11 @@ Depends: kernel-image
 Priority: standard
 Description: Support for ACPI
 
+Package: efi-modules
+Depends: kernel-image
+Priority: standard
+Description: EFI support
+
 Package: fat-modules
 Depends: kernel-image
 Priority: standard
@@ -18,11 +23,6 @@ Package: firewire-core-modules
 Depends: kernel-image, storage-core-modules
 Priority: standard
 Description: Firewire (IEEE-1394) Support
-
-Package: firmware-modules
-Depends: kernel-image
-Priority: standard
-Description: Firmware support
 
 Package: floppy-modules
 Depends: kernel-image
