@@ -17,6 +17,7 @@ orinoco_plx
 orinoco_tmd
 padlock
 pas2
+pasemi_mac
 rom
 rtc-dev
 rtc-lib
