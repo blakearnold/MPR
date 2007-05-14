@@ -1,10 +1,12 @@
 ac97_codec
 btaudio
 cs4232
+dtlk
 generic
 i2c_ec
 i2c-pca-isa
 i810_audio
+i8xx_tco
 ibm_acpi
 kahlua
 mxser
