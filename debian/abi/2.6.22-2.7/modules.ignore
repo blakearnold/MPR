@@ -16,12 +16,15 @@ orinoco_plx
 orinoco_tmd
 padlock
 pas2
+rom
 rtc-dev
+rtc-lib
 rtc-proc
 rtc-sysfs
 sb
 siimage
 sk98lin
+snd-hda-codec
 trident
 tvmixer
 usbtouchscreen
