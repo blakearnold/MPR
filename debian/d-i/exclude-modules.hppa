@@ -1,5 +1,5 @@
 firewire-core-modules
-firmware-modules
+efi-modules
 socket-modules
 irda-modules
 floppy-modules
