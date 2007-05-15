@@ -1,4 +1,4 @@
-firmware-modules
+efi-modules
 nic-pcmcia-modules
 pcmcia-modules
 pcmcia-storage-modules

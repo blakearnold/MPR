@@ -1,4 +1,6 @@
-linux-source-2.6.22 (2.6.22-3.8) gutsy; urgency=low
+linux-source-2.6.22 (2.6.22-3.9) gutsy; urgency=low
+
+  * Fixup firmware-modules -> efi-modules in exclude files.
 
   [Ben Collins]
 
