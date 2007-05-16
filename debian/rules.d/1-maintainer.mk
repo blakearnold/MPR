@@ -61,7 +61,7 @@ insertchanges:
 	@perl -w -f debian/scripts/misc/insert-changes.pl
 
 diffupstream:
-	@git-diff-tree -p upstream-linux..HEAD $(shell ls | grep -vE '^(ubuntu|debian|\.git.*)')
+	@git-diff-tree -p linux..HEAD $(shell ls | grep -vE '^(ubuntu|debian|\.git.*)')
 
 startnewrelease:
 	dh_testdir
