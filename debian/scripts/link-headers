@@ -8,12 +8,18 @@ flavour="$5"
 
 echo "Symlinking and copying headers for $flavour..."
 
+# XXX Special case for ppc
+if [ "$build_arch" = "powerpc" ]; then
+	install -d -m755 $hdrdir/arch/powerpc/include
+	ln -fsn ../../../include/asm-ppc $hdrdir/arch/powerpc/include
+fi
+
 excludes='( -path ./debian -prune -o -path ./.git ) -prune -o'
 
 # For custom builds, we have to take care of a few things. First, we want
 # to check for files to symlink and copy in the srcdir, not the stock src.
-# We compare against stock source, copying for diffs, and later symlinking
-# for same files.
+# We compare against stock source, copying for files that aren't the same,
+# and later symlinking for same files.
 if [ -n "$srcdir" ]; then
   (
   cd $srcdir
