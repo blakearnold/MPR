@@ -44,7 +44,7 @@ install-headers:
 	find . -path './debian/*' -prune -o -path './include/*' -prune \
 	  -o -path './scripts/*' -prune -o -type f \
 	  \( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
-	     -name '*.sh' -o -name '*.pl' -name '*.lds' \) \
+	     -name '*.sh' -o -name '*.pl' -o -name '*.lds' \) \
 	  -print | cpio -pd --preserve-modification-time $(indep_hdrdir)
 	cp -a scripts include $(indep_hdrdir)
 
