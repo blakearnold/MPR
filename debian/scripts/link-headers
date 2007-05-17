@@ -11,7 +11,7 @@ echo "Symlinking and copying headers for $flavour..."
 # XXX Special case for ppc
 if [ "$build_arch" = "powerpc" ]; then
 	install -d -m755 $hdrdir/arch/powerpc/include
-	ln -fsn ../../../include/asm-ppc $hdrdir/arch/powerpc/include
+	ln -fsn ../../../include/asm-ppc $hdrdir/arch/powerpc/include/asm
 fi
 
 excludes='( -path ./debian -prune -o -path ./.git ) -prune -o'
