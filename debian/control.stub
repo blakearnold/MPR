@@ -59,7 +59,7 @@ Description: Linux kernel specific documentation for version 2.6.22
  information about the problems, which may result by upgrading your
  kernel.
 
-Package: linux-headers-2.6.22-4
+Package: linux-headers-2.6.22-5
 Architecture: all
 Section: devel
 Priority: optional
@@ -68,7 +68,7 @@ Provides: linux-headers, linux-headers-2.6
 Description: Header files related to Linux kernel version 2.6.22
  This package provides kernel header files for version 2.6.22, for sites
  that want the latest kernel headers. Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details
 
 Package: linux-libc-dev
 Architecture: amd64 i386 powerpc sparc ia64 hppa
@@ -82,7 +82,7 @@ Description: Linux Kernel Headers for development
  are used by the installed headers for GNU glibc and other system
  libraries.
 
-Package: linux-image-2.6.22-4-386
+Package: linux-image-2.6.22-5-386
 Architecture: i386
 Section: base
 Priority: optional
@@ -108,20 +108,20 @@ Description: Linux kernel image for version 2.6.22 on i386
  the linux-386 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-386
+Package: linux-headers-2.6.22-5-386
 Architecture: i386
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on i386
  This package provides kernel header files for version 2.6.22 on
  i386.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-4-386
+Package: linux-image-debug-2.6.22-5-386
 Architecture: i386
 Section: devel
 Priority: optional
@@ -135,7 +135,7 @@ Description: Linux kernel debug image for version 2.6.22 on i386
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-4-generic
+Package: linux-image-2.6.22-5-generic
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -161,20 +161,20 @@ Description: Linux kernel image for version 2.6.22 on x86/x86_64
  the linux-generic meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-generic
+Package: linux-headers-2.6.22-5-generic
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on x86/x86_64
  This package provides kernel header files for version 2.6.22 on
  x86/x86_64.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-4-generic
+Package: linux-image-debug-2.6.22-5-generic
 Architecture: i386 amd64
 Section: devel
 Priority: optional
@@ -188,7 +188,7 @@ Description: Linux kernel debug image for version 2.6.22 on x86/x86_64
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-4-hppa32
+Package: linux-image-2.6.22-5-hppa32
 Architecture: hppa
 Section: base
 Priority: optional
@@ -214,20 +214,20 @@ Description: Linux kernel image for version 2.6.22 on 32-bit HP PA-RISC SMP
  the linux-hppa32 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-hppa32
+Package: linux-headers-2.6.22-5-hppa32
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 32-bit HP PA-RISC SMP
  This package provides kernel header files for version 2.6.22 on
  32-bit HP PA-RISC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-hppa64
+Package: linux-image-2.6.22-5-hppa64
 Architecture: hppa
 Section: base
 Priority: optional
@@ -253,20 +253,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit HP PA-RISC SMP
  the linux-hppa64 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-hppa64
+Package: linux-headers-2.6.22-5-hppa64
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 64-bit HP PA-RISC SMP
  This package provides kernel header files for version 2.6.22 on
  64-bit HP PA-RISC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-itanium
+Package: linux-image-2.6.22-5-itanium
 Architecture: ia64
 Section: base
 Priority: optional
@@ -292,20 +292,20 @@ Description: Linux kernel image for version 2.6.22 on Itanium SMP
  the linux-itanium meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-itanium
+Package: linux-headers-2.6.22-5-itanium
 Architecture: ia64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on Itanium SMP
  This package provides kernel header files for version 2.6.22 on
  Itanium SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-mckinley
+Package: linux-image-2.6.22-5-mckinley
 Architecture: ia64
 Section: base
 Priority: optional
@@ -331,20 +331,20 @@ Description: Linux kernel image for version 2.6.22 on Itanium II SMP
  the linux-mckinley meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-mckinley
+Package: linux-headers-2.6.22-5-mckinley
 Architecture: ia64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on Itanium II SMP
  This package provides kernel header files for version 2.6.22 on
  Itanium II SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-powerpc
+Package: linux-image-2.6.22-5-powerpc
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -370,20 +370,20 @@ Description: Linux kernel image for version 2.6.22 on 32-bit PowerPC
  the linux-powerpc meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-powerpc
+Package: linux-headers-2.6.22-5-powerpc
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 32-bit PowerPC
  This package provides kernel header files for version 2.6.22 on
  32-bit PowerPC.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-powerpc-smp
+Package: linux-image-2.6.22-5-powerpc-smp
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -409,20 +409,20 @@ Description: Linux kernel image for version 2.6.22 on 32-bit PowerPC SMP
  the linux-powerpc-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-powerpc-smp
+Package: linux-headers-2.6.22-5-powerpc-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 32-bit PowerPC SMP
  This package provides kernel header files for version 2.6.22 on
  32-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-powerpc64-smp
+Package: linux-image-2.6.22-5-powerpc64-smp
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -448,20 +448,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit PowerPC SMP
  the linux-powerpc64-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-powerpc64-smp
+Package: linux-headers-2.6.22-5-powerpc64-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 64-bit PowerPC SMP
  This package provides kernel header files for version 2.6.22 on
  64-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-server
+Package: linux-image-2.6.22-5-server
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -487,20 +487,20 @@ Description: Linux kernel image for version 2.6.22 on x86/x86_64
  the linux-server meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-server
+Package: linux-headers-2.6.22-5-server
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on x86/x86_64
  This package provides kernel header files for version 2.6.22 on
  x86/x86_64.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-4-server
+Package: linux-image-debug-2.6.22-5-server
 Architecture: i386 amd64
 Section: devel
 Priority: optional
@@ -514,7 +514,7 @@ Description: Linux kernel debug image for version 2.6.22 on x86/x86_64
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-4-server-bigiron
+Package: linux-image-2.6.22-5-server-bigiron
 Architecture: i386
 Section: base
 Priority: optional
@@ -540,20 +540,20 @@ Description: Linux kernel image for version 2.6.22 on BigIron Server Equipment
  the linux-server-bigiron meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-server-bigiron
+Package: linux-headers-2.6.22-5-server-bigiron
 Architecture: i386
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on BigIron Server Equipment
  This package provides kernel header files for version 2.6.22 on
  BigIron Server Equipment.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-4-server-bigiron
+Package: linux-image-debug-2.6.22-5-server-bigiron
 Architecture: i386
 Section: devel
 Priority: optional
@@ -567,7 +567,7 @@ Description: Linux kernel debug image for version 2.6.22 on BigIron Server Equip
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-4-sparc64
+Package: linux-image-2.6.22-5-sparc64
 Architecture: sparc
 Section: base
 Priority: optional
@@ -593,20 +593,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit UltraSPARC
  the linux-sparc64 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-sparc64
+Package: linux-headers-2.6.22-5-sparc64
 Architecture: sparc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 64-bit UltraSPARC
  This package provides kernel header files for version 2.6.22 on
  64-bit UltraSPARC.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
 
-Package: linux-image-2.6.22-4-sparc64-smp
+Package: linux-image-2.6.22-5-sparc64-smp
 Architecture: sparc
 Section: base
 Priority: optional
@@ -632,15 +632,15 @@ Description: Linux kernel image for version 2.6.22 on 64-bit UltraSPARC SMP
  the linux-sparc64-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-4-sparc64-smp
+Package: linux-headers-2.6.22-5-sparc64-smp
 Architecture: sparc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-4, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-5, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 64-bit UltraSPARC SMP
  This package provides kernel header files for version 2.6.22 on
  64-bit UltraSPARC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-4/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.22-5/debian.README.gz for details.
