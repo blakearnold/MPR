@@ -804,58 +804,9 @@ sub image_magic {
 if ( -d "$modules_base/$version" ) {
   print STDERR "Running depmod.\n";
   my $ret = system("depmod -a -F $realimageloc/System.map-$version $version");
-  my $exit_value  = $? >> 8;
-  my $signal_num  = $? & 127;
-  my $dumped_core = $? & 128;
   if ($ret) {
-    if ( -f "$modules_base/$version/modules.dep") {
-      unlink "$modules_base/$version/modules.dep" unless $initrd;
-    }
-    my $seen;
-    my $answer;
-    my $question = "${package_name}/postinst/depmod-error-$version";
-    if ($initrd) {
-      $question = "${package_name}/postinst/depmod-error-initrd-$version";
-    }
-    ($ret,$seen) = fset ("$question", 'seen', 'false');
-    die "Error setting debconf flags in $question: $seen" if $ret;
-
-    $ret = subst("$question", 'modules_base', "$modules_base");
-    die "Error setting debconf substitutions in $question: $seen" if $ret;
-
-    $ret = subst("$question", 'SIGNAL', ", and got a signal $signal_num");
-    die "Error setting debconf substitutions in $question: $seen" if $ret;
-
-    if ($dumped_core) {
-      $ret = subst("$question", 'CORE', ", and dumped core");
-      die "Error setting debconf substitutions in $question: $seen" if $ret;
-    }
-    else {
-      $ret = subst("$question", 'CORE', " ");
-      die "Error setting debconf substitutions in $question: $seen" if $ret;
-    }
-
-    ($ret,$seen) = input('medium', "$question");
-    if ($ret && $ret != 30 ) {
-      die "Error setting debconf question $question: $seen";
-    }
-
-    ($ret,$seen) = go ();
-    if ($ret && $ret != 30 ) {
-      die "Error asking debconf question $question: $seen";
-    }
-
-    ($ret,$answer) = get("$question");
-    die "Error retreiving answer for $question: $answer" if $ret;
-
-    if (! $ignore_depmod_err) {
-      if ($answer =~ /^(y|t)/i) {
-        exit(1);
-      }
-      else {
-        print STDERR "Ok, continuing as directed\n";
-      }
-    }
+    print STDERR "Failed to run depmod\n";
+    exit(1);
   }
 }
 
@@ -1139,72 +1090,17 @@ sub run_lilo (){
   # So, if the user has explicitly asked for the loader to be run, or
   # if there is no postinst hook, or if there is no grub installed --
   # we are OK. Or else, we ask.
-  if ($explicit_do_loader || (! ($postinst_hook && -x '/sbin/grub')))  {
+  if ($explicit_do_loader || (! ($postinst_hook && -x '/usr/sbin/grub')))  {
     print STDERR "Running boot loader as requested\n";
-  }
-  else {
-    # Ask the user
-    my $seen;
-    my $question = "shared/kernel-image/really-run-bootloader";
-
-    print STDERR "Do we really want to run bootloader $loader?\n";
-
-    ($ret,$seen) = fset ("$question", 'seen', 'false');
-    die "Error setting debconf flags in $question: $seen" if $ret;
-
-    $ret = subst("$question", 'loader', "$loader");
-    die "Error setting debconf substitutions in $question: $seen" if $ret;
-
-    ($ret,$seen) = input('critical', "$question");
-    if ($ret && $ret != 30 ) {
-      die "Error setting debconf question $question: $seen";
-    }
-
-    ($ret,$seen) = go ();
-    if ($ret && $ret != 30 ) {
-      die "Error asking debconf question $question: $seen";
-    }
-
-    ($ret,$answer) = get("$question");
-    die "Error retreiving answer for $question: $answer" if $ret;
-
-    if ($answer =~ /^(y|t)/i) {
-      print STDERR "Ok, not running $loader\n";
-      return 0;
-    }
-    else {
-      print STDERR "Ok, continuing as directed.\n";
-    }
-
+  } else {
+    print STDERR "Ok, not running $loader\n";
   }
   if ($loader =~ /^lilo/io or $loader =~ /vmelilo/io) {
     print STDERR "Testing $loader.conf ... \n";
     unlink $temp_file_name;     # security
     $ret = system("$loaderloc -t >$temp_file_name 2>&1");
     if ($ret) {
-      my $seen;
-      my $note = "${package_name}/postinst/bootloader-test-error-$version";
-
-      print STDERR "Failed test for bootloader $loader\n";
-
-      ($ret,$seen) = fset ("$note", 'seen', 'false');
-      die "Error setting debconf flags in $note: $seen" if $ret;
-
-      $ret = subst("$note", 'loader', "$loader");
-      die "Error setting debconf substitutions in $note: $seen" if $ret;
-
-      $ret = subst("$note", 'temp_file_name', "$temp_file_name");
-      die "Error setting debconf substitutions in $note: $seen" if $ret;
-
-      ($ret,$seen) = input('critical', "$note");
-      if ($ret && $ret != 30 ) {
-        die "Error setting debconf note $note: $seen";
-      }
-
-      ($ret,$seen) = go ();
-      if ($ret && $ret != 30 ) {
-        die "Error showing debconf note $note: $seen";
-      }
+      print STDERR "Boot loader test failed\n";
       return $ret;
     }
     unlink "$temp_file_name";
@@ -1221,28 +1117,7 @@ sub run_lilo (){
     $ret = system("$loaderloc >$temp_file_name 2>&1");
   }
   if ($ret) {
-    my $ret;
-    my $seen;
-    my $note = "${package_name}/postinst/bootloader-error-$version";
-
-    ($ret,$seen) = fset ("$note", 'seen', 'false');
-    die "Error setting debconf flags in $note: $seen" if $ret;
-
-    $ret = subst("$note", 'locader', "$loader");
-    die "Error setting debconf substitutions in $note: $seen" if $ret;
-
-    $ret = subst("$note", 'temp_file_name', "$temp_file_name");
-    die "Error setting debconf substitutions in $note: $seen" if $ret;
-
-    ($ret,$seen) = input('critical', "$note");
-    if ($ret && $ret != 30 ) {
-      die "Error setting debconf note $note: $seen";
-    }
-
-    ($ret,$seen) = go ();
-    if ($ret && $ret != 30 ) {
-      die "Error asking debconf question $note: $seen";
-    }
+    print STDERR "Boot loader failed to run\n";
     return $ret;
   }
   unlink $temp_file_name;
