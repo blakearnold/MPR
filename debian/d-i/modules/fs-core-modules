@@ -1,6 +1,5 @@
 ext2 ?
 ext3 ?
-isofs ?
 jfs ?
 reiserfs ?
 xfs ?
