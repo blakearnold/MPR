@@ -43,7 +43,7 @@ Description: Extra filesystem modules
  Amiga AFFS.
 
 Package: ide-modules
-Depends: kernel-image
+Depends: kernel-image, storage-core-modules
 Priority: standard
 Description: IDE support
 
