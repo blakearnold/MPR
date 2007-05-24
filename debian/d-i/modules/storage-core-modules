@@ -4,7 +4,8 @@ libata ?
 # For SCSI (and for ATA and USB)
 scsi_mod ?
 
-# IDE Core is built-in ?
+# IDE Core support
+ide-core
 
 # USB Core for usb-storage ?
 usbcore ?
