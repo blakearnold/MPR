@@ -1,4 +1,4 @@
-linux-source-2.6.22 (2.6.22-6.12) UNRELEASED; urgency=low
+linux-source-2.6.22 (2.6.22-6.12) gutsy; urgency=low
 
   [Ben Collins]
 
@@ -13,6 +13,7 @@ linux-source-2.6.22 (2.6.22-6.12) UNRELEASED; urgency=low
   * build/d-i: Include ide-core in storage-core udeb, not that it's modular
   * build/d-i: Make ide-modules depend on storage-code-modules
   * build/config: Enable CONFIG_TIMER_STATS on x86_64.
+  * build/config: Disable CONFIG_RTC_DRV_CMOS
 
   [Colin Watson]
 
