@@ -1,4 +1,4 @@
-linux-source-2.6.22 (2.6.22-6.12) gutsy; urgency=low
+linux-source-2.6.22 (2.6.22-6.13) gutsy; urgency=low
 
   [Ben Collins]
 
@@ -14,6 +14,13 @@ linux-source-2.6.22 (2.6.22-6.12) gutsy; urgency=low
   * build/d-i: Make ide-modules depend on storage-code-modules
   * build/config: Enable CONFIG_TIMER_STATS on x86_64.
   * build/config: Disable CONFIG_RTC_DRV_CMOS
+  * build/config: Enable TIMER_STATS everywhere.
+  * build/config: Enable SND_AC97_POWER_SAVE
+    - LP: #116679
+  * kmod: Improve call_usermodehelper_pipe to handle data close
+  * coredump: Convert to new call_usermodehelper_pipe symantics
+  * PPC: Only set hwif stuff when ide-core is non-modular
+  * PPC/MEDIABAY: Export some functions for modular ide-core/ppc-ide
 
   [Colin Watson]
 
@@ -409,7 +416,7 @@ linux-source-2.6.22 (2.6.22-6.12) gutsy; urgency=low
   * fix compat console unimap regression
   * Linux 2.6.22-rc3
 
- -- Ben Collins <bcollins@ubuntu.com>  Sat, 19 May 2007 10:48:20 -0400
+ -- Ben Collins <bcollins@ubuntu.com>  Thu, 31 May 2007 12:35:44 -0400
 
 linux-source-2.6.22 (2.6.22-5.11) gutsy; urgency=low
 
