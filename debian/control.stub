@@ -87,7 +87,7 @@ Architecture: i386
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -140,7 +140,7 @@ Architecture: i386 amd64
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -271,7 +271,7 @@ Architecture: ia64
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: elilo (>= 3.6-1)
@@ -310,7 +310,7 @@ Architecture: ia64
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: elilo (>= 3.6-1)
@@ -349,7 +349,7 @@ Architecture: powerpc
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
@@ -388,7 +388,7 @@ Architecture: powerpc
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
@@ -427,7 +427,7 @@ Architecture: powerpc
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
@@ -466,7 +466,7 @@ Architecture: i386 amd64
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -519,7 +519,7 @@ Architecture: i386
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
@@ -572,7 +572,7 @@ Architecture: sparc
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: silo
@@ -611,7 +611,7 @@ Architecture: sparc
 Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: silo
