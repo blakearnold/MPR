@@ -50,7 +50,7 @@ fi
 cd $srcdir
 find . $excludes  -type f \
 	\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
-	-name '*.sh' -o -name '*.pl' \) -print
+	-name '*.sh' -o -name '*.pl' -o -name '*.lds' \) -print
 find ./include ./scripts -name .gitignore -prune -o -type f -print
 find ./include -mindepth 1 -maxdepth 1 $excludes -type d -print
 ) | (
