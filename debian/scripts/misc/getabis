@@ -78,7 +78,7 @@ echo $abi > $abidir/abiname
 
 getall powerpc powerpc{,-smp,64-smp}
 getall amd64 generic server
-getall i386 386 generic server{,-bigiron}
+getall i386 386 generic server
 getall sparc sparc64{,-smp}
 getall ia64 itanium mckinley
 
