@@ -38,7 +38,8 @@ static int event;
 static struct list_head *mount_hashtable __read_mostly;
 static int hash_mask __read_mostly, hash_bits __read_mostly;
 static struct kmem_cache *mnt_cache __read_mostly;
-static struct rw_semaphore namespace_sem;
+struct rw_semaphore namespace_sem;
+EXPORT_SYMBOL_GPL(namespace_sem);
 
 /* /sys/fs */
 decl_subsys(fs, NULL, NULL);
