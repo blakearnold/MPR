@@ -121,6 +121,8 @@
 #define AUDIT_ANOM_PROMISCUOUS      1700 /* Device changed promiscuous mode */
 #define AUDIT_ANOM_ABEND            1701 /* Process ended abnormally */
 
+#define AUDIT_SD		1500	/* AppArmor (SubDomain) audit */
+
 #define AUDIT_KERNEL		2000	/* Asynchronous audit record. NOT A REQUEST. */
 
 /* Rule flags */
@@ -513,6 +515,9 @@ extern void		    audit_log(struct audit_context *ctx, gfp_t gfp_mask,
 				      __attribute__((format(printf,4,5)));
 
 extern struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask, int type);
+extern void		    audit_log_vformat(struct audit_buffer *ab,
+					      const char *fmt, va_list args)
+			    __attribute__((format(printf,2,0)));
 extern void		    audit_log_format(struct audit_buffer *ab,
 					     const char *fmt, ...)
 			    __attribute__((format(printf,2,3)));
