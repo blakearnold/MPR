@@ -30,7 +30,7 @@ $(stampdir)/stamp-custom-build-%: srcdir = $(builddir)/custom-build-$*
 $(stampdir)/stamp-custom-build-%: bimage = $(call custom_override,build_image,$*)
 $(stampdir)/stamp-custom-build-%: $(stampdir)/stamp-custom-prepare-%
 	@echo "Building custom $*..."
-	$(kmake) -C $(srcdir) $(conc_level) $(bimage)
+	$(kmake) -C $(srcdir) $(conc_level)
 	$(kmake) -C $(srcdir) $(conc_level) modules
 	@touch $@
 
@@ -48,8 +48,13 @@ custom-install-%: $(stampdir)/stamp-custom-build-%
 	dh_clean -k -plinux-headers-$(release)$(debnum)-$*
 
 	# The main image
-	install -m644 -D $(srcdir)/$(kfile) \
-		$(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$*
+	# xen doesnt put stuff in the same directory. its quirky that way
+	if [ $(target_flavour) == "xen" ];  then \
+		install -m644 -D $(srcdir)/vmlinuz $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$* ; \
+	else \
+		install -m644 -D $(srcdir)/$(kfile) $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$* ; \
+	fi
+
 	install -m644 $(srcdir)/.config \
 		$(pkgdir)/boot/config-$(release)$(debnum)-$*
 	install -m644 $(srcdir)/System.map \
