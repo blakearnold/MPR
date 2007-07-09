@@ -1,15 +1,15 @@
 # arch	version		flavour		installedname			suffix	bdep
-amd64	2.6.22-7	generic		2.6.22-7-generic		-	
+amd64	2.6.22-8	generic		2.6.22-8-generic		-	
 
-hppa	2.6.22-7	hppa32		2.6.22-7-hppa32		y	
-hppa	2.6.22-7	hppa64		2.6.22-7-hppa64		y	
+hppa	2.6.22-8	hppa32		2.6.22-8-hppa32		y	
+hppa	2.6.22-8	hppa64		2.6.22-8-hppa64		y	
 
-i386	2.6.22-7	386		2.6.22-7-386		-	
-i386	2.6.22-7	generic		2.6.22-7-generic		-	
+i386	2.6.22-8	386		2.6.22-8-386		-	
+i386	2.6.22-8	generic		2.6.22-8-generic		-	
 
-ia64	2.6.22-7	itanium		2.6.22-7-itanium		-	
+ia64	2.6.22-8	itanium		2.6.22-8-itanium		-	
 
-powerpc	2.6.22-7	powerpc		2.6.22-7-powerpc		-	
-powerpc	2.6.22-7	powerpc64-smp	2.6.22-7-powerpc64-smp	-	
+powerpc	2.6.22-8	powerpc		2.6.22-8-powerpc		-	
+powerpc	2.6.22-8	powerpc64-smp	2.6.22-8-powerpc64-smp	-	
 
-sparc	2.6.22-7	sparc64		2.6.22-7-sparc64		-	
+sparc	2.6.22-8	sparc64		2.6.22-8-sparc64		-	
