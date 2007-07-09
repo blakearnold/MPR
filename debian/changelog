@@ -1,3 +1,234 @@
+linux-source-2.6.22 (2.6.22-8.15) gutsy; urgency=low
+
+  [Alexey Starikovskiy]
+
+  * Fix ACPI battery detection on Asus
+
+  [Amit Kucheria]
+
+  * Export symbols required to build GFS1 in LUM
+  * Update configuration files
+  * 2.6.22-7.14 ABI
+  * Remove old ABI
+  * Update d-i modules to support Sparc LDOM
+  * Introducing the UME kernel flavour
+
+  [Jacob Pan]
+
+  * Poulsbo SMBus Controller
+  * Intel Poulsbo SCH IDE Controller
+  * Intel Poulsbo HD audio controller
+
+  [Phillip Lougher]
+
+  * xen: Update custom binary flavour (Xen 3.1 for 2.6.22-rc5)
+  * xen: Update xen/config.i386 to enable PAE
+
+  [Upstream Kernel Changes]
+
+  * [SCSI] fusion: fix for BZ 8426 - massive slowdown on SCSI CD/DVD drive
+  * [XFS] Update the MAINTAINERS file entry for XFS.
+  * IB/mlx4: Fix handling of wq->tail for send completions
+  * IB/mlx4: Fix warning in rounding up queue sizes
+  * [SCSI] ESP: Don't forget to clear ESP_FLAG_RESETTING.
+  * firewire: fix hang after card ejection
+  * ieee1394: fix to ether1394_tx in ether1394.c
+  * [ARM] Add support for pause_on_oops and display preempt/smp options
+  * sh: Fix restartable syscall arg5 clobbering.
+  * ACPI: gracefully print null trip-point device
+  * ACPICA: fix error path in new external package objects as method
+    arguments
+  * sh: oops_enter()/oops_exit() in die().
+  * [ARM] Update show_regs/oops register format
+  * IB/mlx4: Handle new FW requirement for send request prefetching
+  * IB/mlx4: Get rid of max_inline_data calculation
+  * IB/mlx4: Handle buffer wraparound in __mlx4_ib_cq_clean()
+  * IB/mlx4: Handle FW command interface rev 3
+  * Fix signalfd interaction with thread-private signals
+  * sched: fix SysRq-N (normalize RT tasks)
+  * Fix possible runqueue lock starvation in wait_task_inactive()
+  * sh: Handle -ERESTART_RESTARTBLOCK for restartable syscalls.
+  * sh64: Handle -ERESTART_RESTARTBLOCK for restartable syscalls.
+  * [POWERPC] Fix snd-powermac refcounting bugs
+  * [XFS] s/memclear_highpage_flush/zero_user_page/
+  * [XFS] Update the MAINTAINERS file entry for XFS - change git repo name.
+  * [XFRM]: Fix MTU calculation for non-ESP SAs
+  * [IPVS]: Fix state variable on failure to start ipvs threads
+  * [AF_RXRPC]: Return the number of bytes buffered in rxrpc_send_data()
+  * [S390] Missing blank when appending cio_ignore kernel parameter
+  * [S390] Fix zfcpdump header
+  * [S390] Fix yet another two section mismatches.
+  * [S390] Print list of modules on die().
+  * [S390] Add oops_enter()/oops_exit() calls to die().
+  * [S390] Move psw_set_key.
+  * [POWERPC] rheap - eliminates internal fragments caused by alignment
+  * [POWERPC] PowerPC: Prevent data exception in kernel space (32-bit)
+  * [POWERPC] Fix powermac late initcall to only run on powermac
+  * [MIPS] Don't drag a platform specific header into generic arch code.
+  * x86_64: Fix readahead/sync_file_range/fadvise64 compat calls
+  * x86_64: Fix eventd/timerfd syscalls
+  * x86: Disable DAC on VIA bridges
+  * x86_64: Quieten Atari keyboard warnings in Kconfig
+  * x86: Only make Macintosh drivers default on Macs
+  * x86: Disable KPROBES with DEBUG_RODATA for now
+  * x86: change_page_attr bandaids
+  * x86_64: fix link warning between for .text and .init.text
+  * Fix up CREDIT entry ordering
+  * firewire: Only set client->iso_context if allocation was successful.
+  * spidernet: null out skb pointer after its been used.
+  * spidernet: Cure RX ram full bug
+  * spidernet: Don't terminate the RX ring
+  * spidernet: silence the ramfull messages
+  * spidernet: turn off descriptor chain end interrupt.
+  * spidernet: checksum and ethtool
+  * bonding: Fix use after free in unregister path
+  * bonding: Fix 802.3ad no carrier on "no partner found" instance
+  * s390: print correct level for HiperSockets devices
+  * s390: qeth driver does not recover
+  * s390: avoid inconsistent lock state in qeth
+  * s390: qeth: wrong packet length in qdio header
+  * s390: Use ccw_device_get_id() in qeth/claw drivers
+  * s390: don't call iucv_path_connect from tasklet context
+  * s390: netiucv spinlock initializer cleanup
+  * s390: netiucv inlining cleanup
+  * forcedeth: use unicast receive mode for WoL
+  * natsemi irq flags
+  * cxgb3 - fix skb->dev dereference
+  * cxgb3 - fix netpoll hanlder
+  * cxgb3 - Fix direct XAUI support
+  * cxgb3 - Stop mac RX when changing MTU
+  * cxgb3 - MAC watchdog update
+  * PATA: Add the MCP73/77 support to PATA driver
+  * pata_it821x: (partially) fix DMA in RAID mode
+  * libata: more NONCQ devices
+  * kerneldoc fix in libata
+  * ahci: fix PORTS_IMPL override
+  * fix module_param mistake in it821x
+  * Blackfin arch: update ANOMALY handling
+  * Blackfin arch: update printk to use KERN_EMERG and reformat crash
+    output
+  * Blackfin arch: add missing braces around array bfin serial init
+  * Blackfin arch: match kernel startup messaage with new linker script
+  * Blackfin arch: move cond_syscall() behind __KERNEL__ like all other
+    architectures
+  * Blackfin arch: Add definition of dma_mapping_error
+  * Blackfin arch: add proper const volatile to addr argument to the read
+    functions
+  * [AGPGART] intel_agp: don't load if no IGD and AGP port
+  * IB/umem: Fix possible hang on process exit
+  * IPoIB/cm: Initialize RX before moving QP to RTR
+  * IPoIB/cm: Fix interoperability when MTU doesn't match
+  * IPoIB/cm: Remove dead definition of struct ipoib_cm_id
+  * IB/mlx4: Correct max_srq_wr returned from mlx4_ib_query_device()
+  * [PARISC] stop lcd driver from stripping initial whitespace
+  * [PARISC] Handle wrapping in expand_upwards()
+  * [PARISC] Fix unwinder on 64-bit kernels
+  * [PARISC] unwinder improvements
+  * page_mapping must avoid slub pages
+  * posix-timers: Prevent softirq starvation by small intervals and SIG_IGN
+  * Allow DEBUG_RODATA and KPROBES to co-exist
+  * [NETFILTER]: nf_conntrack_sip: add missing message types containing RTP
+    info
+  * [NETFILTER]: nfctnetlink: Don't allow to change helper
+  * [IPV6] NDISC: Fix thinko to control Router Preference support.
+  * [IPV4]: include sysctl.h from inetdevice.h
+  * i386: Make CMPXCHG64 only dependent on PAE
+  * x86_64: Fix only make Macintosh drivers default on Macs
+  * x86_64: Ignore compat mode SYSCALL when IA32_EMULATION is not defined
+  * [AVR32] Fix bug in invalidate_dcache_region()
+  * [AVR32] NGW100, Remove relics of the old USART mapping scheme
+  * [AVR32] Initialize dma_mask and dma_coherent_mask
+  * [AVR32] Update defconfigs
+  * ACPI: fix 2.6.20 SMP boot regression
+  * [SKBUFF]: Fix incorrect config #ifdef around skb_copy_secmark
+  * [TIPC]: Fix infinite loop in netlink handler
+  * [PPP]: Revert 606f585e363527da9feaed79465132c0c661fd9e
+  * [PPP]: Fix osize too small errors when decoding mppe.
+  * [TCP] tcp_read_sock: Allow recv_actor() return return negative error
+    value.
+  * [NET]: Re-enable irqs before pushing pending DMA requests
+  * [NET]: Make skb_seq_read unmap the last fragment
+  * hwmon/coretemp: fix a broken error path
+  * fix refcounting of nsproxy object when unshared
+  * console UTF-8 fixes (fix)
+  * SM501: suspend support
+  * SM501: initialise SDRAM clock before bus clocks
+  * SM501: Fix sm501_init_reg() mask/set order
+  * SM501: Clock updates and checks
+  * SM501: Add Documentation/SM501.txt
+  * SM501: Check SM501 ID register on initialisation
+  * SLUB: fix behavior if the text output of list_locations overflows
+    PAGE_SIZE
+  * sched: fix next_interval determination in idle_balance()
+  * update checkpatch.pl to version 0.05
+  * alpha: fix alignment problem in csum_ipv6_magic()
+  * Char: stallion, fix oops during init with ISA cards
+  * uml: use generic BUG
+  * uml: add asm/paravirt.h
+  * "volatile considered harmful"
+  * document nlink function
+  * slab allocators: MAX_ORDER one off fix
+  * update checkpatch.pl to version 0.06
+  * x86_64: fix misplaced `continue' in mce.c
+  * ext2: disallow setting xip on remount
+  * audit: fix oops removing watch if audit disabled
+  * ext3: lost brelse in ext3_read_inode()
+  * ext4: lost brelse in ext4_read_inode()
+  * ACPI: preserve the ebx value in acpi_copy_wakeup_routine
+  * FUTEX: Restore the dropped ERSCH fix
+  * Linus 2.6.22-rc6
+  * [ARM] 4452/1: Force the literal pool dump before reloc_end
+  * [ARM] 4449/1: more entries in arch/arm/boot/.gitignore
+  * fix nmi_watchdog=2 bootup hang
+  * [POWERPC] Update g5_defconfig
+  * [POWERPC] Update defconfigs
+  * [POWERPC] Fix VDSO gettimeofday() when called with NULL struct timeval
+  * [POWERPC] Fix subtle FP state corruption bug in signal return on SMP
+  * USB: g_file_storage: call allow_signal()
+  * USB: ti serial driver sleeps with spinlock held
+  * USB: memory leak in iowarrior.c
+  * USB: usblcd doesn't limit memory consumption during write
+  * USB: fix race leading to use after free in io_edgeport
+  * USB: add new device id to option driver
+  * USB: ftdio_sio: New IPlus device ID
+  * [MIPS] __ucmpdi2 arguments are unsigned long long.
+  * [MIPS] add io_map_base to pci_controller on Cobalt
+  * [MIPS] remove "support for" from system type entry
+  * [MIPS] Alchemy: Fix wrong cast
+  * [MIPS] Fix pb1500 reg B access
+  * [MIPS] AP/SP requires shadow registers, auto enable support.
+  * [MIPS] 20K: Handle WAIT related bugs according to errata information
+  * [MIPS] use compat_siginfo in rt_sigframe_n32
+  * [MIPS] Remove a duplicated local variable in test_and_clear_bit()
+  * [MIPS] EMMA2RH: Disable GEN_RTC, it can't possibly work.
+  * [MIPS] SMTC and non-SMTC kernel and modules are incompatible
+  * [MIPS] Count timer interrupts correctly.
+  * x86_64: set the irq_chip name for lapic
+  * x86_64 irq: use mask/unmask and proper locking in fixup_irqs()
+  * [SPARC64]: Add irqs to mdesc_node.
+  * [SPARC64]: Fix VIRQ enabling.
+  * [SPARC64]: Need to set state to IDLE during sun4v IRQ enable.
+  * [SPARC64]: Add LDOM virtual channel driver and VIO device layer.
+  * [SPARC64]: Add Sun LDOM virtual network driver.
+  * [SPARC64]: Add Sun LDOM virtual disk driver.
+  * [SPARC64]: Create proper obppath sysfs files for VIO bus devices.
+  * [SPARC64] LDC: Do limited polled retry on setting RX queue head.
+  * [GFS2] Fix gfs2_block_truncate_page err return
+  * [DLM] Telnet to port 21064 can stop all lockspaces
+  * [GFS2] inode size inconsistency
+  * [GFS2] remounting w/o acl option leaves acls enabled
+  * [GFS2] System won't suspend with GFS2 file system mounted
+  * [GFS2] git-gfs2-nmw-build-fix
+  * [GFS2] Obtaining no_formal_ino from directory entry
+  * [GFS2] Remove i_mode passing from NFS File Handle
+  * [SUNVNET]: Validate RX descriptor size field.
+  * [SPARC64]: Add missing symbol exports for LDOM infrastructure.
+  * [SPARC64]: Temporary workaround for LDC INO double-delivery.
+  * [SPARC64]: Create 'devspec' nodes for vio devices.
+  * [SPARC64]: vdev->type can be NULL, handle this in devspec_show().
+
+ -- Amit Kucheria <amit.kucheria@ubuntu.com>  Mon, 09 Jul 2007 12:55:56 +0300
+
 linux-source-2.6.22 (2.6.22-7.14) gutsy; urgency=low
 
   [Ben Collins]
