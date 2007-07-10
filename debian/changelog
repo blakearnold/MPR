@@ -1,4 +1,7 @@
-linux-source-2.6.22 (2.6.22-8.15) gutsy; urgency=low
+linux-source-2.6.22 (2.6.22-8.16) gutsy; urgency=low
+
+  * Removed CONFIG_BLINK from all configs and added to modules.ignore
+  * This fixes a build failure for 8.15
 
   [Alexey Starikovskiy]
 
