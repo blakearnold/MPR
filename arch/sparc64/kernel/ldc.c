@@ -290,7 +290,8 @@ static struct ldc_packet *data_get_tx_packet(struct ldc_channel *lp,
 	return p + (lp->tx_tail / LDC_PACKET_SIZE);
 }
 
-static int set_tx_tail(struct ldc_channel *lp, unsigned long tail)
+static int set_tx_tail(struct ldc_channel *lp,
+		       unsigned long tail)
 {
 	unsigned long orig_tail = lp->tx_tail;
 	int limit = 1000;
@@ -311,30 +312,6 @@ static int set_tx_tail(struct ldc_channel *lp, unsigned long tail)
 	}
 
 	lp->tx_tail = orig_tail;
-	return -EBUSY;
-}
-
-/* This just updates the head value in the hypervisor using
- * a polling loop with a timeout.  The caller takes care of
- * upating software state representing the head change, if any.
- */
-static int __set_rx_head(struct ldc_channel *lp, unsigned long head)
-{
-	int limit = 1000;
-
-	while (limit-- > 0) {
-		unsigned long err;
-
-		err = sun4v_ldc_rx_set_qhead(lp->id, head);
-		if (!err)
-			return 0;
-
-		if (err != HV_EWOULDBLOCK)
-			return -EINVAL;
-
-		udelay(1);
-	}
-
 	return -EBUSY;
 }
 
@@ -818,7 +795,7 @@ static irqreturn_t ldc_rx(int irq, void *dev_id)
 	 * everything.
 	 */
 	if (lp->flags & LDC_FLAG_RESET) {
-		(void) __set_rx_head(lp, lp->rx_tail);
+		(void) sun4v_ldc_rx_set_qhead(lp->id, lp->rx_tail);
 		goto out;
 	}
 
@@ -847,7 +824,7 @@ handshake_complete:
 
 	while (lp->rx_head != lp->rx_tail) {
 		struct ldc_packet *p;
-		unsigned long new;
+		unsigned long new, hv_err;
 		int err;
 
 		p = lp->rx_base + (lp->rx_head / LDC_PACKET_SIZE);
@@ -882,8 +859,8 @@ handshake_complete:
 			new = 0;
 		lp->rx_head = new;
 
-		err = __set_rx_head(lp, new);
-		if (err < 0) {
+		hv_err = sun4v_ldc_rx_set_qhead(lp->id, new);
+		if (hv_err) {
 			(void) ldc_abort(lp);
 			break;
 		}
@@ -1452,8 +1429,8 @@ static int read_raw(struct ldc_channel *lp, void *buf, unsigned int size)
 	new = rx_advance(lp, lp->rx_head);
 	lp->rx_head = new;
 
-	err = __set_rx_head(lp, new);
-	if (err < 0)
+	hv_err = sun4v_ldc_rx_set_qhead(lp->id, new);
+	if (hv_err)
 		err = -ECONNRESET;
 	else
 		err = LDC_PACKET_SIZE;
@@ -1537,6 +1514,7 @@ static int write_nonraw(struct ldc_channel *lp, const void *buf,
 static int rx_bad_seq(struct ldc_channel *lp, struct ldc_packet *p,
 		      struct ldc_packet *first_frag)
 {
+	unsigned long hv_err;
 	int err;
 
 	if (first_frag)
@@ -1546,8 +1524,8 @@ static int rx_bad_seq(struct ldc_channel *lp, struct ldc_packet *p,
 	if (err)
 		return err;
 
-	err = __set_rx_head(lp, lp->rx_tail);
-	if (err < 0)
+	hv_err = sun4v_ldc_rx_set_qhead(lp->id, lp->rx_tail);
+	if (hv_err)
 		return ldc_abort(lp);
 
 	return 0;
@@ -1601,9 +1579,10 @@ static int rx_data_wait(struct ldc_channel *lp, unsigned long cur_head)
 
 static int rx_set_head(struct ldc_channel *lp, unsigned long head)
 {
-	int err = __set_rx_head(lp, head);
+	unsigned long hv_err;
 
-	if (err < 0)
+	hv_err = sun4v_ldc_rx_set_qhead(lp->id, head);
+	if (hv_err)
 		return ldc_abort(lp);
 
 	lp->rx_head = head;
