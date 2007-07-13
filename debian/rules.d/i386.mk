@@ -10,4 +10,4 @@ do_debug_image	= true
 
 loader		= grub
 
-custom_flavours	= xen
+custom_flavours	= xen rt

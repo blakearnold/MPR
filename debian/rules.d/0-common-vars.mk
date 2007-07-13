@@ -72,7 +72,7 @@ conc_level		= -j$(CONCURRENCY_LEVEL)
 kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour) \
 	SUBLEVEL=$(SUBLEVEL)
 
-all_custom_flavours = xen
+all_custom_flavours = xen rt
 
 # Checks if a var is overriden by the custom rules. Called with var and
 # flavour as arguments.
