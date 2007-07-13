@@ -2126,7 +2126,6 @@ int ldc_map_sg(struct ldc_channel *lp,
 
 	return state.nc;
 }
-EXPORT_SYMBOL(ldc_map_sg);
 
 int ldc_map_single(struct ldc_channel *lp,
 		   void *buf, unsigned int len,
