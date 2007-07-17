@@ -389,7 +389,7 @@ CONFIG_RTC=y
 # CONFIG_SKY2 is not set
 # CONFIG_SLIP is not set
 # CONFIG_SLUB_DEBUG is not set
-# CONFIG_SMP is not set
+CONFIG_SMP=y
 # CONFIG_SMSC37B787_WDT is not set
 # CONFIG_SND_AC97_POWER_SAVE is not set
 # CONFIG_SND_AD1816A is not set
