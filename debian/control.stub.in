@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>
 Standards-Version: 3.6.1
-Build-Depends: debhelper (>= 3), module-init-tools, kernel-wedge (>= 2.24ubuntu1), gcc-3.4-hppa64 [hppa], binutils-hppa64 [hppa], gcc-3.4 [hppa], device-tree-compiler [powerpc]
+Build-Depends: debhelper (>= 3), module-init-tools, kernel-wedge (>= 2.24ubuntu1), gcc-4.1-hppa64 [hppa], binutils-hppa64 [hppa], gcc-3.4 [hppa], device-tree-compiler [powerpc]
 Build-Depends-Indep: xmlto, docbook-utils, gs, transfig, bzip2, sharutils
 
 Package: linux-kernel-devel
