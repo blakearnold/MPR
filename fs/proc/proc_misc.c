@@ -653,6 +653,19 @@ static int execdomains_read_proc(char *page, char **start, off_t off,
 	return proc_calc_metrics(page, start, off, count, eof, len);
 }
 
+#ifdef CONFIG_VERSION_SIGNATURE
+static int version_signature_read_proc(char *page, char **start, off_t off,
+				       int count, int *eof, void *data)
+{
+	int len;
+
+	strcpy(page, CONFIG_VERSION_SIGNATURE);
+	strcat(page, "\n");
+	len = strlen(page);
+	return proc_calc_metrics(page, start, off, count, eof, len);
+}
+#endif
+
 #ifdef CONFIG_MAGIC_SYSRQ
 /*
  * writing 'C' to /proc/sysrq-trigger is like sysrq-C
@@ -704,6 +717,9 @@ void __init proc_misc_init(void)
 		{"filesystems",	filesystems_read_proc},
 		{"cmdline",	cmdline_read_proc},
 		{"execdomains",	execdomains_read_proc},
+#ifdef CONFIG_VERSION_SIGNATURE
+		{"version_signature", version_signature_read_proc},
+#endif
 		{NULL,}
 	};
 	for (p = simple_ones; p->name; p++)
