@@ -422,6 +422,7 @@ static void nfs_destroy_server(struct nfs_server *server)
  */
 static int nfs_start_lockd(struct nfs_server *server)
 {
+	static int warned;
 	int error = 0;
 
 	if (server->nfs_client->cl_nfsversion > 3)
@@ -430,9 +431,28 @@ static int nfs_start_lockd(struct nfs_server *server)
 		goto out;
 	error = lockd_up((server->flags & NFS_MOUNT_TCP) ?
 			IPPROTO_TCP : IPPROTO_UDP);
-	if (error < 0)
+	if (error < 0) {
+		/*
+		 * Ubuntu: fix NFS mounting regression from Edgy->Feisty.
+		 * In 2.6.18 and older kernels any failures to start lockd were
+		 * ignored.  This meant an Edgy user could successfully mount
+		 * NFS filesystems without having installed nfs-common.
+		 * 
+		 * This behaviour has been changed in 2.6.19 and later kernels,
+		 * and so mounting NFS filesystems without nfs-common fail with
+		 * can't read superblock.
+		 *
+		 * This workaround fixes this by issuing a warning (on the first
+		 * lockd start failure), and then allowing the mount to continue
+		 * without locking.
+		 */
+		if (warned++ == 0) {
+			printk(KERN_ERR "nfs: Starting lockd failed (do you have nfs-common installed?).\n");
+			printk(KERN_ERR "nfs: Continuing anyway, but this workaround will go away soon.\n");
+		}
 		server->flags |= NFS_MOUNT_NONLM;
-	else
+		error = 0;
+	} else
 		server->destroy = nfs_destroy_server;
 out:
 	return error;
