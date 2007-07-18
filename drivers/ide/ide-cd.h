@@ -15,7 +15,7 @@
    memory, though. */
 
 #ifndef VERBOSE_IDE_CD_ERRORS
-#define VERBOSE_IDE_CD_ERRORS 1
+#define VERBOSE_IDE_CD_ERRORS 0
 #endif
 
 
