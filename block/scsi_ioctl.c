@@ -546,8 +546,14 @@ static inline int blk_send_start_stop(struct request_queue *q,
 	return __blk_send_generic(q, bd_disk, GPCMD_START_STOP_UNIT, data);
 }
 
-int scsi_cmd_ioctl(struct file *file, struct request_queue *q,
-		   struct gendisk *bd_disk, unsigned int cmd, void __user *arg)
+static inline int blk_send_allow_medium_removal(struct request_queue *q,
+						struct gendisk *bd_disk)
+{
+	return __blk_send_generic(q, bd_disk,
+				  GPCMD_PREVENT_ALLOW_MEDIUM_REMOVAL, 0);
+}
+
+int scsi_cmd_ioctl(struct file *file, struct gendisk *bd_disk, unsigned int cmd, void __user *arg)
 {
 	int err;
 
@@ -666,7 +672,11 @@ int scsi_cmd_ioctl(struct file *file, struct request_queue *q,
 			err = blk_send_start_stop(q, bd_disk, 0x03);
 			break;
 		case CDROMEJECT:
-			err = blk_send_start_stop(q, bd_disk, 0x02);
+			err = 0;
+
+			err |= blk_send_allow_medium_removal(q, bd_disk);
+			err |= blk_send_start_stop(q, bd_disk, 0x01);
+			err |= blk_send_start_stop(q, bd_disk, 0x02);
 			break;
 		default:
 			err = -ENOTTY;
