@@ -394,7 +394,7 @@ static void tulip_up(struct net_device *dev)
 				goto media_picked;
 			}
 	}
-	if (tp->chip_id == ULI526X) {
+	if (tp->chip_id == PCI_ULI5261_ID || tp->chip_id == PCI_ULI5263_ID) {
 		for (i = tp->mtable->leafcount - 1; i >= 0; i--)
 			if (tulip_media_cap[tp->mtable->mleaf[i].media] & MediaIsMII)
 				goto media_picked;
