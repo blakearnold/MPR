@@ -325,9 +325,18 @@ index a2afca3..f39c9d7 100644
  	depending on the build options.
    - Linux runs on a wide range of different processor architectures.
 diff --git a/Makefile b/Makefile
-index de4f8f7..b5e7bf0 100644
+index e28395a..693a9b5 100644
 --- a/Makefile
 +++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 22
+-EXTRAVERSION = .1
++EXTRAVERSION = .1-rt4
+ NAME = Holy Dancing Manatees, Batman!
+ 
+ # *DOCUMENTATION*
 @@ -490,10 +490,14 @@ endif
  
  include $(srctree)/arch/$(ARCH)/Makefile
@@ -347,7 +356,7 @@ index de4f8f7..b5e7bf0 100644
  
  ifdef CONFIG_DEBUG_INFO
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 50d9f3e..a51f6db 100644
+index 50d9f3e..19a4c35 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
 @@ -33,6 +33,10 @@ config GENERIC_CLOCKEVENTS
@@ -361,15 +370,7 @@ index 50d9f3e..a51f6db 100644
  config MMU
  	bool
  	default y
-@@ -390,7 +394,6 @@ config ARCH_DAVINCI
- config ARCH_OMAP
- 	bool "TI OMAP"
- 	select GENERIC_GPIO
--	select GENERIC_TIME
- 	help
- 	  Support for TI's OMAP platform (OMAP1 and OMAP2).
- 
-@@ -591,18 +594,7 @@ config LOCAL_TIMERS
+@@ -591,18 +595,7 @@ config LOCAL_TIMERS
  	  accounting to be spread across the timer interval, preventing a
  	  "thundering herd" at every timer tick.
  
@@ -657,7 +658,7 @@ index 11dcd52..4f19f4b 100644
  	 * Some hardware gives randomly wrong interrupts.  Rather
  	 * than crashing, do something sensible.
 diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 8423617..74e5f74 100644
+index 8423617..1cec965 100644
 --- a/arch/arm/kernel/process.c
 +++ b/arch/arm/kernel/process.c
 @@ -130,7 +130,7 @@ static void default_idle(void)
@@ -669,7 +670,7 @@ index 8423617..74e5f74 100644
  			timer_dyn_reprogram();
  			arch_idle();
  		}
-@@ -162,13 +162,15 @@ void cpu_idle(void)
+@@ -162,13 +162,17 @@ void cpu_idle(void)
  			idle = default_idle;
  		leds_event(led_idle_start);
  		tick_nohz_stop_sched_tick();
@@ -677,13 +678,15 @@ index 8423617..74e5f74 100644
 +		while (!need_resched() && !need_resched_delayed())
  			idle();
  		leds_event(led_idle_end);
++		local_irq_disable();
++		trace_preempt_exit_idle();
  		tick_nohz_restart_sched_tick();
 -		preempt_enable_no_resched();
 -		schedule();
-+		local_irq_disable();
 +		__preempt_enable_no_resched();
 +		__schedule();
  		preempt_disable();
++		trace_preempt_enter_idle();
 +		local_irq_enable();
  	}
  }
@@ -886,14 +889,14 @@ index 30351cd..f3e5e64 100644
  $(obj)/csumpartialcopyuser.o:	$(obj)/csumpartialcopygeneric.S
 diff --git a/arch/arm/lib/stacktrace.c b/arch/arm/lib/stacktrace.c
 new file mode 100644
-index 0000000..73a45be
+index 0000000..1afa1c7
 --- /dev/null
 +++ b/arch/arm/lib/stacktrace.c
 @@ -0,0 +1,7 @@
 +#include <linux/sched.h>
 +#include <linux/stacktrace.h>
 +
-+void save_stack_trace(struct stack_trace *trace, struct task_struct *task)
++void save_stack_trace(struct stack_trace *trace)
 +{
 +}
 +
@@ -1972,7 +1975,7 @@ index f74dfc4..3feede8 100644
  	popl %es
  	popl %edx
 diff --git a/arch/i386/kernel/hpet.c b/arch/i386/kernel/hpet.c
-index 17d7345..31d5cd1 100644
+index 17d7345..732cee6 100644
 --- a/arch/i386/kernel/hpet.c
 +++ b/arch/i386/kernel/hpet.c
 @@ -1,16 +1,19 @@
@@ -1997,29 +2000,31 @@ index 17d7345..31d5cd1 100644
  #define HPET_MASK	CLOCKSOURCE_MASK(32)
  #define HPET_SHIFT	22
  
-@@ -21,8 +24,34 @@ extern struct clock_event_device *global_clock_event;
+@@ -21,9 +24,9 @@ extern struct clock_event_device *global_clock_event;
   * HPET address is set in acpi/boot.c, when an ACPI entry exists
   */
  unsigned long hpet_address;
-+
- static void __iomem * hpet_virt_address;
+-static void __iomem * hpet_virt_address;
++static void __iomem *hpet_virt_address;
+ 
+-static inline unsigned long hpet_readl(unsigned long a)
++unsigned long hpet_readl(unsigned long a)
+ {
+ 	return readl(hpet_virt_address + a);
+ }
+@@ -33,6 +36,36 @@ static inline void hpet_writel(unsigned long d, unsigned long a)
+ 	writel(d, hpet_virt_address + a);
+ }
  
 +#ifdef CONFIG_X86_64
 +
 +#include <asm/pgtable.h>
-+#include <asm/vsyscall.h>
 +
 +static inline void hpet_set_mapping(void)
 +{
 +	set_fixmap_nocache(FIX_HPET_BASE, hpet_address);
 +	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VSYSCALL_NOCACHE);
 +	hpet_virt_address = (void __iomem *)fix_to_virt(FIX_HPET_BASE);
-+
-+}
-+
-+static inline void __iomem *hpet_get_virt_address(void)
-+{
-+	return hpet_virt_address;
 +}
 +
 +static inline void hpet_clear_mapping(void)
@@ -2029,21 +2034,9 @@ index 17d7345..31d5cd1 100644
 +
 +#else
 +
- static inline unsigned long hpet_readl(unsigned long a)
- {
- 	return readl(hpet_virt_address + a);
-@@ -33,6 +62,23 @@ static inline void hpet_writel(unsigned long d, unsigned long a)
- 	writel(d, hpet_virt_address + a);
- }
- 
 +static inline void hpet_set_mapping(void)
 +{
 +	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
-+}
-+
-+static inline void __iomem *hpet_get_virt_address(void)
-+{
-+	return hpet_virt_address;
 +}
 +
 +static inline void hpet_clear_mapping(void)
@@ -2056,7 +2049,7 @@ index 17d7345..31d5cd1 100644
  /*
   * HPET command line enable / disable
   */
-@@ -48,6 +94,13 @@ static int __init hpet_setup(char* str)
+@@ -48,6 +81,13 @@ static int __init hpet_setup(char* str)
  }
  __setup("hpet=", hpet_setup);
  
@@ -2070,16 +2063,7 @@ index 17d7345..31d5cd1 100644
  static inline int is_hpet_capable(void)
  {
  	return (!boot_hpet_disable && hpet_address);
-@@ -73,7 +126,7 @@ int is_hpet_enabled(void)
- #ifdef CONFIG_HPET
- static void hpet_reserve_platform_timers(unsigned long id)
- {
--	struct hpet __iomem *hpet = hpet_virt_address;
-+	struct hpet __iomem *hpet = hpet_get_virt_address();
- 	struct hpet_timer __iomem *timer = &hpet->hpet_timers[2];
- 	unsigned int nrtimers, i;
- 	struct hpet_data hd;
-@@ -82,7 +135,7 @@ static void hpet_reserve_platform_timers(unsigned long id)
+@@ -82,7 +122,7 @@ static void hpet_reserve_platform_timers(unsigned long id)
  
  	memset(&hd, 0, sizeof (hd));
  	hd.hd_phys_address = hpet_address;
@@ -2088,7 +2072,7 @@ index 17d7345..31d5cd1 100644
  	hd.hd_nirqs = nrtimers;
  	hd.hd_flags = HPET_DATA_PLATFORM;
  	hpet_reserve_timer(&hd, 0);
-@@ -110,9 +163,9 @@ static void hpet_reserve_platform_timers(unsigned long id) { }
+@@ -110,9 +150,9 @@ static void hpet_reserve_platform_timers(unsigned long id) { }
   */
  static unsigned long hpet_period;
  
@@ -2100,7 +2084,7 @@ index 17d7345..31d5cd1 100644
  			   struct clock_event_device *evt);
  
  /*
-@@ -121,10 +174,11 @@ static int hpet_next_event(unsigned long delta,
+@@ -121,10 +161,11 @@ static int hpet_next_event(unsigned long delta,
  static struct clock_event_device hpet_clockevent = {
  	.name		= "hpet",
  	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
@@ -2114,7 +2098,7 @@ index 17d7345..31d5cd1 100644
  };
  
  static void hpet_start_counter(void)
-@@ -139,7 +193,18 @@ static void hpet_start_counter(void)
+@@ -139,7 +180,18 @@ static void hpet_start_counter(void)
  	hpet_writel(cfg, HPET_CFG);
  }
  
@@ -2134,7 +2118,7 @@ index 17d7345..31d5cd1 100644
  {
  	unsigned long cfg = hpet_readl(HPET_CFG);
  
-@@ -148,7 +213,39 @@ static void hpet_enable_int(void)
+@@ -148,7 +200,39 @@ static void hpet_enable_int(void)
  	hpet_legacy_int_enabled = 1;
  }
  
@@ -2175,7 +2159,7 @@ index 17d7345..31d5cd1 100644
  			  struct clock_event_device *evt)
  {
  	unsigned long cfg, cmp, now;
-@@ -187,10 +284,14 @@ static void hpet_set_mode(enum clock_event_mode mode,
+@@ -187,10 +271,14 @@ static void hpet_set_mode(enum clock_event_mode mode,
  		cfg &= ~HPET_TN_ENABLE;
  		hpet_writel(cfg, HPET_T0_CFG);
  		break;
@@ -2191,7 +2175,7 @@ index 17d7345..31d5cd1 100644
  			   struct clock_event_device *evt)
  {
  	unsigned long cnt;
-@@ -205,11 +306,18 @@ static int hpet_next_event(unsigned long delta,
+@@ -205,11 +293,18 @@ static int hpet_next_event(unsigned long delta,
  /*
   * Clock source related code
   */
@@ -2211,7 +2195,7 @@ index 17d7345..31d5cd1 100644
  static struct clocksource clocksource_hpet = {
  	.name		= "hpet",
  	.rating		= 250,
-@@ -217,21 +325,76 @@ static struct clocksource clocksource_hpet = {
+@@ -217,21 +312,73 @@ static struct clocksource clocksource_hpet = {
  	.mask		= HPET_MASK,
  	.shift		= HPET_SHIFT,
  	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
@@ -2279,9 +2263,6 @@ index 17d7345..31d5cd1 100644
  	unsigned long id;
 -	uint64_t hpet_freq;
 -	u64 tmp;
-+
-+	if (hpet_get_virt_address())
-+		return 0;
  
  	if (!is_hpet_capable())
  		return 0;
@@ -2291,7 +2272,7 @@ index 17d7345..31d5cd1 100644
  
  	/*
  	 * Read the period and check for a sane value:
-@@ -241,21 +404,6 @@ int __init hpet_enable(void)
+@@ -241,21 +388,6 @@ int __init hpet_enable(void)
  		goto out_nohpet;
  
  	/*
@@ -2313,7 +2294,7 @@ index 17d7345..31d5cd1 100644
  	 * Read the HPET ID register to retrieve the IRQ routing
  	 * information and the number of channels
  	 */
-@@ -270,49 +418,47 @@ int __init hpet_enable(void)
+@@ -270,49 +402,47 @@ int __init hpet_enable(void)
  		goto out_nohpet;
  #endif
  
@@ -2367,7 +2348,7 @@ index 17d7345..31d5cd1 100644
 +/*
 + * Needs to be late, as the reserve_timer code calls kalloc !
 + *
-+ * Not a problem on i386 as the hpet_init is called from late_time_init,
++ * Not a problem on i386 as hpet_enable is called from late_time_init,
 + * but on x86_64 it is necessary !
 + */
 +static __init int hpet_late_init(void)
@@ -2381,7 +2362,7 @@ index 17d7345..31d5cd1 100644
 +
 +		hpet_address = force_hpet_address;
 +		hpet_enable();
-+		if (!hpet_get_virt_address())
++		if (!hpet_virt_address)
 +			return -ENODEV;
 +	}
 +
@@ -2393,7 +2374,7 @@ index 17d7345..31d5cd1 100644
  
  #ifdef CONFIG_HPET_EMULATE_RTC
  
-@@ -524,68 +670,3 @@ irqreturn_t hpet_rtc_interrupt(int irq, void *dev_id)
+@@ -524,68 +654,3 @@ irqreturn_t hpet_rtc_interrupt(int irq, void *dev_id)
  	return IRQ_HANDLED;
  }
  #endif
@@ -9620,7 +9601,7 @@ index 01fc6c2..dd33fa0 100644
  
  /* We may be fed a pagetable here by ptep_to_xxx and others. */
 diff --git a/arch/sparc64/Kconfig b/arch/sparc64/Kconfig
-index 3787221..9de9794 100644
+index 30eb193..e79ea05 100644
 --- a/arch/sparc64/Kconfig
 +++ b/arch/sparc64/Kconfig
 @@ -23,6 +23,10 @@ config GENERIC_TIME
@@ -9635,10 +9616,10 @@ index 3787221..9de9794 100644
  	bool
  	default y
 diff --git a/arch/sparc64/kernel/smp.c b/arch/sparc64/kernel/smp.c
-index 4dcd7d0..40e40f9 100644
+index 60963ce..b448d33 100644
 --- a/arch/sparc64/kernel/smp.c
 +++ b/arch/sparc64/kernel/smp.c
-@@ -1163,32 +1163,6 @@ int setup_profiling_timer(unsigned int multiplier)
+@@ -1233,35 +1233,8 @@ int setup_profiling_timer(unsigned int multiplier)
  	return -EINVAL;
  }
  
@@ -9668,19 +9649,14 @@ index 4dcd7d0..40e40f9 100644
 -		       smallest / 1024U / 1024U);
 -}
 -
- /* Constrain the number of cpus to max_cpus.  */
  void __init smp_prepare_cpus(unsigned int max_cpus)
  {
-@@ -1206,7 +1180,6 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 	}
- 
- 	cpu_data(boot_cpu_id).udelay_val = loops_per_jiffy;
 -	smp_tune_scheduling();
  }
  
  void __devinit smp_prepare_boot_cpu(void)
 diff --git a/arch/sparc64/kernel/time.c b/arch/sparc64/kernel/time.c
-index a31a043..ce564fa 100644
+index 62e316a..7b7fd28 100644
 --- a/arch/sparc64/kernel/time.c
 +++ b/arch/sparc64/kernel/time.c
 @@ -403,58 +403,9 @@ static struct sparc64_tick_ops hbtick_operations __read_mostly = {
@@ -9744,7 +9720,7 @@ index a31a043..ce564fa 100644
  }
  
  /* Kick start a stopped clock (procedure from the Sun NVRAM/hostid FAQ). */
-@@ -938,6 +889,7 @@ static void sparc64_timer_setup(enum clock_event_mode mode,
+@@ -931,6 +882,7 @@ static void sparc64_timer_setup(enum clock_event_mode mode,
  {
  	switch (mode) {
  	case CLOCK_EVT_MODE_ONESHOT:
@@ -9905,7 +9881,7 @@ index de1de8a..6fc60f0 100644
  bootflag-y			+= ../../i386/kernel/bootflag.o
  legacy_serial-y			+= ../../i386/kernel/legacy_serial.o
 diff --git a/arch/x86_64/kernel/apic.c b/arch/x86_64/kernel/apic.c
-index 1b0e07b..aaf61cf 100644
+index 1b0e07b..26a17b8 100644
 --- a/arch/x86_64/kernel/apic.c
 +++ b/arch/x86_64/kernel/apic.c
 @@ -25,6 +25,7 @@
@@ -9916,33 +9892,36 @@ index 1b0e07b..aaf61cf 100644
  
  #include <asm/atomic.h>
  #include <asm/smp.h>
-@@ -41,7 +42,6 @@
+@@ -39,12 +40,10 @@
+ #include <asm/hpet.h>
+ #include <asm/apic.h>
  
- int apic_mapped;
+-int apic_mapped;
  int apic_verbosity;
 -int apic_runs_main_timer;
- int apic_calibrate_pmtmr __initdata;
+-int apic_calibrate_pmtmr __initdata;
+-
+-int disable_apic_timer __initdata;
++static int apic_mapped;
++static int apic_calibrate_pmtmr __initdata;
++static int disable_apic_timer __initdata;
  
- int disable_apic_timer __initdata;
-@@ -56,14 +56,27 @@ static struct resource lapic_resource = {
+ /* Local APIC timer works in C2? */
+ int local_apic_timer_c2_ok;
+@@ -56,14 +55,78 @@ static struct resource lapic_resource = {
  	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
  };
  
--/*
-- * cpu_mask that denotes the CPUs that needs timer interrupt coming in as
-- * IPIs in place of local APIC timers
-- */
--static cpumask_t timer_interrupt_broadcast_ipi_mask;
 +static unsigned int calibration_result;
- 
--/* Using APIC to generate smp_local_timer_interrupt? */
--int using_apic_timer __read_mostly = 0;
++
 +static int lapic_next_event(unsigned long delta,
 +			    struct clock_event_device *evt);
 +static void lapic_timer_setup(enum clock_event_mode mode,
 +			      struct clock_event_device *evt);
 +
 +static void lapic_timer_broadcast(cpumask_t mask);
++
++static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen);
 +
 +static struct clock_event_device lapic_clockevent = {
 +	.name		= "lapic",
@@ -9956,10 +9935,65 @@ index 1b0e07b..aaf61cf 100644
 +	.irq		= -1,
 +};
 +static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
++
++static int lapic_next_event(unsigned long delta,
++			    struct clock_event_device *evt)
++{
++	apic_write(APIC_TMICT, delta);
++	return 0;
++}
++
++static void lapic_timer_setup(enum clock_event_mode mode,
++			      struct clock_event_device *evt)
++{
++	unsigned long flags;
++	unsigned int v;
++
++	/* Lapic used as dummy for broadcast ? */
++	if (evt->features & CLOCK_EVT_FEAT_DUMMY)
++		return;
++
++	local_irq_save(flags);
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++	case CLOCK_EVT_MODE_ONESHOT:
++		__setup_APIC_LVTT(calibration_result,
++				  mode != CLOCK_EVT_MODE_PERIODIC, 1);
++		break;
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		v = apic_read(APIC_LVTT);
++		v |= (APIC_LVT_MASKED | LOCAL_TIMER_VECTOR);
++		apic_write(APIC_LVTT, v);
++		break;
++	case CLOCK_EVT_MODE_RESUME:
++		/* Nothing to do here */
++		break;
++	}
++
++	local_irq_restore(flags);
++}
++
+ /*
+- * cpu_mask that denotes the CPUs that needs timer interrupt coming in as
+- * IPIs in place of local APIC timers
++ * Local APIC timer broadcast function
+  */
+-static cpumask_t timer_interrupt_broadcast_ipi_mask;
+-
+-/* Using APIC to generate smp_local_timer_interrupt? */
+-int using_apic_timer __read_mostly = 0;
++static void lapic_timer_broadcast(cpumask_t mask)
++{
++#ifdef CONFIG_SMP
++	send_IPI_mask(mask, LOCAL_TIMER_VECTOR);
++#endif
++}
  
  static void apic_pm_activate(void);
  
-@@ -92,8 +105,9 @@ unsigned int safe_apic_wait_icr_idle(void)
+@@ -92,8 +155,9 @@ unsigned int safe_apic_wait_icr_idle(void)
  void enable_NMI_through_LVT0 (void * dummy)
  {
  	unsigned int v;
@@ -9971,7 +10005,7 @@ index 1b0e07b..aaf61cf 100644
  	apic_write(APIC_LVT0, v);
  }
  
-@@ -120,7 +134,7 @@ void ack_bad_irq(unsigned int irq)
+@@ -120,7 +184,7 @@ void ack_bad_irq(unsigned int irq)
  	 * holds up an irq slot - in excessive cases (when multiple
  	 * unexpected vectors occur) that might lock up the APIC
  	 * completely.
@@ -9980,7 +10014,7 @@ index 1b0e07b..aaf61cf 100644
  	 */
  	if (!disable_apic)
  		ack_APIC_irq();
-@@ -453,7 +467,6 @@ void __cpuinit setup_local_APIC (void)
+@@ -453,7 +517,6 @@ void __cpuinit setup_local_APIC (void)
  			oldvalue, value);
  	}
  
@@ -9988,7 +10022,7 @@ index 1b0e07b..aaf61cf 100644
  	setup_apic_nmi_watchdog(NULL);
  	apic_pm_activate();
  }
-@@ -616,7 +629,7 @@ early_param("apic", apic_set_verbosity);
+@@ -616,7 +679,7 @@ early_param("apic", apic_set_verbosity);
   * Detect and enable local APICs on non-SMP boards.
   * Original code written by Keir Fraser.
   * On AMD64 we trust the BIOS - if it says no APIC it is likely
@@ -9997,10 +10031,12 @@ index 1b0e07b..aaf61cf 100644
   */
  
  static int __init detect_init_APIC (void)
-@@ -759,14 +772,14 @@ void __init init_apic_mappings(void)
+@@ -757,16 +820,14 @@ void __init init_apic_mappings(void)
+  * P5 APIC double write bug.
+  */
  
- #define APIC_DIVISOR 16
- 
+-#define APIC_DIVISOR 16
+-
 -static void __setup_APIC_LVTT(unsigned int clocks)
 +static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
  {
@@ -10017,34 +10053,24 @@ index 1b0e07b..aaf61cf 100644
  		lvtt_value |= APIC_LVT_MASKED;
  
  	apic_write(APIC_LVTT, lvtt_value);
-@@ -779,49 +792,70 @@ static void __setup_APIC_LVTT(unsigned int clocks)
+@@ -779,46 +840,18 @@ static void __setup_APIC_LVTT(unsigned int clocks)
  				& ~(APIC_TDR_DIV_1 | APIC_TDR_DIV_TMBASE))
  				| APIC_TDR_DIV_16);
  
 -	apic_write(APIC_TMICT, clocks/APIC_DIVISOR);
 +	if (!oneshot)
-+		apic_write(APIC_TMICT, clocks/APIC_DIVISOR);
++		apic_write(APIC_TMICT, clocks);
  }
  
 -static void setup_APIC_timer(unsigned int clocks)
-+static int lapic_next_event(unsigned long delta,
-+			    struct clock_event_device *evt)
-+{
-+	apic_write(APIC_TMICT, delta);
-+	return 0;
-+}
-+
-+static void lapic_timer_setup(enum clock_event_mode mode,
-+			      struct clock_event_device *evt)
++static void setup_APIC_timer(void)
  {
- 	unsigned long flags;
-+	unsigned int v;
-+
-+	/* Lapic used as dummy for broadcast ? */
-+	if (evt->features & CLOCK_EVT_FEAT_DUMMY)
-+		return;
+-	unsigned long flags;
++	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
  
- 	local_irq_save(flags);
+-	local_irq_save(flags);
++	memcpy(levt, &lapic_clockevent, sizeof(*levt));
++	levt->cpumask = cpumask_of_cpu(smp_processor_id());
  
 -	/* wait for irq slice */
 - 	if (hpet_address && hpet_use_timer) {
@@ -10075,51 +10101,13 @@ index 1b0e07b..aaf61cf 100644
 -		!cpu_isset(boot_cpu_id, timer_interrupt_broadcast_ipi_mask)) {
 -		stop_timer_interrupt();
 -		apic_runs_main_timer++;
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		__setup_APIC_LVTT(calibration_result,
-+				  mode != CLOCK_EVT_MODE_PERIODIC, 1);
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		v = apic_read(APIC_LVTT);
-+		v |= (APIC_LVT_MASKED | LOCAL_TIMER_VECTOR);
-+		apic_write(APIC_LVTT, v);
-+		break;
-+	case CLOCK_EVT_MODE_RESUME:
-+		/* Nothing to do here */
-+		break;
- 	}
-+
- 	local_irq_restore(flags);
+-	}
+-	local_irq_restore(flags);
++	clockevents_register_device(levt);
  }
  
  /*
-+ * Local APIC timer broadcast function
-+ */
-+static void lapic_timer_broadcast(cpumask_t mask)
-+{
-+#ifdef CONFIG_SMP
-+	send_IPI_mask(mask, LOCAL_TIMER_VECTOR);
-+#endif
-+}
-+
-+static void __devinit setup_APIC_timer(void)
-+{
-+	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
-+
-+	memcpy(levt, &lapic_clockevent, sizeof(*levt));
-+	levt->cpumask = cpumask_of_cpu(smp_processor_id());
-+
-+	clockevents_register_device(levt);
-+}
-+
-+/*
-  * In this function we calibrate APIC bus clocks to the external
-  * timer. Unfortunately we cannot use jiffies and the timer irq
-  * to calibrate, since some later bootup code depends on getting
-@@ -836,7 +870,7 @@ static void setup_APIC_timer(unsigned int clocks)
+@@ -836,17 +869,22 @@ static void setup_APIC_timer(unsigned int clocks)
  
  #define TICK_COUNT 100000000
  
@@ -10128,7 +10116,11 @@ index 1b0e07b..aaf61cf 100644
  {
  	unsigned apic, apic_start;
  	unsigned long tsc, tsc_start;
-@@ -845,8 +879,10 @@ static int __init calibrate_APIC_clock(void)
+ 	int result;
++
++	local_irq_disable();
++
+ 	/*
  	 * Put whatever arbitrary (but long enough) timeout
  	 * value into the APIC clock, we just want to get the
  	 * counter running for calibration.
@@ -10136,20 +10128,36 @@ index 1b0e07b..aaf61cf 100644
 +	 * No interrupt enable !
  	 */
 -	__setup_APIC_LVTT(4000000000);
-+	__setup_APIC_LVTT(4000000000, 0, 0);
++	__setup_APIC_LVTT(250000000, 0, 0);
  
  	apic_start = apic_read(APIC_TMCCT);
  #ifdef CONFIG_X86_PM_TIMER
-@@ -874,132 +910,61 @@ static int __init calibrate_APIC_clock(void)
+@@ -868,138 +906,75 @@ static int __init calibrate_APIC_clock(void)
+ 		result = (apic_start - apic) * 1000L * tsc_khz /
+ 					(tsc - tsc_start);
+ 	}
+-	printk("result %d\n", result);
+ 
++	local_irq_enable();
++
++	printk(KERN_DEBUG "APIC timer calibration result %d\n", result);
+ 
  	printk(KERN_INFO "Detected %d.%03d MHz APIC timer.\n",
  		result / 1000 / 1000, result / 1000 % 1000);
  
 -	return result * APIC_DIVISOR / HZ;
-+	calibration_result = result * APIC_DIVISOR / HZ;
- }
+-}
++	/* Calculate the scaled math multiplication factor */
++	lapic_clockevent.mult = div_sc(result, NSEC_PER_SEC, 32);
++	lapic_clockevent.max_delta_ns =
++		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
++	lapic_clockevent.min_delta_ns =
++		clockevent_delta2ns(0xF, &lapic_clockevent);
  
 -static unsigned int calibration_result;
--
++	calibration_result = result / HZ;
++}
+ 
  void __init setup_boot_APIC_clock (void)
  {
 -	if (disable_apic_timer) { 
@@ -10157,10 +10165,10 @@ index 1b0e07b..aaf61cf 100644
 -		return; 
 -	} 
 +	/*
-+	 * The local apic timer can be disabled via the kernel
-+	 * commandline or from the test above. Register the lapic
-+	 * timer as a dummy clock event source on SMP systems, so the
-+	 * broadcast mechanism is used. On UP systems simply ignore it.
++	 * The local apic timer can be disabled via the kernel commandline.
++	 * Register the lapic timer as a dummy clock event source on SMP
++	 * systems, so the broadcast mechanism is used. On UP systems simply
++	 * ignore it.
 +	 */
 +	if (disable_apic_timer) {
 +		printk(KERN_INFO "Disabling APIC timer\n");
@@ -10245,7 +10253,8 @@ index 1b0e07b..aaf61cf 100644
 -		disable_APIC_timer();
 -		cpu_set(cpu, timer_interrupt_broadcast_ipi_mask);
 -	}
--}
++	setup_APIC_timer();
+ }
 -EXPORT_SYMBOL(switch_APIC_timer_to_ipi);
 -
 -void smp_send_timer_broadcast_ipi(void)
@@ -10276,8 +10285,7 @@ index 1b0e07b..aaf61cf 100644
 -		cpu_clear(cpu, timer_interrupt_broadcast_ipi_mask);
 -		enable_APIC_timer();
 -	}
-+	setup_APIC_timer();
- }
+-}
 -EXPORT_SYMBOL(switch_ipi_to_APIC_timer);
  
  int setup_profiling_timer(unsigned int multiplier)
@@ -10292,7 +10300,6 @@ index 1b0e07b..aaf61cf 100644
  {
  	unsigned long reg = (lvt_off << 4) + K8_APIC_EXT_LVT_BASE;
  	unsigned int  v   = (mask << 16) | (msg_type << 8) | vector;
-+
  	apic_write(reg, v);
  }
  
@@ -10301,12 +10308,9 @@ index 1b0e07b..aaf61cf 100644
  /*
   * Local timer interrupt handler. It does both profiling and
   * process statistics/rescheduling.
-@@ -1010,24 +975,36 @@ void setup_APIC_extened_lvt(unsigned char lvt_off, unsigned char vector,
-  * value into /proc/profile.
-  */
+@@ -1012,22 +987,34 @@ void setup_APIC_extened_lvt(unsigned char lvt_off, unsigned char vector,
  
--void smp_local_timer_interrupt(void)
-+void local_apic_timer_interrupt(void)
+ void smp_local_timer_interrupt(void)
  {
 -	profile_tick(CPU_PROFILING);
 -#ifdef CONFIG_SMP
@@ -10352,7 +10356,7 @@ index 1b0e07b..aaf61cf 100644
  }
  
  /*
-@@ -1043,11 +1020,6 @@ void smp_apic_timer_interrupt(struct pt_regs *regs)
+@@ -1043,11 +1030,6 @@ void smp_apic_timer_interrupt(struct pt_regs *regs)
  	struct pt_regs *old_regs = set_irq_regs(regs);
  
  	/*
@@ -10364,16 +10368,7 @@ index 1b0e07b..aaf61cf 100644
  	 * NOTE! We'd better ACK the irq immediately,
  	 * because timer handling can be slow.
  	 */
-@@ -1059,7 +1031,7 @@ void smp_apic_timer_interrupt(struct pt_regs *regs)
- 	 */
- 	exit_idle();
- 	irq_enter();
--	smp_local_timer_interrupt();
-+	local_apic_timer_interrupt();
- 	irq_exit();
- 	set_irq_regs(old_regs);
- }
-@@ -1127,21 +1099,6 @@ asmlinkage void smp_spurious_interrupt(void)
+@@ -1127,21 +1109,6 @@ asmlinkage void smp_spurious_interrupt(void)
  	v = apic_read(APIC_ISR + ((SPURIOUS_APIC_VECTOR & ~0x1f) >> 1));
  	if (v & (1 << (SPURIOUS_APIC_VECTOR & 0x1f)))
  		ack_APIC_irq();
@@ -10395,7 +10390,7 @@ index 1b0e07b..aaf61cf 100644
  	irq_exit();
  }
  
-@@ -1173,11 +1130,11 @@ asmlinkage void smp_error_interrupt(void)
+@@ -1173,11 +1140,11 @@ asmlinkage void smp_error_interrupt(void)
  	   7: Illegal register address
  	*/
  	printk (KERN_DEBUG "APIC error on CPU%d: %02x(%02x)\n",
@@ -10409,7 +10404,7 @@ index 1b0e07b..aaf61cf 100644
  
  /*
   * This initializes the IO-APIC and APIC hardware if this is
-@@ -1185,11 +1142,11 @@ int disable_apic;
+@@ -1185,11 +1152,11 @@ int disable_apic;
   */
  int __init APIC_init_uniprocessor (void)
  {
@@ -10424,7 +10419,7 @@ index 1b0e07b..aaf61cf 100644
  		disable_apic = 1;
  		printk(KERN_INFO "Apic disabled by BIOS\n");
  		return -1;
-@@ -1211,8 +1168,8 @@ int __init APIC_init_uniprocessor (void)
+@@ -1211,8 +1178,8 @@ int __init APIC_init_uniprocessor (void)
  	return 0;
  }
  
@@ -10435,7 +10430,7 @@ index 1b0e07b..aaf61cf 100644
  	disable_apic = 1;
  	clear_bit(X86_FEATURE_APIC, boot_cpu_data.x86_capability);
  	return 0;
-@@ -1220,10 +1177,10 @@ static __init int setup_disableapic(char *str)
+@@ -1220,10 +1187,10 @@ static __init int setup_disableapic(char *str)
  early_param("disableapic", setup_disableapic);
  
  /* same as disableapic, for compatibility */
@@ -10449,7 +10444,7 @@ index 1b0e07b..aaf61cf 100644
  early_param("nolapic", setup_nolapic);
  
  static int __init parse_lapic_timer_c2_ok(char *arg)
-@@ -1233,36 +1190,12 @@ static int __init parse_lapic_timer_c2_ok(char *arg)
+@@ -1233,36 +1200,20 @@ static int __init parse_lapic_timer_c2_ok(char *arg)
  }
  early_param("lapic_timer_c2_ok", parse_lapic_timer_c2_ok);
  
@@ -10477,18 +10472,19 @@ index 1b0e07b..aaf61cf 100644
 -	return 1;
  }
 -__setup("noapicmaintimer", setup_noapicmaintimer);
--
--static __init int setup_apicpmtimer(char *s)
--{
--	apic_calibrate_pmtmr = 1;
--	notsc_setup(NULL);
--	return setup_apicmaintimer(NULL);
--}
--__setup("apicpmtimer", setup_apicpmtimer);
--
--__setup("noapictimer", setup_noapictimer); 
 +__setup("noapictimer", setup_noapictimer);
  
+ static __init int setup_apicpmtimer(char *s)
+ {
+ 	apic_calibrate_pmtmr = 1;
+ 	notsc_setup(NULL);
+-	return setup_apicmaintimer(NULL);
++	return 0;
+ }
+ __setup("apicpmtimer", setup_apicpmtimer);
+ 
+-__setup("noapictimer", setup_noapictimer); 
+-
 diff --git a/arch/x86_64/kernel/crash.c b/arch/x86_64/kernel/crash.c
 index 13432a1..31d23e0 100644
 --- a/arch/x86_64/kernel/crash.c
@@ -11867,7 +11863,7 @@ index 32f5078..567cfd3 100644
  	current_thread_info()->cpu = 0;  /* needed? */
  	set_cpu_sibling_map(0);
 diff --git a/arch/x86_64/kernel/time.c b/arch/x86_64/kernel/time.c
-index 4a0895b..d29a573 100644
+index 4a0895b..9742f6b 100644
 --- a/arch/x86_64/kernel/time.c
 +++ b/arch/x86_64/kernel/time.c
 @@ -28,11 +28,13 @@
@@ -11974,7 +11970,8 @@ index 4a0895b..d29a573 100644
 +	return set_rtc_mmss(now.tv_sec);
  }
  
- static irqreturn_t timer_interrupt(int irq, void *dev_id)
+-static irqreturn_t timer_interrupt(int irq, void *dev_id)
++static irqreturn_t timer_event_interrupt(int irq, void *dev_id)
  {
 -	if (apic_runs_main_timer > 1)
 -		return IRQ_HANDLED;
@@ -12161,8 +12158,9 @@ index 4a0895b..d29a573 100644
  }
  
  static struct irqaction irq0 = {
- 	.handler	= timer_interrupt,
+-	.handler	= timer_interrupt,
 -	.flags		= IRQF_DISABLED | IRQF_IRQPOLL,
++	.handler	= timer_event_interrupt,
 +	.flags		= IRQF_DISABLED | IRQF_IRQPOLL | IRQF_NOBALANCING |
 +			  IRQF_NODELAY,
  	.mask		= CPU_MASK_NONE,
@@ -12551,7 +12549,7 @@ index 355f5f5..e686caf 100644
  	 * Trigger the target to continue into the measurement too:
  	 */
 diff --git a/arch/x86_64/kernel/vsyscall.c b/arch/x86_64/kernel/vsyscall.c
-index 57660d5..b58f200 100644
+index 57660d5..fe2a6f4 100644
 --- a/arch/x86_64/kernel/vsyscall.c
 +++ b/arch/x86_64/kernel/vsyscall.c
 @@ -43,7 +43,7 @@
@@ -12590,7 +12588,15 @@ index 57660d5..b58f200 100644
  	.sysctl_enabled = 1,
  };
  
-@@ -128,10 +128,29 @@ static __always_inline long time_syscall(long *t)
+@@ -93,6 +93,7 @@ void update_vsyscall(struct timespec *wall_time, struct clocksource *clock)
+ 	vsyscall_gtod_data.clock.mask = clock->mask;
+ 	vsyscall_gtod_data.clock.mult = clock->mult;
+ 	vsyscall_gtod_data.clock.shift = clock->shift;
++	vsyscall_gtod_data.clock.cycle_accumulated = clock->cycle_accumulated;
+ 	vsyscall_gtod_data.wall_time_sec = wall_time->tv_sec;
+ 	vsyscall_gtod_data.wall_time_nsec = wall_time->tv_nsec;
+ 	vsyscall_gtod_data.sys_tz = sys_tz;
+@@ -128,10 +129,29 @@ static __always_inline long time_syscall(long *t)
  
  static __always_inline void do_vgettimeofday(struct timeval * tv)
  {
@@ -12621,7 +12627,7 @@ index 57660d5..b58f200 100644
  	do {
  		seq = read_seqbegin(&__vsyscall_gtod_data.lock);
  
-@@ -142,6 +161,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
+@@ -142,6 +162,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
  		}
  		now = vread();
  		base = __vsyscall_gtod_data.clock.cycle_last;
@@ -12629,7 +12635,7 @@ index 57660d5..b58f200 100644
  		mask = __vsyscall_gtod_data.clock.mask;
  		mult = __vsyscall_gtod_data.clock.mult;
  		shift = __vsyscall_gtod_data.clock.shift;
-@@ -152,6 +172,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
+@@ -152,6 +173,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
  
  	/* calculate interval: */
  	cycle_delta = (now - base) & mask;
@@ -12986,7 +12992,7 @@ index f7de02a..60646dd 100644
  	acpi_processor_ppc_exit();
  
 diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index 80ffc78..b02c92b 100644
+index 80ffc78..d8830c0 100644
 --- a/drivers/acpi/processor_idle.c
 +++ b/drivers/acpi/processor_idle.c
 @@ -40,6 +40,7 @@
@@ -13862,7 +13868,7 @@ index 80ffc78..b02c92b 100644
 +}
 +
 +static int c3_cpu_count;
-+static DEFINE_SPINLOCK(c3_lock);
++static DEFINE_RAW_SPINLOCK(c3_lock);
 +
 +/**
 + * acpi_idle_enter_c3 - enters an ACPI C3 state-type
@@ -20624,10 +20630,10 @@ index 13cdcd6..ae319a4 100644
  
  #endif /* _ASM_HIGHMEM_H */
 diff --git a/include/asm-i386/hpet.h b/include/asm-i386/hpet.h
-index dddeedf..935648e 100644
+index dddeedf..6f42e3a 100644
 --- a/include/asm-i386/hpet.h
 +++ b/include/asm-i386/hpet.h
-@@ -4,112 +4,85 @@
+@@ -4,117 +4,91 @@
  
  #ifdef CONFIG_HPET_TIMER
  
@@ -20771,8 +20777,8 @@ index dddeedf..935648e 100644
 -#else
 -extern int hpet_enable(void);
 -#endif
-+
-+void force_hpet_resume(void);
++extern unsigned long hpet_readl(unsigned long a);
++extern void force_hpet_resume(void);
  
  #ifdef CONFIG_HPET_EMULATE_RTC
 +
@@ -20791,30 +20797,43 @@ index dddeedf..935648e 100644
  #endif /* CONFIG_HPET_EMULATE_RTC */
  
  #else
+ 
+ static inline int hpet_enable(void) { return 0; }
++static inline unsigned long hpet_readl(unsigned long a) { return 0; }
+ 
+ #endif /* CONFIG_HPET_TIMER */
+ #endif /* _I386_HPET_H */
 diff --git a/include/asm-i386/i8253.h b/include/asm-i386/i8253.h
-index 6cb0dd4..c3e516c 100644
+index 6cb0dd4..8b1ac2a 100644
 --- a/include/asm-i386/i8253.h
 +++ b/include/asm-i386/i8253.h
-@@ -3,7 +3,12 @@
+@@ -1,21 +1,15 @@
+ #ifndef __ASM_I8253_H__
+ #define __ASM_I8253_H__
  
- #include <linux/clockchips.h>
- 
--extern spinlock_t i8253_lock;
+-#include <linux/clockchips.h>
 +/* i8253A PIT registers */
 +#define PIT_MODE		0x43
 +#define PIT_CH0			0x40
 +#define PIT_CH2			0x42
-+
+ 
+-extern spinlock_t i8253_lock;
 +extern raw_spinlock_t i8253_lock;
  
  extern struct clock_event_device *global_clock_event;
  
-@@ -18,4 +23,6 @@ static inline void pit_interrupt_hook(void)
- 	global_clock_event->event_handler(global_clock_event);
- }
- 
+-/**
+- * pit_interrupt_hook - hook into timer tick
+- * @regs:	standard registers from interrupt
+- *
+- * Call the global clock event handler.
+- **/
+-static inline void pit_interrupt_hook(void)
+-{
+-	global_clock_event->event_handler(global_clock_event);
+-}
 +extern void setup_pit_timer(void);
-+
+ 
  #endif	/* __ASM_I8253_H__ */
 diff --git a/include/asm-i386/i8259.h b/include/asm-i386/i8259.h
 index 29d8f9a..488ad9c 100644
@@ -20829,6 +20848,17 @@ index 29d8f9a..488ad9c 100644
  
  extern void init_8259A(int auto_eoi);
  extern void enable_8259A_irq(unsigned int irq);
+diff --git a/include/asm-i386/mach-default/do_timer.h b/include/asm-i386/mach-default/do_timer.h
+index 56e5689..23ecda0 100644
+--- a/include/asm-i386/mach-default/do_timer.h
++++ b/include/asm-i386/mach-default/do_timer.h
+@@ -12,5 +12,5 @@
+ 
+ static inline void do_timer_interrupt_hook(void)
+ {
+-	pit_interrupt_hook();
++	global_clock_event->event_handler(global_clock_event);
+ }
 diff --git a/include/asm-i386/mach-default/io_ports.h b/include/asm-i386/mach-default/io_ports.h
 index a96d9f6..48540ba 100644
 --- a/include/asm-i386/mach-default/io_ports.h
@@ -20857,6 +20887,19 @@ index 881c63c..753738b 100644
 +#define FIRST_SYSTEM_VECTOR	0xee
  
  #define TIMER_IRQ 0
+ 
+diff --git a/include/asm-i386/mach-voyager/do_timer.h b/include/asm-i386/mach-voyager/do_timer.h
+index 60f9dcc..bc2b589 100644
+--- a/include/asm-i386/mach-voyager/do_timer.h
++++ b/include/asm-i386/mach-voyager/do_timer.h
+@@ -12,7 +12,7 @@
+  **/
+ static inline void do_timer_interrupt_hook(void)
+ {
+-	pit_interrupt_hook();
++	global_clock_event->event_handler(global_clock_event);
+ 	voyager_timer_interrupt();
+ }
  
 diff --git a/include/asm-i386/mc146818rtc.h b/include/asm-i386/mc146818rtc.h
 index 99a8900..ffc4a5a 100644
@@ -24797,10 +24840,18 @@ index a29f050..06e0c6a 100644
  
  int __acpi_acquire_global_lock(unsigned int *lock);
 diff --git a/include/asm-x86_64/apic.h b/include/asm-x86_64/apic.h
-index 45e9fca..76e306f 100644
+index 45e9fca..66ef386 100644
 --- a/include/asm-x86_64/apic.h
 +++ b/include/asm-x86_64/apic.h
-@@ -79,12 +79,14 @@ extern void smp_local_timer_interrupt (void);
+@@ -19,7 +19,6 @@
+ extern int apic_verbosity;
+ extern int apic_runs_main_timer;
+ extern int ioapic_force;
+-extern int apic_mapped;
+ 
+ /*
+  * Define the default level of output to be very little
+@@ -79,12 +78,14 @@ extern void smp_local_timer_interrupt (void);
  extern void setup_boot_APIC_clock (void);
  extern void setup_secondary_APIC_clock (void);
  extern int APIC_init_uniprocessor (void);
@@ -24819,7 +24870,7 @@ index 45e9fca..76e306f 100644
  
  #define K8_APIC_EXT_LVT_BASE    0x500
  #define K8_APIC_EXT_INT_MSG_FIX 0x0
-@@ -93,9 +95,7 @@ extern void setup_APIC_extened_lvt(unsigned char lvt_off, unsigned char vector,
+@@ -93,9 +94,7 @@ extern void setup_APIC_extened_lvt(unsigned char lvt_off, unsigned char vector,
  #define K8_APIC_EXT_INT_MSG_EXT 0x7
  #define K8_APIC_EXT_LVT_ENTRY_THRESHOLD    0
  
@@ -25077,7 +25128,7 @@ index c6fbb67..20f3efb 100644
  
  #endif /* _ASM_X8664_PERCPU_H_ */
 diff --git a/include/asm-x86_64/proto.h b/include/asm-x86_64/proto.h
-index 85255db..57035a9 100644
+index 85255db..b7b80f1 100644
 --- a/include/asm-x86_64/proto.h
 +++ b/include/asm-x86_64/proto.h
 @@ -51,9 +51,6 @@ extern void reserve_bootmem_generic(unsigned long phys, unsigned len);
@@ -25090,6 +25141,21 @@ index 85255db..57035a9 100644
  extern unsigned long end_pfn_map; 
  
  extern void show_trace(struct task_struct *, struct pt_regs *, unsigned long * rsp);
+@@ -110,14 +107,10 @@ extern int timer_over_8254;
+ 
+ extern int gsi_irq_sharing(int gsi);
+ 
+-extern void smp_local_timer_interrupt(void);
+-
+ extern int force_mwait;
+ 
+ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr);
+ 
+-void i8254_timer_resume(void);
+-
+ #define round_up(x,y) (((x) + (y) - 1) & ~((y)-1))
+ #define round_down(x,y) ((x) & ~((y)-1))
+ 
 diff --git a/include/asm-x86_64/semaphore.h b/include/asm-x86_64/semaphore.h
 index 1194888..2a216da 100644
 --- a/include/asm-x86_64/semaphore.h
@@ -25480,10 +25546,10 @@ index 8696f8a..0a82ae8 100644
  #define __NR_read                                0
  __SYSCALL(__NR_read, sys_read)
 diff --git a/include/asm-x86_64/vsyscall.h b/include/asm-x86_64/vsyscall.h
-index 82b4afe..f623b39 100644
+index 82b4afe..117df3e 100644
 --- a/include/asm-x86_64/vsyscall.h
 +++ b/include/asm-x86_64/vsyscall.h
-@@ -22,7 +22,7 @@ enum vsyscall_num {
+@@ -22,14 +22,11 @@ enum vsyscall_num {
  /* Definitions for CONFIG_GENERIC_TIME definitions */
  #define __section_vsyscall_gtod_data __attribute__ \
  	((unused, __section__ (".vsyscall_gtod_data"),aligned(16)))
@@ -25492,6 +25558,13 @@ index 82b4afe..f623b39 100644
  
  #define VGETCPU_RDTSCP	1
  #define VGETCPU_LSL	2
+ 
+-#define hpet_readl(a)           readl((const void __iomem *)fix_to_virt(FIX_HPET_BASE) + a)
+-#define hpet_writel(d,a)        writel(d, (void __iomem *)fix_to_virt(FIX_HPET_BASE) + a)
+-
+ extern int __vgetcpu_mode;
+ extern volatile unsigned long __jiffies;
+ 
 diff --git a/include/linux/acpi.h b/include/linux/acpi.h
 index fccd8b5..137baad 100644
 --- a/include/linux/acpi.h
@@ -25650,9 +25723,18 @@ index 5c6e128..00ccc3f 100644
  
  /*
 diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index 8486e78..e0bd46e 100644
+index 8486e78..30aabfa 100644
 --- a/include/linux/clockchips.h
 +++ b/include/linux/clockchips.h
+@@ -8,7 +8,7 @@
+ #ifndef _LINUX_CLOCKCHIPS_H
+ #define _LINUX_CLOCKCHIPS_H
+ 
+-#ifdef CONFIG_GENERIC_CLOCKEVENTS
++#ifdef CONFIG_GENERIC_CLOCKEVENTS_BUILD
+ 
+ #include <linux/clocksource.h>
+ #include <linux/cpumask.h>
 @@ -23,6 +23,7 @@ enum clock_event_mode {
  	CLOCK_EVT_MODE_SHUTDOWN,
  	CLOCK_EVT_MODE_PERIODIC,
@@ -25672,6 +25754,23 @@ index 8486e78..e0bd46e 100644
  extern void clockevents_set_mode(struct clock_event_device *dev,
  				 enum clock_event_mode mode);
  extern int clockevents_register_notifier(struct notifier_block *nb);
+@@ -130,11 +127,14 @@ extern void clockevents_unregister_notifier(struct notifier_block *nb);
+ extern int clockevents_program_event(struct clock_event_device *dev,
+ 				     ktime_t expires, ktime_t now);
+ 
++#ifdef CONFIG_GENERIC_CLOCKEVENTS
+ extern void clockevents_notify(unsigned long reason, void *arg);
+-
+ #else
++# define clockevents_notify(reason, arg) do { } while (0)
++#endif
++
++#else /* CONFIG_GENERIC_CLOCKEVENTS_BUILD */
+ 
+-static inline void clockevents_resume_events(void) { }
+ #define clockevents_notify(reason, arg) do { } while (0)
+ 
+ #endif
 diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
 index bf297b0..0732bc2 100644
 --- a/include/linux/clocksource.h
@@ -26278,7 +26377,7 @@ index 276ccaa..9209904 100644
  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
 diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 5323f62..ea3bf2d 100644
+index 5323f62..824665e 100644
 --- a/include/linux/interrupt.h
 +++ b/include/linux/interrupt.h
 @@ -52,10 +52,12 @@
@@ -26286,7 +26385,7 @@ index 5323f62..ea3bf2d 100644
  #define IRQF_SHARED		0x00000080
  #define IRQF_PROBE_SHARED	0x00000100
 -#define IRQF_TIMER		0x00000200
-+#define _IRQF_TIMER		0x00000200
++#define __IRQF_TIMER		0x00000200
  #define IRQF_PERCPU		0x00000400
  #define IRQF_NOBALANCING	0x00000800
  #define IRQF_IRQPOLL		0x00001000
@@ -26710,6 +26809,33 @@ index 4527375..d5c1329 100644
  }
  
  struct jbd_revoke_table_s;
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index c080f61..d7a5e03 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -36,8 +36,6 @@
+ /* LATCH is used in the interval timer and ftape setup. */
+ #define LATCH  ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
+ 
+-#define LATCH_HPET ((HPET_TICK_RATE + HZ/2) / HZ)
+-
+ /* Suppose we want to devide two numbers NOM and DEN: NOM/DEN, the we can
+  * improve accuracy by shifting LSH bits, hence calculating:
+  *     (NOM << LSH) / DEN
+@@ -53,13 +51,9 @@
+ /* HZ is the requested value. ACTHZ is actual HZ ("<< 8" is for accuracy) */
+ #define ACTHZ (SH_DIV (CLOCK_TICK_RATE, LATCH, 8))
+ 
+-#define ACTHZ_HPET (SH_DIV (HPET_TICK_RATE, LATCH_HPET, 8))
+-
+ /* TICK_NSEC is the time between ticks in nsec assuming real ACTHZ */
+ #define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
+ 
+-#define TICK_NSEC_HPET (SH_DIV(1000000UL * 1000, ACTHZ_HPET, 8))
+-
+ /* TICK_USEC is the time between ticks in usec assuming fake USER_HZ */
+ #define TICK_USEC ((1000000UL + USER_HZ/2) / USER_HZ)
+ 
 diff --git a/include/linux/kernel.h b/include/linux/kernel.h
 index 7a48525..f0f290f 100644
 --- a/include/linux/kernel.h
@@ -33686,7 +33812,7 @@ index 45490be..a586c76 100644
  	}
  	return 0;
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 23c03f4..c5d5a31 100644
+index 72d0342..d087099 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
 @@ -116,10 +116,17 @@ void ktime_get_ts(struct timespec *ts)
@@ -35239,10 +35365,10 @@ index 0000000..d5fb502
 +#endif
 diff --git a/kernel/latency_trace.c b/kernel/latency_trace.c
 new file mode 100644
-index 0000000..4072150
+index 0000000..5a688dc
 --- /dev/null
 +++ b/kernel/latency_trace.c
-@@ -0,0 +1,2804 @@
+@@ -0,0 +1,2808 @@
 +/*
 + *  kernel/latency_trace.c
 + *
@@ -35330,9 +35456,13 @@ index 0000000..4072150
 +}
 +#endif
 +
++#if defined(CONFIG_CRITICAL_IRQSOFF_TIMING) || \
++   (defined(CONFIG_CRITICAL_PREEMPT_TIMING) && defined(CONFIG_TRACE_IRQFLAGS))
++   static DEFINE_PER_CPU(int, trace_cpu_idle);
++#endif
++
 +#ifdef CONFIG_CRITICAL_IRQSOFF_TIMING
 +# ifdef CONFIG_CRITICAL_PREEMPT_TIMING
-+   static DEFINE_PER_CPU(int, trace_cpu_idle);
 +#  define irqs_off_preempt_count() (preempt_count() && !__get_cpu_var(trace_cpu_idle))
 +# else
 +#  define irqs_off_preempt_count() 0
@@ -37398,7 +37528,7 @@ index 0000000..4072150
 +}
 +EXPORT_SYMBOL(unmask_preempt_count);
 +
-+#ifdef CONFIG_CRITICAL_PREEMPT_TIMING
++#if defined(CONFIG_CRITICAL_PREEMPT_TIMING) && defined(CONFIG_TRACE_IRQFLAGS)
 +
 +/* Some archs do their cpu_idle with preemption on. Don't measure it */
 +void notrace trace_preempt_enter_idle(void)
@@ -52990,8 +53120,33 @@ index f04791f..389293a 100644
  }
  
  EXPORT_SYMBOL(do_gettimeofday);
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index f663511..8d53106 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -23,3 +23,8 @@ config HIGH_RES_TIMERS
+ 	  hardware is not capable then this option only increases
+ 	  the size of the kernel image.
+ 
++config GENERIC_CLOCKEVENTS_BUILD
++	bool
++	default y
++	depends on GENERIC_CLOCKEVENTS || GENERIC_CLOCKEVENTS_MIGR
++
+diff --git a/kernel/time/Makefile b/kernel/time/Makefile
+index 99b6034..905b0b5 100644
+--- a/kernel/time/Makefile
++++ b/kernel/time/Makefile
+@@ -1,6 +1,6 @@
+ obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o
+ 
+-obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= clockevents.o
++obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
+ obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
+ obj-$(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)	+= tick-broadcast.o
+ obj-$(CONFIG_TICK_ONESHOT)			+= tick-oneshot.o
 diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 76212b2..c3ddc62 100644
+index 76212b2..f348f89 100644
 --- a/kernel/time/clockevents.c
 +++ b/kernel/time/clockevents.c
 @@ -12,12 +12,14 @@
@@ -53027,10 +53182,11 @@ index 76212b2..c3ddc62 100644
  	if (delta <= 0)
  		return -ETIME;
  
-@@ -205,47 +209,6 @@ void clockevents_exchange_device(struct clock_event_device *old,
+@@ -204,47 +208,7 @@ void clockevents_exchange_device(struct clock_event_device *old,
+ 	local_irq_restore(flags);
  }
  
- /**
+-/**
 - * clockevents_request_device
 - */
 -struct clock_event_device *clockevents_request_device(unsigned int features,
@@ -53071,10 +53227,16 @@ index 76212b2..c3ddc62 100644
 -	spin_unlock(&clockevents_lock);
 -}
 -
--/**
++#ifdef CONFIG_GENERIC_CLOCKEVENTS
+ /**
   * clockevents_notify - notification about relevant events
   */
- void clockevents_notify(unsigned long reason, void *arg)
+@@ -273,4 +237,4 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 	spin_unlock(&clockevents_lock);
+ }
+ EXPORT_SYMBOL_GPL(clockevents_notify);
+-
++#endif
 diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
 index 51b6a6a..cf4cfb8 100644
 --- a/kernel/time/clocksource.c
