@@ -565,7 +565,10 @@ static int socket_resume(struct pcmcia_socket *skt)
 
 	if (!(skt->state & SOCKET_PRESENT)) {
 		skt->state &= ~SOCKET_SUSPEND;
-		return socket_insert(skt);
+		/* UBUNTU: This causes problems on resume. Userspace
+		 * scripts take care of this. */
+		/* return socket_insert(skt); */
+		return 0;
 	}
 
 	ret = socket_setup(skt, resume_delay);
