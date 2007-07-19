@@ -32,18 +32,57 @@ static const struct usb_device_id usb_quirk_list[] = {
 	{ USB_DEVICE(0x0204, 0x6025), .driver_info = USB_QUIRK_RESET_RESUME },
 	/* HP 5300/5370C scanner */
 	{ USB_DEVICE(0x03f0, 0x0701), .driver_info = USB_QUIRK_STRING_FETCH_255 },
+	/* Elsa MicroLink 56k (V.250) */
+	{ USB_DEVICE(0x05cc, 0x2267), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Ultima Electronics Corp. */
+	{ USB_DEVICE(0x05d8, 0x4005), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Samsung ML-2510 Series printer */
+	{ USB_DEVICE(0x04e8, 0x327e), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Umax [hex] Astra 3400U */
+	{ USB_DEVICE(0x1606, 0x0060), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 
 	/* INTEL VALUE SSD */
 	{ USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
 
+	/* BenQ */
+	/* Acer Peripherals Inc. (now BenQ Corp.) S2W 3300U/4300U */
+	{ USB_DEVICE(0x04a5, 0x20b0), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Acer Peripherals Inc. (now BenQ Corp.) Prisa 640BU */
+	{ USB_DEVICE(0x04a5, 0x207e), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+
 	/* M-Systems Flash Disk Pioneers */
 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+
+	/* Canon */
+	/* CanoScan N1240U/LiDE 30 */
+	{ USB_DEVICE(0x04a9, 0x220e), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* CanoScan N670U/N676U/LiDE 20 */
+	{ USB_DEVICE(0x04a9, 0x220d), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Canon LiDE25 */
+	{ USB_DEVICE(0x04a9, 0x2220), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* CanoScan N650U/N656U */
+	{ USB_DEVICE(0x04a9, 0x2206), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 
 	/* Philips PSC805 audio device */
 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
 
+	/* Epson */
+	/* Seiko Epson Corp. Perfection 660 */
+	{ USB_DEVICE(0x04b8, 0x0114), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Seiko Epson Corp. Perfection 1200 */
+	{ USB_DEVICE(0x04b8, 0x0104), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Seiko Epson Corp - Perfection 1670 */
+	{ USB_DEVICE(0x04b8, 0x011f), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	/* Seiko Epson Corp - Perfection 2480 */
+	{ USB_DEVICE(0x04b8, 0x0121), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+
 	/* SKYMEDI USB_DRIVE */
 	{ USB_DEVICE(0x1516, 0x8628), .driver_info = USB_QUIRK_RESET_RESUME },
+
+	/* RIM Blackberry */
+	{ USB_DEVICE(0x0fca, 0x0001), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	{ USB_DEVICE(0x0fca, 0x0004), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
+	{ USB_DEVICE(0x0fca, 0x0006), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 
 	{ }  /* terminating entry must be last */
 };
