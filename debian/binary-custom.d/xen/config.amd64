@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.22.1
-# Thu Jul 26 12:14:47 2007
+# Sun Jul 29 12:50:47 2007
 #
 CONFIG_X86_64=y
 CONFIG_64BIT=y
@@ -42,6 +42,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 #
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_VERSION_SIGNATURE="Unofficial"
 CONFIG_SWAP=y
 CONFIG_SYSVIPC=y
 # CONFIG_IPC_NS is not set
