@@ -9,7 +9,7 @@ $(stampdir)/stamp-prepare-%: target_flavour = $*
 $(stampdir)/stamp-prepare-%: $(confdir)/config $(confdir)/config.%
 	@echo "Preparing $*..."
 	install -d $(builddir)/build-$*
-	cat $^ > $(builddir)/build-$*/.config
+	cat $^ | sed -e 's/.*CONFIG_VERSION_SIGNATURE.*/CONFIG_VERSION_SIGNATURE="Ubuntu $(release)-$(revision)-$*"/' > $(builddir)/build-$*/.config
 	$(kmake) O=$(builddir)/build-$* silentoldconfig prepare scripts
 	touch $@
 
