@@ -59,6 +59,7 @@ ata_piix
 ati_remote
 ati_remote2
 atl1
+auth_rpcgss
 autofs
 autofs4
 axnet_cs
@@ -67,6 +68,7 @@ backlight
 bcm43xx
 berry_charge
 binfmt_misc
+blkcipher
 blowfish
 bnx2
 bridge
@@ -77,6 +79,7 @@ capability
 cassini
 cast5
 cast6
+cbc
 cdrom
 cfg80211
 ch
@@ -114,9 +117,11 @@ dccp_diag
 dccp_ipv4
 dccp_ipv6
 dccp_tfrc_lib
+de2104x
 deflate
 delkin_cb
 depca
+des
 dgrs
 display
 dl2k
@@ -311,6 +316,7 @@ lm70
 lne390
 lock_dlm
 lock_nolock
+lockd
 loop
 lp
 lp486e
@@ -370,9 +376,13 @@ nf_nat_tftp
 nfnetlink
 nfnetlink_log
 nfnetlink_queue
+nfs
 nfsd
+nls_ascii
 nls_cp437
+nls_cp850
 nls_iso8859-1
+nls_iso8859-15
 nls_utf8
 nmclan_cs
 ns83820
@@ -448,6 +458,7 @@ rc80211_simple
 reiserfs
 rfkill
 rfkill-input
+rpcsec_gss_krb5
 rpcsec_gss_spkm3
 rsrc_nonstatic
 rtc-core
@@ -586,6 +597,7 @@ sundance
 sungem
 sungem_phy
 sunhme
+sunrpc
 svgalib
 sym53c500_cs
 sym53c8xx
@@ -613,6 +625,7 @@ twofish_common
 typhoon
 u132-hcd
 udf
+ufs
 uli526x
 usb-storage
 usb8xxx
@@ -690,3 +703,4 @@ yenta_socket
 zalon7xx
 zd1211rw
 zlib_deflate
+zlib_inflate
