@@ -1,3 +1,17 @@
+linux-source-2.6.22 (2.6.22-9.21) gutsy; urgency=low
+
+  [Ben Collins]
+
+  * lpia: Add build stuff for lpia architecture
+
+  [LaMont Jones]
+
+  * abi files for hppa
+  * UBUNTU-HPPA: configs that seem to work
+  * hppa: abi files for 9.20
+
+ -- Ben Collins <bcollins@ubuntu.com>  Wed, 01 Aug 2007 11:12:59 -0400
+
 linux-source-2.6.22 (2.6.22-9.20) gutsy; urgency=low
 
   [Ben Collins]
