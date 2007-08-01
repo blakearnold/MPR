@@ -16,18 +16,11 @@ fi
 arch="$1"
 
 case "$arch" in
-	sparc)
-		kernarch="sparc64"
-		;;
-	amd64)
-		kernarch="x86_64"
-		;;
-	hppa)
-		kernarch="parisc"
-		;;
-	*)
-		kernarch="$arch"
-		;;
+	sparc)	kernarch="sparc64"	;;
+	amd64)	kernarch="x86_64"	;;
+	hppa)	kernarch="parisc"	;;
+	lpia)	kernarch="i386"		;;
+	*)	kernarch="$arch"	;;
 esac
 
 confdir="`pwd`/debian/config/$arch"
