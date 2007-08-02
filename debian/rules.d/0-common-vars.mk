@@ -44,7 +44,7 @@ SUBLEVEL	:= $(shell echo $(release) | awk -F. '{print $$3}')
 
 export abinum debnum version
 
-arch		:= $(shell dpkg-architecture -qDEB_HOST_ARCH_CPU)
+arch		:= $(shell dpkg-architecture -qDEB_HOST_ARCH)
 abidir		:= $(CURDIR)/debian/abi/$(release)-$(revision)/$(arch)
 prev_abidir	:= $(CURDIR)/debian/abi/$(release)-$(prev_revision)/$(arch)
 confdir		:= $(CURDIR)/debian/config/$(arch)
