@@ -17,6 +17,7 @@ binary-udebs: binary-debs debian/control
 
         # Build just the udebs
 	dilist=$$(dh_listpackages -s | grep "\-di$$") && \
+	[ -z "$dilist" ] || \
 	for i in $$dilist; do \
 	  dh_fixperms -p$$i; \
 	  dh_gencontrol -p$$i; \
