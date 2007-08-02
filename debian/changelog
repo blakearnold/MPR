@@ -1,3 +1,11 @@
+linux-source-2.6.22 (2.6.22-9.22) gutsy; urgency=low
+
+  [Ben Collins]
+
+  * ubuntu: Use DEB_HOST_ARCH, not DEB_HOST_ARCH_CPU
+
+ -- Ben Collins <bcollins@ubuntu.com>  Thu, 02 Aug 2007 08:44:09 -0400
+
 linux-source-2.6.22 (2.6.22-9.21) gutsy; urgency=low
 
   [Ben Collins]
