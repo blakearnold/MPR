@@ -105,6 +105,6 @@ if ($new) {
 	print "II: No new modules (hope you're happy, slacker)\n";
 }
 
-print "II: Done";
+print "II: Done\n";
 
 exit(0);
