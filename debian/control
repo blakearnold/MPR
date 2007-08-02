@@ -71,7 +71,7 @@ Description: Header files related to Linux kernel version 2.6.22
  /usr/share/doc/linux-headers-2.6.22-9/debian.README.gz for details
 
 Package: linux-libc-dev
-Architecture: amd64 i386 powerpc sparc ia64 hppa
+Architecture: amd64 i386 powerpc sparc ia64 hppa lpia
 Conflicts: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6), amd64-libs-dev (<= 1.1)
 Replaces: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6)
 Provides: linux-kernel-headers

@@ -1,3 +1,12 @@
+linux-source-2.6.22 (2.6.22-9.23) UNRELEASED; urgency=low
+
+  [Ben Collins]
+
+  * ubuntu: Add missing newline to module-check script
+  * ubuntu: Add lpia to linux-libc-dev. Should finally build now.
+
+ -- Ben Collins <bcollins@ubuntu.com>  Thu, 02 Aug 2007 13:10:23 -0400
+
 linux-source-2.6.22 (2.6.22-9.22) gutsy; urgency=low
 
   [Ben Collins]
