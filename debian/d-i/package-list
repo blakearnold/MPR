@@ -32,12 +32,14 @@ Description: Floppy driver support
 Package: fs-core-modules
 Depends: kernel-image
 Priority: standard
+Provides: ext2-modules, ext3-modules, jfs-modules, reiserfs-modules, xfs-modules
 Description: Base filesystem modules
  This includes ext2, ext3, jfs, reiserfs and xfs.
 
 Package: fs-secondary-modules
 Depends: kernel-image, fat-modules
 Priority: standard
+Provides: ntfs-modules, ufs-modules, hfs-modules, affs-modules
 Description: Extra filesystem modules
  This includes support for Windows NTFS, SysV UFS, MacOS HFS and HFSPlus and
  Amiga AFFS.
