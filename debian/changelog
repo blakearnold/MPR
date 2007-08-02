@@ -1,3 +1,11 @@
+linux-source-2.6.22 (2.6.22-9.25) gutsy; urgency=low
+
+  [Kyle McMartin]
+
+  * ubuntu: Fix FTBFS -- forgot to bump debian/abi
+
+ -- Kyle McMartin <kyle@ubuntu.com>  Thu, 02 Aug 2007 22:13:28 +0000
+
 linux-source-2.6.22 (2.6.22-9.24) gutsy; urgency=low
 
   [Colin Watson]
