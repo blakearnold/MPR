@@ -1,3 +1,19 @@
+linux-source-2.6.22 (2.6.22-9.24) gutsy; urgency=low
+
+  [Colin Watson]
+
+  * provide Provides for fs-*-modules udebs
+
+  [Matthias Klose]
+
+  * test $dilist before using it
+
+  [Lamont Jones]
+
+  * hppa: Update abi files
+
+ -- Kyle McMartin <kyle@ubuntu.com>  Thu, 02 Aug 2007 18:26:34 +0000
+
 linux-source-2.6.22 (2.6.22-9.23) UNRELEASED; urgency=low
 
   [Ben Collins]
