@@ -1,4 +1,5 @@
-# Windows filesystems ?
+# Windows filesystems; fuse is needed for ntfs-3g.
+fuse ?
 ntfs ?
 
 # UFS (Unix SysV)
