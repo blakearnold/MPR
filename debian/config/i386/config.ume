@@ -24,7 +24,6 @@ CONFIG_ACPI_HOTPLUG_CPU=y
 # CONFIG_AGP_SIS is not set
 # CONFIG_AGP_SWORKS is not set
 # CONFIG_AGP_VIA is not set
-# CONFIG_AIRO is not set
 # CONFIG_ALIM1535_WDT is not set
 # CONFIG_ALIM7101_WDT is not set
 # CONFIG_AMD8111_ETH is not set
@@ -36,11 +35,10 @@ CONFIG_ACPI_HOTPLUG_CPU=y
 # CONFIG_AT1700 is not set
 # CONFIG_ATL1 is not set
 # CONFIG_ATM is not set
-# CONFIG_ATMEL is not set
 # CONFIG_AUDIT is not set
 # CONFIG_B44 is not set
 # CONFIG_BACKLIGHT_PROGEAR is not set
-# CONFIG_BCM43XX is not set
+CONFIG_BCM43XX_DEBUG=y
 # CONFIG_BEFS_FS is not set
 # CONFIG_BFS_FS is not set
 # CONFIG_BLK_DEV_3W_XXXX_RAID is not set
@@ -156,13 +154,12 @@ CONFIG_GENERIC_PENDING_IRQ=y
 # CONFIG_HAMACHI is not set
 # CONFIG_HAMRADIO is not set
 # CONFIG_HAPPYMEAL is not set
-# CONFIG_HERMES is not set
 # CONFIG_HFSPLUS_FS is not set
 # CONFIG_HFS_FS is not set
 CONFIG_HIGHMEM4G=y
 # CONFIG_HIGHMEM64G is not set
 # CONFIG_HIPPI is not set
-# CONFIG_HOSTAP is not set
+# CONFIG_HOSTAP_FIRMWARE_NVRAM is not set
 CONFIG_HOTPLUG_CPU=y
 # CONFIG_HOTPLUG_PCI is not set
 # CONFIG_HP100 is not set
@@ -197,7 +194,6 @@ CONFIG_IRQBALANCE=y
 # CONFIG_KVM is not set
 # CONFIG_LANCE is not set
 # CONFIG_LBD is not set
-# CONFIG_LIBERTAS is not set
 CONFIG_LLC=m
 # CONFIG_LLC2 is not set
 # CONFIG_LNE390 is not set
@@ -240,6 +236,7 @@ CONFIG_M586=y
 # CONFIG_NET_VENDOR_RACAL is not set
 # CONFIG_NET_VENDOR_SMC is not set
 # CONFIG_NFSD is not set
+CONFIG_NORTEL_HERMES=m
 CONFIG_NO_HZ=y
 CONFIG_NR_CPUS=8
 # CONFIG_NS83820 is not set
@@ -268,6 +265,7 @@ CONFIG_NR_CPUS=8
 # CONFIG_PCCARD is not set
 # CONFIG_PCIEPORTBUS is not set
 # CONFIG_PCIPCWATCHDOG is not set
+CONFIG_PCI_HERMES=m
 # CONFIG_PCI_MSI is not set
 # CONFIG_PCNET32 is not set
 # CONFIG_PCWATCHDOG is not set
@@ -275,6 +273,7 @@ CONFIG_NR_CPUS=8
 # CONFIG_PHANTOM is not set
 # CONFIG_PHONE is not set
 # CONFIG_PLIP is not set
+CONFIG_PLX_HERMES=m
 # CONFIG_PM_LEGACY is not set
 # CONFIG_PM_SYSFS_DEPRECATED is not set
 # CONFIG_PNPBIOS is not set
@@ -283,6 +282,7 @@ CONFIG_PREEMPT_BKL=y
 # CONFIG_PREEMPT_NONE is not set
 CONFIG_PREEMPT_VOLUNTARY=y
 # CONFIG_PRINTER is not set
+CONFIG_PRISM54=m
 # CONFIG_QLA3XXX is not set
 # CONFIG_QNX4FS_FS is not set
 # CONFIG_R3964 is not set
@@ -506,6 +506,7 @@ CONFIG_SUSPEND_SMP=y
 # CONFIG_TIGON3 is not set
 # CONFIG_TIPAR is not set
 # CONFIG_TLAN is not set
+CONFIG_TMD_HERMES=m
 # CONFIG_TOSHIBA is not set
 # CONFIG_TR is not set
 # CONFIG_UFS_FS is not set
@@ -513,7 +514,6 @@ CONFIG_SUSPEND_SMP=y
 # CONFIG_USBPCWATCHDOG is not set
 # CONFIG_USB_SL811_HCD is not set
 # CONFIG_USB_U132_HCD is not set
-# CONFIG_USB_ZD1201 is not set
 # CONFIG_UTS_NS is not set
 # CONFIG_VGASTATE is not set
 # CONFIG_VIA_RHINE is not set
@@ -547,4 +547,3 @@ CONFIG_X86_SMP=y
 CONFIG_X86_TRAMPOLINE=y
 # CONFIG_XFS_FS is not set
 # CONFIG_YELLOWFIN is not set
-# CONFIG_ZD1211RW is not set
