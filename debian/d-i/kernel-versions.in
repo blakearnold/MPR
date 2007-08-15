@@ -9,6 +9,8 @@ i386	PKGVER-ABINUM	generic		PKGVER-ABINUM-generic		-
 
 ia64	PKGVER-ABINUM	itanium		PKGVER-ABINUM-itanium		-	
 
+lpia	PKGVER-ABINUM	lpia		PKGVER-ABINUM-lpia		-	
+
 powerpc	PKGVER-ABINUM	powerpc		PKGVER-ABINUM-powerpc		-	
 powerpc	PKGVER-ABINUM	powerpc64-smp	PKGVER-ABINUM-powerpc64-smp	-	
 
