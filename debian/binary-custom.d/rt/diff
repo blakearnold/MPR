@@ -325,7 +325,7 @@ index a2afca3..f39c9d7 100644
  	depending on the build options.
    - Linux runs on a wide range of different processor architectures.
 diff --git a/Makefile b/Makefile
-index e28395a..69dc684 100644
+index bc2d377..37f9d9c 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,7 +1,7 @@
@@ -1755,10 +1755,10 @@ index 06da59f..ed36fd5 100644
  obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o nmi.o
  obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
 diff --git a/arch/i386/kernel/apic.c b/arch/i386/kernel/apic.c
-index 67824f3..e9f8596 100644
+index 878f302..806daf8 100644
 --- a/arch/i386/kernel/apic.c
 +++ b/arch/i386/kernel/apic.c
-@@ -263,6 +263,9 @@ static void lapic_timer_setup(enum clock_event_mode mode,
+@@ -264,6 +264,9 @@ static void lapic_timer_setup(enum clock_event_mode mode,
  		v |= (APIC_LVT_MASKED | LOCAL_TIMER_VECTOR);
  		apic_write_around(APIC_LVTT, v);
  		break;
@@ -1768,7 +1768,7 @@ index 67824f3..e9f8596 100644
  	}
  
  	local_irq_restore(flags);
-@@ -315,7 +318,7 @@ static void __devinit setup_APIC_timer(void)
+@@ -316,7 +319,7 @@ static void __devinit setup_APIC_timer(void)
  
  #define LAPIC_CAL_LOOPS		(HZ/10)
  
@@ -1777,7 +1777,7 @@ index 67824f3..e9f8596 100644
  static __initdata long lapic_cal_t1, lapic_cal_t2;
  static __initdata unsigned long long lapic_cal_tsc1, lapic_cal_tsc2;
  static __initdata unsigned long lapic_cal_pm1, lapic_cal_pm2;
-@@ -485,7 +488,7 @@ void __init setup_boot_APIC_clock(void)
+@@ -483,7 +486,7 @@ void __init setup_boot_APIC_clock(void)
  		/* Let the interrupts run */
  		local_irq_enable();
  
@@ -1786,7 +1786,7 @@ index 67824f3..e9f8596 100644
  			cpu_relax();
  
  		local_irq_disable();
-@@ -521,6 +524,9 @@ void __init setup_boot_APIC_clock(void)
+@@ -519,6 +522,9 @@ void __init setup_boot_APIC_clock(void)
  		 */
  		if (nmi_watchdog != NMI_IO_APIC)
  			lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
@@ -1796,7 +1796,7 @@ index 67824f3..e9f8596 100644
  	}
  
  	/* Setup the lapic or request the broadcast */
-@@ -573,10 +579,12 @@ static void local_apic_timer_interrupt(void)
+@@ -571,10 +577,12 @@ static void local_apic_timer_interrupt(void)
   *   interrupt as well. Thus we cannot inline the local irq ... ]
   */
  
@@ -1810,7 +1810,7 @@ index 67824f3..e9f8596 100644
  	/*
  	 * NOTE! We'd better ACK the irq immediately,
  	 * because timer handling can be slow.
-@@ -1303,6 +1311,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+@@ -1301,6 +1309,7 @@ void smp_error_interrupt(struct pt_regs *regs)
  	*/
  	printk (KERN_DEBUG "APIC error on CPU%d: %02lx(%02lx)\n",
  		smp_processor_id(), v , v1);
@@ -1975,7 +1975,7 @@ index f74dfc4..3feede8 100644
  	popl %es
  	popl %edx
 diff --git a/arch/i386/kernel/hpet.c b/arch/i386/kernel/hpet.c
-index 17d7345..0cb5d93 100644
+index cbb4751..0cb5d93 100644
 --- a/arch/i386/kernel/hpet.c
 +++ b/arch/i386/kernel/hpet.c
 @@ -1,16 +1,18 @@
@@ -2194,7 +2194,7 @@ index 17d7345..0cb5d93 100644
  static struct clocksource clocksource_hpet = {
  	.name		= "hpet",
  	.rating		= 250,
-@@ -217,21 +311,73 @@ static struct clocksource clocksource_hpet = {
+@@ -217,60 +311,17 @@ static struct clocksource clocksource_hpet = {
  	.mask		= HPET_MASK,
  	.shift		= HPET_SHIFT,
  	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
@@ -2204,77 +2204,30 @@ index 17d7345..0cb5d93 100644
 +#endif
  };
  
+-/*
+- * Try to setup the HPET timer
+- */
+-int __init hpet_enable(void)
 +static int hpet_clocksource_register(void)
-+{
-+	u64 tmp, start, now;
-+	cycle_t t1;
-+
-+	/* Start the counter */
-+	hpet_start_counter();
-+
-+	/* Verify whether hpet counter works */
-+	t1 = read_hpet();
-+	rdtscll(start);
-+
-+	/*
-+	 * We don't know the TSC frequency yet, but waiting for
-+	 * 200000 TSC cycles is safe:
-+	 * 4 GHz == 50us
-+	 * 1 GHz == 200us
-+	 */
-+	do {
-+		rep_nop();
-+		rdtscll(now);
-+	} while ((now - start) < 200000UL);
-+
-+	if (t1 == read_hpet()) {
-+		printk(KERN_WARNING
-+		       "HPET counter not counting. HPET disabled\n");
-+		return -ENODEV;
-+	}
-+
-+	/* Initialize and register HPET clocksource
-+	 *
-+	 * hpet period is in femto seconds per cycle
-+	 * so we need to convert this to ns/cyc units
-+	 * aproximated by mult/2^shift
-+	 *
-+	 *  fsec/cyc * 1nsec/1000000fsec = nsec/cyc = mult/2^shift
-+	 *  fsec/cyc * 1ns/1000000fsec * 2^shift = mult
-+	 *  fsec/cyc * 2^shift * 1nsec/1000000fsec = mult
-+	 *  (fsec/cyc << shift)/1000000 = mult
-+	 *  (hpet_period << shift)/FSEC_PER_NSEC = mult
-+	 */
-+	tmp = (u64)hpet_period << HPET_SHIFT;
-+	do_div(tmp, FSEC_PER_NSEC);
-+	clocksource_hpet.mult = (u32)tmp;
-+
-+	clocksource_register(&clocksource_hpet);
-+
-+	return 0;
-+}
-+
- /*
-  * Try to setup the HPET timer
-  */
- int __init hpet_enable(void)
  {
- 	unsigned long id;
+-	unsigned long id;
 -	uint64_t hpet_freq;
--	u64 tmp;
+ 	u64 tmp, start, now;
+ 	cycle_t t1;
  
- 	if (!is_hpet_capable())
- 		return 0;
- 
+-	if (!is_hpet_capable())
+-		return 0;
+-
 -	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
-+	hpet_set_mapping();
- 
- 	/*
- 	 * Read the period and check for a sane value:
-@@ -241,21 +387,6 @@ int __init hpet_enable(void)
- 		goto out_nohpet;
- 
- 	/*
+-
+-	/*
+-	 * Read the period and check for a sane value:
+-	 */
+-	hpet_period = hpet_readl(HPET_PERIOD);
+-	if (hpet_period < HPET_MIN_PERIOD || hpet_period > HPET_MAX_PERIOD)
+-		goto out_nohpet;
+-
+-	/*
 -	 * The period is a femto seconds value. We need to calculate the
 -	 * scaled math multiplication factor for nanosecond to hpet tick
 -	 * conversion.
@@ -2290,34 +2243,73 @@ index 17d7345..0cb5d93 100644
 -							   &hpet_clockevent);
 -
 -	/*
- 	 * Read the HPET ID register to retrieve the IRQ routing
- 	 * information and the number of channels
- 	 */
-@@ -270,49 +401,47 @@ int __init hpet_enable(void)
- 		goto out_nohpet;
- #endif
- 
--	/* Start the counter */
--	hpet_start_counter();
--
--	/* Initialize and register HPET clocksource
--	 *
--	 * hpet period is in femto seconds per cycle
--	 * so we need to convert this to ns/cyc units
--	 * aproximated by mult/2^shift
--	 *
--	 *  fsec/cyc * 1nsec/1000000fsec = nsec/cyc = mult/2^shift
--	 *  fsec/cyc * 1ns/1000000fsec * 2^shift = mult
--	 *  fsec/cyc * 2^shift * 1nsec/1000000fsec = mult
--	 *  (fsec/cyc << shift)/1000000 = mult
--	 *  (hpet_period << shift)/FSEC_PER_NSEC = mult
+-	 * Read the HPET ID register to retrieve the IRQ routing
+-	 * information and the number of channels
 -	 */
--	tmp = (u64)hpet_period << HPET_SHIFT;
--	do_div(tmp, FSEC_PER_NSEC);
--	clocksource_hpet.mult = (u32)tmp;
+-	id = hpet_readl(HPET_ID);
 -
--	clocksource_register(&clocksource_hpet);
+-#ifdef CONFIG_HPET_EMULATE_RTC
+-	/*
+-	 * The legacy routing mode needs at least two channels, tick timer
+-	 * and the rtc emulation channel.
+-	 */
+-	if (!(id & HPET_ID_NUMBER))
+-		goto out_nohpet;
+-#endif
 -
+ 	/* Start the counter */
+ 	hpet_start_counter();
+ 
+@@ -292,7 +343,7 @@ int __init hpet_enable(void)
+ 	if (t1 == read_hpet()) {
+ 		printk(KERN_WARNING
+ 		       "HPET counter not counting. HPET disabled\n");
+-		goto out_nohpet;
++		return -ENODEV;
+ 	}
+ 
+ 	/* Initialize and register HPET clocksource
+@@ -313,28 +364,84 @@ int __init hpet_enable(void)
+ 
+ 	clocksource_register(&clocksource_hpet);
+ 
++	return 0;
++}
++
++/*
++ * Try to setup the HPET timer
++ */
++int __init hpet_enable(void)
++{
++	unsigned long id;
++
++	if (!is_hpet_capable())
++		return 0;
++
++	hpet_set_mapping();
++
++	/*
++	 * Read the period and check for a sane value:
++	 */
++	hpet_period = hpet_readl(HPET_PERIOD);
++	if (hpet_period < HPET_MIN_PERIOD || hpet_period > HPET_MAX_PERIOD)
++		goto out_nohpet;
++
++	/*
++	 * Read the HPET ID register to retrieve the IRQ routing
++	 * information and the number of channels
++	 */
++	id = hpet_readl(HPET_ID);
++
++#ifdef CONFIG_HPET_EMULATE_RTC
++	/*
++	 * The legacy routing mode needs at least two channels, tick timer
++	 * and the rtc emulation channel.
++	 */
++	if (!(id & HPET_ID_NUMBER))
++		goto out_nohpet;
++#endif
++
 +	if (hpet_clocksource_register())
 +		goto out_nohpet;
  
@@ -2373,7 +2365,7 @@ index 17d7345..0cb5d93 100644
  
  #ifdef CONFIG_HPET_EMULATE_RTC
  
-@@ -524,68 +653,3 @@ irqreturn_t hpet_rtc_interrupt(int irq, void *dev_id)
+@@ -546,68 +653,3 @@ irqreturn_t hpet_rtc_interrupt(int irq, void *dev_id)
  	return IRQ_HANDLED;
  }
  #endif
@@ -4292,10 +4284,10 @@ index 44650e0..8e83244 100644
  
  pci-$(CONFIG_X86_VISWS)		:= visws.o fixup.o
 diff --git a/arch/i386/pci/common.c b/arch/i386/pci/common.c
-index 3f78d4d..afaa496 100644
+index 50da3cb..f79773d 100644
 --- a/arch/i386/pci/common.c
 +++ b/arch/i386/pci/common.c
-@@ -52,7 +52,7 @@ int pcibios_scanned;
+@@ -51,7 +51,7 @@ int pcibios_scanned;
   * This interrupt-safe spinlock protects all accesses to PCI
   * configuration space.
   */
@@ -9616,10 +9608,10 @@ index 30eb193..e79ea05 100644
  	bool
  	default y
 diff --git a/arch/sparc64/kernel/smp.c b/arch/sparc64/kernel/smp.c
-index 60963ce..b448d33 100644
+index f0e32ec..b84c49e 100644
 --- a/arch/sparc64/kernel/smp.c
 +++ b/arch/sparc64/kernel/smp.c
-@@ -1233,35 +1233,8 @@ int setup_profiling_timer(unsigned int multiplier)
+@@ -1228,35 +1228,8 @@ int setup_profiling_timer(unsigned int multiplier)
  	return -EINVAL;
  }
  
@@ -12734,10 +12726,10 @@ index 9a0e98a..b1b59f6 100644
  /*
   * NOTE: pagetable_init alloc all the fixmap pagetables contiguous on the
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index baef5fc..8299c57 100644
+index a131d41..06630d0 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1278,6 +1278,8 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq)
+@@ -1280,6 +1280,8 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq)
  			/*
  			 * no prio set, place us in the middle of the BE classes
  			 */
@@ -12746,7 +12738,7 @@ index baef5fc..8299c57 100644
  			cfqq->ioprio = task_nice_ioprio(tsk);
  			cfqq->ioprio_class = IOPRIO_CLASS_BE;
  			break;
-@@ -1290,6 +1292,7 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq)
+@@ -1292,6 +1294,7 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq)
  			cfqq->ioprio_class = IOPRIO_CLASS_BE;
  			break;
  		case IOPRIO_CLASS_IDLE:
@@ -14680,7 +14672,7 @@ index 0000000..0c9116b
 +MODULE_DESCRIPTION("lpp test module");
 +
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 7f52712..e938bc5 100644
+index 397c714..c9ab45e 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
 @@ -580,8 +580,11 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
@@ -17455,7 +17447,7 @@ index f15f695..edb0fc4 100644
  	if (!kpsmoused_wq) {
  		printk(KERN_ERR "psmouse: failed to create kpsmoused workqueue\n");
 diff --git a/drivers/kvm/svm.c b/drivers/kvm/svm.c
-index fa17d6d..ca26c26 100644
+index aee952f..8cf3191 100644
 --- a/drivers/kvm/svm.c
 +++ b/drivers/kvm/svm.c
 @@ -610,9 +610,17 @@ static void svm_free_vcpu(struct kvm_vcpu *vcpu)
@@ -17939,10 +17931,10 @@ index 4328038..5d10367 100644
  	}
  	/* We raced with gem_do_stop() */
 diff --git a/drivers/net/tulip/tulip_core.c b/drivers/net/tulip/tulip_core.c
-index 041af63..fbed784 100644
+index 0a638bc..596f4bb 100644
 --- a/drivers/net/tulip/tulip_core.c
 +++ b/drivers/net/tulip/tulip_core.c
-@@ -1803,6 +1803,7 @@ static void __devexit tulip_remove_one (struct pci_dev *pdev)
+@@ -1812,6 +1812,7 @@ static void __devexit tulip_remove_one (struct pci_dev *pdev)
  	pci_iounmap(pdev, tp->base_addr);
  	free_netdev (dev);
  	pci_release_regions (pdev);
@@ -18602,7 +18594,7 @@ index aa68206..7566f9c 100644
  	get_cpu_var(bh_accounting).nr--;
  	recalc_bh_state();
 diff --git a/fs/dcache.c b/fs/dcache.c
-index 0e73aa0..f52270d 100644
+index ef5086f..820f109 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
 @@ -708,8 +708,9 @@ void shrink_dcache_for_umount(struct super_block *sb)
@@ -18631,7 +18623,7 @@ index 936409f..a83f489 100644
  		spin_unlock(&dentry->d_lock);
  		__inode_dir_notify(parent->d_inode, event);
 diff --git a/fs/exec.c b/fs/exec.c
-index 1b45ec2..d2377d9 100644
+index 1218ad0..f1c7f6c 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
 @@ -47,6 +47,7 @@
@@ -19072,10 +19064,10 @@ index 6e5c253..f3ca9dc 100644
  }
  
 diff --git a/fs/open.c b/fs/open.c
-index 0d515d1..afdbc95 100644
+index 0f9e149..a777fe1 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -694,7 +694,7 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+@@ -700,7 +700,7 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
  	f->f_path.mnt = mnt;
  	f->f_pos = 0;
  	f->f_op = fops_get(inode->i_fop);
@@ -19527,7 +19519,7 @@ index 8a40e15..7d4a11e 100644
  		de->next = NULL;
  		if (S_ISDIR(de->mode))
 diff --git a/fs/proc/proc_misc.c b/fs/proc/proc_misc.c
-index 5fd49e4..7d01442 100644
+index 47dfcd0..6fb5cf9 100644
 --- a/fs/proc/proc_misc.c
 +++ b/fs/proc/proc_misc.c
 @@ -96,6 +96,27 @@ static int loadavg_read_proc(char *page, char **start, off_t off,
@@ -19669,9 +19661,9 @@ index 5fd49e4..7d01442 100644
  	return 0;
  }
  
-@@ -623,6 +689,20 @@ static int execdomains_read_proc(char *page, char **start, off_t off,
- 	return proc_calc_metrics(page, start, off, count, eof, len);
+@@ -636,6 +702,20 @@ static int version_signature_read_proc(char *page, char **start, off_t off,
  }
+ #endif
  
 +#ifdef CONFIG_EVENT_TRACE
 +extern struct seq_operations latency_trace_op;
@@ -19690,7 +19682,7 @@ index 5fd49e4..7d01442 100644
  #ifdef CONFIG_MAGIC_SYSRQ
  /*
   * writing 'C' to /proc/sysrq-trigger is like sysrq-C
-@@ -662,6 +742,9 @@ void __init proc_misc_init(void)
+@@ -675,6 +755,9 @@ void __init proc_misc_init(void)
  		int (*read_proc)(char*,char**,off_t,int,int*,void*);
  	} *p, simple_ones[] = {
  		{"loadavg",     loadavg_read_proc},
@@ -19700,7 +19692,7 @@ index 5fd49e4..7d01442 100644
  		{"uptime",	uptime_read_proc},
  		{"meminfo",	meminfo_read_proc},
  		{"version",	version_read_proc},
-@@ -716,6 +799,9 @@ void __init proc_misc_init(void)
+@@ -732,6 +815,9 @@ void __init proc_misc_init(void)
  #ifdef CONFIG_SCHEDSTATS
  	create_seq_entry("schedstat", 0, &proc_schedstat_operations);
  #endif
@@ -20530,12 +20522,12 @@ index 449f3f2..d58015e 100644
  
  int __acpi_acquire_global_lock(unsigned int *lock);
 diff --git a/include/asm-i386/apic.h b/include/asm-i386/apic.h
-index 1e8f6f2..c18bb82 100644
+index 4091b33..f68aa37 100644
 --- a/include/asm-i386/apic.h
 +++ b/include/asm-i386/apic.h
-@@ -116,6 +116,8 @@ extern void enable_NMI_through_LVT0 (void * dummy);
- extern int timer_over_8254;
- extern int local_apic_timer_c2_ok;
+@@ -118,6 +118,8 @@ extern int local_apic_timer_c2_ok;
+ 
+ extern int local_apic_timer_disabled;
  
 +extern void smp_send_nmi_allbutself(void);
 +
@@ -26100,7 +26092,7 @@ index 0000000..27227b0
 +
 +#endif /* _LINUX_CPUIDLE_H */
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 6a41f4c..65c1925 100644
+index 12318e5..ab7c7f3 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
 @@ -278,11 +278,13 @@ extern int dir_notify_enable;
@@ -26117,7 +26109,7 @@ index 6a41f4c..65c1925 100644
  
  #include <asm/atomic.h>
  #include <asm/semaphore.h>
-@@ -713,9 +715,13 @@ struct file {
+@@ -716,9 +718,13 @@ struct file {
  	/*
  	 * fu_list becomes invalid after file_free is called and queued via
  	 * fu_rcuhead for RCU freeing
@@ -26131,7 +26123,7 @@ index 6a41f4c..65c1925 100644
  		struct rcu_head 	fu_rcuhead;
  	} f_u;
  	struct path		f_path;
-@@ -748,9 +754,25 @@ extern spinlock_t files_lock;
+@@ -751,9 +757,25 @@ extern spinlock_t files_lock;
  #define file_list_lock() spin_lock(&files_lock);
  #define file_list_unlock() spin_unlock(&files_lock);
  
@@ -26157,7 +26149,7 @@ index 6a41f4c..65c1925 100644
  #define	MAX_NON_LFS	((1UL<<31) - 1)
  
  /* Page cache limit. The filesystems should put that into their s_maxbytes 
-@@ -935,7 +957,8 @@ struct super_block {
+@@ -938,7 +960,8 @@ struct super_block {
  	struct list_head	s_dirty;	/* dirty inodes */
  	struct list_head	s_io;		/* parked for writeback */
  	struct hlist_head	s_anon;		/* anonymous dentries for (nfs) exporting */
@@ -27673,10 +27665,10 @@ index 9cdd694..a0f895e 100644
  
  /* A parallel port */
 diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 820c1d9..cfed521 100644
+index e541ddd..1373cda 100644
 --- a/include/linux/pci_ids.h
 +++ b/include/linux/pci_ids.h
-@@ -2222,6 +2222,7 @@
+@@ -2226,6 +2226,7 @@
  #define PCI_DEVICE_ID_INTEL_82801EB_5	0x24d5
  #define PCI_DEVICE_ID_INTEL_82801EB_6	0x24d6
  #define PCI_DEVICE_ID_INTEL_82801EB_11	0x24db
@@ -32323,10 +32315,10 @@ index dfeb8b1..50b9a0d 100644
  
  /* With per-bucket locks this operation is not-atomic, so that
 diff --git a/init/Kconfig b/init/Kconfig
-index a9e99f8..74772d0 100644
+index 95af4ac..b6bef9e 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -568,6 +568,7 @@ config SLAB
+@@ -577,6 +577,7 @@ config SLAB
  
  config SLUB
  	bool "SLUB (Unqueued Allocator)"
@@ -32540,7 +32532,7 @@ index 5ac7678..a51783c 100644
  	return 0;
  }
 diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index a242c83..401d802 100644
+index 95b2be7..68e22ce 100644
 --- a/ipc/mqueue.c
 +++ b/ipc/mqueue.c
 @@ -783,12 +783,17 @@ static inline void pipelined_send(struct mqueue_inode_info *info,
@@ -33431,7 +33423,7 @@ index 73ad5cd..2a6c01b 100644
 +}
 +
 diff --git a/kernel/futex.c b/kernel/futex.c
-index 45490be..a586c76 100644
+index 9b57f7e..9c1cfe5 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
 @@ -120,6 +120,26 @@ static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
@@ -33851,7 +33843,7 @@ index 45490be..a586c76 100644
  	}
  	return 0;
  }
-@@ -2095,7 +2097,11 @@ static int __init init(void)
+@@ -2097,7 +2099,11 @@ static int __init init(void)
  	}
  
  	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
@@ -39088,7 +39080,7 @@ index 8ce09bc..79b99d2 100644
  
  /*
 diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
-index 58f35e5..9f179dd 100644
+index 96f0417..f7ec51a 100644
 --- a/kernel/lockdep_proc.c
 +++ b/kernel/lockdep_proc.c
 @@ -5,7 +5,8 @@
@@ -39113,7 +39105,7 @@ index 58f35e5..9f179dd 100644
  #include "lockdep_internals.h"
  
 @@ -342,6 +347,289 @@ static const struct file_operations proc_lockdep_stats_operations = {
- 	.release	= seq_release,
+ 	.release	= single_release,
  };
  
 +#ifdef CONFIG_LOCK_STAT
@@ -53068,7 +53060,7 @@ index 872271c..e9d0594 100644
  	if (error)
  		return error;
 diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 30ee462..fbd8ad0 100644
+index 85f7ad0..26f6e63 100644
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
 @@ -29,6 +29,7 @@
@@ -54284,7 +54276,7 @@ index 3d1042f..e379e61 100644
  	/* store full nanoseconds into xtime */
  	xtime.tv_nsec = (s64)clock->xtime_nsec >> clock->shift;
 diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
-index 3216937..f96b63e 100644
+index 7bb561d..13a022f 100644
 --- a/kernel/time/timer_stats.c
 +++ b/kernel/time/timer_stats.c
 @@ -80,12 +80,12 @@ struct entry {
@@ -54784,7 +54776,7 @@ index 4869563..3926eb6 100644
  }
  
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 3bebf73..e339c80 100644
+index 3831f88..fd33761 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
 @@ -26,6 +26,7 @@
@@ -54921,7 +54913,7 @@ index 3bebf73..e339c80 100644
  void flush_scheduled_work(void)
  {
  	flush_workqueue(keventd_wq);
-@@ -755,6 +803,47 @@ static void cleanup_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+@@ -754,6 +802,47 @@ static void cleanup_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
  	cwq->thread = NULL;
  }
  
@@ -54969,7 +54961,7 @@ index 3bebf73..e339c80 100644
  /**
   * destroy_workqueue - safely terminate a workqueue
   * @wq: target workqueue
-@@ -837,4 +926,5 @@ void __init init_workqueues(void)
+@@ -836,4 +925,5 @@ void __init init_workqueues(void)
  	hotcpu_notifier(workqueue_cpu_callback, 0);
  	keventd_wq = create_workqueue("events");
  	BUG_ON(!keventd_wq);
@@ -56398,7 +56390,7 @@ index ad401fc..46eb702 100644
  
  #else /* CONFIG_HIGHMEM */
 diff --git a/mm/filemap.c b/mm/filemap.c
-index d1d9814..1e63b7b 100644
+index d2d3e19..db0ff03 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
 @@ -440,6 +440,7 @@ int add_to_page_cache(struct page *page, struct address_space *mapping,
@@ -57807,10 +57799,10 @@ index ae8189c..68348fb 100644
  			count += q->nr_pages;
  	}
 diff --git a/mm/readahead.c b/mm/readahead.c
-index 9861e88..f3107f1 100644
+index 1448e53..7106fbe 100644
 --- a/mm/readahead.c
 +++ b/mm/readahead.c
-@@ -69,7 +69,7 @@ static inline void reset_ahead_window(struct file_ra_state *ra)
+@@ -77,7 +77,7 @@ static inline void reset_ahead_window(struct file_ra_state *ra)
  static inline void ra_off(struct file_ra_state *ra)
  {
  	ra->start = 0;
@@ -57819,7 +57811,7 @@ index 9861e88..f3107f1 100644
  	ra->size = 0;
  	reset_ahead_window(ra);
  	return;
-@@ -283,27 +283,25 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
+@@ -291,27 +291,25 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
  	/*
  	 * Preallocate as many pages as we will need.
  	 */
@@ -60201,7 +60193,7 @@ index 0514305..644e819 100644
  	if (atomic_dec_and_test(&info->cpuleft))
  		complete(&info->completion);
 diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index a0efdd7..84a7d77 100644
+index 5df8cf4..4506e31 100644
 --- a/net/core/netpoll.c
 +++ b/net/core/netpoll.c
 @@ -64,19 +64,19 @@ static void queue_process(struct work_struct *work)
@@ -60946,7 +60938,7 @@ index e673ef9..7d51121 100644
  	rqstp = kzalloc(sizeof(*rqstp), GFP_KERNEL);
  	if (!rqstp)
 diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index d70fa30..2632dc0 100644
+index f46519e..237c351 100644
 --- a/net/unix/af_unix.c
 +++ b/net/unix/af_unix.c
 @@ -307,10 +307,11 @@ static void unix_write_space(struct sock *sk)
