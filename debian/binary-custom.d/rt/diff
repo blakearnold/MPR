@@ -332,8 +332,8 @@ index e28395a..69dc684 100644
  VERSION = 2
  PATCHLEVEL = 6
  SUBLEVEL = 22
--EXTRAVERSION = .1
-+EXTRAVERSION = .1-rt8
+-EXTRAVERSION = .3
++EXTRAVERSION = .333-rt8
  NAME = Holy Dancing Manatees, Batman!
  
  # *DOCUMENTATION*
@@ -60840,19 +60840,6 @@ index 6bd421d..5c3c54b 100644
  		if (ecache->ct)
  			nf_ct_put(ecache->ct);
  	}
-diff --git a/net/rfkill/rfkill-input.c b/net/rfkill/rfkill-input.c
-index e5c840c..230e35c 100644
---- a/net/rfkill/rfkill-input.c
-+++ b/net/rfkill/rfkill-input.c
-@@ -55,7 +55,7 @@ static void rfkill_task_handler(struct work_struct *work)
- 
- static void rfkill_schedule_toggle(struct rfkill_task *task)
- {
--	unsigned int flags;
-+	unsigned long flags;
- 
- 	spin_lock_irqsave(&task->lock, flags);
- 
 diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
 index f4d3448..67beab9 100644
 --- a/net/sched/sch_generic.c
