@@ -90,7 +90,7 @@ if ($new or $missing) {
 
 # Let's see where we stand...
 if ($errors) {
-	if (-f "$abidir/ignore.modules" or -f "$abidir/$flavour.ignore.modules"
+	if (-f "$prev_abidir/ignore.modules" or -f "$prev_abidir/$flavour.ignore.modules"
 	    or defined($skipmodule)) {
 		print "WW: Explicitly asked to ignore failures (probably not good)\n";
 	} else {
