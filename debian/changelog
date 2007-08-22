@@ -1,7 +1,9 @@
-linux-source-2.6.22 (2.6.22-10.29) gutsy; urgency=low
+linux-source-2.6.22 (2.6.22-10.30) gutsy; urgency=low
 
   * URGENT upload to fix FTBFS with xen-{i386,amd64} configs,
     lpia d-i ftbfs, xen ftbfs.
+  * URGENT fix module-check to actually ignore things
+  * URGENT ignore ume modules
 
   [Alek Du]
 
