@@ -11,7 +11,7 @@ $(stampdir)/stamp-custom-prepare-%: target_flavour = $*
 $(stampdir)/stamp-custom-prepare-%: origsrc = $(builddir)/custom-source-$*
 $(stampdir)/stamp-custom-prepare-%: srcdir = $(builddir)/custom-build-$*
 $(stampdir)/stamp-custom-prepare-%: debian/binary-custom.d/%/config.$(arch) \
-		debian/binary-custom.d/%/diff
+		debian/binary-custom.d/%/patches
 	@echo "Preparing custom $*..."
 	rm -rf $(origsrc)
 	install -d $(origsrc)
