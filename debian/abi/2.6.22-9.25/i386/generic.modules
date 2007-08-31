@@ -987,11 +987,8 @@ mtdblock
 mtdblock_ro
 mtdchar
 mtdconcat
-mtdcore
 mtd_dataflash
-mtdpart
 mtdram
-mtdsuper
 mtouch
 multipath
 mwave
