@@ -51,6 +51,12 @@ confdir		:= $(CURDIR)/debian/config/$(arch)
 builddir	:= $(CURDIR)/debian/build
 stampdir	:= $(CURDIR)/debian/stamps
 
+# Support parallel=<n> in DEB_BUILD_OPTIONS (see #209008)
+COMMA=,
+ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
+  CONCURRENCY_LEVEL := $(subst parallel=,,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
+endif
+
 ifeq ($(CONCURRENCY_LEVEL),)
   # Check the environment
   CONCURRENCY_LEVEL := $(shell echo $$CONCURRENCY_LEVEL)
