@@ -328,15 +328,6 @@ diff --git a/Makefile b/Makefile
 index bc2d377..37f9d9c 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 22
--EXTRAVERSION = .4
-+EXTRAVERSION = .4-rt8
- NAME = Holy Dancing Manatees, Batman!
- 
- # *DOCUMENTATION*
 @@ -490,10 +490,14 @@ endif
  
  include $(srctree)/arch/$(ARCH)/Makefile
