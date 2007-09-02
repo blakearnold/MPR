@@ -1,0 +1,406 @@
+From 08d09f95e88e7aa1f08c86317fbba9c7e2bf26ed Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Tue, 14 Aug 2007 16:23:56 +0800
+Subject: [PATCH] Poulsbo: AUX trip point support
+
+- Support for programming AUX trip points of Intel platform Poulsbo
+- Support for disabling user space thermal management from BIOS
+- Register/Unregister with thermal driver and expose AUX programming interface
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+---
+ drivers/acpi/Kconfig          |    8 +
+ drivers/acpi/Makefile         |    1 +
+ drivers/acpi/thermal_sensor.c |  349 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 358 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/acpi/thermal_sensor.c
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index ad9f836..c8f50c0 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -182,6 +182,14 @@ config ACPI_HOTPLUG_CPU
+ 	select ACPI_CONTAINER
+ 	default y
+ 
++config THERMAL_SENSOR
++	tristate "Thermal sensor driver"
++	depends on  ACPI_THERMAL
++	default y
++	help
++	  This driver adds support for AUX trip programming of sensors withing ACPI thermal zones. This is an intel platform specific driver.
++
++
+ config ACPI_NUMA
+ 	bool "NUMA support"
+ 	depends on NUMA
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index d4336f1..4cda36c 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_ACPI_POWER)	+= power.o
+ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+ obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
+ obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
++obj-$(CONFIG_THERMAL_SENSOR)	+= thermal_sensor.o
+ obj-$(CONFIG_ACPI_SYSTEM)	+= system.o event.o
+ obj-$(CONFIG_ACPI_DEBUG)	+= debug.o
+ obj-$(CONFIG_ACPI_NUMA)		+= numa.o
+diff --git a/drivers/acpi/thermal_sensor.c b/drivers/acpi/thermal_sensor.c
+new file mode 100644
+index 0000000..d203a86
+--- /dev/null
++++ b/drivers/acpi/thermal_sensor.c
+@@ -0,0 +1,349 @@
++/*
++ *  thermal_sensor.c - Platform specific sensor Driver ($Revision: 1 $)
++ *  Copyright (C) 2001, 2002 Sujith Thomas <sujith.thomas@intel.com>
++
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This driver fully implements the platform sensor driver aux progamming
++ *  for intel formfactor device 'Donley'
++ *
++ *  It makes use of the acpi_ec driver to communicate to all the sensors
++ *  in the platform which are connected to EC
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/thermal.h>
++
++MODULE_AUTHOR("Sujith Thomas");
++MODULE_DESCRIPTION("Thermal sensor driver");
++MODULE_LICENSE("GPL");
++
++/*Offsets in EC memory region for Poulsbo*/
++#define OFFSET_SKN0_AUX0 131/*Top skin*/
++#define OFFSET_SKN0_AUX1 132
++#define OFFSET_SKN1_AUX0 128/*Bottom skin*/
++#define OFFSET_SKN1_AUX1 129
++#define OFFSET_CPU_AUX0  125/*CPU*/
++#define OFFSET_CPU_AUX1  126
++#define OFFSET_MEM_AUX0  134/*Memory*/
++#define OFFSET_MEM_AUX1  135
++
++
++
++#define MAX_AUX_COUNT 2
++#define MAX_SENSOR_COUNT 5
++#define TZ_PREFIX "TZ"
++
++/*Macros for reading an ACPI object from ACPI namespace*/
++static acpi_handle root_handle;
++
++
++#define THERMAL_ACPI_HANDLE(object, parent, paths...)                   \
++		static acpi_handle  object##_handle;			\
++		static acpi_handle *object##_parent = &parent##_handle;	\
++		static char        *object##_path;			\
++		static char        *object##_paths[] = { paths }        \
++
++
++THERMAL_ACPI_HANDLE(user_algo, root, "\\_TZ");
++
++#define THERMAL_ACPI_HANDLE_INIT(object)  \
++	thermal_acpi_handle_init( \
++		#object, &object##_handle \
++		, *object##_parent, object##_paths\
++		, ARRAY_SIZE(object##_paths) \
++		, &object##_path \
++		)
++
++struct thermal_sensor_info {
++	/*Currently only AUX0 & AUX1 are supported*/
++	int aux[MAX_AUX_COUNT];
++	enum participant_class class;	/*as defined in thermal.h*/
++	char name[ACPI_MAX_CHAR];	/*ACPI name*/
++	unsigned long caps;	        /*Device capabilities*/
++	unsigned long tempbase;	        /*Temperature base (Kelvin/Celsius)*/
++};
++
++static struct thermal_sensor_info thermal_sensor_infos[MAX_SENSOR_COUNT] = {
++	{
++	 .aux[THERMAL_AUX0] = OFFSET_CPU_AUX0,
++	 .aux[THERMAL_AUX1] = OFFSET_CPU_AUX1,
++	 .class = THERMAL_CPU_CLASS,
++	 .name = "TZ00",
++	 .caps = SENSOR_CAPS_REPORT_TEMP,
++	 .tempbase = SENSOR_TEMPBASE_ABS_CELSIUS,
++	 },
++	{
++	 .aux[THERMAL_AUX0] = OFFSET_CPU_AUX0,
++	 .aux[THERMAL_AUX1] = OFFSET_CPU_AUX1,
++	 .class = THERMAL_CPU_CLASS,
++	 .name = "TZ01",
++	 .caps = SENSOR_CAPS_REPORT_TEMP,
++	 .tempbase = SENSOR_TEMPBASE_ABS_CELSIUS,
++	 },
++	{
++	 .aux[THERMAL_AUX0] = OFFSET_MEM_AUX0,
++	 .aux[THERMAL_AUX1] = OFFSET_MEM_AUX1,
++	 .class = THERMAL_MEM_CLASS,
++	 .name = "TZ02",
++	 .caps = SENSOR_CAPS_REPORT_TEMP,
++	 .tempbase = SENSOR_TEMPBASE_ABS_CELSIUS,
++	 },
++	{
++	 .aux[THERMAL_AUX0] = OFFSET_SKN1_AUX0,
++	 .aux[THERMAL_AUX1] = OFFSET_SKN1_AUX1,
++	 .class = THERMAL_SKIN_CLASS,
++	 .name = "TZ03",
++	 .caps = SENSOR_CAPS_REPORT_TEMP,
++	 .tempbase = SENSOR_TEMPBASE_ABS_CELSIUS,
++	 },
++	{
++	 .aux[THERMAL_AUX0] = OFFSET_SKN0_AUX0,
++	 .aux[THERMAL_AUX1] = OFFSET_SKN0_AUX1,
++	 .class = THERMAL_SKIN_CLASS,
++	 .name = "TZ04",
++	 .caps = SENSOR_CAPS_REPORT_TEMP,
++	 .tempbase = SENSOR_TEMPBASE_ABS_CELSIUS,
++	 },
++};
++
++/*
++ * sensor_get_id
++ * -------------
++ * Convert the name to an ID in the thermal_sensor_infos
++ * name: Thermalzone name
++ */
++static int sensor_get_id(const char *name)
++{
++	int id;
++	char *tzID = strstr(name, TZ_PREFIX);
++
++	if (!name)
++		return -EINVAL;
++
++	id = strtoul(tzID + strlen(TZ_PREFIX), NULL, 0);
++
++	if (id >= MAX_SENSOR_COUNT) {
++		return -ENODEV;
++	}
++
++	return id;
++}
++
++/*
++ * sensor_get_auxtrip
++ * -----------------
++ * get the current auxtrip value from sensor throughec
++ * name: Thermalzone name
++ * auxtype : AUX0/AUX1
++ * buf: syfs buffer
++ */
++static int sensor_get_auxtrip(const char *name, const int auxtype, char *buf)
++{
++	int ret = 0;
++	int id;
++	u8 data;
++
++	if (!name || !buf)
++		return -EINVAL;
++
++	id = sensor_get_id(name);
++	if (id < 0)
++		return -ENODEV;
++
++	ret = ec_read(thermal_sensor_infos[id].aux[auxtype], &data);
++	if (ret)
++		return -EIO;
++
++	sprintf(buf, "%d \n", data);
++
++	return ret;
++}
++
++/*
++ * sensor_set_auxtrip
++ * -----------------
++ * set the new auxtrip value to sensor through ec
++ * name: Thermalzone name
++ * auxtype : AUX0/AUX1
++ * buf: syfs buffer
++ */
++static int sensor_set_auxtrip(const char *name, const int auxtype,
++			      const char *buf)
++{
++	int ret = 0;
++	int id;
++	u8 data;
++	u8 cmp_data;
++
++	if (!name || !buf)
++		return -EINVAL;
++
++	id = sensor_get_id(name);
++	if (id < 0)
++		return ret;
++
++	data = strtoul(buf, NULL, 0);
++
++	/*Sanity check aux0 < aux1*/
++	if (THERMAL_AUX0 == auxtype) {
++		ret =
++		    ec_read(thermal_sensor_infos[id].aux[THERMAL_AUX1],
++			    &cmp_data);
++		if (ret)
++			return -EIO;
++		if (data > cmp_data)
++			return -EINVAL;
++	} else if (THERMAL_AUX1 == auxtype) {
++		ret =
++		    ec_read(thermal_sensor_infos[id].aux[THERMAL_AUX0],
++			    &cmp_data);
++		if (ret)
++			return -EIO;
++		if (data < cmp_data)
++			return -EINVAL;
++	}
++
++	ret = ec_write(thermal_sensor_infos[id].aux[auxtype], data);
++
++	if (ret)
++		return -EIO;
++
++	return ret;
++}
++
++/*
++ * sensor_get_caps
++ * -----------------
++ * get the capabilities of sensor
++ * name: Thermalzone name
++ * buf: syfs buffer
++ */
++static int sensor_get_caps(const char *name, char *buf)
++{
++	int ret = 0;
++	int id;
++
++	if (!name || !buf)
++		return -EINVAL;
++
++	id = sensor_get_id(name);
++	if (id < 0)
++		return ret;
++
++	sprintf(buf, "%lu \n", thermal_sensor_infos[id].caps);
++
++	return 0;
++}
++
++/*
++ * sensor_get_tempbase
++ * -----------------
++ * get the temperature base (Kelvin /Celsius)
++ * name: Thermalzone name
++ * buf: syfs buffer
++ */
++static int sensor_get_tempbase(const char *name, char *buf)
++{
++	int ret = 0;
++	int id;
++
++	if (!name || !buf)
++		return -EINVAL;
++
++	id = sensor_get_id(name);
++	if (id < 0)
++		return ret;
++
++	sprintf(buf, "%lu \n", thermal_sensor_infos[id].tempbase);
++
++	return 0;
++}
++
++static void __init thermal_acpi_handle_init(char *name,
++					    acpi_handle * handle,
++					    acpi_handle parent, char **paths,
++					    int num_paths, char **path)
++{
++	int i;
++	acpi_status status;
++
++	for (i = 0; i < num_paths; i++) {
++		status = acpi_get_handle(parent, paths[i], handle);
++		if (ACPI_SUCCESS(status)) {
++			*path = paths[i];
++			return;
++		}
++	}
++
++	*handle = NULL;
++}
++
++static struct thermal_sensor_ops ops = {
++	.setauxtrip = sensor_set_auxtrip,
++	.getauxtrip = sensor_get_auxtrip,
++	.gettempbase = sensor_get_tempbase,
++	.getcaps = sensor_get_caps,
++};
++
++static int __init thermalsensor_start(void)
++{
++	int i;
++	struct acpi_buffer result, *resultp;
++	union acpi_object out_obj;
++	acpi_status status = AE_OK;
++
++	/*Register all the supported sensors*/
++	for (i = 0; i < MAX_SENSOR_COUNT; i++) {
++		if (0 !=
++		    thermal_register_sensor(thermal_sensor_infos[i].class,
++					    thermal_sensor_infos[i].name, &ops))
++			printk(KERN_INFO "Failed to register \
++			sensor for thermalzone %s\n",
++			       thermal_sensor_infos[i].name);
++	}
++
++	THERMAL_ACPI_HANDLE_INIT(user_algo);
++
++	result.length = sizeof(out_obj);
++	result.pointer = &out_obj;
++	resultp = &result;
++
++	/*Check whether the user application is enabled in BIOS*/
++	status = acpi_evaluate_object(user_algo_handle, "DSTS", NULL, resultp);
++	if (ACPI_FAILURE(status)
++	    || THERMAL_USER_DISABLED == out_obj.integer.value)
++		thermal_set_userenabled(THERMAL_USER_DISABLED);
++
++	return 0;
++}
++
++static void __exit thermalsensor_end(void)
++{
++	int i;
++	/*Unregister all the sensors*/
++	for (i = 0; i < MAX_SENSOR_COUNT; i++) {
++		thermal_unregister_sensor(thermal_sensor_infos[i].name);
++	}
++}
++
++module_init(thermalsensor_start);
++module_exit(thermalsensor_end);
+-- 
+1.5.2.4
+
