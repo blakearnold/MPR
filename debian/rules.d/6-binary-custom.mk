@@ -11,14 +11,17 @@ $(stampdir)/stamp-custom-prepare-%: target_flavour = $*
 $(stampdir)/stamp-custom-prepare-%: origsrc = $(builddir)/custom-source-$*
 $(stampdir)/stamp-custom-prepare-%: srcdir = $(builddir)/custom-build-$*
 $(stampdir)/stamp-custom-prepare-%: debian/binary-custom.d/%/config.$(arch) \
-		debian/binary-custom.d/%/patches
+		debian/binary-custom.d/%/patchset
 	@echo "Preparing custom $*..."
 	rm -rf $(origsrc)
 	install -d $(origsrc)
 	install -d $(srcdir)
 	find . \( -path ./debian -o -path ./.git -o -name .gitignore \) \
 		-prune -o -print | cpio -dumpl $(origsrc)
-	(cd $(origsrc); patch -p1) < debian/binary-custom.d/$*/diff
+	for patch in `ls debian/binary-custom.d/$*/patchset/*.patch | sort`; do \
+		echo $$patch; \
+		(cd $(origsrc); patch -p1) < $$patch ;\
+	done
 	cat $< > $(srcdir)/.config
 	$(kmake) -C $(origsrc) O=$(srcdir) silentoldconfig prepare scripts
 	touch $@
