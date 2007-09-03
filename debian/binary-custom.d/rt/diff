@@ -132,10 +132,10 @@ index 0000000..28233b9
 +
 +
 diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index af50f9b..4d880b3 100644
+index 026e4e5..1dd9bba 100644
 --- a/Documentation/kernel-parameters.txt
 +++ b/Documentation/kernel-parameters.txt
-@@ -1014,49 +1014,6 @@ and is between 256 and 4096 characters. It is defined in the file
+@@ -1009,49 +1009,6 @@ and is between 256 and 4096 characters. It is defined in the file
  
  	mga=		[HW,DRM]
  
@@ -325,7 +325,7 @@ index a2afca3..f39c9d7 100644
  	depending on the build options.
    - Linux runs on a wide range of different processor architectures.
 diff --git a/Makefile b/Makefile
-index bc2d377..37f9d9c 100644
+index 3067f6a..7f41154 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -490,10 +490,14 @@ endif
@@ -1700,7 +1700,7 @@ index eb26441..6a3b37d 100644
  	  If you say Y here the kernel will use a 4Kb stacksize for the
  	  kernel stack attached to each process/thread. This facilitates
 diff --git a/arch/i386/Makefile b/arch/i386/Makefile
-index bd28f9f..fab0f02 100644
+index 541b3ae..6d0dff5 100644
 --- a/arch/i386/Makefile
 +++ b/arch/i386/Makefile
 @@ -31,7 +31,7 @@ LDFLAGS_vmlinux := --emit-relocs
@@ -1734,7 +1734,7 @@ index a661217..6abec92 100644
  hostprogs-y	:= relocs
  
 diff --git a/arch/i386/kernel/Makefile b/arch/i386/kernel/Makefile
-index 06da59f..ed36fd5 100644
+index e9297cb..f761301 100644
 --- a/arch/i386/kernel/Makefile
 +++ b/arch/i386/kernel/Makefile
 @@ -21,6 +21,7 @@ obj-$(CONFIG_APM)		+= apm.o
@@ -4055,10 +4055,10 @@ index 2b55694..402af9e 100644
  	.name = "timer"
  };
 diff --git a/arch/i386/mm/fault.c b/arch/i386/mm/fault.c
-index 1ecb3e4..cf68ef7 100644
+index 27ba2fd..4401107 100644
 --- a/arch/i386/mm/fault.c
 +++ b/arch/i386/mm/fault.c
-@@ -295,8 +295,8 @@ static inline int vmalloc_fault(unsigned long address)
+@@ -296,8 +296,8 @@ static inline int vmalloc_fault(unsigned long address)
   *	bit 3 == 1 means use of reserved bit detected
   *	bit 4 == 1 means fault was an instruction fetch
   */
@@ -4069,7 +4069,7 @@ index 1ecb3e4..cf68ef7 100644
  {
  	struct task_struct *tsk;
  	struct mm_struct *mm;
-@@ -306,6 +306,7 @@ fastcall void __kprobes do_page_fault(struct pt_regs *regs,
+@@ -307,6 +307,7 @@ fastcall void __kprobes do_page_fault(struct pt_regs *regs,
  
  	/* get the address */
          address = read_cr2();
@@ -4077,7 +4077,7 @@ index 1ecb3e4..cf68ef7 100644
  
  	tsk = current;
  
-@@ -350,7 +351,7 @@ fastcall void __kprobes do_page_fault(struct pt_regs *regs,
+@@ -351,7 +352,7 @@ fastcall void __kprobes do_page_fault(struct pt_regs *regs,
  	 * If we're in an interrupt, have no user context or are running in an
  	 * atomic region then we must not take the fault..
  	 */
@@ -4086,7 +4086,7 @@ index 1ecb3e4..cf68ef7 100644
  		goto bad_area_nosemaphore;
  
  	/* When running in the kernel we expect faults to occur only to
-@@ -488,6 +489,9 @@ bad_area_nosemaphore:
+@@ -489,6 +490,9 @@ bad_area_nosemaphore:
  		nr = (address - idt_descr.address) >> 3;
  
  		if (nr == 6) {
@@ -9842,7 +9842,7 @@ index 47565c3..4c282c6 100644
 +#endif
  ia32_syscall_end:
 diff --git a/arch/x86_64/kernel/Makefile b/arch/x86_64/kernel/Makefile
-index de1de8a..6fc60f0 100644
+index 4d94c51..5776717 100644
 --- a/arch/x86_64/kernel/Makefile
 +++ b/arch/x86_64/kernel/Makefile
 @@ -9,7 +9,7 @@ obj-y	:= process.o signal.o entry.o traps.o irq.o \
@@ -9854,7 +9854,7 @@ index de1de8a..6fc60f0 100644
  
  obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
  obj-$(CONFIG_X86_MCE)		+= mce.o therm_throt.o
-@@ -48,6 +48,8 @@ obj-y				+= pcspeaker.o
+@@ -47,6 +47,8 @@ obj-y				+= pcspeaker.o
  
  CFLAGS_vsyscall.o		:= $(PROFILING) -g0
  
@@ -9862,7 +9862,7 @@ index de1de8a..6fc60f0 100644
 +hpet-y				+= ../../i386/kernel/hpet.o
  therm_throt-y                   += ../../i386/kernel/cpu/mcheck/therm_throt.o
  bootflag-y			+= ../../i386/kernel/bootflag.o
- legacy_serial-y			+= ../../i386/kernel/legacy_serial.o
+ cpuid-$(subst m,y,$(CONFIG_X86_CPUID))  += ../../i386/kernel/cpuid.o
 diff --git a/arch/x86_64/kernel/apic.c b/arch/x86_64/kernel/apic.c
 index 1b0e07b..26a17b8 100644
 --- a/arch/x86_64/kernel/apic.c
@@ -12769,7 +12769,7 @@ index c99b463..34aa0b5 100644
  	clear_bit(QUEUE_FLAG_STOPPED, &q->queue_flags);
  
 diff --git a/drivers/Makefile b/drivers/Makefile
-index adad2f3..4ddaf85 100644
+index 6e25872..4ec3b19 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
 @@ -70,6 +70,7 @@ obj-$(CONFIG_EDAC)		+= edac/
@@ -12778,8 +12778,8 @@ index adad2f3..4ddaf85 100644
  obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
 +obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
  obj-$(CONFIG_MMC)		+= mmc/
+ obj-$(CONFIG_MSS)		+= mmc/
  obj-$(CONFIG_NEW_LEDS)		+= leds/
- obj-$(CONFIG_INFINIBAND)	+= infiniband/
 diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
 index 5cae633..71afa2e 100644
 --- a/drivers/acpi/ec.c
@@ -18305,7 +18305,7 @@ index 8969e42..3d8580d 100644
  	/* synchronize with the hardware, so old configuration state
  	 * clears out immediately (and will be freed).
 diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
-index f9fed34..f864419 100644
+index 68ce2de..a212512 100644
 --- a/drivers/usb/core/message.c
 +++ b/drivers/usb/core/message.c
 @@ -250,8 +250,9 @@ static void sg_clean (struct usb_sg_request *io)
@@ -18585,7 +18585,7 @@ index aa68206..7566f9c 100644
  	get_cpu_var(bh_accounting).nr--;
  	recalc_bh_state();
 diff --git a/fs/dcache.c b/fs/dcache.c
-index ef5086f..820f109 100644
+index 0e73aa0..f52270d 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
 @@ -708,8 +708,9 @@ void shrink_dcache_for_umount(struct super_block *sb)
@@ -18614,7 +18614,7 @@ index 936409f..a83f489 100644
  		spin_unlock(&dentry->d_lock);
  		__inode_dir_notify(parent->d_inode, event);
 diff --git a/fs/exec.c b/fs/exec.c
-index 1218ad0..f1c7f6c 100644
+index a2e6f28..0b2daf4 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
 @@ -47,6 +47,7 @@
@@ -18643,7 +18643,7 @@ index 1218ad0..f1c7f6c 100644
  	arch_pick_mmap_layout(mm);
  	if (old_mm) {
  		up_read(&old_mm->mmap_sem);
-@@ -681,7 +687,7 @@ static int de_thread(struct task_struct *tsk)
+@@ -675,7 +681,7 @@ static int de_thread(struct task_struct *tsk)
  		 */
  		leader = tsk->group_leader;
  		while (leader->exit_state != EXIT_ZOMBIE)
@@ -19055,10 +19055,10 @@ index 6e5c253..f3ca9dc 100644
  }
  
 diff --git a/fs/open.c b/fs/open.c
-index 0f9e149..a777fe1 100644
+index 0d515d1..afdbc95 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -700,7 +700,7 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+@@ -694,7 +694,7 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
  	f->f_path.mnt = mnt;
  	f->f_pos = 0;
  	f->f_op = fops_get(inode->i_fop);
@@ -26083,7 +26083,7 @@ index 0000000..27227b0
 +
 +#endif /* _LINUX_CPUIDLE_H */
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 12318e5..ab7c7f3 100644
+index 6a41f4c..65c1925 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
 @@ -278,11 +278,13 @@ extern int dir_notify_enable;
@@ -26100,7 +26100,7 @@ index 12318e5..ab7c7f3 100644
  
  #include <asm/atomic.h>
  #include <asm/semaphore.h>
-@@ -716,9 +718,13 @@ struct file {
+@@ -713,9 +715,13 @@ struct file {
  	/*
  	 * fu_list becomes invalid after file_free is called and queued via
  	 * fu_rcuhead for RCU freeing
@@ -26114,7 +26114,7 @@ index 12318e5..ab7c7f3 100644
  		struct rcu_head 	fu_rcuhead;
  	} f_u;
  	struct path		f_path;
-@@ -751,9 +757,25 @@ extern spinlock_t files_lock;
+@@ -748,9 +754,25 @@ extern spinlock_t files_lock;
  #define file_list_lock() spin_lock(&files_lock);
  #define file_list_unlock() spin_unlock(&files_lock);
  
@@ -26140,7 +26140,7 @@ index 12318e5..ab7c7f3 100644
  #define	MAX_NON_LFS	((1UL<<31) - 1)
  
  /* Page cache limit. The filesystems should put that into their s_maxbytes 
-@@ -938,7 +960,8 @@ struct super_block {
+@@ -935,7 +957,8 @@ struct super_block {
  	struct list_head	s_dirty;	/* dirty inodes */
  	struct list_head	s_io;		/* parked for writeback */
  	struct hlist_head	s_anon;		/* anonymous dentries for (nfs) exporting */
@@ -27349,7 +27349,7 @@ index 0d50ea3..d4666ec 100644
 +
 +#endif
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 3a70f55..51778fe 100644
+index ab210be..5de99af 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -903,7 +903,7 @@ static inline int netif_rx_reschedule(struct net_device *dev, int undo)
@@ -27656,10 +27656,10 @@ index 9cdd694..a0f895e 100644
  
  /* A parallel port */
 diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index e541ddd..1373cda 100644
+index cf8f84a..95f916a 100644
 --- a/include/linux/pci_ids.h
 +++ b/include/linux/pci_ids.h
-@@ -2226,6 +2226,7 @@
+@@ -2231,6 +2231,7 @@
  #define PCI_DEVICE_ID_INTEL_82801EB_5	0x24d5
  #define PCI_DEVICE_ID_INTEL_82801EB_6	0x24d6
  #define PCI_DEVICE_ID_INTEL_82801EB_11	0x24db
@@ -32075,6 +32075,27 @@ index d9325cf..9f1b234 100644
  }
  
  static inline void count_vm_events(enum vm_event_item item, long delta)
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index e820d00..9d6147d 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -369,12 +369,10 @@ static inline void remove_wait_queue_locked(wait_queue_head_t *q,
+  * They are racy.  DO NOT use them, use the wait_event* interfaces above.  
+  * We plan to remove these interfaces during 2.7.
+  */
+-extern void FASTCALL(sleep_on(wait_queue_head_t *q));
+-extern long FASTCALL(sleep_on_timeout(wait_queue_head_t *q,
+-				      signed long timeout));
+-extern void FASTCALL(interruptible_sleep_on(wait_queue_head_t *q));
+-extern long FASTCALL(interruptible_sleep_on_timeout(wait_queue_head_t *q,
+-						    signed long timeout));
++extern void sleep_on(wait_queue_head_t *q);
++extern long sleep_on_timeout(wait_queue_head_t *q, long timeout);
++extern void interruptible_sleep_on(wait_queue_head_t *q);
++extern long interruptible_sleep_on_timeout(wait_queue_head_t *q, long timeout);
+ 
+ /*
+  * Waitqueues which are removed from the waitqueue_head at wakeup time
 diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
 index ce0719a..925d898 100644
 --- a/include/linux/workqueue.h
@@ -32523,7 +32544,7 @@ index 5ac7678..a51783c 100644
  	return 0;
  }
 diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 95b2be7..68e22ce 100644
+index a242c83..401d802 100644
 --- a/ipc/mqueue.c
 +++ b/ipc/mqueue.c
 @@ -783,12 +783,17 @@ static inline void pipelined_send(struct mqueue_inode_info *info,
@@ -51414,7 +51435,7 @@ index 0000000..c63c38f
 +#endif /* CONFIG_SCHEDSTATS || CONFIG_TASK_DELAY_ACCT */
 +
 diff --git a/kernel/signal.c b/kernel/signal.c
-index f940560..206bc09 100644
+index d625195..b6cac66 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
 @@ -724,8 +724,10 @@ specific_send_sig_info(int sig, struct siginfo *info, struct task_struct *t)
@@ -53051,7 +53072,7 @@ index 872271c..e9d0594 100644
  	if (error)
  		return error;
 diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 85f7ad0..26f6e63 100644
+index 30ee462..fbd8ad0 100644
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
 @@ -29,6 +29,7 @@
@@ -56381,7 +56402,7 @@ index ad401fc..46eb702 100644
  
  #else /* CONFIG_HIGHMEM */
 diff --git a/mm/filemap.c b/mm/filemap.c
-index d2d3e19..db0ff03 100644
+index d1d9814..1e63b7b 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
 @@ -440,6 +440,7 @@ int add_to_page_cache(struct page *page, struct address_space *mapping,
@@ -59936,7 +59957,7 @@ index eceaf49..29b1a90 100644
  
  void __dec_zone_page_state(struct page *page, enum zone_stat_item item)
 diff --git a/net/core/dev.c b/net/core/dev.c
-index ee051bb..0c62e1b 100644
+index 1561f61..8ec56ef 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -1185,7 +1185,7 @@ void __netif_rx_schedule(struct net_device *dev)
@@ -60619,10 +60640,10 @@ index 29ca63e..b49e27f 100644
  #endif
  
 diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 450f44b..68738ad 100644
+index 11ff182..42e4350 100644
 --- a/net/ipv4/tcp.c
 +++ b/net/ipv4/tcp.c
-@@ -1144,10 +1144,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+@@ -1145,10 +1145,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
  	preempt_disable();
  	if ((len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
  	    !sysctl_tcp_low_latency && __get_cpu_var(softnet_data).net_dma) {
@@ -60635,7 +60656,7 @@ index 450f44b..68738ad 100644
  #endif
  
  	do {
-@@ -2407,6 +2407,8 @@ static int __init set_thash_entries(char *str)
+@@ -2408,6 +2408,8 @@ static int __init set_thash_entries(char *str)
  }
  __setup("thash_entries=", set_thash_entries);
  
@@ -60644,7 +60665,7 @@ index 450f44b..68738ad 100644
  void __init tcp_init(void)
  {
  	struct sk_buff *skb = NULL;
-@@ -2438,6 +2440,10 @@ void __init tcp_init(void)
+@@ -2439,6 +2441,10 @@ void __init tcp_init(void)
  					NULL,
  					0);
  	tcp_hashinfo.ehash_size = 1 << tcp_hashinfo.ehash_size;
@@ -60656,7 +60677,7 @@ index 450f44b..68738ad 100644
  		rwlock_init(&tcp_hashinfo.ehash[i].lock);
  		INIT_HLIST_HEAD(&tcp_hashinfo.ehash[i].chain);
 diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 354721d..825d617 100644
+index fa36e1a..e845ca6 100644
 --- a/net/ipv4/tcp_ipv4.c
 +++ b/net/ipv4/tcp_ipv4.c
 @@ -2040,7 +2040,12 @@ static void *established_get_first(struct seq_file *seq)
@@ -60929,7 +60950,7 @@ index e673ef9..7d51121 100644
  	rqstp = kzalloc(sizeof(*rqstp), GFP_KERNEL);
  	if (!rqstp)
 diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index f46519e..237c351 100644
+index d70fa30..2632dc0 100644
 --- a/net/unix/af_unix.c
 +++ b/net/unix/af_unix.c
 @@ -307,10 +307,11 @@ static void unix_write_space(struct sock *sk)
