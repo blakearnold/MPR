@@ -757,7 +757,7 @@ Description: Linux kernel image for version 2.6.22 on RT kernel
  .
  Supports Generic processors.
  .
- Ingo Molnar's full real time preemption patch (2.6.22.1-rt8)
+ Ingo Molnar's full real time preemption patch (2.6.22.1-rt9)
  .
  You likely do not want to install this package directly. Instead, install
  the linux-rt meta-package, which will ensure that upgrades work
