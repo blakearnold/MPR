@@ -1,4 +1,4 @@
-arch="i386"
+arch="i386 amd64"
 supported="Generic"
 target="Xen domO/domU"
 desc="This kernel can be used for Xen dom0 and domU"
