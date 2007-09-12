@@ -699,7 +699,7 @@ Description: Linux kernel debug image for version 2.6.22 on x86
  is uncompressed, and unstripped.
 
 Package: linux-image-2.6.22-11-xen
-Architecture: i386
+Architecture: i386 amd64
 Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
@@ -725,7 +725,7 @@ Description: Linux kernel image for version 2.6.22 on This kernel can be used fo
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.22-11-xen
-Architecture: i386
+Architecture: i386 amd64
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-11, ${shlibs:Depends}
