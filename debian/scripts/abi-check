@@ -9,7 +9,7 @@ skipabi="$6"
 
 echo -n "Checking ABI for $flavour..."
 
-if [ -f "$abidir/ignore" -o -f "$abidir/$flavour.ignore" -o -n "$skipabi" ]; then
+if [ -f "$abidir/ignore" -o -f "$abidir/$flavour.ignore" -o -f "$prev_abidir/$flavour.ignore" -o -n "$skipabi" ]; then
 	echo "explicitly asked to ignore ABI (probably not good)"
 	exit
 fi
