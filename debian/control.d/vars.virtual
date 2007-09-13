@@ -1,0 +1,7 @@
+arch="i386"
+supported="Virtual"
+target="Geared toward virtualised hardware."
+desc="x86"
+bootloader="lilo (>= 19.1) | grub"
+provides="kvm-api-4, rhcs-modules2-1"
+do_debug="Yes"
