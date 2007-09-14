@@ -171,3 +171,9 @@ Priority: standard
 Depends: kernel-image, storage-core-modules, scsi-modules
 Description: Fusion and i2o storage modules
  This package containes the fusion and i2o storage modules.
+
+Package: crypto-modules
+Priority: extra
+Depends: kernel-image
+Description: crypto modules
+ This package contains crypto modules.
