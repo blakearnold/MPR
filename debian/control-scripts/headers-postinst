@@ -111,7 +111,21 @@ if (-x "$header_postinst_hook") {
   &run_hook("postinst", $header_postinst_hook);
 }
 
+if (-d "/etc/kernel/header_postinst.d") {
+  print STDERR "Examining /etc/kernel/header_postinst.d.\n";
+  system ("run-parts --verbose --exit-on-error --arg=$version " .
+          "--arg=$realimageloc$kimage-$version " .
+          "/etc/kernel/header_postinst.d") &&
+            die "Failed to process /etc/kernel/header_postinst.d";
+}
 
+if (-d "/etc/kernel/header_postinst.d/$version") {
+  print STDERR "Examining /etc/kernel/header_postinst.d/$version.\n";
+  system ("run-parts --verbose --exit-on-error --arg=$version " .
+          "--arg=$realimageloc$kimage-$version " .
+          "/etc/kernel/header_postinst.d/$version") &&
+            die "Failed to process /etc/kernel/header_postinst.d/$version";
+}
 
 exit 0;
 
