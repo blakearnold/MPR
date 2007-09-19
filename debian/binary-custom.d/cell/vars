@@ -1,0 +1,6 @@
+arch="powerpc"
+supported="PowerPC Cell"
+desc="PowerPC Cell"
+target="Supports PowerPC Cell (Including PS3)"
+bootloader="yaboot"
+provides="rhcs-modules2-1"
