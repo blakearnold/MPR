@@ -7,3 +7,5 @@ kernel_file	= $(build_image)
 install_file	= $(build_image)
 
 loader		= yaboot
+
+custom_flavours	= cell

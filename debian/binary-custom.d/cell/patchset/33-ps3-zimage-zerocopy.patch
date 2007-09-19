@@ -1,0 +1,749 @@
+Subject: PS3: Bootwrapper support.
+
+zImage.ps3 is a gzip compressed rom image that contains a flat device tree,
+an lv1 compatible entry point, a wrapper program, and an optional initrd.
+zImage.ps3 is suitable for programming into the PS3 boot flash memory.
+zImage.ps3 is also known as otheros.bld, and for convenience, a hard link
+with the name otheros.bld is created when zImage.ps3 is built.
+
+Signed-off-by: Geoff Levand <geoffrey.levand@am.sony.com>
+---
+ arch/powerpc/boot/Makefile         |   26 ++-
+ arch/powerpc/boot/ps3-head.S       |   75 +++++++++
+ arch/powerpc/boot/ps3-hvcall.S     |  297 +++++++++++++++++++++++++++++++++++++
+ arch/powerpc/boot/ps3.c            |  157 +++++++++++++++++++
+ arch/powerpc/boot/wrapper          |   40 ++++
+ arch/powerpc/boot/zImage.ps3.lds.S |   50 ++++++
+ arch/powerpc/platforms/ps3/mm.c    |    2 
+ 7 files changed, 636 insertions(+), 11 deletions(-)
+
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -42,11 +42,14 @@ zliblinuxheader := zlib.h zconf.h zutil.
+ $(addprefix $(obj)/,$(zlib) gunzip_util.o main.o): \
+ 	$(addprefix $(obj)/,$(zliblinuxheader)) $(addprefix $(obj)/,$(zlibheader))
+ 
++src-plat-$(CONFIG_PPC_PS3) += ps3-head.S ps3.c ps3-hvcall.S
++inc-plat-$(CONFIG_PPC_PS3) += lv1call.h
++
+ src-wlib := string.S crt0.S stdio.c main.c flatdevtree.c flatdevtree_misc.c \
+ 		ns16550.c serial.c simple_alloc.c div64.S util.S \
+ 		gunzip_util.c elf_util.c $(zlib) devtree.c \
+ 		44x.c ebony.c mv64x60.c mpsc.c mv64x60_i2c.c
+-src-plat := of.c cuboot-83xx.c cuboot-85xx.c holly.c \
++src-plat := $(src-plat-y) of.c cuboot-83xx.c cuboot-85xx.c holly.c \
+ 		cuboot-ebony.c treeboot-ebony.c prpmc2800.c
+ src-boot := $(src-wlib) $(src-plat) empty.c
+ 
+@@ -54,6 +57,7 @@ src-boot := $(addprefix $(obj)/, $(src-b
+ obj-boot := $(addsuffix .o, $(basename $(src-boot)))
+ obj-wlib := $(addsuffix .o, $(basename $(addprefix $(obj)/, $(src-wlib))))
+ obj-plat := $(addsuffix .o, $(basename $(addprefix $(obj)/, $(src-plat))))
++inc-plat := $(addprefix $(obj)/,$(inc-plat-y))
+ 
+ quiet_cmd_copy_zlib = COPY    $@
+       cmd_copy_zlib = sed "s@__attribute_used__@@;s@<linux/\([^>]*\).*@\"\1\"@" $< > $@
+@@ -73,14 +77,17 @@ $(addprefix $(obj)/,$(zlibheader)): $(ob
+ $(addprefix $(obj)/,$(zliblinuxheader)): $(obj)/%: $(srctree)/include/linux/%
+ 	$(call cmd,copy_zliblinuxheader)
+ 
++$(addprefix $(obj)/,$(inc-plat-y)): $(obj)/%: $(srctree)/include/asm-powerpc/%
++	$(call cmd,copy_zliblinuxheader)
++
+ $(obj)/empty.c:
+ 	@touch $@
+ 
+-$(obj)/zImage.lds $(obj)/zImage.coff.lds: $(obj)/%: $(srctree)/$(src)/%.S
++$(obj)/zImage.lds $(obj)/zImage.coff.lds $(obj)/zImage.ps3.lds: $(obj)/%: $(srctree)/$(src)/%.S
+ 	@cp $< $@
+ 
+ clean-files := $(zlib) $(zlibheader) $(zliblinuxheader) \
+-		empty.c zImage.coff.lds zImage.lds
++		empty.c zImage zImage.coff.lds zImage.ps3.lds zImage.lds
+ 
+ quiet_cmd_bootcc = BOOTCC  $@
+       cmd_bootcc = $(CROSS32CC) -Wp,-MD,$(depfile) $(BOOTCFLAGS) -c -o $@ $<
+@@ -102,8 +109,8 @@ $(obj)/wrapper.a: $(obj-wlib) FORCE
+ hostprogs-y	:= addnote addRamDisk hack-coff mktree
+ 
+ targets		+= $(patsubst $(obj)/%,%,$(obj-boot) wrapper.a)
+-extra-y		:= $(obj)/wrapper.a $(obj-plat) $(obj)/empty.o \
+-		   $(obj)/zImage.lds $(obj)/zImage.coff.lds
++extra-y		:= $(obj)/wrapper.a  $(inc-plat) $(obj-plat) $(obj)/empty.o \
++		   $(obj)/zImage.lds $(obj)/zImage.coff.lds $(obj)/zImage.ps3.lds
+ 
+ wrapper		:=$(srctree)/$(src)/wrapper
+ wrapperbits	:= $(extra-y) $(addprefix $(obj)/,addnote hack-coff mktree) \
+@@ -188,11 +195,12 @@ $(obj)/zImage.%: vmlinux $(wrapperbits)
+ $(obj)/zImage.iseries: vmlinux
+ 	$(STRIP) -s -R .comment $< -o $@
+ 
+-$(obj)/zImage.ps3: vmlinux
+-	$(STRIP) -s -R .comment $< -o $@
++$(obj)/zImage.ps3: vmlinux  $(wrapper) $(wrapperbits) $(srctree)/$(src)/dts/ps3.dts
++	$(STRIP) -s -R .comment $< -o vmlinux.strip
++	$(call cmd,wrap,ps3,$(srctree)/$(src)/dts/ps3.dts,,)
+ 
+-$(obj)/zImage.initrd.ps3: vmlinux
+-	@echo "  WARNING zImage.initrd.ps3 not supported (yet)"
++$(obj)/zImage.initrd.ps3: vmlinux  $(wrapper) $(wrapperbits) $(srctree)/$(src)/dts/ps3.dts $(obj)/ramdisk.image.gz
++	$(call cmd,wrap,ps3,$(srctree)/$(src)/dts/ps3.dts,,$(obj)/ramdisk.image.gz)
+ 
+ $(obj)/zImage.holly-elf: vmlinux $(wrapperbits)
+ 	$(call if_changed,wrap,holly,$(obj)/dts/holly.dts,,)
+--- /dev/null
++++ b/arch/powerpc/boot/ps3-head.S
+@@ -0,0 +1,75 @@
++/*
++ *  PS3 bootwrapper entry.
++ *
++ *  Copyright (C) 2007 Sony Computer Entertainment Inc.
++ *  Copyright 2007 Sony Corp.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include "ppc_asm.h"
++
++	.text
++
++/*
++ * __system_reset_overlay - The PS3 first stage entry.
++ *
++ * The bootwraper build script copies the 0x100 bytes at symbol
++ * __system_reset_overlay to offset 0x100 of the rom image.
++ */
++
++	.globl __system_reset_overlay
++__system_reset_overlay:
++
++	/* Switch to 32-bit mode. */
++
++	mfmsr	r9
++	clrldi	r9,r9,1
++	mtmsrd	r9
++	nop
++
++	/* Get thread number in r3 and branch. */
++
++	mfspr	r3, 0x88
++	cntlzw.	r3, r3
++	li	r4, 0
++	li	r5, 0
++	beq	1f
++
++	/* Secondary goes to __secondary_hold in kernel. */
++
++	li	r4, 0x60
++	mtctr	r4
++	bctr
++
++	/* Primary goes to _zimage_start in wrapper. */
++1:
++	lis	r4, _zimage_start@ha
++	addi	r4, r4, _zimage_start@l
++	mtctr	r4
++	bctr
++
++/*
++ * __system_reset_kernel - Place holder for the kernel reset vector.
++ *
++ * The bootwrapper build script copies 0x100 bytes from offset 0x100
++ * of the rom image to the symbol __system_reset_kernel.  At runtime
++ * the bootwrapper program copies the 0x100 bytes at __system_reset_kernel
++ * to ram address 0x100.  This symbol must occupy 0x100 bytes.
++ */
++
++	.globl __system_reset_kernel
++__system_reset_kernel:
++
++	. = __system_reset_kernel + 0x100
+--- /dev/null
++++ b/arch/powerpc/boot/ps3-hvcall.S
+@@ -0,0 +1,297 @@
++/*
++ *  PS3 hvcall interface.
++ *
++ *  Copyright (C) 2006 Sony Computer Entertainment Inc.
++ *  Copyright 2006 Sony Corp.
++ *  Copyright 2003, 2004 (c) MontaVista Software, Inc.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include "ppc_asm.h"
++
++/*
++ *  wrapper           lv1
++ *  32-bit (h,l)      64-bit
++ *
++ *  1: r3,r4          <-> r3
++ *  2: r5,r6          <-> r4
++ *  3: r7,r8          <-> r5
++ *  4: r9,r10         <-> r6
++ *  5: 8(r1),12(r1)   <-> r7
++ *  6: 16(r1),20(r1)  <-> r8
++ *  7: 24(r1),28(r1)  <-> r9
++ *  8: 32(r1),36(r1)  <-> r10
++ *
++ */
++
++.macro global name
++	.section ".text"
++	.balign 4
++	.globl \name
++\name:
++.endm
++
++.macro no_support name
++	GLOBAL \name
++	b ps3_no_support
++.endm
++
++.macro hvcall
++	.long 0x44000022
++	extsw r3, r3
++.endm
++
++.macro save_lr offset=4
++	mflr r0
++	stw r0, \offset(r1)
++.endm
++
++.macro load_lr offset=4
++	lwz r0, \offset(r1)
++	mtlr r0
++.endm
++
++.macro load_64_reg target,high,low
++	sldi r11, \high, 32
++	or \target, r11, \low
++.endm
++
++.macro load_64_stack target,offset
++	ld \target, \offset(r1)
++.endm
++
++.macro load_r3
++	LOAD_64_REG r3,r3,r4
++.endm
++
++.macro load_r4
++	LOAD_64_REG r4,r5,r6
++.endm
++
++.macro load_r5
++	LOAD_64_REG r5,r7,r8
++.endm
++
++.macro load_r6
++	LOAD_64_REG r6,r9,r10
++.endm
++
++.macro load_r7
++	LOAD_64_STACK r7,8
++.endm
++
++.macro load_r8
++	LOAD_64_STACK r8,16
++.endm
++
++.macro load_r9
++	LOAD_64_STACK r9,24
++.endm
++
++.macro load_r10
++	LOAD_64_STACK r10,32
++.endm
++
++.macro load_regs_5
++	LOAD_R3
++	LOAD_R4
++	LOAD_R5
++	LOAD_R6
++	LOAD_R7
++.endm
++
++.macro load_regs_6
++	LOAD_REGS_5
++	LOAD_R8
++.endm
++
++.macro load_regs_8
++	LOAD_REGS_6
++	LOAD_R9
++	LOAD_R10
++.endm
++
++.macro store_regs_0_1
++	lwz r11, 8(r1)
++	std r4, 0(r11)
++.endm
++
++.macro store_regs_5_2
++	lwz r11, 16(r1)
++	std r4, 0(r11)
++	lwz r11, 24(r1)
++	std r5, 0(r11)
++.endm
++
++.macro store_regs_6_1
++	lwz r11, 24(r1)
++	std r4, 0(r11)
++.endm
++
++#define LV1_N_IN_0_OUT(API_NAME, API_NUMBER)	\
++GLOBAL _##API_NAME;				\
++	SAVE_LR;				\
++	LOAD_REGS_8;				\
++	li      r11, API_NUMBER;		\
++	HVCALL;					\
++	LOAD_LR;				\
++	blr
++
++#define LV1_0_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_1_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_2_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_3_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_4_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_5_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_6_IN_0_OUT LV1_N_IN_0_OUT
++#define LV1_7_IN_0_OUT LV1_N_IN_0_OUT
++
++.macro save_r5
++	stw r5, 8(r1)
++.endm
++
++.macro save_r6
++	stw r6, 12(r1)
++.endm
++
++.macro save_1
++	SAVE_R5
++	SAVE_R6
++.endm
++
++#define LV1_0_IN_1_OUT(API_NAME, API_NUMBER)	\
++GLOBAL _##API_NAME;				\
++	SAVE_LR;				\
++	stwu r1,-16(r1);			\
++	stw r3, 8(r1);				\
++	li      r11, API_NUMBER;		\
++	HVCALL;					\
++	lwz r11, 8(r1);				\
++	std r4, 0(r11);				\
++	mr r4, r3;				\
++	li r3, 0;				\
++	addi r1,r1,16;				\
++	LOAD_LR;				\
++	blr
++
++#define LV1_0_IN_2_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_0_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_0_IN_7_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_1_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_1_IN_2_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_1_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_1_IN_4_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_1_IN_5_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_1_IN_6_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT
++
++#define LV1_1_IN_7_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_2_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_2_IN_2_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_2_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_2_IN_4_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_2_IN_5_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_3_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_3_IN_2_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_3_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_4_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_4_IN_2_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_4_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_5_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_5_IN_2_OUT(API_NAME, API_NUMBER)	\
++GLOBAL _##API_NAME;				\
++	SAVE_LR;				\
++	LOAD_REGS_5;				\
++	li      r11, API_NUMBER;		\
++	HVCALL;					\
++	STORE_REGS_5_2;				\
++	LOAD_LR;				\
++	blr
++
++#define LV1_5_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_6_IN_1_OUT(API_NAME, API_NUMBER)	\
++GLOBAL _##API_NAME;				\
++	SAVE_LR;				\
++	LOAD_REGS_6;				\
++	li      r11, API_NUMBER;		\
++	HVCALL;					\
++	STORE_REGS_6_1;				\
++	LOAD_LR;				\
++	blr
++
++#define LV1_6_IN_2_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_6_IN_3_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_7_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_7_IN_6_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++#define LV1_8_IN_1_OUT(API_NAME, API_NUMBER)	\
++	NO_SUPPORT _##API_NAME
++
++/* the lv1 underscored call definitions expand here */
++
++#define LV1_CALL(name, in, out, num) LV1_##in##_IN_##out##_OUT(lv1_##name, num)
++#include "lv1call.h"
++
+--- /dev/null
++++ b/arch/powerpc/boot/ps3.c
+@@ -0,0 +1,157 @@
++/*
++ *  PS3 bootwrapper support.
++ *
++ *  Copyright (C) 2007 Sony Computer Entertainment Inc.
++ *  Copyright 2007 Sony Corp.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <stdarg.h>
++#include <stddef.h>
++#include "types.h"
++#include "elf.h"
++#include "string.h"
++#include "stdio.h"
++#include "page.h"
++#include "ops.h"
++#include "lv1call.h"
++
++#ifdef DEBUG
++#define DBG(fmt...) printf(fmt)
++#else
++static inline int __attribute__ ((format (printf, 1, 2))) DBG(
++	const char *fmt, ...) {return 0;}
++#endif
++
++BSS_STACK(4096);
++
++static void ps3_console_write(const char *buf, int len)
++{
++}
++
++static void ps3_exit(void)
++{
++	printf("ps3_exit\n");
++	lv1_panic(0); /* zero = no reboot */
++	while(1);
++}
++
++static int ps3_repository_read_rm_size(u64 *rm_size)
++{
++	int result;
++	u64 lpar_id;
++	u64 ppe_id;
++	u64 v2;
++
++	result = lv1_get_logical_partition_id(&lpar_id);
++
++	if (result)
++		return -1;
++
++	result = lv1_get_logical_ppe_id(&ppe_id);
++
++	if (result)
++		return -1;
++
++	/*
++	 * n1: 0000000062690000 : ....bi..
++	 * n2: 7075000000000000 : pu......
++	 * n3: 0000000000000001 : ........
++	 * n4: 726d5f73697a6500 : rm_size.
++	*/
++
++	result = lv1_get_repository_node_value(lpar_id, 0x0000000062690000ULL,
++		0x7075000000000000ULL, ppe_id, 0x726d5f73697a6500ULL, rm_size,
++		&v2);
++
++	printf("%s:%d: ppe_id  %lu \n", __func__, __LINE__,
++		(unsigned long)ppe_id);
++	printf("%s:%d: lpar_id %lu \n", __func__, __LINE__,
++		(unsigned long)lpar_id);
++	printf("%s:%d: rm_size %llxh \n", __func__, __LINE__, *rm_size);
++
++	return result;
++}
++
++void ps3_copy_vectors(void)
++{
++	extern char __system_reset_kernel[];
++
++	memcpy((void*)0x100, __system_reset_kernel, 0x100);
++	flush_cache((void*)0x100, 0x100);
++}
++
++/* A buffer that may be edited by tools operating on a zImage binary so as to
++ * edit the command line passed to vmlinux (by setting /chosen/bootargs).
++ * The buffer is put in it's own section so that tools may locate it easier.
++ */
++static char cmdline[COMMAND_LINE_SIZE]
++	__attribute__((__section__("__builtin_cmdline")));
++
++static void prep_cmdline(void *chosen)
++{
++	if (cmdline[0] == '\0')
++		getprop(chosen, "bootargs", cmdline, COMMAND_LINE_SIZE-1);
++	else
++		setprop_str(chosen, "bootargs", cmdline);
++
++	printf("cmdline: '%s'\n", cmdline);
++}
++
++void platform_init(void)
++{
++	extern char _end[];
++	extern char _dtb_start[];
++	extern char _initrd_start[];
++	extern char _initrd_end[];
++	const u32 heapsize = 0x2000000 - (u32)_end; /* 32M */
++	void *chosen;
++	unsigned long ft_addr;
++	u64 rm_size;
++
++	console_ops.write = ps3_console_write;
++	platform_ops.exit = ps3_exit;
++
++	printf("\n-- PS3 bootwrapper --\n");
++
++	ps3_copy_vectors();
++
++	simple_alloc_init(_end, heapsize, 32, 64);
++	ft_init(_dtb_start, 0, 4);
++
++	chosen = finddevice("/chosen");
++
++	ps3_repository_read_rm_size(&rm_size);
++	dt_fixup_memory(0, rm_size);
++
++	if (_initrd_end > _initrd_start) {
++		setprop_val(chosen, "linux,initrd-start", (u32)(_initrd_start));
++		setprop_val(chosen, "linux,initrd-end", (u32)(_initrd_end));
++	}
++
++	prep_cmdline(chosen);
++
++	ft_addr = dt_ops.finalize();
++
++	printf(" flat tree at 0x%lx\n\r", ft_addr);
++
++	((kernel_entry_t)0)(ft_addr, 0, NULL);
++}
++
++void ps3_no_support(void)
++{
++	printf("\n*** bootwrapper BUG: ps3_no_support() called!\n");
++	ps3_exit();
++}
+--- a/arch/powerpc/boot/wrapper
++++ b/arch/powerpc/boot/wrapper
+@@ -144,6 +144,15 @@ miboot|uboot)
+ cuboot*)
+     gzip=
+     ;;
++ps3)
++    platformo="$object/ps3-head.o $object/ps3-hvcall.o $object/ps3.o"
++    lds=$object/zImage.ps3.lds
++    gzip=
++    ext=bin
++    objflags="-O binary"
++    ksection=.kernel:vmlinux.bin
++    isection=.kernel:initrd
++    ;;
+ esac
+ 
+ vmz="$tmpdir/`basename \"$kernel\"`.$ext"
+@@ -239,4 +248,35 @@ treeboot*)
+     fi
+     exit 0
+     ;;
++ps3)
++    # The ps3's loader supports loading gzipped binary images from flash
++    # rom to addr zero. The loader enters the image at addr 0x100.  A
++    # bootwrapper overlay is use to arrange for the kernel to be loaded
++    # to addr zero and to have a suitable bootwrapper entry at 0x100.
++    # To construct the rom image 0x100 bytes from offset 0x100 in the
++    # kernel is copied to the bootwrapper symbol __system_reset_kernel.
++    # The 0x100 bytes at the bootwrapper symbol __system_reset_overlay is
++    # then copied to offset 0x100.  At runtime the bootwrapper program
++    # copies the 0x100 bytes at __system_reset_kernel to addr 0x100.
++
++    system_reset_overlay=0x`${CROSS}nm "$ofile" | grep ' __system_reset_overlay$' | cut -d' ' -f1`
++    system_reset_overlay=`printf "%d" $system_reset_overlay`
++    system_reset_kernel=0x`${CROSS}nm "$ofile" | grep ' __system_reset_kernel$' | cut -d' ' -f1`
++    system_reset_kernel=`printf "%d" $system_reset_kernel`
++    overlay_dest="256"
++    overlay_size="256"
++
++    rm -f "$object/otheros.bld"
++
++    cp -a "$ofile" "$ofile.elf"
++    ${CROSS}objcopy -O binary "$ofile" "$ofile"
++    cp -a "$ofile" "$ofile.bin.org"
++
++#    dd if="$ofile" of="$ofile" conv=notrunc skip=$overlay_dest seek=$system_reset_kernel bs=1 count=$overlay_size
++    dd if="$ofile" of="$ofile" conv=notrunc skip=$system_reset_overlay seek=$overlay_dest bs=1 count=$overlay_size
++
++    cp -a "$ofile" "$ofile.bin"
++    gzip --force -9 --stdout "$ofile.bin" > "$ofile"
++    ln "$ofile" "$object/otheros.bld"
++    ;;
+ esac
+--- /dev/null
++++ b/arch/powerpc/boot/zImage.ps3.lds.S
+@@ -0,0 +1,50 @@
++OUTPUT_ARCH(powerpc:common)
++ENTRY(_zimage_start)
++EXTERN(_zimage_start)
++SECTIONS
++{
++  _vmlinux_start =  .;
++  .kernel:vmlinux.bin : { *(.kernel:vmlinux.bin) }
++  _vmlinux_end =  .;
++
++  . = ALIGN(8);
++  _dtb_start = .;
++  .kernel:dtb : { *(.kernel:dtb) }
++  _dtb_end = .;
++
++  . = ALIGN(4096);
++  _initrd_start =  .;
++  .kernel:initrd : { *(.kernel:initrd) }
++  _initrd_end =  .;
++
++  _start = .;
++  .text      :
++  {
++    *(.text)
++    *(.fixup)
++  }
++  _etext = .;
++  . = ALIGN(4096);
++  .data    :
++  {
++    *(.rodata*)
++    *(.data*)
++    *(.sdata*)
++    __got2_start = .;
++    *(.got2)
++    __got2_end = .;
++  }
++
++  . = ALIGN(4096);
++  _edata  =  .;
++
++  . = ALIGN(4096);
++  __bss_start = .;
++  .bss       :
++  {
++   *(.sbss)
++   *(.bss)
++  }
++  . = ALIGN(4096);
++  _end = . ;
++}
+--- a/arch/powerpc/platforms/ps3/mm.c
++++ b/arch/powerpc/platforms/ps3/mm.c
+@@ -1211,8 +1211,6 @@ void __init ps3_mm_init(void)
+ 	BUG_ON(map.rm.base);
+ 	BUG_ON(!map.rm.size);
+ 
+-	lmb_add(map.rm.base, map.rm.size);
+-	lmb_analyze();
+ 
+ 	/* arrange to do this in ps3_mm_add_memory */
+ 	ps3_mm_region_create(&map.r1, map.total - map.rm.size);
