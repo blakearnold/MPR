@@ -102,7 +102,16 @@ endif
 	install -m644 $(builddir)/build-$*/Module.symvers \
 		$(hdrdir)/Module.symvers
 
-	# At the end of the, call the tests
+	# Now the header scripts
+	install -d $(CURDIR)/debian/$(basepkg)-$*/DEBIAN
+	for script in postinst; do						\
+	  sed -e 's/=V/$(release)$(debnum)-$*/g' -e 's/=K/$(install_file)/g'	\
+		debian/control-scripts/headers-$$script > 			\
+			$(CURDIR)/debian/$(basepkg)-$*/DEBIAN/$$script;		\
+	  chmod 755 $(CURDIR)/debian/$(basepkg)-$*/DEBIAN/$$script;		\
+	done
+
+	# At the end of the package prep, call the tests
 	DPKG_ARCH="$(arch)" KERN_ARCH="$(build_arch)" FLAVOUR="$*"	\
 	 VERSION="$(release)$(debnum)" REVISION="$(revision)"		\
 	 PREV_REVISION="$(prev_revision)" ABI_NUM="$(abinum)"		\
