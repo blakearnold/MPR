@@ -13,5 +13,6 @@ lpia	2.6.22-12	lpia		2.6.22-12-lpia		-
 
 powerpc	2.6.22-12	powerpc		2.6.22-12-powerpc		-	
 powerpc	2.6.22-12	powerpc64-smp	2.6.22-12-powerpc64-smp	-	
+powerpc	2.6.22-12	cell		2.6.22-12-cell		-
 
 sparc	2.6.22-12	sparc64		2.6.22-12-sparc64		-	
