@@ -1,3 +1,12 @@
+linux-source-2.6.22 (2.6.22-12.37) gutsy; urgency=low
+
+  [Kyle McMartin]
+
+  * enable d-i for cell flavour
+  * ignore ABI check on all hppa flavours
+
+ -- Kyle McMartin <kyle@ubuntu.com>  Fri, 21 Sep 2007 11:28:34 -0400
+
 linux-source-2.6.22 (2.6.22-12.36) gutsy; urgency=low
 
   [Ben Collins]
