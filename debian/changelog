@@ -1,8 +1,16 @@
-linux-source-2.6.22 (2.6.22-12.39) UNRELEASED; urgency=low
+linux-source-2.6.22 (2.6.22-12.39) gutsy; urgency=low
 
-  * 
+  [Ben Collins]
 
- -- Tim Gardner <rtg@intel-sdp>  Fri, 21 Sep 2007 14:16:07 -0600
+  * ubuntu: Re-order deps so that binary-custom is done before
+    binary-udebs. Fixes ppc build
+
+  [Upstream Kernel Changes]
+
+  * x86_64: Zero extend all registers after ptrace in 32bit entry path.
+  * Linux 2.6.22.7
+
+ -- Ben Collins <bcollins@ubuntu.com>  Sun, 23 Sep 2007 11:05:32 -0400
 
 linux-source-2.6.22 (2.6.22-12.38) gutsy; urgency=low
 
