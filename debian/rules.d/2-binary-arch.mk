@@ -210,4 +210,4 @@ build-debs: $(addprefix build-,$(flavours))
 
 build-arch: build-debs build-custom
 
-binary-arch: binary-debs binary-udebs binary-custom
+binary-arch: binary-debs binary-custom binary-udebs
