@@ -1,4 +1,4 @@
-binary-udebs: binary-debs debian/control
+binary-udebs: binary-debs binary-custom debian/control
 	dh_testdir
 	dh_testroot
 
