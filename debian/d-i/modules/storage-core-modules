@@ -15,6 +15,9 @@ usbcore ?
 # Generic cdrom support ?
 cdrom ?
 
+# PS3 storage lib
+ps3stor_lib ?
+
 # Anything that wants cdrom support will want isofs too
 isofs ?
 
