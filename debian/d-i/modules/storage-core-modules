@@ -17,6 +17,8 @@ cdrom ?
 
 # PS3 storage lib
 ps3stor_lib ?
+# PS3 Optical Storage
+ps3rom ?
 
 # Anything that wants cdrom support will want isofs too
 isofs ?
