@@ -508,7 +508,13 @@ static int ata_acpi_exec_tfs(struct ata_device *dev)
 	int gtf_count, i, rc;
 
 	/* get taskfiles */
-	gtf_count = ata_dev_get_GTF(dev, &gtf, &ptr_to_free);
+	rc = ata_dev_get_GTF(dev, &gtf, &ptr_to_free);
+	if (rc < 0) {
+		if (rc == -EINVAL)
+			return 0;
+		return rc;
+	}
+	gtf_count = rc;
 
 	/* execute them */
 	for (i = 0, rc = 0; i < gtf_count; i++) {
