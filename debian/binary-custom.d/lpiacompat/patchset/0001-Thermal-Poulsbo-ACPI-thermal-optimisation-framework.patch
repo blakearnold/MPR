@@ -1,0 +1,2449 @@
+From fbf97c825cb58771da2a4803b6ad323629030367 Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Tue, 14 Aug 2007 16:23:56 +0800
+Subject: [PATCH] Poulsbo: ACPI thermal optimisation framework
+
+-Moved the definitions to header file
+-Provided support for sysfs interface to thermal driver
+-Provided support for userspace application to handle thermal management
+-Provided a unified interface for CPU throttling (acpi_set_passive_thermal_limit)
+-Provided interfaces for other components like CPU to register with thermal driver
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+---
+ .../thermal/thermal-ext-add-device-howto.txt       |  139 ++
+ .../thermal/thermal-ext-add-sensor-howto.txt       |  112 ++
+ Documentation/thermal/thermal-extensions.txt       |  151 +++
+ drivers/acpi/Kconfig                               |   42 +-
+ drivers/acpi/thermal.c                             | 1400 ++++++++++++++++++--
+ include/linux/thermal.h                            |  355 +++++
+ 6 files changed, 2070 insertions(+), 129 deletions(-)
+ create mode 100644 Documentation/thermal/thermal-ext-add-device-howto.txt
+ create mode 100644 Documentation/thermal/thermal-ext-add-sensor-howto.txt
+ create mode 100644 Documentation/thermal/thermal-extensions.txt
+ create mode 100644 include/linux/thermal.h
+
+diff --git a/Documentation/thermal/thermal-ext-add-device-howto.txt b/Documentation/thermal/thermal-ext-add-device-howto.txt
+new file mode 100644
+index 0000000..6d72b5a
+--- /dev/null
++++ b/Documentation/thermal/thermal-ext-add-device-howto.txt
+@@ -0,0 +1,139 @@
++How-to add participant for thermal extensions
++============================================
++
++Written by Sujith Thomas <sujith.thomas@intel.com>
++
++Updated: 30 July 2007
++
++Copyright (c)  2007 Intel Corporation
++
++
++0. Introduction
++
++The thermal extensions provide a set of interfaces for devices to register
++with the thermal management solution and to be a part of it. This how-to
++focusses on enabling a new class of device to participate in thermal
++management.
++
++1. Device interface functions
++   ==========================
++
++1.1 Register device driver
++
++This step has to be done by all drivers upon initialization. This registers
++a set of callbacks with the thermalzone driver. This needs to be done
++only once for a particular class of device
++
++/*
++ * thermal_register_device_driver
++ * -----------------------------
++ * Interface function for platform sensor driver to unregister
++ * dd : thermal_device_driver instance as defined in thermal.h
++ */
++int thermal_register_device_driver(struct thermal_device_driver* dd);
++
++1.2 Unregister device driver
++
++This step has to be done by all drivers upon exit. This removes a
++particular class of devices from participating in thermal management.
++Logical flow is that all the instances should be unregistered using
++thermal_unregister_device before unregistering the driver
++
++/*
++ * thermal_unregister_device_driver
++ * -----------------------------
++ * Interface function for platform sensor driver to unregister
++ * dd : thermal_device_driver instance used for registration
++ */
++int thermal_unregister_device_driver(struct thermal_device_driver* dd);
++
++1.3 Register device
++
++This step has to be done by all devices upon enumeration. Upon enumeration
++ACPI will be detecting devices like CPU0,CPU1 etc. This would be a nice
++place to call this interface function and get registered with thermal zone
++driver.
++
++/*
++ * thermal_register_device
++ * ----------------------
++ * Interface function for devices like CPU,LCD ... to register
++ * name : ACPI name like CPU0
++ * class : class (same as driver class)
++ * private: context of the device
++ * return : a pointer to new thermal device
++ */
++struct thermal_device* thermal_register_device(const char* name,enum participant_class class
++	,void* private);
++
++
++1.4 Unregister device
++
++This needs to be done by all devices upon ACPI remove. Whenever an ACPI device
++is getting removed a callback function in the driver will be getting called.
++This will be the nice place for unregistering device from thermal management.
++
++/*
++ * thermal_unregister_device
++ * ----------------------
++ * Interface function for devices like CPU,LCD ... to unregister
++ * name : ACPI thermal device *
++ */
++int thermal_unregister_device(struct thermal_device* td);
++
++2. Device callback functions
++   =========================
++In addition to these calls driver needs to implement the following
++callback functions that are defined in struct thermal_device_ops
++
++struct thermal_device_ops {
++	thermal_device_set_throttle_limit setthrottlelimit;        //Set new throttle limit
++	thermal_device_get_throttle_limit getthrottlelimit;        //Get current throttle limit
++	thermal_device_get_max_throttle_limit getmaxthrottlelimit; //Get maximum suppoted throttle state
++	thermal_device_get_caps getcaps ;                          //Get device capabilities
++};
++
++2.1 Get throttle limit
++
++/*
++ * device_get_throttle_limit
++ * -----------------------------
++ * call back function for getting the device's current throttle limit
++ * data : device context
++ * buf : sysfs buffer that needs to be filled back
++ */
++int device_get_throttle_limit(void *data, char *buf)
++
++2.2 Set throttle limit
++
++/*
++ * device_set_throttle_limit
++ * -----------------------------
++ * call back function for setting the device's new throttle limit
++ * type : Absolute throttle value or Relative throttle step
++ * data : device context
++ * buf : sysfs buffer that needs to be filled back
++ */
++int device_set_throttle_limit(enum throttle_set_type type,void *data, const char *buf)
++
++2.3 Get maximum throttle limit
++
++/*
++ * device_get_maxthrottle_limit
++ * -----------------------------
++ * call back function for getting the device's maximum throttle limit
++ * data : device context
++ * buf : sysfs buffer that needs to be filled back
++ */
++int device_get_maxthrottle_limit(void *data, char *buf)
++
++2.4 Get device capabilities
++
++/*
++ * device_get_caps
++ * -----------------------------
++ * call back function for getting the device's capabilities
++ * data : device context
++ * buf : sysfs buffer that needs to be filled back
++ */
++int device_get_caps(void *data, char *buf)
+\ No newline at end of file
+diff --git a/Documentation/thermal/thermal-ext-add-sensor-howto.txt b/Documentation/thermal/thermal-ext-add-sensor-howto.txt
+new file mode 100644
+index 0000000..9468b45
+--- /dev/null
++++ b/Documentation/thermal/thermal-ext-add-sensor-howto.txt
+@@ -0,0 +1,112 @@
++How-to add sensor for thermal extensions
++============================================
++
++Written by Sujith Thomas <sujith.thomas@intel.com>
++
++Updated: 30 July 2007
++
++Copyright (c)  2007 Intel Corporation
++
++
++0. Introduction
++
++The thermal extensions provide a set of interface for platform specific
++sensor driver to register with the thermal management solution and to be
++a part of it. The main role of the platform sensor driver is to provide
++programming interface for AUX trips to the user application.  This how-to
++focusses on writing a new  sensor driver for a new platform.
++
++
++1 Sensor driver interfaces
++===========================
++
++1.1  Register sensor driver
++
++This step has to be done by all drivers upon initialization. This registers
++a set of callbacks with the thermalzone driver for programming the AUX
++trips.
++
++/*
++ * thermal_register_sensor
++ * ----------------------
++ * Interface function for platform sensor driver to register
++ * class: class of sensor like CPU sensor or skin sensor
++ * name : ACPI Thermal zone name like TZ00
++ * ops: callback function as defined in platform sensor driver
++ */
++int thermal_register_sensor(enum participant_class class
++	,const char* name, struct thermal_sensor_ops* ops);
++
++
++1.2 Unregister sensor driver
++
++This step needs to be done upon sensor driver exit. This removes the
++association of a thermal sensor from the thermal management solution.
++
++/*
++ * thermal_unregister_sensor
++ * ----------------------
++ * Interface function for platform sensor driver to unregister
++ * name : ACPI Thermal zone name like TZ00
++ */
++int thermal_unregister_sensor(const char* name);
++
++2 Sensor driver callbacks
++=======================
++
++The sensor driver needs to implement the following callbacks as defined
++in struct thermal_sensor_ops
++
++struct thermal_sensor_ops{
++	thermal_sensor_set_aux_trip setauxtrip; //Get current AUX trip
++	thermal_sensor_get_aux_trip getauxtrip; //Set new AUX trip
++	thermal_sensor_get_temp_base gettempbase; //Get temperature base (K/c)
++	thermal_sensor_get_caps getcaps; //Get sensor capabilities
++};
++
++2.1 Get AUX trip
++
++/*
++ * sensor_get_auxtrip
++ * -----------------
++ * get the current auxtrip value from sensor throughec
++ * name: Thermalzone name
++ * auxtype : AUX0/AUX1
++ * buf: syfs buffer
++ */
++int sensor_get_auxtrip(const char* name,const int auxtype, char* buf)
++
++2.2 Set AUX trip
++
++/*
++ * sensor_set_auxtrip
++ * -----------------
++ * set the new auxtrip value to sensor through ec
++ * name: Thermalzone name
++ * auxtype : AUX0/AUX1
++ * buf: syfs buffer
++ */
++int sensor_set_auxtrip(const char* name,const int auxtype,const char* buf)
++
++2.3 Get Capabilities
++
++/*
++ * sensor_get_caps
++ * -----------------
++ * get the capabilities of sensor
++ * name: Thermalzone name
++ * buf: syfs buffer
++ */
++int sensor_get_caps(const char* name, char* buf)
++
++2.4 Get temperature base
++
++/*
++ * sensor_get_tempbase
++ * -----------------
++ * get the temperature base (Kelvin /Celsius)
++ * name: Thermalzone name
++ * buf: syfs buffer
++ */
++int sensor_get_tempbase(const char* name, char* buf)
++
+diff --git a/Documentation/thermal/thermal-extensions.txt b/Documentation/thermal/thermal-extensions.txt
+new file mode 100644
+index 0000000..c121a48
+--- /dev/null
++++ b/Documentation/thermal/thermal-extensions.txt
+@@ -0,0 +1,151 @@
++The thermal extensions
++======================
++
++Written by Sujith Thomas <sujith.thomas@intel.com>
++
++Updated: 30 July 2007
++
++Copyright (c)  2007 Intel Corporation
++
++
++0. Introduction
++
++The current thermal management solution in Linux is strictly
++kernel based and supports only CPU class of devices. The "thermal extensions "
++is a framework for supporting user-space thermal management solutions.
++The framework depends on a stack of components rangng from embedded
++controller's firmware, BIOS, kernel and application. This document will
++be focussing on the the kernel layer.
++                              -------------
++			      |   syfs    |
++			      -------------
++      --------------------------------------------------------------
++				   |
++				   |               ------------
++				   |	  ---------|   CPU   |
++				   |	  |	   ------------
++				   |	  |
++				   |	  |         ------------
++				   |	  |    -----|   LCD   |
++				   |	  |    |    ------------
++				   |	  |    |
++       ---------------		   |	  |    |   -------------
++       |Sensor driver|---------	   |	  |    | --|   WLAN   |
++       ---------------	      |	   |	  |    | | -------------
++			      |	   |	  |    | |   ...........
++			      |	   |	  |    | |   ...........
++			      ---------------------
++			      |   Thermal zone    |
++			      ---------------------
++					|
++					|
++			              -------
++				      | BIOS|
++				      -------
++
++The modifications done for thermal zone driver strictly falls under
++ACPI 2.0 specification. The "thermal extensions" basicallly accepts
++registration from devices those are thermal contributors and exposes
++the throttle mechanism to the user-space applications via sysfs.
++Similarly there is a platform sensor driver that registers with the
++thermal zone driver providing mechanism for programming AUX trip points.
++
++
++1. Sysfs directory structure
++
++The sysfs entry will be made under /sys/thermal and it will have the
++following group of attributes.
++
++-/sys/thermal/config       (thermal management related configuration)
++-/sys/thermal/<TZ#>        (thermal zone related data)
++-/sys/thermal/<TZ#>/<DEV#> (info about a device in a thermal zone)
++
++1.1 /sys/thermal/config
++
++This folder has the following attributes
++
++-mode (0 = user-space thermal managemnt ; 1= kernel-space thermal management)
++-userenabled (0 if kernel is not willing to give control to application else 1)
++
++
++1.2 /sys/thermal/<TZ#>
++
++The below attributes will appear for any thermal zone
++
++-critical    (_CRT as reported by BIOS)
++-hot         (_HOT as reported by BIOS)
++-passive     (_PSV as reported by BIOS)
++-temperature (_TMP as reported by BIOS)
++
++The below attributes will appear only if platform sensor driver is loaded.
++
++-aux0        (lower AUX value interface for platform sensor driver)
++-aux1        (upper AUX value interface for platform sensor driver)
++-sensorcapabilities (capabilities as defined in thermal.h)
++-tempbase    (The way temperature is reported K/celsius)
++-sensorclass (The class of sensor as in SKIN or CPU or ...)
++
++1.3 /sys/thermal/<TZ#>/<DEV#>
++
++The below attributes will appear for each and every device registered
++with thermal zone driver and that has an entrly in _TZD.
++
++-maxthrottlestate (maximum no:of states supported by this device)
++-deviceclass      (as defined in thermal.h)
++-capabilities     (as defined in thermal.h)
++-throttletype     (Absolute/Relative )
++-throttlestate
++(if throttletype == Absolute -> current/new state of the device for eg: P1-T3 for CPU
++ Lower 16 bits is the P-state and higher 16 bits are T-state
++ if throttletype == Relative -> this field will take the next step level for throttling as input)
++
++
++2. Modified file list
++
++2.1 include/linux/thermal.h
++
++-All the definitions are moved from "thermal.c"into new file "thermal.h"
++
++2.2 drivers/acpi/thermal.c
++
++-Support for user-space thermal management algorithm
++-Replaced procfs with sysfs
++-Removed the dependency of the thermal driver on acpi_processor driver
++
++2.3 drivers/acpi/thermal_sensor.c
++-Support for programming AUX trip points in platform sensors
++-Support for disabling user-space thermal management
++
++2.4 drivers/acpi/processor_core.c
++-Registers with thermal zone driver as a participant device
++-Provides support for both P & T state throttling
++
++2.5 drivers/acpi/video.c
++-Registers with thermal zone driver as a participant device
++-Provides support for backlight controlling of LCD
++
++2.6 drivers/acpi/smi_thermal.c
++-Generic driver for providing thermal controls to all devices which use
++SMI for device throttling
++
++2.7 include/linux/smi_thermal.h
++-Generic driver for providing thermal controls to all devices which use
++SMI for device throttling. Struct definition.
++
++2.8 drivers/acpi/smi_device_throttle.c
++-Platform specific driver for throttling devices based on SMI mechanism.
++
++2.9 drivers/acpi/Kconfig
++-Added support for conditional build with "thermal extensions"
++
++2.10 drivers/acpi/Makefile
++
++2.11 drivers/cpufreq/cpufreq.c
++-Brought back the cpufreq_set_policy interface.
++
++2.12 include/linux/cpufreq.h
++-Brought back the cpufreq_set_policy interface.
++
++2.13 include/acpi/processor.h
++-change in acpi_processor structure
++
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index a9826f2..3c74305 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -122,17 +122,6 @@ config ACPI_BUTTON
+ 	  such as shutting down the system.  This is necessary for
+ 	  software controlled poweroff.
+ 
+-config ACPI_VIDEO
+-	tristate "Video"
+-	depends on X86 && BACKLIGHT_CLASS_DEVICE
+-	help
+-	  This driver implement the ACPI Extensions For Display Adapters
+-	  for integrated graphics devices on motherboard, as specified in
+-	  ACPI 2.0 Specification, Appendix B, allowing to perform some basic
+-	  control like defining the video POST device, retrieving EDID information
+-	  or to setup a video output, etc.
+-	  Note that this is an ref. implementation only.  It may or may not work
+-	  for your integrated video device.
+ 
+ config ACPI_FAN
+ 	tristate "Fan"
+@@ -155,6 +144,28 @@ config ACPI_BAY
+ 	  This driver adds support for ACPI controlled removable drive
+ 	  bays such as the IBM ultrabay or the Dell Module Bay.
+ 
++config ACPI_THERMAL
++	tristate "Thermal Zone"
++	default y
++	help
++	  This driver adds support for ACPI thermal zones.  Most mobile and
++	  some desktop systems support ACPI thermal zones.  It is HIGHLY
++	  recommended that this option be enabled, as your processor(s)
++	  may be damaged without it.
++
++config ACPI_VIDEO
++	tristate "Video"
++	depends on X86 && BACKLIGHT_CLASS_DEVICE
++	default n
++	help
++	  This driver implement the ACPI Extensions For Display Adapters
++	  for integrated graphics devices on motherboard, as specified in
++	  ACPI 2.0 Specification, Appendix B, allowing to perform some basic
++	  control like defining the video POST device, retrieving EDID information
++	  or to setup a video output, etc.
++	  Note that this is an ref. implementation only.  It may or may not work
++	  for your integrated video device.
++
+ config ACPI_PROCESSOR
+ 	tristate "Processor"
+ 	default y
+@@ -170,15 +181,6 @@ config ACPI_HOTPLUG_CPU
+ 	select ACPI_CONTAINER
+ 	default y
+ 
+-config ACPI_THERMAL
+-	tristate "Thermal Zone"
+-	depends on ACPI_PROCESSOR
+-	default y
+-	help
+-	  This driver adds support for ACPI thermal zones.  Most mobile and
+-	  some desktop systems support ACPI thermal zones.  It is HIGHLY
+-	  recommended that this option be enabled, as your processor(s)
+-	  may be damaged without it.
+ 
+ config ACPI_NUMA
+ 	bool "NUMA support"
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index 88a6fc7..30b8ded 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -1,9 +1,11 @@
+ /*
+- *  acpi_thermal.c - ACPI Thermal Zone Driver ($Revision: 41 $)
++ *  thermal.c - ACPI Thermal Zone Driver ($Revision: 41 $)
+  *
+  *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
+  *  Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
+- *
++ *  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++ *  Copyright (C) 2006, 2007 Manohar P <manohar.p@intel.com>
++
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  *
+  *  This program is free software; you can redistribute it and/or modify
+@@ -28,13 +30,12 @@
+  *  TBD: 1. Implement passive cooling hysteresis.
+  *       2. Enhance passive cooling (CPU) states/limit interface to support
+  *          concepts of 'multiple limiters', upper/lower limits, etc.
++ *  Modified: 1. Provide infrastructure from kernel to enable user-space
++ *              thermal management algorithm
+  *
+  */
+ 
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/types.h>
++#include <linux/thermal.h>
+ #include <linux/proc_fs.h>
+ #include <linux/timer.h>
+ #include <linux/jiffies.h>
+@@ -42,31 +43,6 @@
+ #include <linux/seq_file.h>
+ #include <asm/uaccess.h>
+ 
+-#include <acpi/acpi_bus.h>
+-#include <acpi/acpi_drivers.h>
+-
+-#define ACPI_THERMAL_COMPONENT		0x04000000
+-#define ACPI_THERMAL_CLASS		"thermal_zone"
+-#define ACPI_THERMAL_DEVICE_NAME	"Thermal Zone"
+-#define ACPI_THERMAL_FILE_STATE		"state"
+-#define ACPI_THERMAL_FILE_TEMPERATURE	"temperature"
+-#define ACPI_THERMAL_FILE_TRIP_POINTS	"trip_points"
+-#define ACPI_THERMAL_FILE_COOLING_MODE	"cooling_mode"
+-#define ACPI_THERMAL_FILE_POLLING_FREQ	"polling_frequency"
+-#define ACPI_THERMAL_NOTIFY_TEMPERATURE	0x80
+-#define ACPI_THERMAL_NOTIFY_THRESHOLDS	0x81
+-#define ACPI_THERMAL_NOTIFY_DEVICES	0x82
+-#define ACPI_THERMAL_NOTIFY_CRITICAL	0xF0
+-#define ACPI_THERMAL_NOTIFY_HOT		0xF1
+-#define ACPI_THERMAL_MODE_ACTIVE	0x00
+-#define ACPI_THERMAL_PATH_POWEROFF	"/sbin/poweroff"
+-
+-#define ACPI_THERMAL_MAX_ACTIVE	10
+-#define ACPI_THERMAL_MAX_LIMIT_STR_LEN 65
+-
+-#define KELVIN_TO_CELSIUS(t)    (long)(((long)t-2732>=0) ? ((long)t-2732+5)/10 : ((long)t-2732-5)/10)
+-#define CELSIUS_TO_KELVIN(t)	((t+273)*10)
+-
+ #define _COMPONENT		ACPI_THERMAL_COMPONENT
+ ACPI_MODULE_NAME("thermal");
+ 
+@@ -78,6 +54,14 @@ static int tzp;
+ module_param(tzp, int, 0);
+ MODULE_PARM_DESC(tzp, "Thermal zone polling frequency, in 1/10 seconds.\n");
+ 
++static void acpi_thermal_enumerate(struct acpi_thermal *tz);
++static void acpi_thermal_reenumerate(struct acpi_thermal *tz);
++static int acpi_thermal_verify_td_in_tz(struct acpi_thermal *tz,
++					struct thermal_device *td,
++					enum action_type action);
++static void acpi_thermal_add_td_info(struct kobject *kobj,
++				     struct thermal_device_info *info);
++
+ static int acpi_thermal_add(struct acpi_device *device);
+ static int acpi_thermal_remove(struct acpi_device *device, int type);
+ static int acpi_thermal_resume(struct acpi_device *device);
+@@ -103,73 +87,6 @@ static struct acpi_driver acpi_thermal_driver = {
+ 		},
+ };
+ 
+-struct acpi_thermal_state {
+-	u8 critical:1;
+-	u8 hot:1;
+-	u8 passive:1;
+-	u8 active:1;
+-	u8 reserved:4;
+-	int active_index;
+-};
+-
+-struct acpi_thermal_state_flags {
+-	u8 valid:1;
+-	u8 enabled:1;
+-	u8 reserved:6;
+-};
+-
+-struct acpi_thermal_critical {
+-	struct acpi_thermal_state_flags flags;
+-	unsigned long temperature;
+-};
+-
+-struct acpi_thermal_hot {
+-	struct acpi_thermal_state_flags flags;
+-	unsigned long temperature;
+-};
+-
+-struct acpi_thermal_passive {
+-	struct acpi_thermal_state_flags flags;
+-	unsigned long temperature;
+-	unsigned long tc1;
+-	unsigned long tc2;
+-	unsigned long tsp;
+-	struct acpi_handle_list devices;
+-};
+-
+-struct acpi_thermal_active {
+-	struct acpi_thermal_state_flags flags;
+-	unsigned long temperature;
+-	struct acpi_handle_list devices;
+-};
+-
+-struct acpi_thermal_trips {
+-	struct acpi_thermal_critical critical;
+-	struct acpi_thermal_hot hot;
+-	struct acpi_thermal_passive passive;
+-	struct acpi_thermal_active active[ACPI_THERMAL_MAX_ACTIVE];
+-};
+-
+-struct acpi_thermal_flags {
+-	u8 cooling_mode:1;	/* _SCP */
+-	u8 devices:1;		/* _TZD */
+-	u8 reserved:6;
+-};
+-
+-struct acpi_thermal {
+-	struct acpi_device * device;
+-	acpi_bus_id name;
+-	unsigned long temperature;
+-	unsigned long last_temperature;
+-	unsigned long polling_frequency;
+-	volatile u8 zombie;
+-	struct acpi_thermal_flags flags;
+-	struct acpi_thermal_state state;
+-	struct acpi_thermal_trips trips;
+-	struct acpi_handle_list devices;
+-	struct timer_list timer;
+-};
+-
+ static const struct file_operations acpi_thermal_state_fops = {
+ 	.open = acpi_thermal_state_open_fs,
+ 	.read = seq_read,
+@@ -207,6 +124,35 @@ static const struct file_operations acpi_thermal_polling_fops = {
+ 	.release = single_release,
+ };
+ 
++static char *thermal_mode[THERMAL_MAX_MODE] = {
++	"user",
++	"kernel",
++};
++
++static char *thermal_throttle_type[THERMAL_MAX_THROTTLE_TYPE] = {
++	"absolute",
++	"relative",
++};
++
++static struct thermal_config thermalconfig = {
++	.userenabled = THERMAL_USER_ENABLED,
++	.mode = THERMAL_KERNELSPACE,
++};
++
++/*Linked list of thermal zones*/
++static LIST_HEAD(acpi_thermal_list);
++/*Linked list of registered component drivers*/
++static LIST_HEAD(thermal_device_driver_list);
++/*Linked list of registered components*/
++static LIST_HEAD(registered_thermal_device_list);
++
++/*Lock for accessing thermalzone linked list*/
++DEFINE_SPINLOCK(tz_list_lock);
++/*Lock for accessing device driver linked list*/
++DEFINE_SPINLOCK(dd_list_lock);
++/*Lock for accessing thermal device linked list*/
++DEFINE_SPINLOCK(td_list_lock);
++
+ /* --------------------------------------------------------------------------
+                              Thermal Zone Management
+    -------------------------------------------------------------------------- */
+@@ -480,6 +426,46 @@ static int acpi_thermal_hot(struct acpi_thermal *tz)
+ 	return 0;
+ }
+ 
++/*
++ * acpi_set_passive_thermal_limit
++ * -----------------------------
++ * Interface function for passive devices like CPU to throttle
++ * name : handle to ACPI devices like CPU0
++ * step : device will be put into current throttle level + step
++ */
++
++int acpi_set_passive_thermal_limit(acpi_handle handle, int step)
++{
++	int result;
++	struct acpi_device *ad;
++	char buf[3];		/*-10<step<10*/
++	struct list_head *entry_td;
++	struct thermal_device *td;
++
++	if (step < MIN_THROTTLE_STEP || step > MAX_THROTTLE_STEP)
++		return -EINVAL;
++
++	sprintf(buf, "%d", step);
++
++	result = acpi_bus_get_device(handle, &ad);
++	spin_lock(&td_list_lock);
++	list_for_each(entry_td, &registered_thermal_device_list) {
++		td = list_entry(entry_td, struct thermal_device, node);
++		if (td->info.name == ad->pnp.bus_id) {
++			if (td->info.dd && td->info.dd->ops->setthrottlelimit) {
++				result =
++				    td->info.dd->ops->
++				    setthrottlelimit(THROTTLE_REL,
++						     td->info.private, buf);
++			}
++			spin_unlock(&td_list_lock);
++			return result;
++		}
++	}
++	spin_unlock(&td_list_lock);
++	return -ENODEV;
++}
++
+ static void acpi_thermal_passive(struct acpi_thermal *tz)
+ {
+ 	int result = 1;
+@@ -513,10 +499,11 @@ static void acpi_thermal_passive(struct acpi_thermal *tz)
+ 		/* Heating up? */
+ 		if (trend > 0)
+ 			for (i = 0; i < passive->devices.count; i++)
+-				acpi_processor_set_thermal_limit(passive->
+-								 devices.
+-								 handles[i],
+-								 ACPI_PROCESSOR_LIMIT_INCREMENT);
++				acpi_set_passive_thermal_limit(passive->
++				       devices.
++				       handles[i],
++				       THROTTLE_INCREMENT_STEP);
++
+ 		/* Cooling off? */
+ 		else if (trend < 0) {
+ 			for (i = 0; i < passive->devices.count; i++)
+@@ -525,10 +512,11 @@ static void acpi_thermal_passive(struct acpi_thermal *tz)
+ 				 * freq/lowest thrott and can leave
+ 				 * passive mode, even in error case
+ 				 */
+-				if (!acpi_processor_set_thermal_limit
++				if (!acpi_set_passive_thermal_limit
+ 				    (passive->devices.handles[i],
+-				     ACPI_PROCESSOR_LIMIT_DECREMENT))
++				     THROTTLE_DECREMENT_STEP))
+ 					result = 0;
++
+ 			/*
+ 			 * Leave cooling mode, even if the temp might
+ 			 * higher than trip point This is because some
+@@ -556,10 +544,10 @@ static void acpi_thermal_passive(struct acpi_thermal *tz)
+ 	if (!passive->flags.enabled)
+ 		return;
+ 	for (i = 0; i < passive->devices.count; i++)
+-		if (!acpi_processor_set_thermal_limit
+-		    (passive->devices.handles[i],
+-		     ACPI_PROCESSOR_LIMIT_DECREMENT))
++		if (!acpi_set_passive_thermal_limit
++		    (passive->devices.handles[i], THROTTLE_DECREMENT_STEP))
+ 			result = 0;
++
+ 	if (result) {
+ 		passive->flags.enabled = 0;
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+@@ -662,6 +650,19 @@ static void acpi_thermal_check(void *data)
+ 		return;
+ 	}
+ 
++	/*
++	 * Check for user/kernel algo
++	 * -------------------------
++	 *If there is a thermal management application in userspace
++	 *Or there are non CPU devices in this thermal zone
++	 *Kernelspace solution won't handle this
++	 */
++
++	if (THERMAL_KERNELSPACE != thermalconfig.mode
++	    || THERMAL_CPU_CLASS != tz->class) {
++		return;
++	}
++
+ 	state = tz->state;
+ 
+ 	result = acpi_thermal_get_temperature(tz);
+@@ -1094,7 +1095,687 @@ static int acpi_thermal_remove_fs(struct acpi_device *device)
+ }
+ 
+ /* --------------------------------------------------------------------------
+-                                 Driver Interface
++			Attribute implementation functions - TZ
++----------------------------------------------------------------------------- */
++
++static ssize_t aux0_show(struct acpi_thermal *tz, char *buf)
++{
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->ops && tz->ops->getauxtrip) {
++		tz->ops->getauxtrip(tz->name, THERMAL_AUX0, buf);
++	}
++
++	return strlen(buf);
++}
++
++static ssize_t aux0_store(struct acpi_thermal *tz, const char *buf,
++			  size_t count)
++{
++	int data;
++	if (!tz || !buf || THERMAL_USERSPACE != thermalconfig.mode)
++		return -EINVAL;
++
++	/*Sanity check; should be integer*/
++	if (!sscanf(buf, "%d", &data))
++		return -EINVAL;
++
++	/*Sanity check ( 0<aux0<_CRT)*/
++	if (data < 0 || (tz->trips.critical.flags.valid
++			 && data >
++			 KELVIN_TO_CELSIUS(tz->trips.critical.temperature)))
++		return -EINVAL;
++
++	if (tz->ops && tz->ops->setauxtrip) {
++		tz->ops->setauxtrip(tz->name, THERMAL_AUX0, buf);
++	}
++
++	return count;
++}
++
++static ssize_t aux1_show(struct acpi_thermal *tz, char *buf)
++{
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->ops && tz->ops->getauxtrip) {
++		tz->ops->getauxtrip(tz->name, THERMAL_AUX1, buf);
++	}
++
++	return strlen(buf);
++}
++
++static ssize_t aux1_store(struct acpi_thermal *tz, const char *buf,
++			  size_t count)
++{
++	int data;
++	if (!tz || !buf || THERMAL_USERSPACE != thermalconfig.mode)
++		return -EINVAL;
++
++	/*Sanity check; should be integer*/
++	if (!sscanf(buf, "%d", &data))
++		return -EINVAL;
++
++	/*Sanity check ( 0<aux1<_CRT)*/
++	if (data < 0 || (tz->trips.critical.flags.valid
++			 && data >
++			 KELVIN_TO_CELSIUS(tz->trips.critical.temperature)))
++		return -EINVAL;
++
++	if (tz->ops && tz->ops->setauxtrip) {
++		tz->ops->setauxtrip(tz->name, THERMAL_AUX1, buf);
++	}
++
++	return count;
++}
++
++static ssize_t sensorcapabilities_show(struct acpi_thermal *tz, char *buf)
++{
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->ops && tz->ops->getcaps) {
++		tz->ops->getcaps(tz->name, buf);
++	}
++
++	return strlen(buf);
++}
++
++static ssize_t tempbase_show(struct acpi_thermal *tz, char *buf)
++{
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->ops && tz->ops->gettempbase) {
++		tz->ops->gettempbase(tz->name, buf);
++	}
++
++	return strlen(buf);
++}
++
++static ssize_t sensorclass_show(struct acpi_thermal *tz, char *buf)
++{
++	char *s = buf;
++
++	if (!tz || !buf)
++		return -EINVAL;
++
++	s += sprintf(s, "%d \n", tz->class);
++
++	return (s - buf);
++}
++
++static ssize_t critical_show(struct acpi_thermal *tz, char *buf)
++{
++	char *s = buf;
++
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->trips.critical.flags.valid)
++		s += sprintf(s, "%ld \n",
++			     KELVIN_TO_CELSIUS(tz->trips.critical.temperature));
++
++	return (s - buf);
++}
++
++static ssize_t hot_show(struct acpi_thermal *tz, char *buf)
++{
++	char *s = buf;
++
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->trips.hot.flags.valid)
++		s += sprintf(s, "%ld \n",
++			     KELVIN_TO_CELSIUS(tz->trips.hot.temperature));
++
++	return (s - buf);
++}
++
++static ssize_t passive_show(struct acpi_thermal *tz, char *buf)
++{
++	char *s = buf;
++
++	if (!tz || !buf)
++		return -EINVAL;
++
++	if (tz->trips.passive.flags.valid)
++		s += sprintf(s, "%ld ",
++			     KELVIN_TO_CELSIUS(tz->trips.passive.temperature));
++
++	return (s - buf);
++}
++
++static ssize_t temperature_show(struct acpi_thermal *tz, char *buf)
++{
++	char *s = buf;
++	ACPI_FUNCTION_TRACE("temp_show");
++
++	if (!tz || !buf)
++		return -EINVAL;
++
++	acpi_thermal_get_temperature(tz);
++
++	s += sprintf(s, "%lu \n", KELVIN_TO_CELSIUS(tz->temperature));
++
++	return (s - buf);
++
++}
++
++/* --------------------------------------------------------------------------
++			sysfs Interface - TZ
++----------------------------------------------------------------------------- */
++
++/*Call back function prototypes*/
++struct thermalzone_attribute {
++	struct attribute attr;
++	 ssize_t(*show) (struct acpi_thermal *tz, char *buf);
++	 ssize_t(*store) (struct acpi_thermal *tz, const char *buf,
++			  size_t count);
++};
++
++/*Helper macros for using THERMALZONE attributes*/
++#define THERMALZONE_ATTR(_name, _mode, _show, _store) \
++struct thermalzone_attribute thermalzone_attr_##_name = {   \
++	.attr = {  \
++		.name = __stringify(_name), \
++		.mode = _mode,       \
++		.owner = THIS_MODULE,  \
++	}, \
++	.show = _show, \
++	.store = _store, \
++};
++
++#define to_thermalzone_attr(_attr) \
++	(container_of(_attr, \
++		     struct thermalzone_attribute, \
++		     attr))
++
++#define to_acpi_thermal(obj) \
++	container_of(obj, struct acpi_thermal, kobj)
++
++/*Attribute list for THERMALZONE subsystem*/
++
++/*current AUX0 trip value*/
++static THERMALZONE_ATTR(aux0, 0644, aux0_show, aux0_store);
++/*current AUX1 trip value*/
++static THERMALZONE_ATTR(aux1, 0644, aux1_show, aux1_store);
++static THERMALZONE_ATTR(sensorcapabilities, 0444,
++			sensorcapabilities_show, NULL);
++/*Kelvin or Celsius*/
++static THERMALZONE_ATTR(tempbase, 0444, tempbase_show, NULL);
++/*enum participant_class*/
++static THERMALZONE_ATTR(sensorclass, 0444, sensorclass_show, NULL);
++
++static struct thermalzone_attribute *thermalzone_extn_attrs[] = {
++	&thermalzone_attr_aux0,
++	&thermalzone_attr_aux1,
++	&thermalzone_attr_sensorcapabilities,
++	&thermalzone_attr_tempbase,
++	&thermalzone_attr_sensorclass,
++	NULL,
++};
++
++/*_CRT*/
++static THERMALZONE_ATTR(critical, 0444, critical_show, NULL);
++/*_HOT*/
++static THERMALZONE_ATTR(hot, 0444, hot_show, NULL);
++/*_PSV*/
++static THERMALZONE_ATTR(passive, 0444, passive_show, NULL);
++/*current temperature*/
++static THERMALZONE_ATTR(temperature, 0444, temperature_show, NULL);
++
++static struct thermalzone_attribute *thermalzone_attrs[] = {
++	&thermalzone_attr_critical,
++	&thermalzone_attr_hot,
++	&thermalzone_attr_passive,
++	&thermalzone_attr_temperature,
++	NULL,
++};
++
++static struct attribute *def_attrs[] = {
++	NULL,
++};
++
++/*Populate the attributes of thermalzone kobject*/
++static void thermalzone_populate_dir(struct acpi_thermal *tz)
++{
++	struct thermalzone_attribute *attr;
++	int error = 0;
++	int i;
++
++	for (i = 0; (attr = thermalzone_attrs[i]) && !error; i++) {
++		error = sysfs_create_file(&tz->kobj, &attr->attr);
++	}
++}
++
++/*Add the sensor driver specific inf*/
++static void thermalzone_sensorinfo_populate_dir(struct acpi_thermal *tz)
++{
++	struct thermalzone_attribute *attr;
++	int error = 0;
++	int i;
++
++	for (i = 0; (attr = thermalzone_extn_attrs[i]) && !error; i++) {
++		error = sysfs_create_file(&tz->kobj, &attr->attr);
++	}
++}
++
++/*Remove the sensor driver specific info*/
++static void thermalzone_sensorinfo_unpopulate_dir(struct acpi_thermal *tz)
++{
++	struct thermalzone_attribute *attr;
++	int i;
++
++	for (i = 0; (attr = thermalzone_extn_attrs[i]); i++) {
++		sysfs_remove_file(&tz->kobj, &attr->attr);
++	}
++}
++
++/*kobj_type callback function for 'show'*/
++static ssize_t
++thermalzone_attr_show(struct kobject *kobj, struct attribute *attr, char *buf)
++{
++	struct acpi_thermal *tzone = to_acpi_thermal(kobj);
++	struct thermalzone_attribute *thermalzone_attr =
++	    to_thermalzone_attr(attr);
++	ssize_t ret = -EIO;
++
++	/*Call attribute callback function*/
++	if (thermalzone_attr->show)
++		ret = thermalzone_attr->show(tzone, buf);
++
++	return ret;
++
++}
++
++/*kobj_type callback function for 'store'*/
++static ssize_t
++thermalzone_attr_store(struct kobject *kobj, struct attribute *attr,
++		       const char *buf, size_t len)
++{
++	struct acpi_thermal *tzone = to_acpi_thermal(kobj);
++	struct thermalzone_attribute *thermalzone_attr =
++	    to_thermalzone_attr(attr);
++
++	ssize_t ret = -EIO;
++
++	/*Call attribute callback function*/
++	if (thermalzone_attr->store)
++		ret = thermalzone_attr->store(tzone, buf, len);
++	return ret;
++}
++
++/*Call back registration for thermalzone*/
++static struct sysfs_ops thermalzone_attr_ops = {
++	.show = thermalzone_attr_show,
++	.store = thermalzone_attr_store,
++};
++
++/*ktype for thermalzone*/
++static struct kobj_type ktype_thermalzone = {
++	.sysfs_ops = &thermalzone_attr_ops,
++	.default_attrs = def_attrs,
++};
++
++static decl_subsys(thermal, &ktype_thermalzone, NULL);
++
++/* --------------------------------------------------------------------------
++			Attribute implementation functions - Thermal config
++----------------------------------------------------------------------------- */
++static ssize_t userenabled_show(struct thermal_config *tc, char *buf)
++{
++	char *s = buf;
++
++	if (!tc || !buf)
++		return -EINVAL;
++
++	s += sprintf(s, "%d \n", tc->userenabled);
++
++	return (s - buf);
++}
++
++static ssize_t mode_show(struct thermal_config *tc, char *buf)
++{
++	char *s = buf;
++
++	if (!tc || !buf)
++		return -EINVAL;
++
++	s += sprintf(s, "%s \n", thermal_mode[tc->mode]);
++
++	return (s - buf);
++}
++
++static ssize_t mode_store(struct thermal_config *tc, const char *buf,
++			  size_t count)
++{
++	int i;
++	if (!tc || !buf)
++		return -EINVAL;
++
++	if (THERMAL_USER_ENABLED == thermalconfig.userenabled) {
++		for (i = 0; i < THERMAL_MAX_MODE; i++) {
++			if (!strncmp
++			    (thermal_mode[i], buf, strlen(thermal_mode[i])))
++				tc->mode = i;
++		}
++	}
++
++	return count;
++}
++
++/* --------------------------------------------------------------------------
++			sysfs Interface - config
++----------------------------------------------------------------------------- */
++
++/*Call back function prototypes*/
++struct thermalconfig_attribute {
++	struct attribute attr;
++	 ssize_t(*show) (struct thermal_config *tc, char *buf);
++	 ssize_t(*store) (struct thermal_config *tc, const char *buf,
++			  size_t count);
++};
++
++/*Helper macros for using THERMALCONFIG attributes*/
++#define THERMALCONFIG_ATTR(_name, _mode, _show, _store) \
++struct thermalconfig_attribute thermalconfig_attr_##_name = {   \
++	.attr = { \
++		.name = __stringify(_name), \
++		.mode = _mode, \
++		.owner = THIS_MODULE \
++	}, \
++	.show = _show, \
++	.store = _store, \
++};
++
++#define to_thermalconfig_attr(_attr) \
++	(container_of(_attr, \
++		     struct thermalconfig_attribute, \
++		     attr))
++
++#define to_thermal_config(obj) \
++	container_of(obj, struct thermal_config, kobj)
++
++/*kobj_type callback function for 'show'*/
++static ssize_t
++thermalconfig_attr_show(struct kobject *kobj, struct attribute *attr, char *buf)
++{
++	struct thermal_config *tc = to_thermal_config(kobj);
++	struct thermalconfig_attribute *thermalconfig_attr =
++	    to_thermalconfig_attr(attr);
++	ssize_t ret = -EIO;
++
++	if (thermalconfig_attr->show)
++		ret = thermalconfig_attr->show(tc, buf);
++
++	return ret;
++}
++
++/*kobj_type callback function for 'store'*/
++static ssize_t
++thermalconfig_attr_store(struct kobject *kobj, struct attribute *attr,
++			 const char *buf, size_t len)
++{
++	struct thermal_config *tc = to_thermal_config(kobj);
++	struct thermalconfig_attribute *thermalconfig_attr =
++	    to_thermalconfig_attr(attr);
++
++	ssize_t ret = -EIO;
++
++	if (thermalconfig_attr->store)
++		ret = thermalconfig_attr->store(tc, buf, len);
++
++	return ret;
++}
++
++/*Enable/Disable userspace algo*/
++static THERMALCONFIG_ATTR(userenabled, 0444, userenabled_show, NULL);
++/*Kernel/user algo in execution*/
++static THERMALCONFIG_ATTR(mode, 0644, mode_show, mode_store);
++
++static struct thermalconfig_attribute *thermalconfig_attrs[] = {
++	&thermalconfig_attr_userenabled,
++	&thermalconfig_attr_mode,
++	NULL,
++};
++
++/*Populate the attributes of thermalconfig kobject*/
++static void thermalconfig_populate_dir(struct thermal_config *tc)
++{
++	struct thermalconfig_attribute *attr;
++	int error = 0;
++	int i;
++
++	for (i = 0; (attr = thermalconfig_attrs[i]) && !error; i++) {
++		error = sysfs_create_file(&tc->kobj, &attr->attr);
++	}
++}
++
++/*Call back registration for thermalzone*/
++static struct sysfs_ops thermalconfig_attr_ops = {
++	.show = thermalconfig_attr_show,
++	.store = thermalconfig_attr_store,
++};
++
++/*ktype for thermaconfig*/
++static struct kobj_type ktype_thermalconfig = {
++	.sysfs_ops = &thermalconfig_attr_ops,
++	.default_attrs = def_attrs,
++};
++
++/* --------------------------------------------------------------------------
++			Attribute implementation functions - devices
++----------------------------------------------------------------------------- */
++static ssize_t throttlestate_show(struct thermal_device_info *info, char *buf)
++{
++	if (!info || !buf)
++		return -EINVAL;
++
++	if (info->dd && info->dd->ops->getthrottlelimit) {
++		info->dd->ops->getthrottlelimit(info->private, buf);
++	}
++
++	return strlen(buf);
++}
++
++static ssize_t throttlestate_store(struct thermal_device_info *info,
++				   const char *buf, size_t count)
++{
++	int data;
++
++	if (!info || !buf || THERMAL_USERSPACE != thermalconfig.mode)
++		return -EINVAL;
++
++	/*Sanity check; should be integer*/
++	if (!sscanf(buf, "%d", &data))
++		return -EINVAL;
++
++	if (info->dd && info->dd->ops->setthrottlelimit) {
++		info->dd->ops->setthrottlelimit(info->common->type,
++						info->private, buf);
++	}
++
++	return count;
++}
++
++static ssize_t throttletype_show(struct thermal_device_info *info, char *buf)
++{
++	int throttletype;
++	char *s = buf;
++	if (!info || !buf)
++		return -EINVAL;
++
++	throttletype = info->common->type;
++	s += sprintf(s, "%s \n", thermal_throttle_type[throttletype]);
++
++	return (s - buf);
++}
++
++static ssize_t throttletype_store(struct thermal_device_info *info,
++				  const char *buf, size_t count)
++{
++	int i;
++	if (!info || !buf || THERMAL_USERSPACE != thermalconfig.mode)
++		return -EINVAL;
++
++	for (i = 0; i < THERMAL_MAX_THROTTLE_TYPE; i++) {
++		if (!strncmp
++		    (thermal_throttle_type[i], buf,
++		     strlen(thermal_throttle_type[i])))
++			info->common->type = i;
++	}
++
++	return count;
++}
++
++static ssize_t maxthrottlestate_show(struct thermal_device_info *info,
++				     char *buf)
++{
++	if (!info || !buf)
++		return -EINVAL;
++
++	if (info->dd && info->dd->ops->getmaxthrottlelimit) {
++		info->dd->ops->getmaxthrottlelimit(info->private, buf);
++	}
++
++	return strlen(buf);
++}
++
++static ssize_t deviceclass_show(struct thermal_device_info *info, char *buf)
++{
++	char *s = buf;
++
++	if (!info || !buf)
++		return -EINVAL;
++
++	s += sprintf(s, "%lu\n", info->dd->class);
++
++	return (s - buf);
++}
++
++static ssize_t capabilities_show(struct thermal_device_info *info, char *buf)
++{
++	if (!info || !buf)
++		return -EINVAL;
++
++	if (info->dd && info->dd->ops->getcaps) {
++		info->dd->ops->getcaps(info->private, buf);
++	}
++
++	return strlen(buf);
++}
++
++/* --------------------------------------------------------------------------
++			sysfs Interface - devices
++----------------------------------------------------------------------------- */
++
++/*Call back function prototypes*/
++struct devices_attribute {
++	struct attribute attr;
++	 ssize_t(*show) (struct thermal_device_info *info, char *buf);
++	 ssize_t(*store) (struct thermal_device_info *info, const char *buf,
++			  size_t count);
++};
++
++/*Helper macros for using devices attributes*/
++#define DEVICES_ATTR(_name, _mode, _show, _store) \
++struct devices_attribute devices_attr_##_name = {   \
++	.attr = { \
++		.name = __stringify(_name), \
++		.mode = _mode, \
++		.owner = THIS_MODULE \
++	}, \
++	.show = _show, \
++	.store = _store, \
++};
++
++#define to_devices_attr(_attr) \
++	container_of(_attr, struct devices_attribute, attr)
++#define to_thermal_device_info(obj) \
++	container_of(obj, struct thermal_device_info, kobj)
++
++/*kobj_type callback function for 'show'*/
++static ssize_t
++devices_attr_show(struct kobject *kobj, struct attribute *attr, char *buf)
++{
++	struct thermal_device_info *info = to_thermal_device_info(kobj);
++
++	struct devices_attribute *devices_attr = to_devices_attr(attr);
++	ssize_t ret = -EIO;
++
++	if (devices_attr->show)
++		ret = devices_attr->show(info, buf);
++
++	return ret;
++}
++
++/*kobj_type callback function for 'store'*/
++static ssize_t
++devices_attr_store(struct kobject *kobj, struct attribute *attr,
++		   const char *buf, size_t len)
++{
++	struct thermal_device_info *info = to_thermal_device_info(kobj);
++	struct devices_attribute *devices_attr = to_devices_attr(attr);
++
++	ssize_t ret = -EIO;
++
++	if (devices_attr->store)
++		ret = devices_attr->store(info, buf, len);
++
++	return ret;
++}
++
++/*Current state/newStep or State*/
++static DEVICES_ATTR(throttlestate, 0644,
++		    throttlestate_show, throttlestate_store);
++/*Absolute/Relative*/
++static DEVICES_ATTR(throttletype, 0644, throttletype_show, throttletype_store);
++/*max state supported*/
++static DEVICES_ATTR(maxthrottlestate, 0444, maxthrottlestate_show, NULL);
++/*enum participant_class*/
++static DEVICES_ATTR(deviceclass, 0444, deviceclass_show, NULL);
++/*device capabilities*/
++static DEVICES_ATTR(capabilities, 044, capabilities_show, NULL);
++
++static struct devices_attribute *devices_attrs[] = {
++	&devices_attr_throttlestate,
++	&devices_attr_throttletype,
++	&devices_attr_maxthrottlestate,
++	&devices_attr_deviceclass,
++	&devices_attr_capabilities,
++	NULL,
++};
++
++/*Call back registration for thermalzone*/
++static struct sysfs_ops devices_attr_ops = {
++	.show = devices_attr_show,
++	.store = devices_attr_store,
++};
++
++/*ktype for devices*/
++static struct kobj_type ktype_devices = {
++	.sysfs_ops = &devices_attr_ops,
++	.default_attrs = def_attrs,
++};
++
++/*Populate the attributes of thermalconfig kobject*/
++static void devices_populate_dir(struct thermal_device_info *info)
++{
++	struct devices_attribute *attr;
++
++	int error = 0;
++	int i;
++
++	for (i = 0; (attr = devices_attrs[i]) && !error; i++) {
++		error = sysfs_create_file(&info->kobj, &attr->attr);
++	}
++}
++
++/* --------------------------------------------------------------------------
++			Driver Interface
+    -------------------------------------------------------------------------- */
+ 
+ static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
+@@ -1110,16 +1791,28 @@ static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
+ 
+ 	switch (event) {
+ 	case ACPI_THERMAL_NOTIFY_TEMPERATURE:
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++		 "Received an event from TZ: %s event type:%x \n",
++		  tz->name, event));
++		/*kernel space algorithm*/
+ 		acpi_thermal_check(tz);
++		/*Event for user space algorithm*/
++		if (THERMAL_USERSPACE == thermalconfig.mode)
++			kobject_uevent(&tz->kobj, KOBJ_CHANGE);
+ 		break;
+ 	case ACPI_THERMAL_NOTIFY_THRESHOLDS:
+ 		acpi_thermal_get_trip_points(tz);
+ 		acpi_thermal_check(tz);
++		if (THERMAL_USERSPACE == thermalconfig.mode)
++			kobject_uevent(&tz->kobj, KOBJ_MOVE);
+ 		acpi_bus_generate_event(device, event, 0);
+ 		break;
+ 	case ACPI_THERMAL_NOTIFY_DEVICES:
+ 		if (tz->flags.devices)
+ 			acpi_thermal_get_devices(tz);
++		/*User space events will be received from
++		  individual devices upon enumeration*/
++		acpi_thermal_reenumerate(tz);
+ 		acpi_bus_generate_event(device, event, 0);
+ 		break;
+ 	default:
+@@ -1168,6 +1861,129 @@ static int acpi_thermal_get_info(struct acpi_thermal *tz)
+ 	return 0;
+ }
+ 
++/*Makes a new device (td)under TZ*/
++static void acpi_thermal_add_td_info(struct kobject *kobj,
++				     struct thermal_device_info *info)
++{
++	int result;
++
++	if (!kobj || !info)
++		return;
++
++	kobject_set_name(&info->kobj, info->name);
++	info->kobj.parent = kobj;
++	info->kobj.ktype = &ktype_devices;
++	result = kobject_register(&info->kobj);
++
++	if (result)
++		return;
++
++	devices_populate_dir(info);
++}
++
++/*Adds a thermal device to thermal zone if reported by _TZD*/
++static int acpi_thermal_verify_td_in_tz(struct acpi_thermal *tz,
++					struct thermal_device *td,
++					enum action_type action)
++{
++	int i;
++	int result;
++	struct acpi_device *ad;
++
++	if (!tz || !td)
++		return -EINVAL;
++
++	/*Loop through _TZD*/
++	for (i = 0; i < tz->devices.count; i++) {
++		result = acpi_bus_get_device(tz->devices.handles[i], &ad);
++		if (result)
++			return -ENODEV;
++
++		/*if registered device's name matches _TZD entry add td to tz*/
++		if (0 == strcmp(td->info.name, ad->pnp.bus_id)) {
++			switch (action) {
++			case THERMAL_ACTION_ADD:{
++					ACPI_DEBUG_PRINT(
++					(ACPI_DB_INFO,
++					  "Registered device %s with \
++					  thermal zone %s\n",
++					  td->info.name,
++					  tz->name));
++
++					tz->info[i] =
++					    kzalloc(sizeof
++						    (struct
++						     thermal_device_info),
++						    GFP_KERNEL);
++
++					memcpy(tz->info[i], &td->info,
++					       sizeof(struct
++						      thermal_device_info));
++
++					acpi_thermal_add_td_info(&tz->kobj,
++								 tz->info[i]);
++					return 0;
++				}
++
++			case THERMAL_ACTION_RMV:{
++					kobject_unregister(&tz->info[i]->kobj);
++					kfree(tz->info[i]);
++					tz->info[i] = NULL;
++					return 0;
++				}
++			}
++		}
++
++	}
++	return -ENODEV;
++}
++
++/* get the list of registered thermal devices
++and add to appropriate thermal zones*/
++static void acpi_thermal_enumerate(struct acpi_thermal *tz)
++{
++	struct thermal_device *td = NULL;
++	struct list_head *entry_td;
++
++	if (!tz)
++		return;
++
++	/*build info based on  _TZD*/
++	tz->info = kzalloc(tz->devices.count *
++			   sizeof(struct thermal_device_info *)
++			   , GFP_KERNEL);
++
++	spin_lock(&td_list_lock);
++	list_for_each(entry_td, &registered_thermal_device_list) {
++		td = list_entry(entry_td, struct thermal_device, node);
++		acpi_thermal_verify_td_in_tz(tz, td, THERMAL_ACTION_ADD);
++	}
++	spin_unlock(&td_list_lock);
++}
++
++static void acpi_thermal_reenumerate(struct acpi_thermal *tz)
++{
++	int i;
++
++	if (!tz)
++		return;
++
++	/*Remove first; needed for event ACPI_THERMAL_NOTIFY_DEVICE
++	  Loop through _TZD and unregister every kobj*/
++	for (i = 0; i < tz->devices.count; i++) {
++		if (tz->info[i]) {
++			kobject_unregister(&tz->info[i]->kobj);
++			kfree(tz->info[i]);
++			tz->info[i] = NULL;
++		}
++	}
++
++	if (tz->info)
++		kfree(tz->info);
++
++	acpi_thermal_enumerate(tz);
++}
++
+ static int acpi_thermal_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1196,6 +2012,17 @@ static int acpi_thermal_add(struct acpi_device *device)
+ 	if (result)
+ 		goto end;
+ 
++	/* kobject registering for thermalzone*/
++	kobject_set_name(&tz->kobj, device->pnp.bus_id);
++	kobj_set_kset_s(tz, thermal_subsys);
++	tz->kobj.parent = &thermal_subsys.kobj;
++	result = kobject_register(&tz->kobj);
++
++	if (result)
++		goto end;
++
++	thermalzone_populate_dir(tz);
++
+ 	init_timer(&tz->timer);
+ 
+ 	acpi_thermal_check(tz);
+@@ -1208,6 +2035,12 @@ static int acpi_thermal_add(struct acpi_device *device)
+ 		goto end;
+ 	}
+ 
++	acpi_thermal_enumerate(tz);
++
++	spin_lock(&tz_list_lock);
++	list_add(&(tz->node), &acpi_thermal_list);
++	spin_unlock(&tz_list_lock);
++
+ 	printk(KERN_INFO PREFIX "%s [%s] (%ld C)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
+ 	       KELVIN_TO_CELSIUS(tz->temperature));
+@@ -1215,6 +2048,7 @@ static int acpi_thermal_add(struct acpi_device *device)
+       end:
+ 	if (result) {
+ 		acpi_thermal_remove_fs(device);
++		kobject_unregister(&tz->kobj);
+ 		kfree(tz);
+ 	}
+ 
+@@ -1245,6 +2079,9 @@ static int acpi_thermal_remove(struct acpi_device *device, int type)
+ 					    ACPI_DEVICE_NOTIFY,
+ 					    acpi_thermal_notify);
+ 
++	list_del(&(tz->node));
++	kobject_unregister(&tz->kobj);
++
+ 	/* Terminate policy */
+ 	if (tz->trips.passive.flags.valid && tz->trips.passive.flags.enabled) {
+ 		tz->trips.passive.flags.enabled = 0;
+@@ -1256,6 +2093,7 @@ static int acpi_thermal_remove(struct acpi_device *device, int type)
+ 		acpi_thermal_active(tz);
+ 	}
+ 
++	kfree(tz->info);
+ 	acpi_thermal_remove_fs(device);
+ 
+ 	kfree(tz);
+@@ -1295,10 +2133,354 @@ static int acpi_thermal_resume(struct acpi_device *device)
+ 	return AE_OK;
+ }
+ 
++/* --------------------------------------------------------------------------
++			Component  Driver Interface
++   -------------------------------------------------------------------------- */
++
++/*
++ * thermal_register_device
++ * ----------------------
++ * Interface function for devices like CPU,LCD ... to register
++ * name : ACPI name like CPU0
++ * class : class as defined in thermal.h
++ * private: context of the device
++ * return : new thermal device
++ */
++struct thermal_device *thermal_register_device(const char *name,
++					       enum participant_class class,
++					       void *private)
++{
++	struct list_head *entry_tz;
++	struct list_head *entry_dd;
++	struct list_head *entry_td;
++	struct thermal_device *td;
++	int result = 0;
++
++	if (!name)
++		return NULL;
++
++	/*Check whether the device is already registered*/
++	spin_lock(&td_list_lock);
++	list_for_each(entry_td, &(registered_thermal_device_list)) {
++		td = list_entry(entry_td, struct thermal_device, node);
++		if (0 == strcmp(name, td->info.name)) {
++			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			  "Device by the name %s already exists \n",
++			  name));
++			spin_unlock(&td_list_lock);
++			return NULL;
++		}
++	}
++	spin_unlock(&td_list_lock);
++
++	/*allocate new thermal device*/
++	td = kzalloc(sizeof(struct thermal_device), GFP_KERNEL);
++
++	if (!td)
++		return NULL;
++
++	/*Check whether a driver has registered for this class*/
++	spin_lock(&dd_list_lock);
++	list_for_each(entry_dd, &thermal_device_driver_list) {
++		struct thermal_device_driver *dd;
++		dd = list_entry(entry_dd, struct thermal_device_driver, node);
++		if (class == dd->class) {
++			td->info.dd = dd;
++			strcpy(td->info.name, name);
++			td->info.private = private;
++			td->info.common = td;
++			break;
++		}
++	}
++	spin_unlock(&dd_list_lock);
++
++	/*Driver not found*/
++	if (!td->info.dd) {
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++		  "Cannot find a suitable driver for device class %du\n",
++				  class));
++		result = -ENODEV;
++		goto end;
++	}
++	/*Search for enumerated item in each tz*/
++	spin_lock(&tz_list_lock);
++	list_for_each(entry_tz, &acpi_thermal_list) {
++		struct acpi_thermal *tz;
++		tz = list_entry(entry_tz, struct acpi_thermal, node);
++		acpi_thermal_verify_td_in_tz(tz, td, THERMAL_ACTION_ADD);
++
++	}
++	spin_unlock(&tz_list_lock);
++
++	/*Add into the list of registered devices*/
++	spin_lock(&td_list_lock);
++	list_add(&(td->node), &(registered_thermal_device_list));
++	spin_unlock(&td_list_lock);
++
++end:
++	if (result) {
++		kfree(td);
++		td = NULL;
++	}
++
++	return td;
++}
++EXPORT_SYMBOL(thermal_register_device);
++
++/*Need to call this function after locking TZ and TD lists*/
++int __thermal_unregister_device(struct thermal_device *td)
++{
++	struct list_head *entry_tz;
++
++	if (!td)
++		return -EINVAL;
++
++	list_for_each(entry_tz, &acpi_thermal_list) {
++		struct acpi_thermal *tz;
++		tz = list_entry(entry_tz, struct acpi_thermal, node);
++		acpi_thermal_verify_td_in_tz(tz, td, THERMAL_ACTION_RMV);
++	}
++
++	list_del(&td->node);
++
++	kfree(td);
++	return 0;
++}
++
++/*
++ * thermal_unregister_device
++ * ----------------------
++ * Interface function for devices like CPU,LCD ... to unregister
++ * name : ACPI name like CPU0
++ */
++int thermal_unregister_device(struct thermal_device *td)
++{
++	if (!td)
++		return -EINVAL;
++
++	/*Remove from registered list*/
++	spin_lock(&tz_list_lock);
++	spin_lock(&td_list_lock);
++
++	__thermal_unregister_device(td);
++
++	spin_unlock(&td_list_lock);
++	spin_unlock(&tz_list_lock);
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_unregister_device);
++
++/*
++ * thermal_register_sensor
++ * ----------------------
++ * Interface function for platform sensor driver to register
++ * class: as defined in thermal.h
++ * name : ACPI Thermal zone name like TZ00
++ * ops: callback function as defined in platform sensor driver
++ */
++int thermal_register_sensor(enum participant_class class, const char *name,
++			    struct thermal_sensor_ops *ops)
++{
++	struct list_head *entry_tz;
++
++	if (!name || !ops)
++		return -EINVAL;
++
++	spin_lock(&tz_list_lock);
++	list_for_each(entry_tz, &acpi_thermal_list) {
++		struct acpi_thermal *tz;
++		tz = list_entry(entry_tz, struct acpi_thermal, node);
++
++		/*Find the matching thermal zone*/
++		if (0 == strcmp(name, tz->name)) {
++			if (tz->ops) {
++				ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
++				  "Already a driver has registered \
++				  for this thermal zone %s \n",
++				  tz->name));
++				spin_unlock(&tz_list_lock);
++				return -EEXIST;
++			}
++			tz->ops = ops;
++			tz->class = class;
++			thermalzone_sensorinfo_populate_dir(tz);
++
++			ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
++			  "Registered sensor for thermal zone %s !\n",
++			  tz->name));
++
++			spin_unlock(&tz_list_lock);
++			return 0;
++		}
++	}
++	spin_unlock(&tz_list_lock);
++	ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
++			  "Failed to register sensor for thermal zone  %s \n",
++			  name));
++	return -ENODEV;
++}
++EXPORT_SYMBOL(thermal_register_sensor);
++
++/*
++ * thermal_unregister_sensor
++ * ----------------------
++ * Interface function for platform sensor driver to unregister
++ * name : ACPI Thermal zone name like TZ00
++ */
++int thermal_unregister_sensor(const char *name)
++{
++	struct list_head *entry_tz;
++
++	if (!name)
++		return -EINVAL;
++
++	spin_lock(&tz_list_lock);
++	list_for_each(entry_tz, &acpi_thermal_list) {
++		struct acpi_thermal *tz;
++		tz = list_entry(entry_tz, struct acpi_thermal, node);
++
++		/*Find the matching thermal zone*/
++		if (0 == strcmp(name, tz->name) && tz->ops) {
++			tz->ops = NULL;
++			thermalzone_sensorinfo_unpopulate_dir(tz);
++
++			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			  "Unregistered sensor for thermal zone %s !\n",
++			  tz->name));
++			spin_unlock(&tz_list_lock);
++			return 0;
++		}
++	}
++	spin_unlock(&tz_list_lock);
++	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			  "Failed to unregister sensor for thermal zone  %s \n",
++			  name));
++	return -ENODEV;
++}
++EXPORT_SYMBOL(thermal_unregister_sensor);
++
++/*
++ * thermal_register_device_driver
++ * -----------------------------
++ * Interface function for platform sensor driver to unregister
++ * dd : thermal_device_driver instance as defined in thermal.h
++ */
++int thermal_register_device_driver(struct thermal_device_driver *dd)
++{
++	struct list_head *entry_dd;
++
++	if (!dd || !dd->ops)
++		return -EINVAL;
++
++	/*Check whether a driver exists for this class of devices*/
++	spin_lock(&dd_list_lock);
++	list_for_each(entry_dd, &thermal_device_driver_list) {
++		struct thermal_device_driver *olddd;
++		olddd =
++		    list_entry(entry_dd, struct thermal_device_driver, node);
++		if (olddd->class == dd->class) {
++			ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
++			  "Already Registered driver \
++			   for class %lu \n",
++					  dd->class));
++			spin_unlock(&dd_list_lock);
++			return -EEXIST;
++		}
++	}
++
++	/*Add to the list of registered drivers*/
++	list_add(&(dd->node), &(thermal_device_driver_list));
++	spin_unlock(&dd_list_lock);
++	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Registered driver for class %lu \n",
++			  dd->class));
++	return 0;
++}
++EXPORT_SYMBOL(thermal_register_device_driver);
++
++/*
++ * thermal_unregister_device_driver
++ * -----------------------------
++ * Interface function for platform sensor driver to unregister
++ * dd : thermal_device_driver instance as defined in thermal.h
++ */
++int thermal_unregister_device_driver(struct thermal_device_driver *dd)
++{
++	struct list_head *pos, *q;
++	struct list_head *entry_dd;
++	int registered = 0;
++
++	if (!dd)
++		return -EINVAL;
++
++	/*Check whether a driver is registered*/
++	spin_lock(&dd_list_lock);
++	list_for_each(entry_dd, &thermal_device_driver_list) {
++		struct thermal_device_driver *olddd;
++		olddd =
++		    list_entry(entry_dd, struct thermal_device_driver, node);
++		if (olddd->class == dd->class) {
++			list_del(&dd->node);
++			registered = 1;
++			break;
++		}
++	}
++	spin_unlock(&dd_list_lock);
++
++	/*Driver is not registered*/
++	if (!registered)
++		return -EINVAL;
++
++	/*Remove all the devices associated with this driver
++	  TZ lock is needed for __thermal_unregister_device*/
++	spin_lock(&tz_list_lock);
++	spin_lock(&td_list_lock);
++	list_for_each_safe(pos, q, &(registered_thermal_device_list)) {
++		struct thermal_device *td;
++		td = list_entry(pos, struct thermal_device, node);
++		if (dd == td->info.dd) {
++		  /*Shouldn't happen; devices should call unregister_device
++		    before unregistering driver*/
++			__thermal_unregister_device(td);
++		}
++	}
++	spin_unlock(&td_list_lock);
++	spin_unlock(&tz_list_lock);
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_unregister_device_driver);
++
++/*
++ * thermal_set_userenabled
++ * -----------------------
++ * Interface function for platform sensor driver to disble userspace algo
++ * ue: enable / disable userspace algo based on BIOS configuration
++ */
++int thermal_set_userenabled(enum thermal_userenabled ue)
++{
++	thermalconfig.userenabled = ue;
++	return 0;
++}
++EXPORT_SYMBOL(thermal_set_userenabled);
++
+ static int __init acpi_thermal_init(void)
+ {
+ 	int result = 0;
++	result = subsystem_register(&thermal_subsys);
++	if (result)
++		return result;
++
++	kobject_set_name(&thermalconfig.kobj, THERMAL_SYSFS_CONFIG);
++	thermalconfig.kobj.parent = &thermal_subsys.kobj;
++	thermalconfig.kobj.ktype = &ktype_thermalconfig;
+ 
++	result = kobject_register(&thermalconfig.kobj);
++
++	if (result)
++		return result;
++
++	thermalconfig_populate_dir(&thermalconfig);
+ 
+ 	acpi_thermal_dir = proc_mkdir(ACPI_THERMAL_CLASS, acpi_root_dir);
+ 	if (!acpi_thermal_dir)
+@@ -1318,7 +2500,7 @@ static void __exit acpi_thermal_exit(void)
+ {
+ 
+ 	acpi_bus_unregister_driver(&acpi_thermal_driver);
+-
++	subsystem_unregister(&thermal_subsys);
+ 	remove_proc_entry(ACPI_THERMAL_CLASS, acpi_root_dir);
+ 
+ 	return;
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+new file mode 100644
+index 0000000..2332e26
+--- /dev/null
++++ b/include/linux/thermal.h
+@@ -0,0 +1,355 @@
++/*
++ *  thermal.h - ACPI Thermal Zone Driver ($Revision: 1 $)
++ *
++ *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
++ *  Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
++ *  Copyright (C) 2001, 2002 Sujith Thomas <sujith.thomas@intel.com>
++
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation;  version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This driver fully implements the ACPI thermal policy as described in the
++ *  ACPI 2.0 Specification.
++ *
++ *  TBD: 1. Implement passive cooling hysteresis.
++ *       2. Enhance passive cooling (CPU) states/limit interface to support
++ *          concepts of 'multiple limiters', upper/lower limits, etc.
++ *  Modified: 1. Provide infrastructure from kernel to enable user-space
++ *              thermal management algorithm
++ *
++ */
++
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/list.h>
++#include <linux/timer.h>
++
++#define ACPI_THERMAL_COMPONENT		0x04000000
++#define ACPI_THERMAL_CLASS		"thermal_zone"
++#define ACPI_THERMAL_DRIVER_NAME	"ACPI Thermal Zone Driver"
++#define ACPI_THERMAL_DEVICE_NAME	"Thermal Zone"
++#define ACPI_THERMAL_FILE_STATE		"state"
++#define ACPI_THERMAL_FILE_TEMPERATURE	"temperature"
++#define ACPI_THERMAL_FILE_TRIP_POINTS	"trip_points"
++#define ACPI_THERMAL_FILE_COOLING_MODE	"cooling_mode"
++#define ACPI_THERMAL_FILE_POLLING_FREQ	"polling_frequency"
++#define ACPI_THERMAL_NOTIFY_TEMPERATURE	0x80
++#define ACPI_THERMAL_NOTIFY_THRESHOLDS	0x81
++#define ACPI_THERMAL_NOTIFY_DEVICES	0x82
++#define ACPI_THERMAL_NOTIFY_CRITICAL	0xF0
++#define ACPI_THERMAL_NOTIFY_HOT		0xF1
++#define ACPI_THERMAL_MODE_ACTIVE	0x00
++#define ACPI_THERMAL_MODE_PASSIVE	0x01
++#define ACPI_THERMAL_MODE_CRITICAL   	0xff
++#define ACPI_THERMAL_PATH_POWEROFF	"/sbin/poweroff"
++
++#define ACPI_MAX_CHAR 5
++#define ACPI_THERMAL_MAX_ACTIVE	10
++#define ACPI_THERMAL_MAX_LIMIT_STR_LEN 65
++
++#define KELVIN_TO_CELSIUS(t) \
++	(long)(((long)t-2732 >= 0) ? ((long)t-2732+5)/10 \
++	: ((long)t-2732-5)/10)
++#define CELSIUS_TO_KELVIN(t)	((t+273)*10)
++
++struct acpi_thermal_state {
++	u8 critical:1;
++	u8 hot:1;
++	u8 passive:1;
++	u8 active:1;
++	u8 reserved:4;
++	int active_index;
++};
++
++struct acpi_thermal_state_flags {
++	u8 valid:1;
++	u8 enabled:1;
++	u8 reserved:6;
++};
++
++struct acpi_thermal_critical {
++	struct acpi_thermal_state_flags flags;
++	unsigned long temperature;
++};
++
++struct acpi_thermal_hot {
++	struct acpi_thermal_state_flags flags;
++	unsigned long temperature;
++};
++
++struct acpi_thermal_passive {
++	struct acpi_thermal_state_flags flags;
++	unsigned long temperature;
++	unsigned long tc1;
++	unsigned long tc2;
++	unsigned long tsp;
++	struct acpi_handle_list devices;
++};
++
++struct acpi_thermal_active {
++	struct acpi_thermal_state_flags flags;
++	unsigned long temperature;
++	struct acpi_handle_list devices;
++};
++
++struct acpi_thermal_trips {
++	struct acpi_thermal_critical critical;
++	struct acpi_thermal_hot hot;
++	struct acpi_thermal_passive passive;
++	struct acpi_thermal_active active[ACPI_THERMAL_MAX_ACTIVE];
++};
++
++struct acpi_thermal_flags {
++	u8 cooling_mode:1;	/* _SCP */
++	u8 devices:1;		/* _TZD */
++	u8 reserved:6;
++};
++
++/*By default kernel increments CPU throttlinby one step at a time*/
++#define THROTTLE_INCREMENT_STEP 1
++#define THROTTLE_DECREMENT_STEP -1
++
++/*Support for absolute or relative throttlestates
++  Relative is the one used by default kernel algorithm*/
++#define THERMAL_MAX_THROTTLE_TYPE 2
++enum throttle_set_type { THROTTLE_ABS, THROTTLE_REL };
++
++/*Permissible Step range for relative throttling*/
++#define MAX_THROTTLE_STEP 9
++#define MIN_THROTTLE_STEP -9
++
++/* --------------------------------------------------------------------------
++			Component Driver Interface
++   -------------------------------------------------------------------------- */
++/*Reserved */
++#define DEVICE_CAPS_RESERVED              0x000000
++/*Has H/W thermal trip/throttle */
++#define DEVICE_CAPS_HW_THROTTLE           0x000001
++/*Has S/W programmable thermal events */
++#define DEVICE_CAPS_SW_PGM_THERMAL_EVENTS 0x000002
++/*Has thermal throttle controls (Non/Linear) */
++#define DEVICE_CAPS_THROTTLE_CONTROLS     0x000004
++/*Active device (e.g. Fan, Pump)" */
++#define DEVICE_CAPS_ACTIVE                0x000008
++/*Has monotonic throttle states */
++#define DEVICE_CAPS_MONOTONIC_STATES      0x000010
++
++typedef int (*thermal_device_set_throttle_limit) (enum throttle_set_type type,
++						  void *data, const char *buf);
++typedef int (*thermal_device_get_throttle_limit) (void *data, char *buf);
++typedef int (*thermal_device_get_max_throttle_limit) (void *data, char *buf);
++typedef int (*thermal_device_get_caps) (void *data, char *buf);
++
++struct thermal_device_ops {
++	/*Set new throttle limit */
++	thermal_device_set_throttle_limit setthrottlelimit;
++	/*Get current throttle limit */
++	thermal_device_get_throttle_limit getthrottlelimit;
++	/*Get maximum suppoted throttle state */
++	thermal_device_get_max_throttle_limit getmaxthrottlelimit;
++	/*Get device capabilities */
++	thermal_device_get_caps getcaps;
++};
++
++struct thermal_device_driver {
++	struct list_head node;	/*Linked list handling */
++	unsigned long class;	/*Device class */
++	struct thermal_device_ops *ops;	/*Callback functions */
++};
++
++struct thermal_device_info {
++	char name[ACPI_MAX_CHAR];	  /*ACPI name */
++	void *private;		          /*Device specific data */
++	struct thermal_device_driver *dd; /*Device driver info */
++	/*Info common to same devices in different TZs */
++	struct thermal_device *common;
++	struct kobject kobj;	          /*Sysfs stuff */
++};
++
++struct thermal_device {
++	struct list_head node;	        /*Linked list handling */
++	enum throttle_set_type type;	/*Absoulute/Relative */
++	struct thermal_device_info info;/*name + driver details + kobj */
++};
++
++enum participant_class { THERMAL_UNKNOWN_CLASS, THERMAL_SKIN_CLASS,
++	THERMAL_SYSTEM_CLASS, THERMAL_CPU_CLASS, THERMAL_MEM_CLASS,
++	THERMAL_LCD_CLASS, THERMAL_GFX_CLASS, THERMAL_WLAN_CLASS,
++	THERMAL_WWAN_CLASS, THERMAL_ACTIVE_CLASS
++};
++
++enum action_type { THERMAL_ACTION_ADD, THERMAL_ACTION_RMV };
++
++/*Interface functions for component registration*/
++
++/*
++ * thermal_register_device
++ * ----------------------
++ * Interface function for devices like CPU,LCD ... to register
++ * name : ACPI name like CPU0
++ * class : class as defined in thermal.h
++ * private: context of the device
++ * return : a pointer to new thermal device
++ */
++struct thermal_device *thermal_register_device(const char *name,
++					       enum participant_class class,
++					       void *private);
++/*
++ * thermal_unregister_device
++ * ----------------------
++ * Interface function for devices like CPU,LCD ... to unregister
++ * name : ACPI thermal device *
++ */
++int thermal_unregister_device(struct thermal_device *td);
++
++/*
++ * thermal_register_device_driver
++ * -----------------------------
++ * Interface function for platform sensor driver to unregister
++ * dd : thermal_device_driver instance as defined in thermal.h
++ */
++int thermal_register_device_driver(struct thermal_device_driver *dd);
++
++/*
++ * thermal_unregister_device_driver
++ * -----------------------------
++ * Interface function for platform sensor driver to unregister
++ * dd : thermal_device_driver instance as defined in thermal.h
++ */
++int thermal_unregister_device_driver(struct thermal_device_driver *dd);
++
++/* --------------------------------------------------------------------------
++				Sensor Driver Interface
++   -------------------------------------------------------------------------- */
++
++/*Sensor capabilities*/
++
++/* Reserved */
++#define SENSOR_CAPS_RESERVED 0x000000
++/*Can support multiple participant devices */
++#define SENSOR_CAPS_MULTIPLE_DEVICES 0x000001
++/*Can report temperature */
++#define SENSOR_CAPS_REPORT_TEMP 0x000002
++/*Reports relative or absolute temperature */
++#define SENSOR_CAPS_REPORT_ABS_TEMP 0x000004
++/*Reports average or instantaneous temp */
++#define SENSOR_CAPS_REPORT_INST_TEMP 0x000008
++/* Programmable sample interval */
++#define SENSOR_CAPS_PGM_SAMPLE_INT 0x000010
++/*Can report rate-of-change */
++#define SENSOR_CAPS_REPORT_RATE 0x000040
++/* Has H/W thermal trip/throttle */
++#define SENSOR_CAPS_HW_THERMAL_TRIP 0x010000
++/*Has S/W programmable thermal events */
++#define SENSOR_CAPS_SW_PGM_THERMAL_EVENTS 0x020000
++/*Has ACPI thermal trip points */
++#define SENSOR_CAPS_ACPI_THERMAL_TRIPS 0x040000
++
++/*Sensor temperature base*/
++#define SENSOR_TEMPBASE_ABS_KELVIN  0x00
++#define SENSOR_TEMPBASE_REL_KELVIN  0x01
++#define SENSOR_TEMPBASE_ABS_CELSIUS 0x02
++#define SENSOR_TEMPBASE_REL_CELSIUS 0x03
++
++enum aux_type { THERMAL_AUX0, THERMAL_AUX1 };
++
++typedef int (*thermal_sensor_set_aux_trip) (const char *name, const int auxtype,
++					    const char *buf);
++typedef int (*thermal_sensor_get_aux_trip) (const char *name, const int auxtype,
++					    char *buf);
++typedef int (*thermal_sensor_get_temp_base) (const char *name, char *buf);
++typedef int (*thermal_sensor_get_caps) (const char *name, char *buf);
++
++struct thermal_sensor_ops {
++	thermal_sensor_set_aux_trip setauxtrip;	 /*Get current AUX trip */
++	thermal_sensor_get_aux_trip getauxtrip;	 /*Set new AUX trip */
++	thermal_sensor_get_temp_base gettempbase;/*Get temperature base (K/c) */
++	thermal_sensor_get_caps getcaps;	 /*Get sensor capabilities */
++};
++/*Interface functions for platform sensor driver registration*/
++
++/*
++ * thermal_register_sensor
++ * ----------------------
++ * Interface function for platform sensor driver to register
++ * class: as defined in thermal.h
++ * name : ACPI Thermal zone name like TZ00
++ * ops: callback function as defined in platform sensor driver
++ */
++int thermal_register_sensor(enum participant_class class, const char *name,
++			    struct thermal_sensor_ops *ops);
++
++/*
++ * thermal_unregister_sensor
++ * ----------------------
++ * Interface function for platform sensor driver to unregister
++ * name : ACPI Thermal zone name like TZ00
++ */
++int thermal_unregister_sensor(const char *name);
++
++/* --------------------------------------------------------------------------
++			Configuration Interface
++   -------------------------------------------------------------------------- */
++
++#define THERMAL_SYSFS_CONFIG "config"
++
++#define THERMAL_MAX_MODE 2
++enum thermal_userenabled { THERMAL_USER_DISABLED, THERMAL_USER_ENABLED };
++enum thermal_mode { THERMAL_USERSPACE, THERMAL_KERNELSPACE };
++
++struct thermal_config {
++	u8 userenabled:1;   /* 1 if user application is allowed to take over */
++	u8 mode:1;	    /* 0 if userspace algorithm has taken over */
++	struct kobject kobj;/*Syfs stuff */
++};
++
++/*
++ * thermal_set_userenabled
++ * -----------------------
++ * Interface function for platform sensor driver to disble userspace algo
++ * ue: enable / disable userspace algo based on BIOS configuration
++ */
++int thermal_set_userenabled(enum thermal_userenabled um);
++
++/* --------------------------------------------------------------------------
++			Thermal zone definition
++   -------------------------------------------------------------------------- */
++struct acpi_thermal {
++	struct list_head node;	        /*Linkedlist management */
++	struct acpi_device *device;	/*ACPI device info */
++	acpi_bus_id name;	        /*ACPI device name (eg:- TZ00) */
++	unsigned long temperature;	/*Current temperature */
++	unsigned long last_temperature;	/*Previous temperature */
++	unsigned long polling_frequency;/*Polling fequency */
++	u8 cooling_mode;	        /*Active or passive */
++	volatile u8 zombie;	       /*Flag for avoiding new deferred task */
++	struct acpi_thermal_flags flags;/*See definition above */
++	struct acpi_thermal_state state;/*See definition above */
++	struct acpi_thermal_trips trips;/*_CRT,_HOT,_PSV*/
++	struct acpi_handle_list devices;/* _TZD */
++	struct timer_list timer;	/*Timer for polling thermal zone */
++	struct thermal_device_info **info;/*Array of devices in TZ */
++	/*Call back functions to platform sensor driver */
++	struct thermal_sensor_ops *ops;
++	enum participant_class class;/*Participant (device + sensor) class */
++	struct kobject kobj;	        /*Syfs stuff */
++};
+-- 
+1.5.2.4
+
