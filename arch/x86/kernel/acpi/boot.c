@@ -592,9 +592,25 @@ acpi_scan_rsdp(unsigned long start, unsigned long length)
 	 * RSDP signature.
 	 */
 	for (offset = 0; offset < length; offset += 16) {
-		if (strncmp((char *)(phys_to_virt(start) + offset), "RSD PTR ", sig_len))
-			continue;
-		return (start + offset);
+		if (strncmp((char *)(phys_to_virt(start) + offset), "RSD PTR ", sig_len) == 0) {
+			/* 2007-09-24 TJ <linux@tjworld.net>
+			 * The ACPI specification states the first 20 bytes of the RSDP table
+			 * must have a checksum of 0 (ACPI 1.0b RSDP table is 20 bytes long).
+			 * The signature can appear in multiple memory locations so don't rely
+			 * on it as the sole proof of a valid table.
+			 * This fixes broken/disabled ACPI problems with Acer Travelmate C100
+			 * (and others) where the first signature match is accepted without
+			 *  confirming the checksum.
+			 */
+			unsigned int i;
+			unsigned char checksum;
+			unsigned char *table = (unsigned char *)(phys_to_virt(start) + offset);
+			for (checksum = 0, i = 0; i < 20; i++)
+				checksum += table[i];
+
+		printk(KERN_WARNING PREFIX "RSDP signature @ 0x%0.8lX checksum %d\n", table, checksum);
+			if (checksum == 0) return (start + offset);
+		}
 	}
 
 	return 0;
