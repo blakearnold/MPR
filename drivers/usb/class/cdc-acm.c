@@ -1183,6 +1183,9 @@ static struct usb_device_id acm_ids[] = {
 	{ USB_DEVICE(0x22b8, 0x7000), /* Motorola Q Phone */
 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
 	},
+	{ USB_DEVICE(0x0e8d,0x0003), /* MediaTek Inc MT6227 */
+	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
+	},
 
 	/* control interfaces with various AT-command sets */
 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
