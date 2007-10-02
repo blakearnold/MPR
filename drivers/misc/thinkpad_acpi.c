@@ -2486,7 +2486,8 @@ static int __init cmos_init(struct ibm_init_struct *iibm)
 
 	node = cmos_handle;
 
-	acpi_method_notify_enable (node->name.ascii);
+	if (node)
+		acpi_method_notify_enable (node->name.ascii);
 
 	return (cmos_handle)? 0 : 1;
 }
