@@ -381,7 +381,7 @@ Description: Linux kernel image for version 2.6.22 on i386
  Geared toward mobile and embedded systems.
  .
  You likely do not want to install this package directly. Instead, install
- the linux-lpia meta-package, which will ensure that upgrades work
+ the linux-lpiacompat meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
 Package: linux-headers-2.6.22-13-lpiacompat
