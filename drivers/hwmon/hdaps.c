@@ -527,6 +527,7 @@ static struct dmi_system_id __initdata hdaps_whitelist[] = {
 	HDAPS_DMI_MATCH_NORMAL("IBM", "ThinkPad Z60m"),
 	HDAPS_DMI_MATCH_NORMAL("IBM", "ThinkPad T61P"),
 	HDAPS_DMI_MATCH_NORMAL("IBM", "ThinkPad R61"),
+	HDAPS_DMI_MATCH_NORMAL("IBM", "ThinkPad T61"),
 	{ .ident = NULL }
 };
 
