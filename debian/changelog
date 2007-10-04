@@ -1,11 +1,45 @@
 linux-source-2.6.22 (2.6.22-13.40) gutsy; urgency=low
 
+  [Amit Kucheria]
+
+  * Enable CONFIG_VM86 for LPIA
+    - LP: #146311
+  * Update configuration files
+  * Disable MSI by default
+  * Add mmconf documentation
+  * Update configuration files
+
+  [Bartlomiej Zolnierkiewicz]
+
+  * ide-disk: workaround for buggy HPA support on ST340823A (take 3)
+    - LP: #26119
+
   [Ben Collins]
 
   * ubuntu/cell: Fixup ps3 related modules for d-i, enable RTAS console
   * ubuntu/cell: Enable CELLEB and related modules (pata_scc)
   * ubuntu/cell: Move ps3rom to storage-core. Also use spidernet, not
     spider_net.
+  * ubuntu/cell: Set PS3_MANAGER=y
+  * ubuntu: Set NR_CPUS=256 for sparc64-smp
+
+  [Chuck Short]
+
+  * [USB] USB] Support for MediaTek MT6227 in cdc-acm.
+    - LP: #134123
+  * [XEN] Fix xen vif create with more than 14 guests.
+    - LP: #14486
+
+  [Jorge Juan Chico]
+
+  * ide: ST320413A has the same problem as ST340823A
+    - LP: #26119
+
+  [Kyle McMartin]
+
+  * fix -rt build
+  * fix ia32entry-xen.S for CVE-2007-4573
+  * fix build when CONFIG_PCI_MSI is not set
 
   [Matthew Garrett]
 
@@ -13,6 +47,29 @@ linux-source-2.6.22 (2.6.22-13.40) gutsy; urgency=low
     - LP: #57146
   * A malformed _GTF object should not prevent ATA device recovery
     - LP: #139079
+  * hostap: send events on data interface as well as master interface
+    - LP: #57146
+  * A malformed _GTF object should not prevent ATA device recovery
+    - LP: #139079
+  * Don't lose appletouch button release events
+  * Fix build with appletouch change
+  * Disable Thinkpad backlight support on machines with ACPI video
+    - LP: #148055
+  * Don't attempt to register a callback if there is no CMOS object
+    - LP: #145857
+  * Update ACPI bay hotswap code to support locking
+    - LP: #148219
+  * Update ACPI bay hotswap code to support locking
+    - LP: #148219
+  * Don't attempt to register a callback if there is no CMOS object
+    - LP: #145857
+  * Disable Thinkpad backlight support on machines with ACPI video
+    - LP: #148055
+
+  [Steffen Klassert]
+
+  * 3c59x: fix duplex configuration
+    - LP: #94186
 
   [Thomas Gleixner]
 
@@ -22,6 +79,36 @@ linux-source-2.6.22 (2.6.22-13.40) gutsy; urgency=low
 
   * orinoco_cs.ko missing
     - LP: #125832
+  * Marvell Technology ethernet card not recognized and not operational
+    - LP: #135316
+  * Marvell Technology ethernet card not recognized and not operational
+    - LP: #135316
+  * acpi_scan_rsdp() breaks some PCs by not honouring ACPI specification
+    - LP: #144336
+  * VIA southbridge Intel id missing
+    - LP: #128289
+  * Add T-Sinus 111card to hostap_cs driver to be able to upload firmware
+    - LP: #132466
+  * RTL8111 PCI Express Gigabit driver r8169 big files produce slow file
+    transfer
+    - LP: #114171
+  * Guest OS does not recognize a lun with non zero target id on Vmware ESX
+    Server
+    - LP: #140761
+  * Modualrize vesafb
+    - LP: #139505
+  * Nikon cameras need support in unusual_devs.h
+    - LP: #134477
+  * agp for i830m broken in gutsy
+    - LP: #139767
+  * hdaps: Added support for Thinkpad T61
+    - LP: #147383
+  * xen: Update config for i386
+    - LP: #139047
+  * xen: resync for amd64
+    - LP: #139047
+  * ide-disk: workaround for buggy HPA support on ST340823A (take 4)
+    - LP: #26119
 
   [Upstream Kernel Changes]
 
@@ -83,8 +170,10 @@ linux-source-2.6.22 (2.6.22-13.40) gutsy; urgency=low
   * bcm43xx: Fix cancellation of work queue crashes
   * Linux 2.6.22.9
   * usb: serial/pl2303: support for BenQ Siemens Mobile Phone EF81
+  * pata_it821x: fix lost interrupt with atapi devices
+  * i915: make vbl interrupts work properly on i965g/gm hw.
 
- -- Tim Gardner <tim.gardner@canonical.com>  Thu, 27 Sep 2007 11:03:26 -0600
+ -- Kyle McMartin <kyle@ubuntu.com>  Thu, 04 Oct 2007 13:57:53 +0000
 
 linux-source-2.6.22 (2.6.22-12.39) gutsy; urgency=low
 
