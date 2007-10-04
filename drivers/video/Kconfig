@@ -630,7 +630,7 @@ config FB_UVESA
 
 config FB_VESA
 	tristate "VESA VGA graphics support"
-	depends on FB && (X86 || IA64)
+	depends on FB && X86
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
