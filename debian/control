@@ -358,59 +358,6 @@ Description: Linux kernel debug image for version 2.6.22 on i386
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-13-lpiacompat
-Architecture: lpia
-Section: base
-Priority: optional
-Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
-Conflicts: hotplug (<< 0.0.20040105-1)
-Recommends: lilo (>= 19.1) | grub
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on i386
- This package contains the Linux kernel image for version 2.6.22 on
- lpia.
- .
- Also includes the corresponding System.map file, the modules built by the
- packager, and scripts that try to ensure that the system is not left in an
- unbootable state after an update.
- .
- Supports Alternate x86 (486 and better) processors.
- .
- Geared toward mobile and embedded systems.
- .
- You likely do not want to install this package directly. Instead, install
- the linux-lpiacompat meta-package, which will ensure that upgrades work
- correctly, and that supporting packages are also installed.
-
-Package: linux-headers-2.6.22-13-lpiacompat
-Architecture: lpia
-Section: devel
-Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-13, ${shlibs:Depends}
-Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on i386
- This package provides kernel header files for version 2.6.22 on
- lpia.
- .
- This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
-
-Package: linux-image-debug-2.6.22-13-lpiacompat
-Architecture: lpia
-Section: devel
-Priority: optional
-Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.22 on i386
- This package provides a kernel debug image for version 2.6.22 on
- lpia.
- .
- This is for sites that wish to debug the kernel.
- .
- The kernel image contained in this package is NOT meant to boot from. It
- is uncompressed, and unstripped.
-
 Package: linux-image-2.6.22-13-mckinley
 Architecture: ia64
 Section: base
@@ -489,45 +436,6 @@ Description: Linux kernel headers for version 2.6.22 on 32-bit PowerPC
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
 
-Package: linux-image-2.6.22-13-powerpc64-smp
-Architecture: powerpc
-Section: base
-Priority: optional
-Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
-Conflicts: hotplug (<< 0.0.20040105-1)
-Recommends: yaboot
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 64-bit PowerPC SMP
- This package contains the Linux kernel image for version 2.6.22 on
- 64-bit PowerPC SMP.
- .
- Also includes the corresponding System.map file, the modules built by the
- packager, and scripts that try to ensure that the system is not left in an
- unbootable state after an update.
- .
- Supports 64-bit PowerPC SMP processors.
- .
- Geared toward desktop or server systems.
- .
- You likely do not want to install this package directly. Instead, install
- the linux-powerpc64-smp meta-package, which will ensure that upgrades work
- correctly, and that supporting packages are also installed.
-
-Package: linux-headers-2.6.22-13-powerpc64-smp
-Architecture: powerpc
-Section: devel
-Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-13, ${shlibs:Depends}
-Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 64-bit PowerPC SMP
- This package provides kernel header files for version 2.6.22 on
- 64-bit PowerPC SMP.
- .
- This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
-
 Package: linux-image-2.6.22-13-powerpc-smp
 Architecture: powerpc
 Section: base
@@ -563,6 +471,45 @@ Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on 32-bit PowerPC SMP
  This package provides kernel header files for version 2.6.22 on
  32-bit PowerPC SMP.
+ .
+ This is for sites that want the latest kernel headers.  Please read
+ /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
+
+Package: linux-image-2.6.22-13-powerpc64-smp
+Architecture: powerpc
+Section: base
+Priority: optional
+Pre-Depends: dpkg (>= 1.10.24)
+Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modules
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Conflicts: hotplug (<< 0.0.20040105-1)
+Recommends: yaboot
+Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
+Description: Linux kernel image for version 2.6.22 on 64-bit PowerPC SMP
+ This package contains the Linux kernel image for version 2.6.22 on
+ 64-bit PowerPC SMP.
+ .
+ Also includes the corresponding System.map file, the modules built by the
+ packager, and scripts that try to ensure that the system is not left in an
+ unbootable state after an update.
+ .
+ Supports 64-bit PowerPC SMP processors.
+ .
+ Geared toward desktop or server systems.
+ .
+ You likely do not want to install this package directly. Instead, install
+ the linux-powerpc64-smp meta-package, which will ensure that upgrades work
+ correctly, and that supporting packages are also installed.
+
+Package: linux-headers-2.6.22-13-powerpc64-smp
+Architecture: powerpc
+Section: devel
+Priority: optional
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-13, ${shlibs:Depends}
+Provides: linux-headers, linux-headers-2.6
+Description: Linux kernel headers for version 2.6.22 on 64-bit PowerPC SMP
+ This package provides kernel header files for version 2.6.22 on
+ 64-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
@@ -903,6 +850,45 @@ Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.22 on PowerPC Cell
  This package provides kernel header files for version 2.6.22 on
  PowerPC Cell.
+ .
+ This is for sites that want the latest kernel headers.  Please read
+ /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
+
+Package: linux-image-2.6.22-13-lpiacompat
+Architecture: lpia
+Section: universe/base
+Priority: optional
+Pre-Depends: dpkg (>= 1.10.24)
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Conflicts: hotplug (<< 0.0.20040105-1)
+Recommends: lilo (>= 19.1) | grub
+Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
+Description: Linux kernel image for version 2.6.22 on Ubuntu Moblie and Embedded-x86 compat edition
+ This package contains the Linux kernel image for version 2.6.22 on
+ Ubuntu Moblie and Embedded-x86 compat edition.
+ .
+ Also includes the corresponding System.map file, the modules built by the
+ packager, and scripts that try to ensure that the system is not left in an
+ unbootable state after an update.
+ .
+ Supports UME processors.
+ .
+ UME kernel
+ .
+ You likely do not want to install this package directly. Instead, install
+ the linux-lpiacompat meta-package, which will ensure that upgrades work
+ correctly, and that supporting packages are also installed.
+
+Package: linux-headers-2.6.22-13-lpiacompat
+Architecture: lpia
+Section: devel
+Priority: optional
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-13, ${shlibs:Depends}
+Provides: linux-headers, linux-headers-2.6
+Description: Linux kernel headers for version 2.6.22 on Ubuntu Moblie and Embedded-x86 compat edition
+ This package provides kernel header files for version 2.6.22 on
+ Ubuntu Moblie and Embedded-x86 compat edition.
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.22-13/debian.README.gz for details.
