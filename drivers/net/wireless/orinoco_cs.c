@@ -11,6 +11,7 @@
  */
 
 #define DRIVER_NAME "orinoco_cs"
+#define OVERLAP_DRIVER_NAME	"orinoco_cs_overlap"
 #define PFX DRIVER_NAME ": "
 
 #include <linux/module.h>
@@ -483,11 +484,11 @@ static struct pcmcia_device_id orinoco_overlap_cs_ids[] = {
 static struct pcmcia_driver orinoco_overlap_driver = {
 	.owner		= THIS_MODULE,
 	.drv		= {
-		.name	= DRIVER_NAME,
+		.name	= OVERLAP_DRIVER_NAME,
 	},
 	.probe		= orinoco_cs_probe,
 	.remove		= orinoco_cs_detach,
-	.id_table   = orinoco_overlap_cs_ids,
+	.id_table	= orinoco_overlap_cs_ids,
 	.suspend	= orinoco_cs_suspend,
 	.resume		= orinoco_cs_resume,
 };
@@ -561,6 +562,9 @@ static struct pcmcia_driver orinoco_driver = {
 	.resume		= orinoco_cs_resume,
 };
 
+static int orinoco_driver_registered = 0;
+static int orinoco_overlap_driver_registered = 0;
+
 static int __init
 init_orinoco_cs(void)
 {
@@ -570,14 +574,27 @@ init_orinoco_cs(void)
 
 	status = pcmcia_register_driver(&orinoco_driver);
 	if (status >= 0)
-		status = pcmcia_register_driver(&orinoco_overlap_driver);
+		orinoco_driver_registered = 1;
+
+	status = pcmcia_register_driver(&orinoco_overlap_driver);
+	if (status >= 0)
+		orinoco_overlap_driver_registered = 1;
+
 	return status;
 }
 
 static void __exit
 exit_orinoco_cs(void)
 {
-	pcmcia_unregister_driver(&orinoco_driver);
+	if (orinoco_overlap_driver_registered) {
+		pcmcia_unregister_driver(&orinoco_overlap_driver);
+		orinoco_overlap_driver_registered = 0;
+	}
+
+	if (orinoco_driver_registered) {
+		pcmcia_unregister_driver(&orinoco_driver);
+		orinoco_driver_registered = 0;
+	}
 }
 
 module_init(init_orinoco_cs);
