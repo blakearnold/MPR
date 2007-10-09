@@ -1,3 +1,11 @@
+linux-source-2.6.22 (2.6.22-14.43) gutsy; urgency=low
+
+  [Kyle McMartin]
+
+  * sparc wants ehci built in
+
+ -- Kyle McMartin <kyle@ubuntu.com>  Tue, 09 Oct 2007 20:07:58 +0000
+
 linux-source-2.6.22 (2.6.22-14.42) gutsy; urgency=low
 
   [Kyle McMartin]
