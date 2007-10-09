@@ -1,3 +1,32 @@
+linux-source-2.6.22 (2.6.22-14.42) gutsy; urgency=low
+
+  [Kyle McMartin]
+
+  * fix up module-check to bail early if asked to ignore modules
+  * disable kernel DRM on lpia (we provide one in lum)
+    - LP: #145168
+  * add ignore for ia64 abi too
+
+  [Upstream Kernel Changes]
+
+  * [NIU]: Use netif_msg_*().
+  * [NIU]: Use pr_info().
+  * [NIU]: Remove redundant BUILD_BUG_ON() in __niu_wait_bits_clear().
+  * [NIU]: Remove BUG_ON() NULL pointer checks.
+  * [NIU]: Use dev_err().
+  * [NIU]: Fix x86_64 build failure.
+  * [NIU]: Use linux/io.h instead of asm/io.h
+  * [NIU]: Fix some checkpatch caught coding style issues.
+  * [NIU]: Fix shadowed local variables.
+  * [NIU]: Fix locking errors in link_status_10g().
+  * [NIU]: Document a few magic constants using comments.
+  * [NIU]: MII phy handling fixes.
+  * [NIU]: Make sure link_up status is set to something in
+    link_status_{1,10}g().
+  * [PATCH]: Gutsy OHCI hang workaround for Huron
+
+ -- Kyle McMartin <kyle@ubuntu.com>  Tue, 09 Oct 2007 17:25:06 +0000
+
 linux-source-2.6.22 (2.6.22-14.41) gutsy; urgency=low
 
   [Ben Collins]
