@@ -7,6 +7,12 @@ $skipmodule = shift;
 
 print "II: Checking modules for $flavour...";
 
+if (-f "$prev_abidir/ignore.modules"
+    or -f "$prev_abidir/$flavour.ignore.modules") {
+	print "explicitly ignoring modules\n";
+	exit(0);
+}
+
 if (not -f "$abidir/$flavour.modules" or not -f
     "$prev_abidir/$flavour.modules") {
 	print "previous or current modules file missing!\n";
@@ -90,8 +96,7 @@ if ($new or $missing) {
 
 # Let's see where we stand...
 if ($errors) {
-	if (-f "$prev_abidir/ignore.modules" or -f "$prev_abidir/$flavour.ignore.modules"
-	    or defined($skipmodule)) {
+	if (defined($skipmodule)) {
 		print "WW: Explicitly asked to ignore failures (probably not good)\n";
 	} else {
 		print "EE: Missing modules (start begging for mercy)\n";
