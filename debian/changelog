@@ -1,3 +1,16 @@
+linux-source-2.6.22 (2.6.22-14.44) gutsy; urgency=low
+
+  [Kyle McMartin]
+
+  * Revert "sparc wants ehci built in"
+
+  [Upstream Kernel Changes]
+
+  * Revert "[PATCH]: Gutsy OHCI hang workaround for Huron"
+  * [USB]: Serialize EHCI CF initialization.
+
+ -- Kyle McMartin <kyle@ubuntu.com>  Sun, 14 Oct 2007 16:25:51 +0000
+
 linux-source-2.6.22 (2.6.22-14.43) gutsy; urgency=low
 
   [Kyle McMartin]
