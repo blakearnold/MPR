@@ -698,9 +698,9 @@ static int release_lockspace(struct dlm_ls *ls, int force)
 			dlm_del_ast(lkb);
 
 			if (lkb->lkb_lvbptr && lkb->lkb_flags & DLM_IFL_MSTCPY)
-				free_lvb(lkb->lkb_lvbptr);
+				dlm_free_lvb(lkb->lkb_lvbptr);
 
-			free_lkb(lkb);
+			dlm_free_lkb(lkb);
 		}
 	}
 	dlm_astd_resume();
@@ -718,7 +718,7 @@ static int release_lockspace(struct dlm_ls *ls, int force)
 					 res_hashchain);
 
 			list_del(&rsb->res_hashchain);
-			free_rsb(rsb);
+			dlm_free_rsb(rsb);
 		}
 
 		head = &ls->ls_rsbtbl[i].toss;
@@ -726,7 +726,7 @@ static int release_lockspace(struct dlm_ls *ls, int force)
 			rsb = list_entry(head->next, struct dlm_rsb,
 					 res_hashchain);
 			list_del(&rsb->res_hashchain);
-			free_rsb(rsb);
+			dlm_free_rsb(rsb);
 		}
 	}
 
