@@ -41,6 +41,7 @@
 #include "linux/virtio_net.h"
 #include "linux/virtio_blk.h"
 #include "linux/virtio_console.h"
+#include "linux/virtio_rng.h"
 #include "linux/virtio_ring.h"
 #include "asm-x86/bootparam.h"
 /*L:110 We can ignore the 38 include files we need for this program, but I do
@@ -1535,6 +1536,54 @@ static void setup_block_file(const char *filename)
 }
 /* That's the end of device setup. */
 
+/* This is the routine which handles console input (ie. stdin). */
+static bool handle_rng_input(int fd, struct device *dev)
+{
+	int len;
+	unsigned int head, in_num, out_num;
+	struct iovec iov[dev->vq->vring.num];
+
+	printf("Got input on rng fd!\n");
+	/* First we need a buffer from the Guests's virtqueue. */
+	head = get_vq_desc(dev->vq, iov, &out_num, &in_num);
+
+	/* If they're not ready for input, stop listening to this file
+	 * descriptor.  We'll start again once they add an input buffer. */
+	if (head == dev->vq->vring.num) {
+		printf("But no buffer!\n");
+		return false;
+	}
+
+	if (out_num)
+		errx(1, "Output buffers in rng?");
+
+	/* This is why we convert to iovecs: the readv() call uses them, and so
+	 * it reads straight into the Guest's buffer. */
+	len = readv(dev->fd, iov, in_num);
+	/* Tell the Guest about the new input. */
+	add_used_and_trigger(fd, dev->vq, head, len);
+
+	/* Everything went OK! */
+	return true;
+}
+
+static void setup_rng(void)
+{
+	struct device *dev;
+	int fd;
+
+	fd = open_or_die("/dev/urandom", O_RDONLY);
+
+	/* The device responds to return from I/O thread. */
+	dev = new_device("rng", VIRTIO_ID_RNG, fd, handle_rng_input);
+
+	/* The device has one virtqueue, where the Guest places inbufs. */
+	add_virtqueue(dev, VIRTQUEUE_NUM, enable_fd);
+
+	verbose("device %u: rng\n", devices.device_num);
+}
+/* That's the end of device setup. */
+
 /*L:220 Finally we reach the core of the Launcher, which runs the Guest, serves
  * its input and output, and finally, lays it to rest. */
 static void __attribute__((noreturn)) run_guest(int lguest_fd)
@@ -1581,6 +1630,7 @@ static struct option opts[] = {
 	{ "verbose", 0, NULL, 'v' },
 	{ "tunnet", 1, NULL, 't' },
 	{ "block", 1, NULL, 'b' },
+	{ "rng", 0, NULL, 'r' },
 	{ "initrd", 1, NULL, 'i' },
 	{ NULL },
 };
@@ -1647,6 +1697,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'b':
 			setup_block_file(optarg);
+			break;
+		case 'r':
+			setup_rng();
 			break;
 		case 'i':
 			initrd_name = optarg;
