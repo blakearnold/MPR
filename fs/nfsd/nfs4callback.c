@@ -370,14 +370,14 @@ static int do_probe_callback(void *data)
 		.flags		= (RPC_CLNT_CREATE_NOPING),
 	};
 
-	if (atomic_read(&cb->cb_set))
-		return;
 	struct rpc_message msg = {
 		.rpc_proc       = &nfs4_cb_procedures[NFSPROC4_CLNT_CB_NULL],
 		.rpc_argp       = clp,
 	};
 	struct rpc_clnt *client;
 	int status;
+
+	BUG_ON(atomic_read(&clp->cl_callback.cb_set));
 
 	/* Initialize address */
 	memset(&addr, 0, sizeof(addr));
