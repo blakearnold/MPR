@@ -1,7 +1,6 @@
 # Rip some version information from our changelog
 release	:= $(shell sed -n '1s/^.*(\(.*\)-.*).*$$/\1/p' debian/changelog)
-pkgversion := $(shell sed -n '1s/^linux-source-\([^ ]*\) .*/\1/p' debian/changelog)
-revisions := $(shell sed -n 's/^linux-source-$(pkgversion)\ .*($(release)-\(.*\)).*$$/\1/p' debian/changelog | tac)
+revisions := $(shell sed -n 's/^linux\ .*($(release)-\(.*\)).*$$/\1/p' debian/changelog | tac)
 revision ?= $(word $(words $(revisions)),$(revisions))
 prev_revisions := $(filter-out $(revision),0.0 $(revisions))
 prev_revision := $(word $(words $(prev_revisions)),$(prev_revisions))
