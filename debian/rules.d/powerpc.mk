@@ -8,4 +8,4 @@ install_file	= $(build_image)
 
 loader		= yaboot
 
-custom_flavours	= cell
+#custom_flavours	= cell
