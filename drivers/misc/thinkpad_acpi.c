@@ -2470,8 +2470,7 @@ static struct device_attribute dev_attr_cmos_command =
 static int __init cmos_init(struct ibm_init_struct *iibm)
 {
 	int res;
-	struct acpi_namespace_node *node;
-       
+
 	vdbg_printk(TPACPI_DBG_INIT,
 		"initializing cmos commands subdriver\n");
 
@@ -2483,10 +2482,6 @@ static int __init cmos_init(struct ibm_init_struct *iibm)
 	res = device_create_file(&tpacpi_pdev->dev, &dev_attr_cmos_command);
 	if (res)
 		return res;
-
-	node = cmos_handle;
-
-	acpi_method_notify_enable (node->name.ascii);
 
 	return (cmos_handle)? 0 : 1;
 }
