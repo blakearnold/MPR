@@ -501,10 +501,10 @@ acpi_status acpi_ps_parse_aml(struct acpi_walk_state *walk_state)
 		
 		if (method_node && ((acpi_ns_get_attached_object(method_node))->method.method_flags & AML_METHOD_NOTIFY)) {
 			/* This is suboptimal */
-			struct acpi_device *device = kzalloc(sizeof(struct acpi_device), GFP_ATOMIC);
-			strcpy (device->pnp.device_class, "METHOD");
-			strcpy (device->pnp.bus_id, method_node->name.ascii);
-			acpi_bus_generate_event (device, 0, 0);
+			struct acpi_device device;
+			strcpy (device.pnp.device_class, "METHOD");
+			strcpy (device.pnp.bus_id, method_node->name.ascii);
+			acpi_bus_generate_event (&device, 0, 0);
 		}
 			
 		if (ACPI_SUCCESS(status)) {
