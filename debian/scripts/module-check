@@ -18,7 +18,11 @@ if (not -f "$abidir/$flavour.modules" or not -f
 	print "previous or current modules file missing!\n";
 	print "   $abidir/$flavour.modules\n";
 	print "   $prev_abidir/$flavour.modules\n";
-	exit(1);
+	if (defined($skipmodule)) {
+		exit(0);
+	} else {
+		exit(1);
+	}
 }
 
 print "\n";
