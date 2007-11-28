@@ -553,7 +553,7 @@ static inline int blk_send_allow_medium_removal(struct request_queue *q,
 				  GPCMD_PREVENT_ALLOW_MEDIUM_REMOVAL, 0);
 }
 
-int scsi_cmd_ioctl(struct file *file, struct gendisk *bd_disk, unsigned int cmd, void __user *arg)
+int scsi_cmd_ioctl(struct file *file, struct request_queue *q, struct gendisk *bd_disk, unsigned int cmd, void __user *arg)
 {
 	int err;
 
