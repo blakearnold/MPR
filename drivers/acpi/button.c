@@ -518,29 +518,6 @@ static int acpi_button_remove(struct acpi_device *device, int type)
 	return 0;
 }
 
-/* this is needed to learn about changes made in suspended state */
-static int acpi_button_resume(struct acpi_device *device)
-{
-	struct acpi_button *button;
-	struct acpi_handle *handle;
-	struct input_dev *input;
-	unsigned long state;
-
-	button = device->driver_data;
-	handle = button->device->handle;
-	input = button->input;
-
-	/*
-	 * On resume we send the state; if it matches to what input layer
-	 * thinks then the event will not even reach userspace.
-	 */
-	if (!ACPI_FAILURE(acpi_evaluate_integer(handle, "_LID",
-						NULL, &state)))
-		input_report_switch(input, SW_LID, !state);
-
-	return 0;
-}
-
 static int __init acpi_button_init(void)
 {
 	int result;
