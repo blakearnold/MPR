@@ -505,8 +505,6 @@ acpi_status acpi_ps_parse_aml(struct acpi_walk_state *walk_state)
 			strcpy (device->pnp.device_class, "METHOD");
 			strcpy (device->pnp.bus_id, method_node->name.ascii);
 			acpi_bus_generate_event (device, 0, 0);
-
-			kfree(device);
 		}
 			
 		if (ACPI_SUCCESS(status)) {
