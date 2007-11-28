@@ -62,8 +62,6 @@ static const struct usb_device_id usb_quirk_list[] = {
 	{ USB_DEVICE(0x04a9, 0x2220), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 	/* CanoScan N650U/N656U */
 	{ USB_DEVICE(0x04a9, 0x2206), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
-	/* Canon, Inc. CanoScan 1220U */
-	{ USB_DEVICE(0x04a9, 0x2207), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 
 	/* Philips PSC805 audio device */
 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
@@ -73,8 +71,6 @@ static const struct usb_device_id usb_quirk_list[] = {
 	{ USB_DEVICE(0x04b8, 0x0114), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 	/* Seiko Epson Corp. Perfection 1200 */
 	{ USB_DEVICE(0x04b8, 0x0104), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
-	/* Epson Perfection 1260 Photo */
-	{ USB_DEVICE(0x04b8, 0x011d), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 	/* Seiko Epson Corp - Perfection 1670 */
 	{ USB_DEVICE(0x04b8, 0x011f), .driver_info = USB_QUIRK_NO_AUTOSUSPEND },
 	/* Seiko Epson Corp - Perfection 2480 */
