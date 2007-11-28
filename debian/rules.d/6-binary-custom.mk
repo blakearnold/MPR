@@ -71,8 +71,8 @@ ifeq ($(no_image_strip),)
 endif
 	# Some initramfs-tools specific modules
 	install -d $(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd
-	ln -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/kernel/security/capability.ko \
-		$(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd/
+	#ln -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/kernel/security/capability.ko \
+	#	$(pkgdir)/lib/modules/$(release)$(debnum)-$*/initrd/
 
 	# Now the image scripts
 	install -d $(pkgdir)/DEBIAN
