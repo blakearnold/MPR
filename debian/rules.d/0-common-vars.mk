@@ -26,6 +26,11 @@ gitverpost=$(shell echo $(gitver) | cut -b 38-40)
 abi_suffix = -$(gitverpre)$(gitverpost)
 endif
 
+ifeq ($(prev_revision),0.0)
+skipabi		= true
+skipmodule	= true
+endif
+
 ifneq ($(NOKERNLOG),)
 ubuntu_log_opts += --no-kern-log
 endif
