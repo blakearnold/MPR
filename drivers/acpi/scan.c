@@ -9,8 +9,6 @@
 
 #include <acpi/acpi_drivers.h>
 #include <acpi/acinterp.h>	/* for acpi_ex_eisa_id_to_string() */
-#include <acpi/acnamesp.h>
-#include <acpi/amlcode.h>
 
 #define _COMPONENT		ACPI_BUS_COMPONENT
 ACPI_MODULE_NAME("scan");
@@ -1450,19 +1448,6 @@ static int acpi_bus_scan_fixed(struct acpi_device *root)
 
 	return result;
 }
-
-int acpi_method_notify_enable(char *pathname)
-{
-	struct acpi_namespace_node *method;
-	acpi_ns_get_node (ACPI_NS_ALL, pathname, 0, &method);
-	if (!method)
-		return -ENODEV;
-
-	acpi_ns_get_attached_object(method)->method.method_flags |= AML_METHOD_NOTIFY;
-	return 0;
-}
-
-EXPORT_SYMBOL (acpi_method_notify_enable);
 
 static int __init acpi_scan_init(void)
 {
