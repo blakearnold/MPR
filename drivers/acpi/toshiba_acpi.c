@@ -758,7 +758,7 @@ static struct backlight_ops toshiba_backlight_data = {
         .update_status  = set_lcd_status,
 };
 
-static DECLARE_MUTEX_LOCKED(thread_sem);
+static struct semaphore thread_sem;
 static int thread_should_die;
 
 static struct acpi_device *threaded_device = 0;
@@ -961,6 +961,7 @@ static int __init toshiba_acpi_init(void)
 		printk(MY_INFO "ktoshkeyd will check %d time%s per second\n",
 			hotkeys_check_per_sec, hotkeys_check_per_sec==1?"":"s");
 		if (init_threaded_acpi() >= 0) {
+			init_MUTEX_LOCKED(&thread_sem);
 			kernel_thread(toshiba_acpi_thread, NULL, CLONE_KERNEL);
 			down(&thread_sem);
 		} else {
