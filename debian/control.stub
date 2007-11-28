@@ -1,4 +1,4 @@
-Source: linux-source-2.6.22
+Source: linux-source-2.6.24
 Section: devel
 Priority: optional
 Maintainer: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>
@@ -15,7 +15,7 @@ Description: Linux kernel hacking dependencies
  This is a dummy package that will install all possible packages
  required to hack comfortably on the kernel.
 
-Package: linux-source-2.6.22
+Package: linux-source-2.6.24
 Architecture: all
 Section: devel
 Priority: optional
@@ -23,8 +23,8 @@ Provides: linux-source, linux-source-2.6
 Depends: binutils, bzip2, coreutils | fileutils (>= 4.0)
 Recommends: libc-dev, gcc, make
 Suggests: libncurses-dev | ncurses-dev, kernel-package, libqt3-dev
-Description: Linux kernel source for version 2.6.22 with Ubuntu patches
- This package provides the source code for the Linux kernel version 2.6.22.
+Description: Linux kernel source for version 2.6.24 with Ubuntu patches
+ This package provides the source code for the Linux kernel version 2.6.24.
  .
  You may configure the kernel to your setup by typing "make config" and
  following instructions, but you could get ncursesX.X-dev and try "make
@@ -32,7 +32,7 @@ Description: Linux kernel source for version 2.6.22 with Ubuntu patches
  to use QT or GNOME based configuration interfaces, but they need
  additional packages to be installed. Also, please read the detailed
  documentation in the file
- /usr/share/doc/linux-source-2.6.22/README.headers.gz.
+ /usr/share/doc/linux-source-2.6.24/README.headers.gz.
  .
  If you wish to use this package to create a custom Linux kernel, then it
  is suggested that you investigate the package kernel-package, which has
@@ -42,7 +42,7 @@ Description: Linux kernel source for version 2.6.22 with Ubuntu patches
  you do not want this package. Install the appropriate linux-headers
  package instead.
 
-Package: linux-doc-2.6.22
+Package: linux-doc-2.6.24
 Architecture: all
 Section: doc
 Priority: optional
@@ -50,25 +50,25 @@ Provides: linux-doc-2.6
 Conflicts: linux-doc-2.6
 Replaces: linux-doc-2.6
 Depends: coreutils | fileutils (>= 4.0)
-Description: Linux kernel specific documentation for version 2.6.22
- This package provides the various readme's in the 2.6.22 kernel
+Description: Linux kernel specific documentation for version 2.6.24
+ This package provides the various readme's in the 2.6.24 kernel
  Documentation/ subdirectory: these typically contain kernel-specific
  installation notes for some drivers for example. See
- /usr/share/doc/linux-doc-2.6.22/Documentation/00-INDEX for a list of what
+ /usr/share/doc/linux-doc-2.6.24/Documentation/00-INDEX for a list of what
  is contained in each file.  Please read the Changes file, as it contains
  information about the problems, which may result by upgrading your
  kernel.
 
-Package: linux-headers-2.6.22-1
+Package: linux-headers-2.6.24-1
 Architecture: all
 Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0)
 Provides: linux-headers, linux-headers-2.6
-Description: Header files related to Linux kernel version 2.6.22
- This package provides kernel header files for version 2.6.22, for sites
+Description: Header files related to Linux kernel version 2.6.24
+ This package provides kernel header files for version 2.6.24, for sites
  that want the latest kernel headers. Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details
 
 Package: linux-libc-dev
 Architecture: amd64 i386 powerpc sparc ia64 hppa lpia
@@ -82,7 +82,7 @@ Description: Linux Kernel Headers for development
  are used by the installed headers for GNU glibc and other system
  libraries.
 
-Package: linux-image-2.6.22-1-386
+Package: linux-image-2.6.24-1-386
 Architecture: i386
 Section: base
 Priority: optional
@@ -91,9 +91,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, ivtv-modules
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on i386
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on i386
+ This package contains the Linux kernel image for version 2.6.24 on
  i386.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -108,26 +108,26 @@ Description: Linux kernel image for version 2.6.22 on i386
  the linux-386 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-386
+Package: linux-headers-2.6.24-1-386
 Architecture: i386
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on i386
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on i386
+ This package provides kernel header files for version 2.6.24 on
  i386.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-1-386
+Package: linux-image-debug-2.6.24-1-386
 Architecture: i386
 Section: devel
 Priority: optional
 Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.22 on i386
- This package provides a kernel debug image for version 2.6.22 on
+Description: Linux kernel debug image for version 2.6.24 on i386
+ This package provides a kernel debug image for version 2.6.24 on
  i386.
  .
  This is for sites that wish to debug the kernel.
@@ -135,7 +135,7 @@ Description: Linux kernel debug image for version 2.6.22 on i386
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-1-generic
+Package: linux-image-2.6.24-1-generic
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -144,9 +144,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1,
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on x86/x86_64
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on x86/x86_64
+ This package contains the Linux kernel image for version 2.6.24 on
  x86/x86_64.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -161,26 +161,26 @@ Description: Linux kernel image for version 2.6.22 on x86/x86_64
  the linux-generic meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-generic
+Package: linux-headers-2.6.24-1-generic
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on x86/x86_64
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on x86/x86_64
+ This package provides kernel header files for version 2.6.24 on
  x86/x86_64.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-1-generic
+Package: linux-image-debug-2.6.24-1-generic
 Architecture: i386 amd64
 Section: devel
 Priority: optional
 Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.22 on x86/x86_64
- This package provides a kernel debug image for version 2.6.22 on
+Description: Linux kernel debug image for version 2.6.24 on x86/x86_64
+ This package provides a kernel debug image for version 2.6.24 on
  x86/x86_64.
  .
  This is for sites that wish to debug the kernel.
@@ -188,7 +188,7 @@ Description: Linux kernel debug image for version 2.6.22 on x86/x86_64
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-1-hppa32
+Package: linux-image-2.6.24-1-hppa32
 Architecture: hppa
 Section: base
 Priority: optional
@@ -197,9 +197,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: palo
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 32-bit HP PA-RISC SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 32-bit HP PA-RISC SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  32-bit HP PA-RISC SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -214,20 +214,20 @@ Description: Linux kernel image for version 2.6.22 on 32-bit HP PA-RISC SMP
  the linux-hppa32 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-hppa32
+Package: linux-headers-2.6.24-1-hppa32
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 32-bit HP PA-RISC SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 32-bit HP PA-RISC SMP
+ This package provides kernel header files for version 2.6.24 on
  32-bit HP PA-RISC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-hppa64
+Package: linux-image-2.6.24-1-hppa64
 Architecture: hppa
 Section: base
 Priority: optional
@@ -236,9 +236,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: palo
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 64-bit HP PA-RISC SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 64-bit HP PA-RISC SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  64-bit HP PA-RISC SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -253,20 +253,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit HP PA-RISC SMP
  the linux-hppa64 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-hppa64
+Package: linux-headers-2.6.24-1-hppa64
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 64-bit HP PA-RISC SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 64-bit HP PA-RISC SMP
+ This package provides kernel header files for version 2.6.24 on
  64-bit HP PA-RISC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-itanium
+Package: linux-image-2.6.24-1-itanium
 Architecture: ia64
 Section: base
 Priority: optional
@@ -275,9 +275,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: elilo (>= 3.6-1)
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on Itanium SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on Itanium SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  Itanium SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -292,20 +292,20 @@ Description: Linux kernel image for version 2.6.22 on Itanium SMP
  the linux-itanium meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-itanium
+Package: linux-headers-2.6.24-1-itanium
 Architecture: ia64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on Itanium SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on Itanium SMP
+ This package provides kernel header files for version 2.6.24 on
  Itanium SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-mckinley
+Package: linux-image-2.6.24-1-mckinley
 Architecture: ia64
 Section: base
 Priority: optional
@@ -314,9 +314,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: elilo (>= 3.6-1)
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on Itanium II SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on Itanium II SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  Itanium II SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -331,20 +331,20 @@ Description: Linux kernel image for version 2.6.22 on Itanium II SMP
  the linux-mckinley meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-mckinley
+Package: linux-headers-2.6.24-1-mckinley
 Architecture: ia64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on Itanium II SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on Itanium II SMP
+ This package provides kernel header files for version 2.6.24 on
  Itanium II SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-powerpc
+Package: linux-image-2.6.24-1-powerpc
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -353,9 +353,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 32-bit PowerPC
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 32-bit PowerPC
+ This package contains the Linux kernel image for version 2.6.24 on
  32-bit PowerPC.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -370,20 +370,20 @@ Description: Linux kernel image for version 2.6.22 on 32-bit PowerPC
  the linux-powerpc meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-powerpc
+Package: linux-headers-2.6.24-1-powerpc
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 32-bit PowerPC
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC
+ This package provides kernel header files for version 2.6.24 on
  32-bit PowerPC.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-powerpc64-smp
+Package: linux-image-2.6.24-1-powerpc64-smp
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -392,9 +392,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 64-bit PowerPC SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 64-bit PowerPC SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  64-bit PowerPC SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -409,20 +409,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit PowerPC SMP
  the linux-powerpc64-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-powerpc64-smp
+Package: linux-headers-2.6.24-1-powerpc64-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 64-bit PowerPC SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 64-bit PowerPC SMP
+ This package provides kernel header files for version 2.6.24 on
  64-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-powerpc-smp
+Package: linux-image-2.6.24-1-powerpc-smp
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -431,9 +431,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 32-bit PowerPC SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 32-bit PowerPC SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  32-bit PowerPC SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -448,20 +448,20 @@ Description: Linux kernel image for version 2.6.22 on 32-bit PowerPC SMP
  the linux-powerpc-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-powerpc-smp
+Package: linux-headers-2.6.24-1-powerpc-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 32-bit PowerPC SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC SMP
+ This package provides kernel header files for version 2.6.24 on
  32-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-server
+Package: linux-image-2.6.24-1-server
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -470,9 +470,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, kvm-api-4,
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on x86/x86_64
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on x86/x86_64
+ This package contains the Linux kernel image for version 2.6.24 on
  x86/x86_64.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -487,26 +487,26 @@ Description: Linux kernel image for version 2.6.22 on x86/x86_64
  the linux-server meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-server
+Package: linux-headers-2.6.24-1-server
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on x86/x86_64
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on x86/x86_64
+ This package provides kernel header files for version 2.6.24 on
  x86/x86_64.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-1-server
+Package: linux-image-debug-2.6.24-1-server
 Architecture: i386 amd64
 Section: devel
 Priority: optional
 Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.22 on x86/x86_64
- This package provides a kernel debug image for version 2.6.22 on
+Description: Linux kernel debug image for version 2.6.24 on x86/x86_64
+ This package provides a kernel debug image for version 2.6.24 on
  x86/x86_64.
  .
  This is for sites that wish to debug the kernel.
@@ -514,7 +514,7 @@ Description: Linux kernel debug image for version 2.6.22 on x86/x86_64
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.22-1-sparc64
+Package: linux-image-2.6.24-1-sparc64
 Architecture: sparc
 Section: base
 Priority: optional
@@ -523,9 +523,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: silo
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 64-bit UltraSPARC
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 64-bit UltraSPARC
+ This package contains the Linux kernel image for version 2.6.24 on
  64-bit UltraSPARC.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -540,20 +540,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit UltraSPARC
  the linux-sparc64 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-sparc64
+Package: linux-headers-2.6.24-1-sparc64
 Architecture: sparc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 64-bit UltraSPARC
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 64-bit UltraSPARC
+ This package provides kernel header files for version 2.6.24 on
  64-bit UltraSPARC.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-sparc64-smp
+Package: linux-image-2.6.24-1-sparc64-smp
 Architecture: sparc
 Section: base
 Priority: optional
@@ -562,9 +562,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, rhcs-modules2-1, ivtv-modul
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: silo
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on 64-bit UltraSPARC SMP
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 64-bit UltraSPARC SMP
+ This package contains the Linux kernel image for version 2.6.24 on
  64-bit UltraSPARC SMP.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -579,20 +579,20 @@ Description: Linux kernel image for version 2.6.22 on 64-bit UltraSPARC SMP
  the linux-sparc64-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-sparc64-smp
+Package: linux-headers-2.6.24-1-sparc64-smp
 Architecture: sparc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on 64-bit UltraSPARC SMP
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on 64-bit UltraSPARC SMP
+ This package provides kernel header files for version 2.6.24 on
  64-bit UltraSPARC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-2.6.22-1-virtual
+Package: linux-image-2.6.24-1-virtual
 Architecture: i386
 Section: base
 Priority: optional
@@ -601,9 +601,9 @@ Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, rhcs-modules2-1
 Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
-Suggests: fdutils, linux-doc-2.6.22 | linux-source-2.6.22
-Description: Linux kernel image for version 2.6.22 on x86
- This package contains the Linux kernel image for version 2.6.22 on
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on x86
+ This package contains the Linux kernel image for version 2.6.24 on
  x86.
  .
  Also includes the corresponding System.map file, the modules built by the
@@ -618,26 +618,26 @@ Description: Linux kernel image for version 2.6.22 on x86
  the linux-virtual meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.22-1-virtual
+Package: linux-headers-2.6.24-1-virtual
 Architecture: i386
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.22-1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.22 on x86
- This package provides kernel header files for version 2.6.22 on
+Description: Linux kernel headers for version 2.6.24 on x86
+ This package provides kernel header files for version 2.6.24 on
  x86.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.22-1/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-1/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.22-1-virtual
+Package: linux-image-debug-2.6.24-1-virtual
 Architecture: i386
 Section: devel
 Priority: optional
 Provides: linux-debug
-Description: Linux kernel debug image for version 2.6.22 on x86
- This package provides a kernel debug image for version 2.6.22 on
+Description: Linux kernel debug image for version 2.6.24 on x86
+ This package provides a kernel debug image for version 2.6.24 on
  x86.
  .
  This is for sites that wish to debug the kernel.
