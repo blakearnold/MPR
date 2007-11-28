@@ -39,12 +39,6 @@ my $CONF_LOC        = '/etc/kernel-img.conf';
 $realimageloc  =~ s|^/*|/|o;
 $realimageloc  =~ s|/+|/|o;
 
-my $architecture;
-chomp($architecture = `dpkg --print-installation-architecture`);
-$architecture = "parisc" if $architecture eq "hppa";
-$architecture = "mips" if $architecture eq "mipsel";
-$architecture = "x86_64" if $architecture eq "amd64";
-
 chdir '/usr/src' or die "Could not chdir to /usr/src:$!";
 
 if (-r "$CONF_LOC" && -f "$CONF_LOC"  ) {
