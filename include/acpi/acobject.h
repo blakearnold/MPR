@@ -173,7 +173,7 @@ struct acpi_object_region {
 };
 
 struct acpi_object_method {
-	ACPI_OBJECT_COMMON_HEADER u16 method_flags;
+	ACPI_OBJECT_COMMON_HEADER u8 method_flags;
 	u8 param_count;
 	u8 sync_level;
 	union acpi_operand_object *mutex;
