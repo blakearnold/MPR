@@ -1610,26 +1610,26 @@ int should_remove_suid(struct dentry *dentry)
 }
 EXPORT_SYMBOL(should_remove_suid);
 
-int __remove_suid(struct dentry *dentry, int kill)
+int __remove_suid(struct path *path, int kill)
 {
 	struct iattr newattrs;
 
 	newattrs.ia_valid = ATTR_FORCE | kill;
-	return notify_change(dentry, &newattrs);
+	return notify_change(path->dentry, path->mnt, &newattrs);
 }
 
-int remove_suid(struct dentry *dentry)
+int remove_suid(struct path *path)
 {
-	int killsuid = should_remove_suid(dentry);
-	int killpriv = security_inode_need_killpriv(dentry);
+	int killsuid = should_remove_suid(path->dentry);
+	int killpriv = security_inode_need_killpriv(path->dentry);
 	int error = 0;
 
 	if (killpriv < 0)
 		return killpriv;
 	if (killpriv)
-		error = security_inode_killpriv(dentry);
+		error = security_inode_killpriv(path->dentry);
 	if (!error && killsuid)
-		error = __remove_suid(dentry, killsuid);
+		error = __remove_suid(path, killsuid);
 
 	return error;
 }
@@ -2342,7 +2342,7 @@ __generic_file_aio_write_nolock(struct kiocb *iocb, const struct iovec *iov,
 	if (count == 0)
 		goto out;
 
-	err = remove_suid(file->f_path.dentry);
+	err = remove_suid(&file->f_path);
 	if (err)
 		goto out;
 
