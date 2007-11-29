@@ -1,5 +1,6 @@
 build_arch	= i386
 header_arch	= i386
+asm_link	= x86
 defconfig	= defconfig
 flavours	= 
 build_image	= bzImage

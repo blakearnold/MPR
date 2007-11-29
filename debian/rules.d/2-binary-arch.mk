@@ -93,7 +93,7 @@ endif
 		"" "$(build_arch)"  "$*"
 	# Setup the proper asm symlink
 	rm -f $(hdrdir)/include/asm
-	ln -s asm-$(build_arch) $(hdrdir)/include/asm
+	ln -s asm-$(asm_link) $(hdrdir)/include/asm
 	# The build symlink
 	install -d debian/$(basepkg)-$*/lib/modules/$(release)$(debnum)-$*
 	ln -s /usr/src/$(basepkg)-$* \
