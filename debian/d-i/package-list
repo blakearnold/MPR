@@ -153,12 +153,6 @@ Depends: kernel-image
 Description: NFS filesystem drivers
  Includes the NFS client driver, and supporting modules.
 
-Package: cdrom-modules
-Priority: standard
-Depends: kernel-image, storage-core-modules
-Description: Legacy CDROM modules
- This package contains legacy type cdrom modules.
-
 Package: block-modules
 Priority: standard
 Depends: kernel-image, storage-core-modules, parport-modules
