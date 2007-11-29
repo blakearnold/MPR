@@ -76,7 +76,7 @@ echo $abi > $abidir/abiname
 # NOTE: The flavours are hardcoded, because they may have changed from the
 # current build.
 
-getall powerpc powerpc{,-smp,64-smp} cell
+getall powerpc powerpc{,-smp,64-smp}
 getall amd64 generic server
 getall i386 386 generic server virtual
 getall sparc sparc64{,-smp}

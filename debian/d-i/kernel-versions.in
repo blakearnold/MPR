@@ -13,6 +13,5 @@ lpia	PKGVER-ABINUM	lpia		PKGVER-ABINUM-lpia		-
 
 powerpc	PKGVER-ABINUM	powerpc		PKGVER-ABINUM-powerpc		-	
 powerpc	PKGVER-ABINUM	powerpc64-smp	PKGVER-ABINUM-powerpc64-smp	-	
-powerpc	PKGVER-ABINUM	cell		PKGVER-ABINUM-cell		-
 
 sparc	PKGVER-ABINUM	sparc64		PKGVER-ABINUM-sparc64		-	
