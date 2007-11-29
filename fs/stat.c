@@ -55,33 +55,6 @@ int vfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
 
 EXPORT_SYMBOL(vfs_getattr);
 
-/*
- * Perform getattr on an open file
- *
- * Fall back to i_op->getattr (or generic_fillattr) if the filesystem
- * doesn't define an f_op->fgetattr operation.
- */
-static int vfs_fgetattr(struct file *file, struct kstat *stat)
-{
-	struct vfsmount *mnt = file->f_path.mnt;
-	struct dentry *dentry = file->f_path.dentry;
-	struct inode *inode = dentry->d_inode;
-	int retval;
-
-	retval = security_inode_getattr(mnt, dentry);
-	if (retval)
-		return retval;
-
-	if (file->f_op && file->f_op->fgetattr) {
-		return file->f_op->fgetattr(file, stat);
-	} else if (inode->i_op->getattr) {
-		return inode->i_op->getattr(mnt, dentry, stat);
-	} else {
-		generic_fillattr(inode, stat);
-		return 0;
-	}
-}
-
 int vfs_stat_fd(int dfd, char __user *name, struct kstat *stat)
 {
 	struct nameidata nd;
@@ -128,7 +101,7 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
 	int error = -EBADF;
 
 	if (f) {
-		error = vfs_fgetattr(f, stat);
+		error = vfs_getattr(f->f_path.mnt, f->f_path.dentry, stat);
 		fput(f);
 	}
 	return error;
@@ -333,7 +306,7 @@ asmlinkage long sys_readlinkat(int dfd, const char __user *path,
 
 		error = -EINVAL;
 		if (inode->i_op && inode->i_op->readlink) {
-			error = security_inode_readlink(nd.dentry, nd.mnt);
+			error = security_inode_readlink(nd.dentry);
 			if (!error) {
 				touch_atime(nd.mnt, nd.dentry);
 				error = inode->i_op->readlink(nd.dentry, buf, bufsiz);

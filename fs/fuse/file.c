@@ -871,17 +871,6 @@ static int fuse_file_flock(struct file *file, int cmd, struct file_lock *fl)
 	return err;
 }
 
-static int fuse_file_fgetattr(struct file *file, struct kstat *stat)
-{
-	struct inode *inode = file->f_dentry->d_inode;
-	struct fuse_conn *fc = get_fuse_conn(inode);
-
-	if (!fuse_allow_task(fc, current))
-		return -EACCES;
-
-	return fuse_getattr(file->f_vfsmnt, file->f_dentry, stat);
-}
-
 static sector_t fuse_bmap(struct address_space *mapping, sector_t block)
 {
 	struct inode *inode = mapping->host;
@@ -918,11 +907,6 @@ static sector_t fuse_bmap(struct address_space *mapping, sector_t block)
 	return err ? 0 : outarg.block;
 }
 
-static int fuse_fsetattr(struct file *file, struct iattr *attr)
-{
-	return fuse_do_setattr(file->f_path.dentry, attr, file);
-}
-
 static const struct file_operations fuse_file_operations = {
 	.llseek		= generic_file_llseek,
 	.read		= do_sync_read,
@@ -936,8 +920,6 @@ static const struct file_operations fuse_file_operations = {
 	.fsync		= fuse_fsync,
 	.lock		= fuse_file_lock,
 	.flock		= fuse_file_flock,
-	.fgetattr	= fuse_file_fgetattr,
-	.fsetattr	= fuse_fsetattr,
 	.splice_read	= generic_file_splice_read,
 };
 
@@ -951,8 +933,6 @@ static const struct file_operations fuse_direct_io_file_operations = {
 	.fsync		= fuse_fsync,
 	.lock		= fuse_file_lock,
 	.flock		= fuse_file_flock,
-	.fgetattr	= fuse_file_fgetattr,
-	.fsetattr	= fuse_fsetattr,
 	/* no mmap and splice_read */
 };
 

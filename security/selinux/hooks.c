@@ -1431,15 +1431,40 @@ static int selinux_capable(struct task_struct *tsk, int cap)
 
 static int selinux_sysctl_get_sid(ctl_table *table, u16 tclass, u32 *sid)
 {
-	char *buffer, *path;
-	int rc = -ENOMEM;
+	int buflen, rc;
+	char *buffer, *path, *end;
 
+	rc = -ENOMEM;
 	buffer = (char*)__get_free_page(GFP_KERNEL);
 	if (!buffer)
 		goto out;
-	path = sysctl_pathname(table, buffer, PAGE_SIZE);
-	if (path)
-		rc = security_genfs_sid("proc", path, tclass, sid);
+
+	buflen = PAGE_SIZE;
+	end = buffer+buflen;
+	*--end = '\0';
+	buflen--;
+	path = end-1;
+	*path = '/';
+	while (table) {
+		const char *name = table->procname;
+		size_t namelen = strlen(name);
+		buflen -= namelen + 1;
+		if (buflen < 0)
+			goto out_free;
+		end -= namelen;
+		memcpy(end, name, namelen);
+		*--end = '/';
+		path = end;
+		table = table->parent;
+	}
+	buflen -= 4;
+	if (buflen < 0)
+		goto out_free;
+	end -= 4;
+	memcpy(end, "/sys", 4);
+	path = end;
+	rc = security_genfs_sid("proc", path, tclass, sid);
+out_free:
 	free_page((unsigned long)buffer);
 out:
 	return rc;
@@ -2159,79 +2184,64 @@ static int selinux_inode_init_security(struct inode *inode, struct inode *dir,
 	return 0;
 }
 
-static int selinux_inode_create(struct inode *dir, struct dentry *dentry,
-				 struct vfsmount *mnt, int mask)
+static int selinux_inode_create(struct inode *dir, struct dentry *dentry, int mask)
 {
 	return may_create(dir, dentry, SECCLASS_FILE);
 }
 
-static int selinux_inode_link(struct dentry *old_dentry,
-			      struct vfsmount *old_mnt,
-			      struct inode *dir,
-			      struct dentry *new_dentry,
-			      struct vfsmount *new_mnt)
+static int selinux_inode_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry)
 {
 	int rc;
 
-	rc = secondary_ops->inode_link(old_dentry, old_mnt, dir, new_dentry,
-				       new_mnt);
+	rc = secondary_ops->inode_link(old_dentry,dir,new_dentry);
 	if (rc)
 		return rc;
 	return may_link(dir, old_dentry, MAY_LINK);
 }
 
-static int selinux_inode_unlink(struct inode *dir, struct dentry *dentry,
-			        struct vfsmount *mnt)
+static int selinux_inode_unlink(struct inode *dir, struct dentry *dentry)
 {
 	int rc;
 
-	rc = secondary_ops->inode_unlink(dir, dentry, mnt);
+	rc = secondary_ops->inode_unlink(dir, dentry);
 	if (rc)
 		return rc;
 	return may_link(dir, dentry, MAY_UNLINK);
 }
 
-static int selinux_inode_symlink(struct inode *dir, struct dentry *dentry,
-				 struct vfsmount *mnt, const char *name)
+static int selinux_inode_symlink(struct inode *dir, struct dentry *dentry, const char *name)
 {
 	return may_create(dir, dentry, SECCLASS_LNK_FILE);
 }
 
-static int selinux_inode_mkdir(struct inode *dir, struct dentry *dentry,
-			       struct vfsmount *mnt, int mask)
+static int selinux_inode_mkdir(struct inode *dir, struct dentry *dentry, int mask)
 {
 	return may_create(dir, dentry, SECCLASS_DIR);
 }
 
-static int selinux_inode_rmdir(struct inode *dir, struct dentry *dentry,
-			       struct vfsmount *mnt)
+static int selinux_inode_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	return may_link(dir, dentry, MAY_RMDIR);
 }
 
-static int selinux_inode_mknod(struct inode *dir, struct dentry *dentry,
-			       struct vfsmount *mnt, int mode, dev_t dev)
+static int selinux_inode_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
 {
 	int rc;
 
-	rc = secondary_ops->inode_mknod(dir, dentry, mnt, mode, dev);
+	rc = secondary_ops->inode_mknod(dir, dentry, mode, dev);
 	if (rc)
 		return rc;
 
 	return may_create(dir, dentry, inode_mode_to_security_class(mode));
 }
 
-static int selinux_inode_rename(struct inode *old_inode,
-				struct dentry *old_dentry,
-				struct vfsmount *old_mnt,
-                                struct inode *new_inode,
-				struct dentry *new_dentry,
-				struct vfsmount *new_mnt)
+static int selinux_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
+                                struct inode *new_inode, struct dentry *new_dentry)
 {
 	return may_rename(old_inode, old_dentry, new_inode, new_dentry);
 }
 
-static int selinux_inode_readlink(struct dentry *dentry, struct vfsmount *mnt)
+static int selinux_inode_readlink(struct dentry *dentry)
 {
 	return dentry_has_perm(current, NULL, dentry, FILE__READ);
 }
@@ -2264,12 +2274,11 @@ static int selinux_inode_permission(struct inode *inode, int mask,
 			       file_mask_to_av(inode->i_mode, mask), NULL);
 }
 
-static int selinux_inode_setattr(struct dentry *dentry, struct vfsmount *mnt,
-				 struct iattr *iattr)
+static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
 {
 	int rc;
 
-	rc = secondary_ops->inode_setattr(dentry, mnt, iattr);
+	rc = secondary_ops->inode_setattr(dentry, iattr);
 	if (rc)
 		return rc;
 
@@ -2307,9 +2316,7 @@ static int selinux_inode_setotherxattr(struct dentry *dentry, char *name)
 	return dentry_has_perm(current, NULL, dentry, FILE__SETATTR);
 }
 
-static int selinux_inode_setxattr(struct dentry *dentry, struct vfsmount *mnt,
-				  char *name, void *value, size_t size,
-				  int flags, struct file *file)
+static int selinux_inode_setxattr(struct dentry *dentry, char *name, void *value, size_t size, int flags)
 {
 	struct task_security_struct *tsec = current->security;
 	struct inode *inode = dentry->d_inode;
@@ -2358,9 +2365,7 @@ static int selinux_inode_setxattr(struct dentry *dentry, struct vfsmount *mnt,
 			    &ad);
 }
 
-static void selinux_inode_post_setxattr(struct dentry *dentry,
-					struct vfsmount *mnt,
-					char *name,
+static void selinux_inode_post_setxattr(struct dentry *dentry, char *name,
                                         void *value, size_t size, int flags)
 {
 	struct inode *inode = dentry->d_inode;
@@ -2384,21 +2389,17 @@ static void selinux_inode_post_setxattr(struct dentry *dentry,
 	return;
 }
 
-static int selinux_inode_getxattr (struct dentry *dentry, struct vfsmount *mnt,
-				   char *name, struct file *file)
+static int selinux_inode_getxattr (struct dentry *dentry, char *name)
 {
 	return dentry_has_perm(current, NULL, dentry, FILE__GETATTR);
 }
 
-static int selinux_inode_listxattr (struct dentry *dentry, struct vfsmount *mnt,
-				    struct file *file)
+static int selinux_inode_listxattr (struct dentry *dentry)
 {
 	return dentry_has_perm(current, NULL, dentry, FILE__GETATTR);
 }
 
-static int selinux_inode_removexattr (struct dentry *dentry,
-				      struct vfsmount *mnt, char *name,
-				      struct file *file)
+static int selinux_inode_removexattr (struct dentry *dentry, char *name)
 {
 	if (strcmp(name, XATTR_NAME_SELINUX))
 		return selinux_inode_setotherxattr(dentry, name);

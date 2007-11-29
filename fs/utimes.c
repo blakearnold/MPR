@@ -54,7 +54,7 @@ long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags
 {
 	int error;
 	struct nameidata nd;
-	struct path path;
+	struct dentry *dentry;
 	struct inode *inode;
 	struct iattr newattrs;
 	struct file *f = NULL;
@@ -77,17 +77,16 @@ long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags
 		f = fget(dfd);
 		if (!f)
 			goto out;
-		path = f->f_path;
+		dentry = f->f_path.dentry;
 	} else {
 		error = __user_walk_fd(dfd, filename, (flags & AT_SYMLINK_NOFOLLOW) ? 0 : LOOKUP_FOLLOW, &nd);
 		if (error)
 			goto out;
 
-		path.dentry = nd.dentry;
-		path.mnt = nd.mnt;
+		dentry = nd.dentry;
 	}
 
-	inode = path.dentry->d_inode;
+	inode = dentry->d_inode;
 
 	error = -EROFS;
 	if (IS_RDONLY(inode))
@@ -132,7 +131,7 @@ long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags
 		}
 	}
 	mutex_lock(&inode->i_mutex);
-	error = fnotify_change(path.dentry, path.mnt, &newattrs, f);
+	error = notify_change(dentry, &newattrs);
 	mutex_unlock(&inode->i_mutex);
 dput_and_out:
 	if (f)
