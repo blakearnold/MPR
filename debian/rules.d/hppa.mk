@@ -1,5 +1,6 @@
 build_arch	= parisc
 header_arch	= $(build_arch)
+asm_link	= $(build_arch)
 defconfig	= defconfig
 flavours	= hppa32 hppa64
 build_image	= vmlinux

@@ -1,5 +1,6 @@
 build_arch	= ia64
 header_arch	= $(build_arch)
+asm_link	= $(build_arch)
 defconfig	= defconfig
 flavours	= itanium mckinley
 build_image	= vmlinux

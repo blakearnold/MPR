@@ -1,5 +1,6 @@
 build_arch	= sparc64
 header_arch	= $(build_arch)
+asm_link	= $(build_arch)
 defconfig	= defconfig
 flavours	= sparc64 sparc64-smp
 build_image	= image

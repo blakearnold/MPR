@@ -1,5 +1,6 @@
 build_arch	= i386
 header_arch	= x86_64
+asm_link	= x86
 defconfig	= defconfig
 flavours	= 386 generic server virtual
 build_image	= bzImage
