@@ -160,7 +160,6 @@ CONFIG_UFS_FS=m
 # CONFIG_UFS_FS_WRITE is not set
 # CONFIG_ULI526X is not set
 # CONFIG_UNUSED_SYMBOLS is not set
-# CONFIG_VGASTATE is not set
 # CONFIG_VIA_RHINE is not set
 # CONFIG_VIA_VELOCITY is not set
 # CONFIG_VT_HW_CONSOLE_BINDING is not set
