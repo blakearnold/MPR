@@ -727,7 +727,7 @@ start:
 	     !capable(CAP_FSETID)) {
 		error = xfs_write_clear_setuid(xip);
 		if (likely(!error))
-			error = -remove_suid(file->f_path.dentry);
+			error = -remove_suid(&file->f_path);
 		if (unlikely(error)) {
 			goto out_unlock_internal;
 		}
