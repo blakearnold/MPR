@@ -1526,7 +1526,7 @@ shmem_file_write(struct file *file, const char __user *buf, size_t count, loff_t
 	if (err || !count)
 		goto out;
 
-	err = remove_suid(&file->f_path);
+	err = remove_suid(file->f_path.dentry);
 	if (err)
 		goto out;
 

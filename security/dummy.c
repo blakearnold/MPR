@@ -262,60 +262,54 @@ static int dummy_inode_init_security (struct inode *inode, struct inode *dir,
 }
 
 static int dummy_inode_create (struct inode *inode, struct dentry *dentry,
-			       struct vfsmount *mnt, int mask)
+			       int mask)
 {
 	return 0;
 }
 
-static int dummy_inode_link (struct dentry *old_dentry,
-			     struct vfsmount *old_mnt, struct inode *inode,
-			     struct dentry *new_dentry,
-			     struct vfsmount *new_mnt)
+static int dummy_inode_link (struct dentry *old_dentry, struct inode *inode,
+			     struct dentry *new_dentry)
 {
 	return 0;
 }
 
-static int dummy_inode_unlink (struct inode *inode, struct dentry *dentry,
-			       struct vfsmount *mnt)
+static int dummy_inode_unlink (struct inode *inode, struct dentry *dentry)
 {
 	return 0;
 }
 
 static int dummy_inode_symlink (struct inode *inode, struct dentry *dentry,
-				struct vfsmount *mnt, const char *name)
+				const char *name)
 {
 	return 0;
 }
 
 static int dummy_inode_mkdir (struct inode *inode, struct dentry *dentry,
-			      struct vfsmount *mnt, int mask)
+			      int mask)
 {
 	return 0;
 }
 
-static int dummy_inode_rmdir (struct inode *inode, struct dentry *dentry,
-			      struct vfsmount *mnt)
+static int dummy_inode_rmdir (struct inode *inode, struct dentry *dentry)
 {
 	return 0;
 }
 
 static int dummy_inode_mknod (struct inode *inode, struct dentry *dentry,
-			      struct vfsmount *mnt, int mode, dev_t dev)
+			      int mode, dev_t dev)
 {
 	return 0;
 }
 
 static int dummy_inode_rename (struct inode *old_inode,
 			       struct dentry *old_dentry,
-			       struct vfsmount *old_mnt,
 			       struct inode *new_inode,
-			       struct dentry *new_dentry,
-			       struct vfsmount *new_mnt)
+			       struct dentry *new_dentry)
 {
 	return 0;
 }
 
-static int dummy_inode_readlink (struct dentry *dentry, struct vfsmount *mnt)
+static int dummy_inode_readlink (struct dentry *dentry)
 {
 	return 0;
 }
@@ -331,8 +325,7 @@ static int dummy_inode_permission (struct inode *inode, int mask, struct nameida
 	return 0;
 }
 
-static int dummy_inode_setattr (struct dentry *dentry, struct vfsmount *mnt,
-				struct iattr *iattr)
+static int dummy_inode_setattr (struct dentry *dentry, struct iattr *iattr)
 {
 	return 0;
 }
@@ -347,9 +340,8 @@ static void dummy_inode_delete (struct inode *ino)
 	return;
 }
 
-static int dummy_inode_setxattr (struct dentry *dentry, struct vfsmount *mnt,
-				 char *name, void *value, size_t size,
-				 int flags, struct file *file)
+static int dummy_inode_setxattr (struct dentry *dentry, char *name, void *value,
+				size_t size, int flags)
 {
 	if (!strncmp(name, XATTR_SECURITY_PREFIX,
 		     sizeof(XATTR_SECURITY_PREFIX) - 1) &&
@@ -358,28 +350,22 @@ static int dummy_inode_setxattr (struct dentry *dentry, struct vfsmount *mnt,
 	return 0;
 }
 
-static void dummy_inode_post_setxattr (struct dentry *dentry,
-				       struct vfsmount *mnt,
-				       char *name, void *value,
+static void dummy_inode_post_setxattr (struct dentry *dentry, char *name, void *value,
 				       size_t size, int flags)
 {
 }
 
-static int dummy_inode_getxattr (struct dentry *dentry,
-			          struct vfsmount *mnt, char *name,
-				  struct file *file)
+static int dummy_inode_getxattr (struct dentry *dentry, char *name)
 {
 	return 0;
 }
 
-static int dummy_inode_listxattr (struct dentry *dentry, struct vfsmount *mnt,
-				  struct file *file)
+static int dummy_inode_listxattr (struct dentry *dentry)
 {
 	return 0;
 }
 
-static int dummy_inode_removexattr (struct dentry *dentry, struct vfsmount *mnt,
-				    char *name, struct file *file)
+static int dummy_inode_removexattr (struct dentry *dentry, char *name)
 {
 	if (!strncmp(name, XATTR_SECURITY_PREFIX,
 		     sizeof(XATTR_SECURITY_PREFIX) - 1) &&

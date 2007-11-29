@@ -154,8 +154,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
 		dprintk("NFSD: nfsd4_create_clid_dir: DIRECTORY EXISTS\n");
 		goto out_put;
 	}
-	status = vfs_mkdir(rec_dir.dentry->d_inode, dentry, rec_dir.mnt,
-			   S_IRWXU);
+	status = vfs_mkdir(rec_dir.dentry->d_inode, dentry, S_IRWXU);
 out_put:
 	dput(dentry);
 out_unlock:
@@ -259,7 +258,7 @@ nfsd4_remove_clid_file(struct dentry *dir, struct dentry *dentry)
 		return -EINVAL;
 	}
 	mutex_lock_nested(&dir->d_inode->i_mutex, I_MUTEX_PARENT);
-	status = vfs_unlink(dir->d_inode, dentry, rec_dir.mnt);
+	status = vfs_unlink(dir->d_inode, dentry);
 	mutex_unlock(&dir->d_inode->i_mutex);
 	return status;
 }
@@ -274,7 +273,7 @@ nfsd4_clear_clid_dir(struct dentry *dir, struct dentry *dentry)
 	 * a kernel from the future.... */
 	nfsd4_list_rec_dir(dentry, nfsd4_remove_clid_file);
 	mutex_lock_nested(&dir->d_inode->i_mutex, I_MUTEX_PARENT);
-	status = vfs_rmdir(dir->d_inode, dentry, rec_dir.mnt);
+	status = vfs_rmdir(dir->d_inode, dentry);
 	mutex_unlock(&dir->d_inode->i_mutex);
 	return status;
 }

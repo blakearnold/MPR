@@ -505,10 +505,6 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
  */
 int fuse_dev_init(void);
 
-
-int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
-		    struct file *file);
-
 /**
  * Cleanup the client device
  */

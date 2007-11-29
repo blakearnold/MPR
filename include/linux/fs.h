@@ -351,6 +351,13 @@ struct iattr {
 	struct timespec	ia_atime;
 	struct timespec	ia_mtime;
 	struct timespec	ia_ctime;
+
+	/*
+	 * Not an attribute, but an auxilary info for filesystems wanting to
+	 * implement an ftruncate() like method.  NOTE: filesystem should
+	 * check for (ia_valid & ATTR_FILE), and not for (ia_file != NULL).
+	 */
+	struct file	*ia_file;
 };
 
 /*
@@ -1061,13 +1068,13 @@ extern void unlock_super(struct super_block *);
  */
 extern int vfs_permission(struct nameidata *, int);
 extern int vfs_create(struct inode *, struct dentry *, int, struct nameidata *);
-extern int vfs_mkdir(struct inode *, struct dentry *, struct vfsmount *, int);
-extern int vfs_mknod(struct inode *, struct dentry *, struct vfsmount *, int, dev_t);
-extern int vfs_symlink(struct inode *, struct dentry *, struct vfsmount *, const char *, int);
-extern int vfs_link(struct dentry *, struct vfsmount *, struct inode *, struct dentry *, struct vfsmount *);
-extern int vfs_rmdir(struct inode *, struct dentry *, struct vfsmount *);
-extern int vfs_unlink(struct inode *, struct dentry *, struct vfsmount *);
-extern int vfs_rename(struct inode *, struct dentry *, struct vfsmount *, struct inode *, struct dentry *, struct vfsmount *);
+extern int vfs_mkdir(struct inode *, struct dentry *, int);
+extern int vfs_mknod(struct inode *, struct dentry *, int, dev_t);
+extern int vfs_symlink(struct inode *, struct dentry *, const char *, int);
+extern int vfs_link(struct dentry *, struct inode *, struct dentry *);
+extern int vfs_rmdir(struct inode *, struct dentry *);
+extern int vfs_unlink(struct inode *, struct dentry *);
+extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *);
 
 /*
  * VFS dentry helper functions.
@@ -1181,8 +1188,6 @@ struct file_operations {
 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *, size_t, unsigned int);
 	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *, size_t, unsigned int);
 	int (*setlease)(struct file *, long, struct file_lock **);
-	int (*fgetattr)(struct file *, struct kstat *);
-	int (*fsetattr)(struct file *, struct iattr *);
 };
 
 struct inode_operations {
@@ -1531,8 +1536,8 @@ static inline int break_lease(struct inode *inode, unsigned int mode)
 
 /* fs/open.c */
 
-extern int do_truncate(struct dentry *, struct vfsmount *, loff_t start,
-		       unsigned int time_attrs, struct file *filp);
+extern int do_truncate(struct dentry *, loff_t start, unsigned int time_attrs,
+		       struct file *filp);
 extern long do_sys_open(int dfd, const char __user *filename, int flags,
 			int mode);
 extern struct file *filp_open(const char *, int, int);
@@ -1688,8 +1693,7 @@ extern int do_remount_sb(struct super_block *sb, int flags,
 #ifdef CONFIG_BLOCK
 extern sector_t bmap(struct inode *, sector_t);
 #endif
-extern int notify_change(struct dentry *, struct vfsmount *, struct iattr *);
-extern int fnotify_change(struct dentry *, struct vfsmount *, struct iattr *, struct file *);
+extern int notify_change(struct dentry *, struct iattr *);
 extern int permission(struct inode *, int, struct nameidata *);
 extern int generic_permission(struct inode *, int,
 		int (*check_acl)(struct inode *, int));
@@ -1762,9 +1766,9 @@ extern void __iget(struct inode * inode);
 extern void clear_inode(struct inode *);
 extern void destroy_inode(struct inode *);
 extern struct inode *new_inode(struct super_block *);
-extern int __remove_suid(struct path *, int);
+extern int __remove_suid(struct dentry *, int);
 extern int should_remove_suid(struct dentry *);
-extern int remove_suid(struct path *);
+extern int remove_suid(struct dentry *);
 
 extern void __insert_inode_hash(struct inode *, unsigned long hashval);
 extern void remove_inode_hash(struct inode *);
