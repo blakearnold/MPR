@@ -819,3 +819,4 @@ int vio_driver_init(struct vio_driver_state *vio, struct vio_dev *vdev,
 
 	return 0;
 }
+EXPORT_SYMBOL(vio_driver_init);
