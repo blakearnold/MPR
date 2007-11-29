@@ -775,7 +775,7 @@ generic_file_splice_write_nolock(struct pipe_inode_info *pipe, struct file *out,
 	ssize_t ret;
 	int err;
 
-	err = remove_suid(out->f_path.dentry);
+	err = remove_suid(&out->f_path);
 	if (unlikely(err))
 		return err;
 
@@ -835,7 +835,7 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
 		if (killpriv)
 			err = security_inode_killpriv(out->f_path.dentry);
 		if (!err && killsuid)
-			err = __remove_suid(out->f_path.dentry, killsuid);
+			err = __remove_suid(&out->f_path, killsuid);
 		mutex_unlock(&inode->i_mutex);
 		if (err)
 			return err;

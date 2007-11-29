@@ -1884,3 +1884,30 @@ void __put_mnt_ns(struct mnt_namespace *ns)
 	release_mounts(&umount_list);
 	kfree(ns);
 }
+
+char *d_namespace_path(struct dentry *dentry, struct vfsmount *vfsmnt,
+		       char *buf, int buflen)
+{
+	struct vfsmount *rootmnt, *nsrootmnt = NULL;
+	struct dentry *root = NULL;
+	char *res;
+
+	read_lock(&current->fs->lock);
+	rootmnt = mntget(current->fs->rootmnt);
+	read_unlock(&current->fs->lock);
+	spin_lock(&vfsmount_lock);
+	if (rootmnt->mnt_ns)
+		nsrootmnt = mntget(rootmnt->mnt_ns->root);
+	spin_unlock(&vfsmount_lock);
+	mntput(rootmnt);
+	if (nsrootmnt)
+		root = dget(nsrootmnt->mnt_root);
+	res = __d_path(dentry, vfsmnt, root, nsrootmnt, buf, buflen, 1);
+	dput(root);
+	mntput(nsrootmnt);
+	/* Prevent empty path for lazily unmounted filesystems. */
+	if (!IS_ERR(res) && *res == '\0')
+		*--res = '.';
+	return res;
+}
+EXPORT_SYMBOL(d_namespace_path);
