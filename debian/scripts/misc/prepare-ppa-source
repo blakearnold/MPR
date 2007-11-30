@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# This script prepares a source upload for a PPA build.
+#
+
+#
+# Don't bother if the repo hasn't changed since the last upload.
+#
+LAST_UPLOAD=../last-ppa-upload
+if [ ! -f ${LAST_UPLOAD} ]
+then
+	touch ${LAST_UPLOAD}
+fi
+git whatchanged -n 1 > ${LAST_UPLOAD}.tmp
+if cmp ${LAST_UPLOAD} ${LAST_UPLOAD}.tmp > /dev/null
+then
+	rm -f ${LAST_UPLOAD}.tmp
+	exit 1
+fi
+mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
+
+rm -f ../linux_*
+dpkg-buildpackage -S -us -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
+
+exit 0
+

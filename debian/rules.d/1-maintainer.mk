@@ -80,3 +80,13 @@ startnewrelease:
 		debian/changelog.new ; \
 	cat debian/changelog >> debian/changelog.new; \
 	mv debian/changelog.new debian/changelog
+
+#
+# If $(ppa_file) exists, then only the standard flavours are built for PPA, e.g.,
+# 386, 386-generic, and amd64-generic.
+#
+prepare-ppa:
+	touch $(ppa_file)
+	-debian/scripts/misc/prepare-ppa-source
+	rm -f $(ppa_file)
+
