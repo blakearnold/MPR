@@ -37,6 +37,9 @@ ifneq ($(PRINTSHAS),)
 ubuntu_log_opts += --print-shas
 endif
 
+ppa_file	:= $(CURDIR)/ppa_build
+is_ppa_build	:= $(shell if [ -f $(ppa_file) ] ; then echo -n yes; fi;)
+
 abinum		:= $(shell echo $(revision) | sed -e 's/\..*//')$(abisuffix)
 prev_abinum	:= $(shell echo $(prev_revision) | sed -e 's/\..*//')$(abisuffix)
 debnum		:= -$(abinum)
