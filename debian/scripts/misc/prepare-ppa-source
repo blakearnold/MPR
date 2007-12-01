@@ -15,12 +15,13 @@ git whatchanged -n 1 > ${LAST_UPLOAD}.tmp
 if cmp ${LAST_UPLOAD} ${LAST_UPLOAD}.tmp > /dev/null
 then
 	rm -f ${LAST_UPLOAD}.tmp
-	exit 1
+	echo No upload needed.
+	exit 0
 fi
 mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
 
 rm -f ../linux_*
-dpkg-buildpackage -S -us -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
+dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
 
 exit 0
 
