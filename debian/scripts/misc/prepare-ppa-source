@@ -4,6 +4,22 @@
 #
 
 #
+# The identity of the git committer must be known.
+#
+if [ ! -z "$GIT_AUTHOR_NAME" ] && [ ! -z "$GIT_AUTHOR_EMAIL" ]
+then
+	SIGNER_NAME="$GIT_AUTHOR_NAME"
+	SIGNER_EMAIL="$GIT_AUTHOR_EMAIL"
+elif [ ! -z "$GIT_COMMITTER_NAME" ] && [ ! -z "$GIT_COMMITTER_EMAIL" ]
+then
+	SIGNER_NAME="$GIT_COMMITTER_NAME"
+	SIGNER_EMAIL="$GIT_COMMITTER_EMAIL"
+else
+	echo Error: Unknown committer.
+	exit 1
+fi
+
+#
 # Don't bother if the repo hasn't changed since the last upload.
 #
 LAST_UPLOAD=../last-ppa-upload
@@ -20,8 +36,16 @@ then
 fi
 mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
 
+#
+# In order to sign the package you must override the first signer's changelog entry.
+#
+export DEBEMAIL="$SIGNER_EMAIL"
+export DEBFULLNAME="$SIGNER_NAME"
+debchange --increment --preserve "PPA Upload"
+
 rm -f ../linux_*
 dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
+#mv ../changelog debian/changelog
 
 exit 0
 
