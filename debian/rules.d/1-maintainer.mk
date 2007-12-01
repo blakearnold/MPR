@@ -18,6 +18,8 @@ help:
 	@echo
 	@echo "  diffupstream    : Diff stock kernel code against upstream (git)"
 	@echo
+	@echo "  prepare-ppa     : Prepare a PPA source upload"
+	@echo
 	@echo "  help            : If you are kernel hacking, you need the professional"
 	@echo "                    version of this"
 	@echo
