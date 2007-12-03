@@ -13,6 +13,12 @@ prev_revision := $(word $(words $(prev_revisions)),$(prev_revisions))
 # AUTOBUILD can also be used by anyone wanting to build a custom kernel
 # image, or rebuild the entire set of Ubuntu packages using custom patches
 # or configs.
+ppa_file	:= $(CURDIR)/ppa_build_sha
+is_ppa_build	:= $(shell if [ -f $(ppa_file) ] ; then echo -n yes; fi;)
+ifndef AUTOBUILD
+AUTOBUILD	:= $(is_ppa_build)
+endif
+
 export AUTOBUILD
 ifeq ($(AUTOBUILD),)
 abi_suffix	=
@@ -36,9 +42,6 @@ endif
 ifneq ($(PRINTSHAS),)
 ubuntu_log_opts += --print-shas
 endif
-
-ppa_file	:= $(CURDIR)/ppa_build
-is_ppa_build	:= $(shell if [ -f $(ppa_file) ] ; then echo -n yes; fi;)
 
 abinum		:= $(shell echo $(revision) | sed -e 's/\..*//')$(abisuffix)
 prev_abinum	:= $(shell echo $(prev_revision) | sed -e 's/\..*//')$(abisuffix)
