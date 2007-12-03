@@ -2,6 +2,8 @@
 #
 # This script prepares a source upload for a PPA build.
 #
+PPA_FILE="`make --no-print-directory -f debian/rules print-ppa-file-name`"
+
 if [ "$1" = "scrub" ]
 then
 	SCRUB=1
@@ -54,7 +56,7 @@ mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
 #
 # Notify the build scripts that this is a PPA build.
 #
-cp -v ${LAST_UPLOAD} `debian/rules print-ppa-file-name`
+cp -v ${LAST_UPLOAD} ${PPA_FILE}
 
 #
 # In order to sign the package you must override the first signer's changelog entry.
@@ -78,8 +80,9 @@ sed -i 's/ubuntu.*)/'`cat ${LAST_UPLOAD}`')/1' debian/changelog
 #
 sed -i 's/) .*;/) hardy;/1' debian/changelog
 
-rm -rf ../linux_*
+rm -rf ../linux*
 dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
 
+rm -f ${PPA_FILE}
 exit 0
 

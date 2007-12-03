@@ -88,8 +88,9 @@ startnewrelease:
 # 386, 386-generic, and amd64-generic.
 #
 prepare-ppa:
-	-debian/scripts/misc/prepare-ppa-source
-	rm -f $(ppa_file)
+	@echo Execute debian/scripts/misc/prepare-ppa-source to prepare an upload
+	@echo for a PPA build. You must do this outside of debian/rules since it cannot
+	@echo nest.
 
 print-ppa-file-name:
 	@echo $(ppa_file)
