@@ -88,9 +88,8 @@ startnewrelease:
 # 386, 386-generic, and amd64-generic.
 #
 prepare-ppa:
-	touch $(ppa_file)
 	-debian/scripts/misc/prepare-ppa-source
 	rm -f $(ppa_file)
 
 print-ppa-file-name:
-	echo $(ppa_file)
+	@echo $(ppa_file)
