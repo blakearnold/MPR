@@ -20,6 +20,13 @@ else
 fi
 
 #
+# git current and cleanup.
+#
+git checkout -f
+git reset --hard
+git pull --force
+git ls-files --others | xargs rm -rf
+
 # Don't bother if the repo hasn't changed since the last upload.
 #
 LAST_UPLOAD=../last-ppa-upload
@@ -27,7 +34,7 @@ if [ ! -f ${LAST_UPLOAD} ]
 then
 	touch ${LAST_UPLOAD}
 fi
-git whatchanged -n 1 > ${LAST_UPLOAD}.tmp
+git log|head -n 1|sed 's/commit //' > ${LAST_UPLOAD}.tmp
 if cmp ${LAST_UPLOAD} ${LAST_UPLOAD}.tmp > /dev/null
 then
 	rm -f ${LAST_UPLOAD}.tmp
@@ -37,15 +44,34 @@ fi
 mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
 
 #
+# Notify the build scripts that this is a PPA vyuild.
+#
+cp ${LAST_UPLOAD} `debian/rules print-ppa-file-name`
+
+#
 # In order to sign the package you must override the first signer's changelog entry.
 #
 export DEBEMAIL="$SIGNER_EMAIL"
 export DEBFULLNAME="$SIGNER_NAME"
 debchange --increment --preserve "PPA Upload"
+if ! head -n 1 debian/changelog | grep ubuntu > /dev/null
+then
+	echo debchange did not work.
+	exit 1
+fi
+
+#
+# Change the version to be that of the git HEAD SHA1.
+#
+sed -i 's/ubuntu.*)/'`cat ${LAST_UPLOAD}`')/1' debian/changelog
+
+#
+# Make sure the third field says hardy.
+#
+sed -i 's/) .*;/) hardy;/1' debian/changelog
 
 rm -f ../linux_*
 dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
-#mv ../changelog debian/changelog
 
 exit 0
 

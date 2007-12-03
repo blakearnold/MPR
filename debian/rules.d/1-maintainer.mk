@@ -92,3 +92,5 @@ prepare-ppa:
 	-debian/scripts/misc/prepare-ppa-source
 	rm -f $(ppa_file)
 
+print-ppa-file-name:
+	echo $(ppa_file)
