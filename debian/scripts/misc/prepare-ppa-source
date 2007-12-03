@@ -2,6 +2,10 @@
 #
 # This script prepares a source upload for a PPA build.
 #
+if [ "$1" = "scrub" ]
+then
+	SCRUB=1
+fi
 
 #
 # The identity of the git committer must be known.
@@ -23,10 +27,14 @@ fi
 # git current and cleanup.
 #
 git checkout -f
-git reset --hard
-git pull --force
+if [ ! -z "${SCRUB}" ]
+then
+	git reset --hard
+	git pull --force
+fi
 git ls-files --others | xargs rm -rf
 
+#
 # Don't bother if the repo hasn't changed since the last upload.
 #
 LAST_UPLOAD=../last-ppa-upload
@@ -44,9 +52,9 @@ fi
 mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
 
 #
-# Notify the build scripts that this is a PPA vyuild.
+# Notify the build scripts that this is a PPA build.
 #
-cp ${LAST_UPLOAD} `debian/rules print-ppa-file-name`
+cp -v ${LAST_UPLOAD} `debian/rules print-ppa-file-name`
 
 #
 # In order to sign the package you must override the first signer's changelog entry.
@@ -70,7 +78,7 @@ sed -i 's/ubuntu.*)/'`cat ${LAST_UPLOAD}`')/1' debian/changelog
 #
 sed -i 's/) .*;/) hardy;/1' debian/changelog
 
-rm -f ../linux_*
+rm -rf ../linux_*
 dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
 
 exit 0
