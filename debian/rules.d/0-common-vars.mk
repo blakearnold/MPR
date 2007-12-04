@@ -14,7 +14,7 @@ prev_revision := $(word $(words $(prev_revisions)),$(prev_revisions))
 # image, or rebuild the entire set of Ubuntu packages using custom patches
 # or configs.
 ppa_file	:= $(CURDIR)/ppa_build_sha
-is_ppa_build	:= $(shell if [ -f $(ppa_file) ] ; then echo -n yes; fi;)
+is_ppa_build	:= $(shell if [ -f $(ppa_file) ] ; then echo yes; fi;)
 ifndef AUTOBUILD
 AUTOBUILD	:= $(is_ppa_build)
 endif
