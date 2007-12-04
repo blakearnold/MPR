@@ -1,3 +1,23 @@
+linux (2.6.24-1.2) hardy; urgency=low
+
+  [Ben Collins]
+
+  * cell: Remove cell custom flavour, merged upstream
+  * apparmor: Added module from SVN repo
+  * ubuntu: Update configs to enable apparmor
+  * ubuntu/configs: Disable vga type framebuffers on hppa32. Fixes FTBFS
+
+  [Tim Gardner]
+
+  * Add support for PPA builds.
+  * Update configuration files
+
+  [Upstream Kernel Changes]
+
+  * [SPARC64] Export symbols for sunvnet and sunvdc to be built modular
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Tue, 04 Dec 2007 14:36:21 -0700
+
 linux (2.6.24-1.1) hardy; urgency=low
 
   [Ben Collins]
