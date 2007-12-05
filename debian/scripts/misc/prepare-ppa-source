@@ -2,6 +2,9 @@
 #
 # This script prepares a source upload for a PPA build.
 #
+LAST_UPLOAD=../last-ppa-upload
+LAST_GIT_CHANGELOG=../last_git_changelog
+LAST_PPA_CHANGELOG=../last_ppa_changelog
 PPA_FILE="`make --no-print-directory -f debian/rules print-ppa-file-name`"
 
 if [ "$1" = "scrub" ]
@@ -29,17 +32,11 @@ fi
 # git current and cleanup.
 #
 git checkout -f
-if [ ! -z "${SCRUB}" ]
-then
-	git reset --hard
-	git pull --force
-fi
 git ls-files --others | xargs rm -rf
 
 #
 # Don't bother if the repo hasn't changed since the last upload.
 #
-LAST_UPLOAD=../last-ppa-upload
 if [ ! -f ${LAST_UPLOAD} ]
 then
 	touch ${LAST_UPLOAD}
@@ -54,6 +51,25 @@ fi
 mv ${LAST_UPLOAD}.tmp ${LAST_UPLOAD}
 
 #
+# The git HEAD can change without anyone updating the debian/changelog.
+# However, if the changelog version is updated, then we want to work
+# forward from that  version.
+#
+cp debian/changelog changelog.sav
+if [ -f ${LAST_GIT_CHANGELOG} ] && [ -f ${LAST_PPA_CHANGELOG} ]
+then
+	#
+	# If the changelog has not changed, then work forward from the
+	# last daily build version.
+	#
+	if cmp ${LAST_GIT_CHANGELOG} debian/changelog > /dev/null
+	then
+		cp ${LAST_PPA_CHANGELOG} debian/changelog
+	fi
+fi
+mv changelog.sav ${LAST_GIT_CHANGELOG}
+
+#
 # Notify the build scripts that this is a PPA build.
 #
 cp -v ${LAST_UPLOAD} ${PPA_FILE}
@@ -63,7 +79,8 @@ cp -v ${LAST_UPLOAD} ${PPA_FILE}
 #
 export DEBEMAIL="$SIGNER_EMAIL"
 export DEBFULLNAME="$SIGNER_NAME"
-debchange --increment --preserve "PPA Upload"
+DEBCHANGE_COMMENT="PPA Upload from git HEAD `cat ${LAST_UPLOAD}`"
+debchange --increment --preserve "${DEBCHANGE_COMMENT}"
 if ! head -n 1 debian/changelog | grep ubuntu > /dev/null
 then
 	echo debchange did not work.
@@ -71,14 +88,15 @@ then
 fi
 
 #
-# Change the version to be that of the git HEAD SHA1.
-#
-sed -i 's/ubuntu.*)/'`cat ${LAST_UPLOAD}`')/1' debian/changelog
-
-#
-# Make sure the third field says hardy.
+# Make sure the third changelog field says hardy.
 #
 sed -i 's/) .*;/) hardy;/1' debian/changelog
+
+#
+# Make sure the next daily build works forward from this version if the git
+# changelog has not changed.
+#
+cp debian/changelog ${LAST_PPA_CHANGELOG}
 
 rm -rf ../linux*
 dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
