@@ -1,4 +1,4 @@
-binary-udebs: binary-debs binary-custom debian/control
+do-binary-udebs:
 	dh_testdir
 	dh_testroot
 
@@ -11,6 +11,7 @@ binary-udebs: binary-debs binary-custom debian/control
 		debian/d-i-${arch}; \
 	done
 
+	touch ignore-dups
 	export SOURCEDIR=debian/d-i-${arch} && \
 	  kernel-wedge install-files && \
 	  kernel-wedge check
@@ -23,3 +24,6 @@ binary-udebs: binary-debs binary-custom debian/control
 	  dh_gencontrol -p$$i; \
 	  dh_builddeb -p$$i; \
 	done
+
+binary-udebs: binary-debs binary-custom debian/control
+	debian/rules do-binary-udebs
