@@ -98,7 +98,7 @@ sed -i 's/) .*;/) hardy;/1' debian/changelog
 #
 cp debian/changelog ${LAST_PPA_CHANGELOG}
 
-rm -rf ../linux*
+rm -rf ../linux* include/config .config
 dpkg-buildpackage -S -sa -rfakeroot -I.git -I.gitignore -i'\.git.*'
 
 rm -f ${PPA_FILE}
