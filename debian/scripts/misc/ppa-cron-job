@@ -1,4 +1,4 @@
-#!/bin
+#!/bin/sh
 
 #
 # Use this script as a template for the daily kernel build cron job.
@@ -6,8 +6,8 @@
 # git tree gets removed and recreated.
 #
 KNAME=hardy
-DAILY_BUILD_DIR=${KBDIR:=~/${KNAME})}
-KERNEL_GIT_REPO=${KREPO:=/srv/kernel.ubuntu.com/git/ubuntu/ubuntu-${KNAME}.git)}
+DAILY_BUILD_DIR=${KBDIR:=~/${KNAME}}
+KERNEL_GIT_REPO=${KREPO:=/srv/kernel.ubuntu.com/git/ubuntu/ubuntu-${KNAME}.git}
 
 #
 # Nothing works unless there is a dput configuration.
