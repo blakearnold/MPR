@@ -2,10 +2,12 @@
 
 #
 # Use this script as a template for the daily kernel build cron job.
+# You should copy it somewhere outside of the git tree 'cause the whole
+# git tree gets removed and recreated.
 #
 KNAME=hardy
-DAILY_BUILD_DIR=~/${KNAME}
-KERNEL_GIT_REPO=/srv/kernel.ubuntu.com/git/ubuntu/ubuntu-${KNAME}.git
+DAILY_BUILD_DIR=${KBDIR:=~/${KNAME})}
+KERNEL_GIT_REPO=${KREPO:=/srv/kernel.ubuntu.com/git/ubuntu/ubuntu-${KNAME}.git)}
 
 #
 # Nothing works unless there is a dput configuration.
@@ -36,10 +38,10 @@ git clone ${KERNEL_GIT_REPO}
 # user must enter the GPG key password.
 #
 rm -f *.changes
-(cd ubuntu-${KNAME}; debian/scripts/misc/prepare-ppa)
+(cd ubuntu-${KNAME}; debian/scripts/misc/prepare-ppa-source)
 
-if ls *.changes 2>&1 > /dev/null
-then
-	dput my-ppa *.changes
-fi
+find . -maxdepth 1 -type f -name "*.changes" | while read f
+do
+	echo dput my-ppa $f
+done
 
