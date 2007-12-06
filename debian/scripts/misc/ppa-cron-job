@@ -6,13 +6,13 @@
 # git tree gets removed and recreated.
 #
 KNAME=hardy
-DAILY_BUILD_DIR=${KBDIR:=~/${KNAME}}
+DAILY_BUILD_DIR=${KBDIR:=${HOME}/${KNAME}}
 KERNEL_GIT_REPO=${KREPO:=/srv/kernel.ubuntu.com/git/ubuntu/ubuntu-${KNAME}.git}
 
 #
 # Nothing works unless there is a dput configuration.
 #
-if [ ! -f ~/.dput.cf ]
+if [ ! -f ${HOME}/.dput.cf ]
 then
 	echo No dput configuration.
 	exit 1
