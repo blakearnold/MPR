@@ -1,22 +1,3 @@
-linux (2.6.24-1.5) hardy; urgency=low
-
-  * Added ABI files for sparc and powerpc
-  * Enabled lpia build.
-
- -- Tim Gardner <tim.gardner@canonical.com>  Thu, 06 Dec 2007 13:46:48 -0700
-
-linux (2.6.24-1.4) hardy; urgency=low
-
-  * Updated prepare-ppa-sources to do more cleanup.
-
- -- Tim Gardner <tim.gardner@canonical.com>  Wed, 05 Dec 2007 11:51:25 -0700
-
-linux (2.6.24-1.3) hardy; urgency=low
-
-  * Name daily build packages in lexicographical order.
-
- -- Tim Gardner <tim.gardner@canonical.com>  Wed, 05 Dec 2007 09:25:33 -0700
-
 linux (2.6.24-1.2) hardy; urgency=low
 
   [Ben Collins]
@@ -29,13 +10,12 @@ linux (2.6.24-1.2) hardy; urgency=low
   [Tim Gardner]
 
   * Add support for PPA builds.
-  * Update configuration files
 
   [Upstream Kernel Changes]
 
   * [SPARC64] Export symbols for sunvnet and sunvdc to be built modular
 
- -- Tim Gardner <tim.gardner@canonical.com>  Tue, 04 Dec 2007 14:36:21 -0700
+ -- Ben Collins <bcollins@ubuntu.com>  Fri, 07 Dec 2007 15:18:32 -0500
 
 linux (2.6.24-1.1) hardy; urgency=low
 
