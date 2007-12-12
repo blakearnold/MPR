@@ -39,13 +39,13 @@ getall() {
 		filename=linux-image-${verabi}-${sub}_${verfull}_${arch}.deb
 		cd $tmpdir
 		if ! [ -f $filename ]; then
-			$WGET $repo/linux-source-$ver/$filename
+			$WGET $repo/linux/$filename
 		fi
 		if ! [ -f $filename ]; then
-			$WGET $repo_ports/linux-source-$ver/$filename
+			$WGET $repo_ports/linux/$filename
 		fi
 		if ! [ -f $filename ]; then
-			$WGET $repo_uni/linux-source-$ver/$filename
+			$WGET $repo_uni/linux/$filename
 		fi
 		if [ "$?" = "0" ]; then
 			echo -n "extracting..."
