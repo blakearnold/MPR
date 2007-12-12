@@ -1,0 +1,665 @@
+From bd243e4020f4bbce600330fd074af31973089cca Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Wed, 12 Dec 2007 11:07:18 +0530
+Subject: [PATCH] ACPI thermal driver registering with generic thermal sysfs driver
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+
+Callbacks for various attributes(critical,hot...) are added
+Provided infrastructure for user mode applicatio to take over platform thermal management
+---
+ drivers/acpi/Kconfig   |    5 +-
+ drivers/acpi/thermal.c |  508 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 507 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index ac09a5c..b065d16 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -3,10 +3,11 @@
+ #
+ 
+ menuconfig ACPI
+-	bool "ACPI (Advanced Configuration and Power Interface) Support"
++	bool "ACPI Support (Advanced Configuration and Power Interface) Support"
+ 	depends on !X86_NUMAQ
+ 	depends on !X86_VISWS
+ 	depends on !IA64_HP_SIM
++	depends on PM || THERMAL_SYSFS
+ 	depends on IA64 || X86
+ 	depends on PCI
+ 	depends on PM
+@@ -181,7 +182,7 @@ config ACPI_HOTPLUG_CPU
+ 
+ config ACPI_THERMAL
+ 	tristate "Thermal Zone"
+-	depends on ACPI_PROCESSOR
++	depends on THERMAL_SYSFS && ACPI_PROCESSOR
+ 	default y
+ 	help
+ 	  This driver adds support for ACPI thermal zones.  Most mobile and
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index 5f79b44..417deed 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -28,6 +28,8 @@
+  *  TBD: 1. Implement passive cooling hysteresis.
+  *       2. Enhance passive cooling (CPU) states/limit interface to support
+  *          concepts of 'multiple limiters', upper/lower limits, etc.
++ *  Modified: 1. Provide infrastructure from kernel to enable user-space
++ *              thermal management algorithm
+  *
+  */
+ 
+@@ -46,6 +48,7 @@
+ 
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <linux/thermal.h>
+ 
+ #define ACPI_THERMAL_COMPONENT		0x04000000
+ #define ACPI_THERMAL_CLASS		"thermal_zone"
+@@ -65,9 +68,6 @@
+ #define ACPI_THERMAL_MAX_ACTIVE	10
+ #define ACPI_THERMAL_MAX_LIMIT_STR_LEN 65
+ 
+-#define KELVIN_TO_CELSIUS(t)    (long)(((long)t-2732>=0) ? ((long)t-2732+5)/10 : ((long)t-2732-5)/10)
+-#define CELSIUS_TO_KELVIN(t)	((t+273)*10)
+-
+ #define _COMPONENT		ACPI_THERMAL_COMPONENT
+ ACPI_MODULE_NAME("thermal");
+ 
+@@ -99,6 +99,11 @@ static int psv;
+ module_param(psv, int, 0644);
+ MODULE_PARM_DESC(psv, "Disable or override all passive trip points.");
+ 
++#define ACPI_THERMAL_GROUP_TZD "thermalzone_devices"
++#define ACPI_THERMAL_GROUP_PSL "passive_devices"
++#define ACPI_THERMAL_GROUP_ALX "active_devices_x"
++#define ACPI_THERMAL_TRIP_ACTIVE "active_x"
++
+ static int acpi_thermal_add(struct acpi_device *device);
+ static int acpi_thermal_remove(struct acpi_device *device, int type);
+ static int acpi_thermal_resume(struct acpi_device *device);
+@@ -196,6 +201,9 @@ struct acpi_thermal {
+ 	struct acpi_handle_list devices;
+ 	struct timer_list timer;
+ 	struct mutex lock;
++	struct thermal_device *td;
++	struct thermal_device_attribute
++	    *thermal_device_active_attr[ACPI_THERMAL_MAX_ACTIVE + 1];
+ };
+ 
+ static const struct file_operations acpi_thermal_state_fops = {
+@@ -235,6 +243,11 @@ static const struct file_operations acpi_thermal_polling_fops = {
+ 	.release = single_release,
+ };
+ 
++static int acpi_thermal_one_group_register(struct acpi_thermal *tz, char *name,
++					   struct acpi_handle_list *devices);
++static int acpi_thermal_sysfs_register(struct acpi_thermal *tz);
++static void acpi_thermal_sysfs_unregister(struct acpi_thermal *tz);
++
+ /* --------------------------------------------------------------------------
+                              Thermal Zone Management
+    -------------------------------------------------------------------------- */
+@@ -757,6 +770,16 @@ static void acpi_thermal_check(void *data)
+ 			     tz->trips.active[i].temperature);
+ 
+ 	/*
++	 * Check for user/kernel algo
++	 * -------------------------
++	 *If there is a thermal management application in userspace
++	 *Or there are non CPU devices in this thermal zone
++	 *Kernelspace solution won't handle this
++	 */
++
++	if (THERMAL_KERNELSPACE == thermal_get_algo_mode()) {
++
++		/*
+ 	 * Invoke Policy
+ 	 * -------------
+ 	 * Separated from the above check to allow individual policy to 
+@@ -770,6 +793,7 @@ static void acpi_thermal_check(void *data)
+ 		acpi_thermal_passive(tz);
+ 	if (state.active)
+ 		acpi_thermal_active(tz);
++	}
+ 
+ 	/*
+ 	 * Calculate State
+@@ -1165,6 +1189,47 @@ static int acpi_thermal_remove_fs(struct acpi_device *device)
+                                  Driver Interface
+    -------------------------------------------------------------------------- */
+ 
++/*
++ * acpi_thermal_one_group_register
++ * ------------------------------
++ * Registers a group such as _TZD,_PSL,_ALx with thermal_sysfs driver
++ * tz : pointer to the acpi_thermal structure
++ * name : Name of the group
++ * devices : List of devices in this group
++ */
++static int acpi_thermal_one_group_register(struct acpi_thermal *tz, char *name,
++					   struct acpi_handle_list *devices)
++{
++	int result, i;
++	struct acpi_device *ad;
++	struct thermal_participant *participants;
++
++	if (!tz || !name || !devices)
++		return -EINVAL;
++
++	participants =
++	    kzalloc(sizeof(struct thermal_participant) * devices->count,
++		    GFP_KERNEL);
++	if (!participants)
++		return -ENOMEM;
++
++	for (i = 0; i < devices->count; i++) {
++		result = acpi_bus_get_device(devices->handles[i], &ad);
++		if (result) {
++			kfree(participants);
++			return result;
++		}
++		participants[i].kobj = &ad->dev.kobj;
++		strlcpy(participants[i].name, ad->pnp.bus_id, KOBJ_NAME_LEN);
++	}
++
++	result =
++	    thermal_group_register(name, tz->td, devices->count, participants);
++
++	kfree(participants);
++	return result;
++}
++
+ static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
+ {
+ 	struct acpi_thermal *tz = data;
+@@ -1178,18 +1243,33 @@ static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
+ 
+ 	switch (event) {
+ 	case ACPI_THERMAL_NOTIFY_TEMPERATURE:
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++				  "Received event from TZ: %s event type:%x \n",
++				  tz->name, event));
+ 		acpi_thermal_check(tz);
++		/*Event for user space algorithm */
++		thermal_sysfs_generate_event(tz->td, KOBJ_CHANGE);
+ 		break;
+ 	case ACPI_THERMAL_NOTIFY_THRESHOLDS:
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++				  "Received event from TZ: %s event type:%x \n",
++				  tz->name, event));
+ 		acpi_thermal_get_trip_points(tz);
+ 		acpi_thermal_check(tz);
++		thermal_sysfs_generate_event(tz->td, KOBJ_MOVE);
+ 		acpi_bus_generate_proc_event(device, event, 0);
+ 		acpi_bus_generate_netlink_event(device->pnp.device_class,
+ 						  device->dev.bus_id, event, 0);
+ 		break;
+ 	case ACPI_THERMAL_NOTIFY_DEVICES:
+-		if (tz->flags.devices)
++		if (tz->flags.devices) {
++			thermal_group_unregister(tz->td,
++						 ACPI_THERMAL_GROUP_TZD);
+ 			acpi_thermal_get_devices(tz);
++			acpi_thermal_one_group_register(tz,
++							ACPI_THERMAL_GROUP_TZD,
++							&tz->devices);
++		}
+ 		acpi_bus_generate_proc_event(device, event, 0);
+ 		acpi_bus_generate_netlink_event(device->pnp.device_class,
+ 						  device->dev.bus_id, event, 0);
+@@ -1240,6 +1320,419 @@ static int acpi_thermal_get_info(struct acpi_thermal *tz)
+ 	return 0;
+ }
+ 
++static int acpi_thermal_sysfs_get_temperature(void *devdata,
++					      struct thermal_device_attribute
++					      *attr, int *temperature)
++{
++	int result;
++	struct acpi_thermal *tz;
++
++	if (!devdata || !temperature)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++	result = acpi_thermal_get_temperature(tz);
++
++	if (result)
++		return result;
++
++	*temperature = KELVIN_TO_CELSIUS(tz->temperature);
++	return 0;
++}
++
++static int acpi_thermal_sysfs_get_critical(void *devdata,
++					   struct thermal_device_attribute
++					   *attr, int *critical)
++{
++	struct acpi_thermal *tz;
++
++	if (!devdata || !critical)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++
++	if (tz->trips.critical.flags.valid) {
++		*critical = KELVIN_TO_CELSIUS(tz->trips.critical.temperature);
++		return 0;
++	}
++
++	return -ENODEV;
++}
++
++static int acpi_thermal_sysfs_get_hot(void *devdata,
++				      struct thermal_device_attribute *attr,
++				      int *hot)
++{
++	struct acpi_thermal *tz;
++
++	if (!devdata || !hot)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++
++	if (tz->trips.hot.flags.valid) {
++		*hot = KELVIN_TO_CELSIUS(tz->trips.hot.temperature);
++		return 0;
++	}
++
++	return -ENODEV;
++}
++
++static int acpi_thermal_sysfs_get_passive(void *devdata,
++					  struct thermal_device_attribute *attr,
++					  int *passive)
++{
++	struct acpi_thermal *tz;
++
++	if (!devdata || !passive)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++
++	if (tz->trips.passive.flags.valid) {
++		*passive = KELVIN_TO_CELSIUS(tz->trips.passive.temperature);
++		return 0;
++	}
++
++	return -ENODEV;
++}
++
++static int acpi_thermal_sysfs_get_polling_freq(void *devdata,
++					       struct thermal_device_attribute
++					       *attr, int *polling_freq)
++{
++	struct acpi_thermal *tz;
++
++	if (!devdata || !polling_freq)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++
++	if (tz->polling_frequency) {
++		*polling_freq = tz->polling_frequency / 10;
++		return 0;
++	}
++
++	return -ENODEV;
++}
++
++static int acpi_thermal_sysfs_set_cooling_mode(void *devdata,
++					       struct thermal_device_attribute
++					       *attr, int cooling_mode)
++{
++	int result;
++	struct acpi_thermal *tz;
++
++	if (!devdata)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++
++	if (tz->flags.cooling_mode) {
++		result = acpi_thermal_set_polling(tz, cooling_mode);
++		if (result)
++			return result;
++
++		acpi_thermal_check(tz);
++	}
++
++	return -ENODEV;
++}
++
++/*
++ * acpi_thermal_sysfs_get_state
++ * ------------------------------
++ * Gets the state of thermal zone which can be OK,critical,hot,passive,active[x]
++ */
++static int
++acpi_thermal_sysfs_get_state(void *devdata,
++			     struct thermal_device_attribute *attr, char *buf)
++{
++	char *s = buf;
++	struct acpi_thermal *tz;
++
++	if (!devdata || !buf)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)devdata;
++
++	if (!tz->state.critical && !tz->state.hot && !tz->state.passive
++	    && !tz->state.active)
++		s += sprintf(buf, "ok\n");
++	else {
++		if (tz->state.critical)
++			s += sprintf(buf, "critical\n");
++		else if (tz->state.hot)
++			s += sprintf(buf, "hot\n");
++		else if (tz->state.passive)
++			s += sprintf(buf, "passive\n");
++		else if (tz->state.active)
++			s += sprintf(buf, "active[%d]\n",
++				     tz->state.active_index);
++	}
++	return (s - buf);
++}
++
++static struct thermal_device_ops acpi_thermal_ops = {
++	.thermal_get_temperature = acpi_thermal_sysfs_get_temperature,
++	.thermal_get_critical = acpi_thermal_sysfs_get_critical,
++	.thermal_get_hot = acpi_thermal_sysfs_get_hot,
++	.thermal_get_passive = acpi_thermal_sysfs_get_passive,
++	.thermal_set_cooling_mode = acpi_thermal_sysfs_set_cooling_mode,
++	.thermal_get_polling_freq = acpi_thermal_sysfs_get_polling_freq,
++	.thermal_get_state = acpi_thermal_sysfs_get_state,
++};
++
++/*
++ * acpi_thermal_sysfs_get_activestate
++ * ------------------------------
++ * Gets the temperature at which active_device[x] will be turned on
++ */
++static int acpi_thermal_sysfs_get_active(struct thermal_device *td,
++					 struct thermal_device_attribute
++					 *attrib, char *buf)
++{
++	const char *attrib_name;
++	int id;
++	char *s = buf;
++	struct acpi_thermal *tz;
++
++	if (!td || !attrib || !buf)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)td->devdata;
++	attrib_name = attrib->attr.name;
++
++	if (!sscanf(attrib_name, "active_%d", &id))
++		return -EINVAL;
++
++	if (id > ACPI_THERMAL_MAX_ACTIVE)
++		return -EINVAL;
++
++	s += sprintf(s, "%lu\n",
++		     KELVIN_TO_CELSIUS(tz->trips.active[id].temperature));
++
++	return (s - buf);
++}
++
++static ssize_t
++acpi_thermal_tc1_show(struct thermal_device *td,
++		      struct thermal_device_attribute *attr, char *buf)
++{
++	char *s = buf;
++	struct acpi_thermal *tz;
++
++	if (!td || !attr || !buf)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)td->devdata;
++
++	if (tz->trips.passive.flags.valid)
++		s += sprintf(s, "%lu\n", tz->trips.passive.tc1);
++
++	return (s - buf);
++}
++
++static ssize_t
++acpi_thermal_tc2_show(struct thermal_device *td,
++		      struct thermal_device_attribute *attr, char *buf)
++{
++	char *s = buf;
++	struct acpi_thermal *tz;
++
++	if (!td || !attr || !buf)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)td->devdata;
++
++	if (tz->trips.passive.flags.valid)
++		s += sprintf(s, "%lu\n", tz->trips.passive.tc2);
++
++	return (s - buf);
++}
++
++static ssize_t
++acpi_thermal_tsp_show(struct thermal_device *td,
++		      struct thermal_device_attribute *attr, char *buf)
++{
++	char *s = buf;
++	struct acpi_thermal *tz;
++
++	if (!td || !attr || !buf)
++		return -EINVAL;
++
++	tz = (struct acpi_thermal *)td->devdata;
++
++	if (tz->trips.passive.flags.valid)
++		s += sprintf(s, "%lu\n", tz->trips.passive.tsp);
++
++	return (s - buf);
++}
++
++/*_TC1*/
++static THERMAL_DEVICE_ATTR(tc1, 0444, acpi_thermal_tc1_show, NULL);
++/*_TC2*/
++static THERMAL_DEVICE_ATTR(tc2, 0444, acpi_thermal_tc2_show, NULL);
++/*_TSP*/
++static THERMAL_DEVICE_ATTR(tsp, 0444, acpi_thermal_tsp_show, NULL);
++
++static struct thermal_device_attribute *thermal_device_attrs[] = {
++	&thermal_device_attr_tc1,
++	&thermal_device_attr_tc2,
++	&thermal_device_attr_tsp,
++	NULL,
++};
++
++/*
++ * acpi_thermal_sysfs_register
++ * ----------------------------
++ * Takes care of registering the zone,_TZD,_PSL,_ALx and extra attributes
++ * with the thermal_sysfs driver.
++ */
++static int acpi_thermal_sysfs_register(struct acpi_thermal *tz)
++{
++	int i, j;
++	int result = 0;
++	char *attrib_name[ACPI_THERMAL_MAX_ACTIVE];
++	struct thermal_device *td;
++
++	if (!tz)
++		return -EINVAL;
++
++	/* TZ registration */
++	td = thermal_device_register(tz->name, tz, &acpi_thermal_ops);
++	if (IS_ERR(td))
++		return PTR_ERR(td);
++
++	tz->td = td;
++
++	/*_PSL group registration */
++	if (tz->trips.passive.flags.valid) {
++		result =
++		    acpi_thermal_one_group_register(tz, ACPI_THERMAL_GROUP_PSL,
++						    &tz->trips.passive.devices);
++		if (result)
++			goto end;
++
++		/*_TC1,_TC2,_TSP attribute registration */
++		thermal_attribute_register(tz->td, thermal_device_attrs);
++	}
++
++	/*_TZD registration */
++	if (tz->flags.devices) {
++		result =
++		    acpi_thermal_one_group_register(tz, ACPI_THERMAL_GROUP_TZD,
++						    &tz->devices);
++		if (result)
++			goto end;
++	}
++
++	for (i = 0; i < ACPI_THERMAL_MAX_ACTIVE; i++) {
++		if (tz->trips.active[i].flags.valid) {
++			char *list_name = ACPI_THERMAL_GROUP_ALX;
++			list_name[strlen(ACPI_THERMAL_GROUP_ALX) - 1] =
++			    ('0' + i);
++
++			/*_ALx group registration */
++			result =
++			    acpi_thermal_one_group_register(tz, list_name,
++							    &tz->trips.
++							    active[i].devices);
++			if (result) {
++				for (j = i - 1; j > 0; j--) {
++				  if (tz->trips.active[j].flags.valid)
++						kfree(
++						      tz->
++						      thermal_device_active_attr
++						      [j]);
++				}
++				goto end;
++			}
++			attrib_name[i] = ACPI_THERMAL_TRIP_ACTIVE;
++			attrib_name[i][strlen(ACPI_THERMAL_TRIP_ACTIVE) - 1] =
++			    ('0' + i);
++
++			tz->thermal_device_active_attr[i] =
++			    kzalloc(sizeof(struct thermal_device_attribute),
++				    GFP_KERNEL);
++			tz->thermal_device_active_attr[i]->attr.name =
++			    attrib_name[i];
++			tz->thermal_device_active_attr[i]->attr.mode = 0444;
++			tz->thermal_device_active_attr[i]->attr.owner =
++			    THIS_MODULE;
++			tz->thermal_device_active_attr[i]->show =
++			    acpi_thermal_sysfs_get_active;
++		}
++	}
++
++	tz->thermal_device_active_attr[i + 1] = NULL;
++
++	/* _ACx attribute registration */
++	if (thermal_attribute_register(tz->td
++				       , tz->thermal_device_active_attr)) {
++		thermal_attribute_unregister(tz->td,
++					     tz->thermal_device_active_attr);
++
++		for (i = 0; i < ACPI_THERMAL_MAX_ACTIVE; i++) {
++			if (tz->trips.active[i].flags.valid)
++				kfree(tz->thermal_device_active_attr[i]);
++
++		}
++	}
++
++end:
++	if (result)
++		thermal_device_unregister(tz->td);
++
++
++	return result;
++}
++
++/*
++ * acpi_thermal_sysfs_unregister
++ * ----------------------------
++ * Takes care of unregistering the zone,_TZD,_PSL,_ALx and extra attributes
++ * with the thermal_sysfs driver.
++ */
++static void acpi_thermal_sysfs_unregister(struct acpi_thermal *tz)
++{
++	int i;
++
++	if (!tz || !tz->td)
++		return;
++
++	/*_PSL unregistration with thermal_sysfs driver */
++	if (tz->trips.passive.flags.valid) {
++		thermal_group_unregister(tz->td, ACPI_THERMAL_GROUP_PSL);
++
++		/* _TC1,_TC2,_TSP attribute unregistration */
++		thermal_attribute_unregister(tz->td, thermal_device_attrs);
++	}
++
++	/*_TZD unregistration with thermal_sysfs driver */
++	if (tz->flags.devices)
++		thermal_group_unregister(tz->td, ACPI_THERMAL_GROUP_TZD);
++
++	/* _ACx attribute unregistration */
++	thermal_attribute_unregister(tz->td, tz->thermal_device_active_attr);
++
++	for (i = 0; i < ACPI_THERMAL_MAX_ACTIVE; i++) {
++		if (tz->trips.active[i].flags.valid) {
++			char *group_name = ACPI_THERMAL_GROUP_ALX;
++			group_name[strlen(ACPI_THERMAL_GROUP_ALX) - 1] =
++			    ('0' + i);
++
++			/* _ALx group unregistration */
++			thermal_group_unregister(tz->td, group_name);
++			kfree(tz->thermal_device_active_attr[i]);
++		}
++	}
++
++	/* Thermal zone un registration */
++	thermal_device_unregister(tz->td);
++
++}
++
+ static int acpi_thermal_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1268,6 +1761,10 @@ static int acpi_thermal_add(struct acpi_device *device)
+ 	if (result)
+ 		goto end;
+ 
++	result = acpi_thermal_sysfs_register(tz);
++	if (result)
++		goto end;
++
+ 	init_timer(&tz->timer);
+ 
+ 	acpi_thermal_check(tz);
+@@ -1287,6 +1784,7 @@ static int acpi_thermal_add(struct acpi_device *device)
+       end:
+ 	if (result) {
+ 		acpi_thermal_remove_fs(device);
++		acpi_thermal_sysfs_unregister(tz);
+ 		kfree(tz);
+ 	}
+ 
+@@ -1329,7 +1827,9 @@ static int acpi_thermal_remove(struct acpi_device *device, int type)
+ 	}
+ 
+ 	acpi_thermal_remove_fs(device);
++	acpi_thermal_sysfs_unregister(tz);
+ 	mutex_destroy(&tz->lock);
++
+ 	kfree(tz);
+ 	return 0;
+ }
+-- 
+1.5.3.7-dirty
+

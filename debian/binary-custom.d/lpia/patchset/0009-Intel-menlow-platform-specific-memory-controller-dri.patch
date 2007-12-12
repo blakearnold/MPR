@@ -1,0 +1,343 @@
+From 0c3f4c7f168aa37d17b3fce2a34e1c454371a4c1 Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Wed, 12 Dec 2007 11:20:25 +0530
+Subject: [PATCH] Intel menlow platform specific memory controller driver
+
+Signed-off-by: Sujith Thomas <sujth.thomas@intel.com>
+
+This driver exposes interfacs to control bandwidth to userspace through sysfs
+Driver internally uses platform specific ASL methods in BIOS
+---
+ drivers/acpi/Kconfig               |    8 +
+ drivers/acpi/Makefile              |    1 +
+ drivers/acpi/intel_menlow_memory.c |  287 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 296 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/acpi/intel_menlow_memory.c
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 0ab6c35..fad14c5 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -191,6 +191,14 @@ config ACPI_THERMAL
+ 	  recommended that this option be enabled, as your processor(s)
+ 	  may be damaged without it.
+ 
++config INTEL_MENLOW_MEMORY
++	tristate "Intel's Menlow memory controller driver"
++	depends on MEMORY_SYSFS && THERMAL_SYSFS
++	default y
++	help
++	  This driver adds support for throttling of memoyr device based on proprietory ACPI methods. This is an intel platform specific driver.
++
++
+ config ACPI_NUMA
+ 	bool "NUMA support"
+ 	depends on NUMA
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 456446f..e152230 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_ACPI_POWER)	+= power.o
+ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+ obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
+ obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
++obj-$(CONFIG_INTEL_MENLOW_MEMORY)+= intel_menlow_memory.o
+ obj-$(CONFIG_ACPI_SYSTEM)	+= system.o event.o
+ obj-$(CONFIG_ACPI_DEBUG)	+= debug.o
+ obj-$(CONFIG_ACPI_NUMA)		+= numa.o
+diff --git a/drivers/acpi/intel_menlow_memory.c b/drivers/acpi/intel_menlow_memory.c
+new file mode 100644
+index 0000000..7ada9ce
+--- /dev/null
++++ b/drivers/acpi/intel_menlow_memory.c
+@@ -0,0 +1,287 @@
++/*
++*  intel_menlow_memory.c - Memory Throttle Driver for menlow platform
++* ($Revision: 1 $)
++*
++*  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++*  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++*
++*  This program is free software; you can redistribute it and/or modify
++*  it under the terms of the GNU General Public License as published by
++*  the Free Software Foundation; version 2 of the License.
++*
++*  This program is distributed in the hope that it will be useful, but
++*  WITHOUT ANY WARRANTY; without even the implied warranty of
++*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++*  General Public License for more details.
++*
++*  You should have received a copy of the GNU General Public License along
++*  with this program; if not, write to the Free Software Foundation, Inc.,
++*  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++*
++* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++*
++*  This driver fully implements the memory controller driver
++*  for intel formfactor device 'menlow'
++*
++*  It makes use of the proprietory ACPI methods to get/set bandwidth.
++*
++*/
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/pci.h>
++#include <linux/pm.h>
++
++#include <acpi/acpi_bus.h>
++#include <linux/memory_controller.h>
++#include <linux/thermal.h>
++
++MODULE_AUTHOR("Sujith Thomas");
++MODULE_DESCRIPTION("Memory throttle driver");
++MODULE_LICENSE("GPL");
++
++struct menlow_memory {
++	char *name;
++	char *acpi_path;
++	char *get_bandwidth;
++	char *set_bandwidth;
++	struct memory_controller_device *mc;
++	struct device *dev;
++	int symlink_created;
++};
++
++static struct menlow_memory memory = {
++	.name = "MEM0",
++	.acpi_path = "\\_TZ.MEM0",
++	.get_bandwidth = "GTHS",
++	.set_bandwidth = "STHS",
++};
++
++#define ARG_MAX_BANDWIDTH 0
++#define ARG_CUR_BANDWIDTH 1
++
++static acpi_handle root_handle;
++
++/*
++ * memory_acpi_evaluate_object
++ * ----------------------------
++ * Function for executing proprietory ACPI methods
++ * path: Path as in ACPI namespace
++ * method : Method name as in ASL code
++ * in_value: Input argument to the ASL method
++ * out_value: Return value from the ASL method
++ */
++static int memory_acpi_evaluate_object(char *path, char *method, int *in_value,
++				       int *out_value)
++{
++	acpi_handle handle;
++
++	struct acpi_buffer result;
++	struct acpi_buffer *resultp = NULL;
++	union acpi_object out_obj;
++	acpi_status status = AE_OK;
++
++	struct acpi_object_list obj_list;
++	struct acpi_object_list *pobj_list = NULL;
++	union acpi_object in_obj;
++
++	status = acpi_get_handle(root_handle, path, &handle);
++	if (ACPI_FAILURE(status))
++		return -EINVAL;
++
++	if (in_value) {
++		in_obj.type = ACPI_TYPE_INTEGER;
++		in_obj.integer.value = *in_value;
++
++		obj_list.count = 1;
++		obj_list.pointer = &in_obj;
++
++		pobj_list = &obj_list;
++	}
++
++	result.length = sizeof(out_obj);
++	result.pointer = &out_obj;
++	resultp = &result;
++
++	/*Check whether the user application is enabled in BIOS */
++
++	status = acpi_evaluate_object(handle, method, pobj_list, resultp);
++	if (ACPI_FAILURE(status)) {
++		return -EINVAL;
++	} else {
++		if (out_value)
++			*out_value = out_obj.integer.value;
++
++	}
++
++	return 0;
++}
++
++static int menlow_memory_get_max_bandwidth(struct memory_controller_device *mc,
++					   char *buf)
++{
++	int out_value, in_value;
++	struct menlow_memory *memory;
++
++	if (!mc || !buf)
++		return -EINVAL;
++
++	memory = (struct menlow_memory *)class_get_devdata(&mc->class_dev);
++
++	in_value = ARG_MAX_BANDWIDTH;
++	if (memory_acpi_evaluate_object
++	    (memory->acpi_path, memory->get_bandwidth, &in_value, &out_value))
++		return -EFAULT;
++
++	sprintf(buf, "%d\n", out_value);
++	return 0;
++}
++
++static int menlow_memory_get_cur_bandwidth(struct memory_controller_device *mc,
++					   char *buf)
++{
++	int out_value, in_value;
++	struct menlow_memory *memory;
++
++	if (!mc || !buf)
++		return -EINVAL;
++
++	memory = (struct menlow_memory *)class_get_devdata(&mc->class_dev);
++
++	in_value = ARG_CUR_BANDWIDTH;
++	if (memory_acpi_evaluate_object
++	    (memory->acpi_path, memory->get_bandwidth, &in_value, &out_value))
++		return -EFAULT;
++
++	sprintf(buf, "%d\n", out_value);
++	return 0;
++}
++
++static int menlow_memory_set_cur_bandwidth(struct memory_controller_device *mc,
++					   const char *buf)
++{
++	int in_value, in_arg, max_state;
++	struct menlow_memory *memory;
++
++	if (!mc || !buf)
++		return -EINVAL;
++
++	memory = (struct menlow_memory *)class_get_devdata(&mc->class_dev);
++
++	if (!sscanf(buf, "%d", &in_value))
++		return -EIO;
++
++	in_arg = ARG_MAX_BANDWIDTH;
++	if (memory_acpi_evaluate_object
++	    (memory->acpi_path, memory->get_bandwidth, &in_arg, &max_state))
++		return -EFAULT;
++
++	if (in_value < 0 || in_value >= max_state)
++		return -EINVAL;
++
++	if (memory_acpi_evaluate_object
++	    (memory->acpi_path, memory->set_bandwidth, &in_value, NULL))
++		return -EFAULT;
++
++	return 0;
++}
++static struct memory_controller_ops memory_ops = {
++	.get_max_bandwidth = menlow_memory_get_max_bandwidth,
++	.get_cur_bandwidth = menlow_memory_get_cur_bandwidth,
++	.set_cur_bandwidth = menlow_memory_set_cur_bandwidth,
++};
++
++/*
++ * memory_thermal_event_handler
++ * ---------------------------
++ * This callback will be called by thermal_sysfs driver whenever
++ * a new 'memory' device is added/removed under any thermal device.
++ * This driver will have to  add/remove symbolic link into memory_controller
++ * sysfs folder.This needs to be done since MEM0 is a pseudo ACPI device.
++ * event_type: THERMAL_SYSFS_EVENT_ADD_TD /THERMAL_SYSFS_EVENT_RMV_TD
++ * sysfs_data: pointer to thermal_participant
++ * private: Context information of this driver sent during registration
++ */
++int memory_thermal_event_handler(int event_type,
++				 void *sysfs_data, void *private)
++{
++	int result;
++	struct menlow_memory *memory;
++	struct thermal_participant *participant;
++
++	if (!sysfs_data || !private)
++		return -EINVAL;
++
++	memory = (struct menlow_memory *)private;
++	participant = (struct thermal_participant *)sysfs_data;
++
++	switch (event_type) {
++	case THERMAL_SYSFS_EVENT_ADD_PART:
++		if (!memory->symlink_created) {
++			result =
++				sysfs_create_link(participant->kobj,
++						  &memory->mc->class_dev.kobj,
++						  memory->name);
++			if (result)
++				return result;
++			else
++				memory->symlink_created = 1;
++		}
++		break;
++
++	case THERMAL_SYSFS_EVENT_RMV_PART:
++		if (memory->symlink_created) {
++			sysfs_remove_link(participant->kobj, memory->name);
++			memory->symlink_created = 0;
++		}
++		break;
++	}
++
++	return 0;
++}
++
++static struct thermal_sysfs_event_listener memory_thermal_event_listener = {
++	.thermal_sysfs_event_handler = memory_thermal_event_handler,
++	.event_type =
++	    THERMAL_SYSFS_EVENT_ADD_PART | THERMAL_SYSFS_EVENT_RMV_PART,
++};
++static int __init memory_devices_init(void)
++{
++	struct memory_controller_device *mc;
++	int out_value;
++	if (memory_acpi_evaluate_object(memory.acpi_path,
++					memory.get_bandwidth,
++					NULL, &out_value))
++		return -ENODEV;
++
++	mc = memory_controller_device_register(memory.name, memory.dev,
++					       &memory,
++					       &memory_ops);
++
++	if (IS_ERR(mc))
++		return PTR_ERR(mc);
++
++	memory.mc = mc;
++
++	/* Register only for 'MEM0' type of participants */
++	memory_thermal_event_listener.query_name = memory.name;
++	memory_thermal_event_listener.private = &memory;
++	thermal_event_register(&memory_thermal_event_listener,
++			       THERMAL_SYSFS_REPORT_EXISTING);
++
++	return 0;
++}
++
++static void __exit memory_devices_exit(void)
++{
++	if (memory.mc) {
++		thermal_event_unregister(&memory_thermal_event_listener,
++					 THERMAL_SYSFS_REPORT_EXISTING);
++		memory_controller_device_unregister(memory.mc);
++	}
++}
++
++module_init(memory_devices_init);
++module_exit(memory_devices_exit);
+-- 
+1.5.3.7-dirty
+
