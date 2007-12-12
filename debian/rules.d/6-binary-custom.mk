@@ -33,8 +33,8 @@ $(stampdir)/stamp-custom-build-%: srcdir = $(builddir)/custom-build-$*
 $(stampdir)/stamp-custom-build-%: bimage = $(call custom_override,build_image,$*)
 $(stampdir)/stamp-custom-build-%: $(stampdir)/stamp-custom-prepare-%
 	@echo "Building custom $*..."
-	$(kmake) -C $(srcdir) $(conc_level)
-	$(kmake) -C $(srcdir) $(conc_level) modules
+	$(kmake) O=$(srcdir) $(conc_level)
+	$(kmake) O=$(srcdir) $(conc_level) modules
 	@touch $@
 
 custom-install-%: pkgdir = $(CURDIR)/debian/linux-image-$(release)$(debnum)-$*
@@ -62,7 +62,7 @@ custom-install-%: $(stampdir)/stamp-custom-build-%
 		$(pkgdir)/boot/config-$(release)$(debnum)-$*
 	install -m644 $(srcdir)/System.map \
 		$(pkgdir)/boot/System.map-$(release)$(debnum)-$*
-	$(kmake) -C $(srcdir) modules_install \
+	$(kmake) O=$(srcdir) modules_install \
 		INSTALL_MOD_PATH=$(pkgdir)/
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/build
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/source

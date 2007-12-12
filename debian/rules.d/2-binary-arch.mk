@@ -20,8 +20,8 @@ build-%: $(stampdir)/stamp-build-%
 $(stampdir)/stamp-build-%: target_flavour = $*
 $(stampdir)/stamp-build-%: $(stampdir)/stamp-prepare-%
 	@echo "Building $*..."
-	$(kmake) -C $(builddir)/build-$* $(conc_level) $(build_image)
-	$(kmake) -C $(builddir)/build-$* $(conc_level) modules
+	$(kmake) O=$(builddir)/build-$* $(conc_level) $(build_image)
+	$(kmake) O=$(builddir)/build-$* $(conc_level) modules
 	@touch $@
 
 # Install the finished build
@@ -53,7 +53,7 @@ endif
 		$(pkgdir)/boot/abi-$(release)$(debnum)-$*
 	install -m644 $(builddir)/build-$*/System.map \
 		$(pkgdir)/boot/System.map-$(release)$(debnum)-$*
-	$(kmake) -C $(builddir)/build-$* modules_install \
+	$(kmake) O=$(builddir)/build-$* modules_install \
 		INSTALL_MOD_PATH=$(pkgdir)/
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/build
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/source
