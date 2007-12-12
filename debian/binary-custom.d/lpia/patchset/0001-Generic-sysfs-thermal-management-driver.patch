@@ -1,0 +1,46 @@
+From 59608b6d0fcd56fb1d0080da934cef57126d4f5c Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Wed, 12 Dec 2007 10:37:33 +0530
+Subject: [PATCH] Generic sysfs thermal management driver
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+---
+ arch/x86/Kconfig      |    9 +++++++++
+ drivers/base/Makefile |    1 +
+ 2 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 391cb18..1a9e3b9 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1228,6 +1228,15 @@ config ARCH_HIBERNATION_HEADER
+ 
+ source "kernel/power/Kconfig"
+ 
++config THERMAL_SYSFS
++	tristate "Thermal Management support"
++	default y
++	---help---
++	  Support thermal management in Sysfs. Thermal devices(sensors)
++	  are exposed to sysfs with relevant attributes so that a user app
++	  can do thermal management for the platform.
++
++
+ source "drivers/acpi/Kconfig"
+ 
+ menuconfig APM
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index b39ea3f..14884cd 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_NUMA)	+= node.o
+ obj-$(CONFIG_MEMORY_HOTPLUG_SPARSE) += memory.o
+ obj-$(CONFIG_SMP)	+= topology.o
+ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
++obj-$(CONFIG_THERMAL_SYSFS) += thermal_sysfs.o
+ 
+ ifeq ($(CONFIG_DEBUG_DRIVER),y)
+ EXTRA_CFLAGS += -DDEBUG
+-- 
+1.5.3.7-dirty
+
