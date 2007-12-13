@@ -1,2 +1,9 @@
-UBUNTU: Update configuration files
+UBUNTU: Put your _meaningful_ one line commit message here.
+#
+# This template is used for commit messages that don't need to
+# show up in debian/changelog. Administrative stuff like config
+# updates, ABI bumps, etc. Setting 'Ignore: yes' prevents
+# 'debian/rules insertchanges' from inserting this commit meesage
+# as a changelog entry.
+#
 Ignore: yes
