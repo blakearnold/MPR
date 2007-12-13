@@ -1,0 +1,72 @@
+From 8196d9c3c4fe714647c9b67333a7138dd0e5cdc6 Mon Sep 17 00:00:00 2001
+From: Jacob Pan <jacob@putvin.dp.intel.com>
+Date: Thu, 13 Dec 2007 12:43:33 +0200
+Subject: [PATCH] LPIA: Poulsbo IDE PATA controller quirk
+
+Signed-off-by: Amit Kucheria <amit.kucheria@ubuntu.com>
+---
+ drivers/ata/ata_piix.c |    9 ++++++++-
+ drivers/pci/quirks.c   |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index e8135e6..54af66a 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -710,7 +710,14 @@ static int piix_pata_prereset(struct ata_link *link, unsigned long deadline)
+ 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
+ 
+ 	if (!pci_test_config_bits(pdev, &piix_enable_bits[ap->port_no]))
+-		return -ENOENT;
++	/* Although a PCI quirk function is added to ~/drivers/pci/quirks.c to
++	 * handle that, but currently, the quirk function won't work because
++	 * Poulsbo chipset regards these "reserved" registers read 00 and wrote no
++	 * effect 
++	 */
++ 		if (pdev->vendor != PCI_VENDOR_ID_INTEL ||
++		    pdev->device != PCI_DEVICE_ID_INTEL_POULSBO_IDE)
++			return -ENOENT;
+ 	return ata_std_prereset(link, deadline);
+ }
+ 
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 11585a3..9298a0b 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -1762,3 +1762,33 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
+ 			quirk_msi_intx_disable_bug);
+ 
+ #endif /* CONFIG_PCI_MSI */
++
++/* The Intel Poulsbo chipset pata controller IDE decode enable bit holds wrong value
++ * it will always be 0. Actually on current stepping, this quirk function won't work
++ * either (write to this bit has no effect). But we still put it here, for upcoming
++ * steppings.
++ */
++static void __devinit quirk_intel_poulsbo_ide_enable(struct pci_dev *dev)
++{
++	unsigned char value;
++
++	pci_read_config_byte(dev, 0x41, &value);
++	if (!(value & 0x80)) {
++		printk(KERN_ERR "PCI: PIIX4: Fixing Poulsbo PATA port 1 IDE decode enabling bit\n");
++		value |= 0x80;
++		pci_write_config_byte(dev, 0x41, value);
++		pci_read_config_byte(dev, 0x41, &value);
++		printk(KERN_ERR "Re-read enabling bit:%d\n", value);
++	}
++	pci_read_config_byte(dev, 0x43, &value);
++	if (!(value & 0x80)) {
++		printk(KERN_ERR "PCI: PIIX4: Fixing Poulsbo PATA port 2 IDE decode enabling bit\n");
++		value |= 0x80;
++		pci_write_config_byte(dev, 0x43, value);
++		pci_read_config_byte(dev, 0x43, &value);
++		printk(KERN_ERR "Re-read enabling bit:%d\n", value);
++	}
++}
++
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_POULSBO_IDE,
++			quirk_intel_poulsbo_ide_enable);
+-- 
+1.5.2.GIT
+
