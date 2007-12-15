@@ -29,12 +29,13 @@ $(stampdir)/stamp-custom-prepare-%: debian/binary-custom.d/%/config.$(arch) \
 custom-build-%: $(stampdir)/stamp-custom-build-%
 	@# Empty for make to be happy
 $(stampdir)/stamp-custom-build-%: target_flavour = $*
+$(stampdir)/stamp-custom-build-%: origsrc = $(builddir)/custom-source-$*
 $(stampdir)/stamp-custom-build-%: srcdir = $(builddir)/custom-build-$*
 $(stampdir)/stamp-custom-build-%: bimage = $(call custom_override,build_image,$*)
 $(stampdir)/stamp-custom-build-%: $(stampdir)/stamp-custom-prepare-%
 	@echo "Building custom $*..."
-	$(kmake) O=$(srcdir) $(conc_level)
-	$(kmake) O=$(srcdir) $(conc_level) modules
+	$(kmake) -C $(origsrc) O=$(srcdir) $(conc_level)
+	$(kmake) -C $(origsrc) O=$(srcdir) $(conc_level) modules
 	@touch $@
 
 custom-install-%: pkgdir = $(CURDIR)/debian/linux-image-$(release)$(debnum)-$*
@@ -62,7 +63,7 @@ custom-install-%: $(stampdir)/stamp-custom-build-%
 		$(pkgdir)/boot/config-$(release)$(debnum)-$*
 	install -m644 $(srcdir)/System.map \
 		$(pkgdir)/boot/System.map-$(release)$(debnum)-$*
-	$(kmake) O=$(srcdir) modules_install \
+	$(kmake) -C $(origsrc) O=$(srcdir) modules_install \
 		INSTALL_MOD_PATH=$(pkgdir)/
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/build
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/source
