@@ -24,6 +24,9 @@
 #include <linux/virtio_net.h>
 #include <linux/scatterlist.h>
 
+static int napi_weight = 128;
+module_param(napi_weight, int, 0444);
+
 /* FIXME: MTU in config. */
 #define MAX_PACKET_LEN (ETH_HLEN+ETH_DATA_LEN)
 
@@ -382,7 +385,7 @@ static int virtnet_probe(struct virtio_device *vdev)
 
 	/* Set up our device-specific information */
 	vi = netdev_priv(dev);
-	netif_napi_add(dev, &vi->napi, virtnet_poll, 16);
+	netif_napi_add(dev, &vi->napi, virtnet_poll, napi_weight);
 	vi->dev = dev;
 	vi->vdev = vdev;
 
