@@ -103,7 +103,8 @@ static int virtio_dev_remove(struct device *_d)
 						 struct virtio_driver, driver);
 
 	dev->config->set_status(dev, dev->config->get_status(dev)
-				& ~VIRTIO_CONFIG_S_DRIVER);
+				& ~(VIRTIO_CONFIG_S_DRIVER
+				    | VIRTIO_CONFIG_S_DRIVER_OK));
 	drv->remove(dev);
 	return 0;
 }
