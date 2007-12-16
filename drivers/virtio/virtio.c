@@ -123,11 +123,17 @@ void unregister_virtio_driver(struct virtio_driver *driver)
 }
 EXPORT_SYMBOL_GPL(unregister_virtio_driver);
 
+static void virtio_device_release(struct device *_d)
+{
+	pr_debug("%s\n" , __FUNCTION__);
+}
+
 int register_virtio_device(struct virtio_device *dev)
 {
 	int err;
 
 	dev->dev.bus = &virtio_bus;
+	dev->dev.release = virtio_device_release;
 	sprintf(dev->dev.bus_id, "%u", dev->index);
 
 	/* Acknowledge that we've seen the device. */

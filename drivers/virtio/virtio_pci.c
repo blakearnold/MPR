@@ -70,12 +70,18 @@ static struct pci_device_id virtio_pci_id_table[] = {
 
 MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
 
+static void virtio_pci_root_release(struct device *d)
+{
+    pr_debug("%s\n", __FUNCTION__);
+}
+
 /* A PCI device has it's own struct device and so does a virtio device so
  * we create a place for the virtio devices to show up in sysfs.  I think it
  * would make more sense for virtio to not insist on having it's own device. */
 static struct device virtio_pci_root = {
 	.parent		= NULL,
 	.bus_id		= "virtio-pci",
+	.release	= virtio_pci_root_release,
 };
 
 /* Unique numbering for devices under the kvm root */
