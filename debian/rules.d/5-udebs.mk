@@ -26,4 +26,6 @@ do-binary-udebs:
 	done
 
 binary-udebs: binary-debs binary-custom debian/control
-	debian/rules do-binary-udebs
+	if [ "$(disable_d_i)" != "true" ]; then \
+		debian/rules do-binary-udebs; \
+	fi

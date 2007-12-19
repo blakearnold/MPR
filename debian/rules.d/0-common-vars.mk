@@ -19,6 +19,13 @@ ifndef AUTOBUILD
 AUTOBUILD	:= $(is_ppa_build)
 endif
 
+#
+# Set this variable to 'true' in the arch makefile in order to
+# avoid building udebs for the debian installer. see lpia.mk as
+# an example of an architecture specific override.
+#
+disable_d_i    = no
+
 export AUTOBUILD
 ifeq ($(AUTOBUILD),)
 abi_suffix	=
