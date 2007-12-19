@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.24-rc5
-# Tue Dec 18 18:43:25 2007
+# Wed Dec 19 12:45:31 2007
 #
 # CONFIG_64BIT is not set
 CONFIG_X86_32=y
@@ -2487,8 +2487,6 @@ CONFIG_AGP_SWORKS=m
 CONFIG_AGP_VIA=m
 CONFIG_AGP_EFFICEON=m
 # CONFIG_DRM is not set
-# CONFIG_DRM_I830 is not set
-# CONFIG_DRM_I915 is not set
 CONFIG_VGASTATE=m
 CONFIG_VIDEO_OUTPUT_CONTROL=m
 CONFIG_FB=y
@@ -2777,8 +2775,6 @@ CONFIG_SND_SOC=m
 # Open Sound System
 #
 # CONFIG_SOUND_PRIME is not set
-# CONFIG_AEDSP16_MSS is not set
-# CONFIG_AEDSP16_SBPRO is not set
 CONFIG_AC97_BUS=m
 CONFIG_HID_SUPPORT=y
 CONFIG_HID=m
@@ -2991,13 +2987,7 @@ CONFIG_USB_MIDI_GADGET=m
 # MMC/SD/SDIO support, can only select one arch from MMC and MSS
 #
 # CONFIG_MMC is not set
-CONFIG_MSS=m
-
-#
-# MSS structure support
-#
-CONFIG_MSS_BLOCK=m
-CONFIG_MSS_SDHCI=m
+# CONFIG_MSS is not set
 CONFIG_NEW_LEDS=y
 CONFIG_LEDS_CLASS=m
 
