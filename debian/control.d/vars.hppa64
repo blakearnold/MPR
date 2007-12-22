@@ -1,0 +1,6 @@
+supported="64-bit HP PA-RISC SMP"
+target="Geared toward desktop or server systems."
+desc="64-bit HP PA-RISC SMP"
+bootloader="palo"
+provides="rhcs-modules2-1"
+arch="hppa"

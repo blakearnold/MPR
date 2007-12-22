@@ -1,0 +1,7 @@
+arch="i386 amd64"
+supported="Generic"
+target="RT kernel"
+desc="Ingo Molnar's full real time preemption patch (2.6.22.1-rt9)"
+bootloader="lilo (>= 19.1) | grub"
+provides="kvm-api-4, rhcs-modules2-1"
+section_image="universe/base"

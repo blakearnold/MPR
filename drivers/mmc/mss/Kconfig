@@ -1,0 +1,28 @@
+#
+# MMC subsystem configuration
+#
+
+comment "MSS structure support"
+
+
+config MSS_BLOCK
+	tristate "MSS block device driver"
+	depends on MSS && BLOCK
+	default y
+	help
+	  Say Y here to enable the MMC block device driver support.
+	  This provides a block device driver, which you can use to
+	  mount the filesystem. Almost everyone wishing MMC support
+	  should say Y or M here.
+
+config MSS_SDHCI
+	tristate "MSS host controller driver"
+	depends on PCI && MSS 
+	help
+	  This select the generic Secure Digital Host Controller Interface.
+	  It is used by manufacturers such as Texas Instruments(R), Ricoh(R)
+	  and Toshiba(R). Most controllers found in laptops are of this type.
+	  If you have a controller with this interface, say Y or M here.
+
+	  If unsure, say N.
+

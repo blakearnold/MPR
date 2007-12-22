@@ -1,0 +1,7 @@
+supported="Alternate x86 (486 and better)"
+target="Geared toward desktop systems."
+desc="i386"
+bootloader="lilo (>= 19.1) | grub"
+provides="kvm-api-4, ivtv-modules"
+arch=i386
+do_debug="Yes"

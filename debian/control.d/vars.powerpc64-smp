@@ -1,0 +1,6 @@
+supported="64-bit PowerPC SMP"
+target="Geared toward desktop or server systems."
+desc="64-bit PowerPC SMP"
+bootloader="yaboot"
+provides="rhcs-modules2-1, ivtv-modules"
+arch="powerpc"

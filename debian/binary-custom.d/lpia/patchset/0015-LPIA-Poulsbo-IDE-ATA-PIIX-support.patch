@@ -1,0 +1,56 @@
+From 5abbce629df45c7e4781f7954924e511820bd950 Mon Sep 17 00:00:00 2001
+From: Jacob Pan <jacob@putvin.dp.intel.com>
+Date: Thu, 13 Dec 2007 12:27:11 +0200
+Subject: [PATCH] LPIA: Poulsbo IDE ATA PIIX support
+
+Signed-off-by: Amit Kucheria <amit.kucheria@ubuntu.com>
+---
+ drivers/ata/ata_piix.c |    2 ++
+ drivers/ide/pci/piix.c |   11 +++++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index e75cb9e..e8135e6 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -212,6 +212,8 @@ static const struct pci_device_id piix_pci_tbl[] = {
+ 	{ 0x8086, 0x269E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
+ 	/* ICH8 Mobile PATA Controller */
+ 	{ 0x8086, 0x2850, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
++	/* Intel Poulsbo */
++	{ 0x8086, 0x811a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
+ 
+ 	/* NOTE: The following PCI ids must be kept in sync with the
+ 	 * list in drivers/pci/quirks.c.
+diff --git a/drivers/ide/pci/piix.c b/drivers/ide/pci/piix.c
+index 27781d2..7df338b 100644
+--- a/drivers/ide/pci/piix.c
++++ b/drivers/ide/pci/piix.c
+@@ -438,6 +438,16 @@ static const struct ide_port_info piix_pci_info[] __devinitdata = {
+ 	/* 22 */ DECLARE_ICH_DEV("ICH4",	ATA_UDMA5),
+ 	/* 23 */ DECLARE_ICH_DEV("ESB2",	ATA_UDMA5),
+ 	/* 24 */ DECLARE_ICH_DEV("ICH8M",	ATA_UDMA5),
++	{ /* 25 */
++		.name           = "POULSBO",
++		.init_chipset   = init_chipset_piix,
++		.init_hwif      = init_hwif_piix,
++		.channels       = 2,
++		.autodma        = AUTODMA,
++		.enablebits     = {{0x83,0x80,0x80}, {0x87,0x80,0x80}},
++		.bootable       = ON_BOARD,
++		.udma_mask      = 0x3f,
++	},
+ };
+ 
+ /**
+@@ -511,6 +521,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_82801DB_1),  22 },
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ESB2_18),    23 },
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ICH8_6),     24 },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_POULSBO_IDE),25 },
+ 	{ 0, },
+ };
+ MODULE_DEVICE_TABLE(pci, piix_pci_tbl);
+-- 
+1.5.2.GIT
+

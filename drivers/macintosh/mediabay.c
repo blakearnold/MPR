@@ -447,6 +447,7 @@ int check_media_bay_by_base(unsigned long base, int what)
 	
 	return -ENODEV;
 }
+EXPORT_SYMBOL(check_media_bay_by_base);
 
 int media_bay_set_ide_infos(struct device_node* which_bay, unsigned long base,
 	int irq, int index)
@@ -487,6 +488,7 @@ int media_bay_set_ide_infos(struct device_node* which_bay, unsigned long base,
 	
 	return -ENODEV;
 }
+EXPORT_SYMBOL(media_bay_set_ide_infos);
 
 static void media_bay_step(int i)
 {

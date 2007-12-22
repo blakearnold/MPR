@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+%map = [];
+
+print "Checking for dupe aliases in $ENV{'FLAVOUR'}...\n";
+
+$aliases =
+  "$ENV{'INSTALL_DIR'}/lib/modules/$ENV{'VERSION'}-$ENV{'FLAVOUR'}/modules.alias";
+
+open(ALIASES, "< $aliases") or die "Could not open $aliases";
+
+while (<ALIASES>) {
+	chomp;
+	($junk, $alias, $module) = split;
+
+	if (defined($map{$alias})) {
+		print "   $map{$alias}/$module : $alias\n";
+	}
+	$map{$alias} = $module;
+}
+
+exit(0);
