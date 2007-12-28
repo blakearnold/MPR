@@ -154,6 +154,9 @@ struct virtqueue
 	void (*handle_output)(int fd, struct virtqueue *me);
 };
 
+/* Remember the arguments to the program so we can "reboot" */
+static char **main_args;
+
 /* Since guest is UP and we don't run at the same time, we don't need barriers.
  * But I include them in the code in case others copy it. */
 #define wmb()
@@ -1525,7 +1528,9 @@ static void setup_block_file(const char *filename)
 
 	/* Create stack for thread and run it */
 	stack = malloc(32768);
-	if (clone(io_thread, stack + 32768, CLONE_VM, dev) == -1)
+	/* SIGCHLD - We dont "wait" for our cloned thread, so prevent it from becoming
+	 * a zombie. */
+	if (clone(io_thread, stack + 32768,  CLONE_VM | SIGCHLD, dev) == -1)
 		err(1, "Creating clone");
 
 	/* We don't need to keep the I/O thread's end of the pipes open. */
@@ -1585,6 +1590,24 @@ static void setup_rng(void)
 }
 /* That's the end of device setup. */
 
+/* Restart the guest */
+static void restart_guest(void)
+{
+	struct device *dev;
+	struct vblk_info *vblk;
+
+	/* Closing the waked_fd causes the waker thread to die */
+	close  (waker_fd);
+	/* Closing the workpipe[1] causes io_thread thread to die */
+	for(dev = devices.device;dev!= NULL;dev = dev->next) {
+		if (strcmp(dev->name, "block") == 0) {
+			vblk = dev->priv;
+			close (vblk->workpipe[1]);
+		}
+	}
+	if(execv(main_args[0],main_args))
+		errx(1,"Could not exec %s", main_args[0]);
+}
 /*L:220 Finally we reach the core of the Launcher, which runs the Guest, serves
  * its input and output, and finally, lays it to rest. */
 static void __attribute__((noreturn)) run_guest(int lguest_fd)
@@ -1607,6 +1630,9 @@ static void __attribute__((noreturn)) run_guest(int lguest_fd)
 			char reason[1024] = { 0 };
 			read(lguest_fd, reason, sizeof(reason)-1);
 			errx(1, "%s", reason);
+		/* ERESTART means that we need to reboot the guest */
+		} else if (errno == ERESTART) {
+			restart_guest();
 		/* EAGAIN means the Waker wanted us to look at some input.
 		 * Anything else means a bug or incompatible change. */
 		} else if (errno != EAGAIN)
@@ -1655,6 +1681,11 @@ int main(int argc, char *argv[])
 	struct boot_params *boot;
 	/* If they specify an initrd file to load. */
 	const char *initrd_name = NULL;
+
+	main_args = argv;
+	/* We don't "wait" for the children, so prevent them from becoming
+	 * zombies. */
+	signal(SIGCHLD, SIG_IGN);
 
 	/* First we initialize the device list.  Since console and network
 	 * device receive input from a file descriptor, we keep an fdset
