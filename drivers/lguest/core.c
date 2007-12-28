@@ -237,6 +237,8 @@ int run_guest(struct lg_cpu *cpu, unsigned long __user *user)
 		lguest_arch_handle_trap(cpu);
 	}
 
+	if (lg->dead == ERR_PTR(-ERESTART))
+		return -ERESTART;
 	/* The Guest is dead => "No such file or directory" */
 	return -ENOENT;
 }
