@@ -756,6 +756,27 @@ _GLOBAL(__lshrdi3)
 	or	r4,r4,r7	# LSW |= t2
 	blr
 
+/*
+ * __ucmpdi2: 64-bit comparison
+ *
+ * R3/R4 has 64 bit value A
+ * R5/R6 has 64 bit value B
+ * result in R3: 0 for A < B
+ *		 1 for A == B
+ *		 2 for A > B
+ */
+_GLOBAL(__ucmpdi2)
+	cmplw	r7,r3,r5	# compare high words
+	li	r3,0
+	blt	r7,2f		# a < b ... return 0
+	bgt	r7,1f		# a > b ... return 2
+	cmplw	r6,r4,r6	# compare low words
+	blt	r6,2f		# a < b ... return 0
+	li	r3,1
+	ble	r6,2f		# a = b ... return 1
+1:	li	r3,2
+2:	blr
+
 _GLOBAL(abs)
 	srawi	r4,r3,31
 	xor	r3,r3,r4

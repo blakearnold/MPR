@@ -97,6 +97,21 @@ config SUSPEND
 	  powered and thus its contents are preserved, such as the
 	  suspend-to-RAM state (i.e. the ACPI S3 state).
 
+config PM_DISABLE_CONSOLE
+	bool "Disable Power Management messing with the active console"
+	depends on PM
+	default n
+	---help---
+	  By defauly, PM will take over the active console (generally, this means
+	  switching to the console when suspending from X). This can at times cause
+	  problems, especially if userspace suspend scripts try to do things with the
+	  console before or after suspending (e.g. calling vbestate).
+	  
+	  To work around this, enable this option so that PM will not handle the
+	  console.
+	  
+	  If unsure, say N.
+
 config HIBERNATION_UP_POSSIBLE
 	bool
 	depends on X86 || PPC64_SWSUSP || PPC32

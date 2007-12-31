@@ -16,6 +16,7 @@ static int orig_fgconsole, orig_kmsg;
 
 int pm_prepare_console(void)
 {
+#ifndef CONFIG_PM_DISABLE_CONSOLE
 	acquire_console_sem();
 
 	orig_fgconsole = fg_console;
@@ -44,15 +45,18 @@ int pm_prepare_console(void)
 	}
 	orig_kmsg = kmsg_redirect;
 	kmsg_redirect = SUSPEND_CONSOLE;
+#endif
 	return 0;
 }
 
 void pm_restore_console(void)
 {
+#ifndef CONFIG_PM_DISABLE_CONSOLE
 	acquire_console_sem();
 	set_console(orig_fgconsole);
 	release_console_sem();
 	kmsg_redirect = orig_kmsg;
+#endif
 	return;
 }
 #endif

@@ -1,0 +1,4 @@
+# Some overrides
+
+build_image_xen	= vmlinuz
+kernel_file_xen	= $(build_image_xen)

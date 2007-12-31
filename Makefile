@@ -297,9 +297,17 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 
+#
+# gcc-4.2 won't build powerpc64-smp.
+#
+ifeq ($(ARCH),powerpc)
+CC		= /usr/bin/gcc-4.1
+else
+CC		= $(CROSS_COMPILE)gcc
+endif
+
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -312,6 +320,7 @@ DEPMOD		= /sbin/depmod
 KALLSYMS	= scripts/kallsyms
 PERL		= perl
 CHECK		= sparse
+
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ -Wbitwise $(CF)
 MODFLAGS	= -DMODULE

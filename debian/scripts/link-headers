@@ -1,0 +1,79 @@
+#!/bin/bash -e
+
+hdrdir="$1"
+symdir="$2"
+srcdir="$3"
+build_arch="$4"
+flavour="$5"
+
+echo "Symlinking and copying headers for $flavour..."
+
+# XXX Special case for ppc
+if [ "$build_arch" = "powerpc" ]; then
+	install -d -m755 $hdrdir/arch/powerpc/include
+	ln -fsn ../../../include/asm-ppc $hdrdir/arch/powerpc/include/asm
+fi
+
+excludes='( -path ./debian -prune -o -path ./.git ) -prune -o'
+
+# For custom builds, we have to take care of a few things. First, we want
+# to check for files to symlink and copy in the srcdir, not the stock src.
+# We compare against stock source, copying for files that aren't the same,
+# and later symlinking for same files.
+if [ -n "$srcdir" ]; then
+  (
+  cd $srcdir
+  find . $excludes  -type f \
+	\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
+	-name '*.sh' -o -name '*.pl' -o -name '*.lds' \) -print
+  find ./include ./scripts -name .gitignore -prune -o -type f -print
+  ) | (
+  while read file; do
+	if [ -e "$hdrdir/$file" ]; then
+		continue
+	fi
+
+	# If the files are not the same, copy it
+	if ! cmp -s "$file" "$srcdir/$file"; then
+		echo $file
+	fi
+  done
+  ) | (
+	cd $srcdir
+	cpio -pd --preserve-modification-time "$hdrdir"
+  )
+else
+	srcdir="."
+fi
+
+(
+cd $srcdir
+find . $excludes  -type f \
+	\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
+	-name '*.sh' -o -name '*.pl' -o -name '*.lds' \) -print
+find ./include ./scripts -name .gitignore -prune -o -type f -print
+find ./include -mindepth 1 -maxdepth 1 $excludes -type d -print
+) | (
+while read file; do
+	dir=$file
+	lastdir=$file
+
+	if [ -f "$hdrdir/$file" ]; then
+		continue
+	fi
+
+	while [ ! -e "$hdrdir/$dir" -a ! -L "$hdrdir/$dir" ]; do
+		lastdir=$dir
+		dir=`dirname $dir`
+	done
+	# If the last item to exist is a symlink we assume all is good
+	if [ ! -L "$hdrdir/$dir" ]; then
+		# Turns things like "./foo" into "../"
+		deref="`echo -n $lastdir | sed -e 's/^\.//' -e's,/[^/]*,../,g'`"
+		item="`echo -n $lastdir | sed -e 's/^\.\///'`"
+		ln -s $deref$symdir/$item $hdrdir/$item
+	fi
+done
+)
+
+exit

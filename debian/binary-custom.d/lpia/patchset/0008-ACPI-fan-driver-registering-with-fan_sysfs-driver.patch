@@ -1,0 +1,187 @@
+From 990abc4c7483a92bddfffe16fa5da64f81d89c22 Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Wed, 12 Dec 2007 11:15:44 +0530
+Subject: [PATCH] ACPI fan driver registering with fan_sysfs driver
+
+Signed-off-by:  Sujith Thomas <sujith.thomas@intel.com>
+
+Callbacks for 'state' & 'max_state' attributes
+---
+ drivers/acpi/Kconfig |    1 +
+ drivers/acpi/fan.c   |  107 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 107 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index b065d16..0ab6c35 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -146,6 +146,7 @@ config ACPI_VIDEO
+ 
+ config ACPI_FAN
+ 	tristate "Fan"
++	depends on FAN_SYSFS
+ 	default y
+ 	help
+ 	  This driver adds support for ACPI fan devices, allowing user-mode 
+diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+index a5a5532..00b7574 100644
+--- a/drivers/acpi/fan.c
++++ b/drivers/acpi/fan.c
+@@ -33,6 +33,7 @@
+ 
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <linux/fan.h>
+ 
+ #define ACPI_FAN_COMPONENT		0x00200000
+ #define ACPI_FAN_CLASS			"fan"
+@@ -64,6 +65,83 @@ static struct acpi_driver acpi_fan_driver = {
+ 		},
+ };
+ 
++struct acpi_fan {
++	struct acpi_device *device;
++	struct fan_device *fd;
++};
++
++/* --------------------------------------------------------------------------
++			FS Interface (/sys/class/fan)
++   -------------------------------------------------------------------------- */
++
++static int acpi_fan_get_max_state(struct fan_device*fd, char*buf)
++{
++	struct acpi_fan *fan;
++
++	if (!fd | !buf)
++		return -EINVAL;
++
++	fan = (struct acpi_fan *)class_get_devdata(&fd->class_dev);
++
++	/*ACPI states*/
++	if (fan)
++		buf += sprintf(buf, "%d\n", ACPI_D_STATES_MAX + 1);
++	else
++		buf += sprintf(buf, "%d\n", 0);
++
++	return 0;
++}
++
++static int acpi_fan_get_state(struct fan_device *fd, char *buf)
++{
++	int state = 0;
++	struct acpi_fan *fan;
++
++	if (!fd | !buf)
++		return -EINVAL;
++
++	fan = (struct acpi_fan *)class_get_devdata(&fd->class_dev);
++
++	/*ACPI supports only on/off*/
++	if (fan) {
++		if (acpi_bus_get_power(fan->device->handle, &state))
++			return -EFAULT;
++		else
++			buf += sprintf(buf, "%d\n", state);
++	}
++
++	return 0;
++}
++
++static int acpi_fan_set_state(struct fan_device *fd, const char *buf)
++{
++	int state = 0;
++	int result = 0;
++	struct acpi_fan *fan;
++
++	if (!fd | !buf)
++		return -EINVAL;
++	fan = (struct acpi_fan *)class_get_devdata(&fd->class_dev);
++
++	if (!sscanf(buf, "%d", &state))
++		return -EIO;
++
++	if (state < 0 || state > ACPI_D_STATES_MAX)
++		return -EINVAL;
++
++	result = acpi_bus_set_power(fan->device->handle, state);
++	if (result)
++		return result;
++
++	return 0;
++}
++
++static struct fan_ops acpi_fan_ops = {
++	.get_max_state = acpi_fan_get_max_state,
++	.get_cur_state = acpi_fan_get_state,
++	.set_cur_state = acpi_fan_set_state,
++};
++
+ /* --------------------------------------------------------------------------
+                               FS Interface (/proc)
+    -------------------------------------------------------------------------- */
+@@ -175,15 +253,23 @@ static int acpi_fan_remove_fs(struct acpi_device *device)
+ static int acpi_fan_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+-	struct acpi_fan *fan = NULL;
+ 	int state = 0;
++	struct acpi_fan *fan = NULL;
++	struct fan_device *fd = NULL;
++
+ 
+ 
+ 	if (!device)
+ 		return -EINVAL;
+ 
++	fan = kzalloc(sizeof(struct acpi_fan), GFP_KERNEL);
++	if (!fan)
++		return -ENOMEM;
++
++	fan->device = device;
+ 	strcpy(acpi_device_name(device), "Fan");
+ 	strcpy(acpi_device_class(device), ACPI_FAN_CLASS);
++	acpi_driver_data(device) = fan;
+ 
+ 	result = acpi_bus_get_power(device->handle, &state);
+ 	if (result) {
+@@ -195,6 +281,16 @@ static int acpi_fan_add(struct acpi_device *device)
+ 	if (result)
+ 		goto end;
+ 
++	fd = fan_device_register(device->pnp.bus_id,
++	&device->dev, fan, &acpi_fan_ops);
++
++	if (IS_ERR(fd)) {
++		result = PTR_ERR(fd);
++		goto end;
++	}
++
++	fan->fd = fd;
++
+ 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
+ 	       !device->power.state ? "on" : "off");
+@@ -208,11 +304,20 @@ static int acpi_fan_add(struct acpi_device *device)
+ 
+ static int acpi_fan_remove(struct acpi_device *device, int type)
+ {
++	struct acpi_fan *fan = NULL;
++
++
+ 	if (!device || !acpi_driver_data(device))
+ 		return -EINVAL;
+ 
++	fan = acpi_driver_data(device);
++
+ 	acpi_fan_remove_fs(device);
+ 
++	fan_device_unregister(fan->fd);
++
++	kfree(fan);
++
+ 	return 0;
+ }
+ 
+-- 
+1.5.3.7-dirty
+

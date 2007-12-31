@@ -81,7 +81,7 @@ struct file *shmem_file_setup(char *name, loff_t size, unsigned long flags)
 	inode->i_nlink = 0;	/* It is unlinked */
 
 	/* notify everyone as to the change of file size */
-	error = do_truncate(dentry, size, 0, file);
+	error = do_truncate(dentry, file->f_path.mnt, size, 0, file);
 	if (error < 0)
 		goto close_file;
 

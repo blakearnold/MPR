@@ -1,0 +1,10 @@
+firewire-core-modules
+efi-modules
+socket-modules
+irda-modules
+floppy-modules
+fb-modules
+acpi-modules
+cdrom-modules
+nfs-modules
+nic-usb-modules

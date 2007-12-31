@@ -1,0 +1,440 @@
+From c60b635637f0baadc4cc937519f11634f5a0d0f8 Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Tue, 14 Aug 2007 16:23:56 +0800
+Subject: [PATCH] Poulsbo: Thottling support from SMI
+
+- Generic support for throttling of any component using SMI
+- Memory throttling for Intel platform Poulsbo
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+---
+ drivers/acpi/Kconfig               |   13 +++
+ drivers/acpi/Makefile              |    2 +
+ drivers/acpi/smi_device_throttle.c |  108 ++++++++++++++++++++
+ drivers/acpi/smi_thermal.c         |  193 ++++++++++++++++++++++++++++++++++++
+ include/linux/smi_thermal.h        |   60 +++++++++++
+ 5 files changed, 376 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/acpi/smi_device_throttle.c
+ create mode 100644 drivers/acpi/smi_thermal.c
+ create mode 100644 include/linux/smi_thermal.h
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index c8f50c0..2f65654 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -189,6 +189,19 @@ config THERMAL_SENSOR
+ 	help
+ 	  This driver adds support for AUX trip programming of sensors withing ACPI thermal zones. This is an intel platform specific driver.
+ 
++config SMI_THERMAL
++	tristate "SMI Thermal driver"
++	depends on ACPI_THERMAL
++	default y
++	help
++	  This driver adds support for AUX trip programming of sensors withing ACPI thermal zones. This is an intel platform specific driver.
++
++config SMI_DEVICE_THROTTLE
++	tristate "SMI Device Throttle Driver"
++	depends on SMI_THERMAL
++	default y
++	help
++	  This driver adds support for throttling of device based on SMI. This is an intel platform specific driver.
+ 
+ config ACPI_NUMA
+ 	bool "NUMA support"
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 4cda36c..84252a3 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -52,7 +52,9 @@ obj-$(CONFIG_ACPI_POWER)	+= power.o
+ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+ obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
+ obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
++obj-$(CONFIG_SMI_THERMAL)	+= smi_thermal.o
+ obj-$(CONFIG_THERMAL_SENSOR)	+= thermal_sensor.o
++obj-$(CONFIG_SMI_DEVICE_THROTTLE)+= smi_device_throttle.o
+ obj-$(CONFIG_ACPI_SYSTEM)	+= system.o event.o
+ obj-$(CONFIG_ACPI_DEBUG)	+= debug.o
+ obj-$(CONFIG_ACPI_NUMA)		+= numa.o
+diff --git a/drivers/acpi/smi_device_throttle.c b/drivers/acpi/smi_device_throttle.c
+new file mode 100644
+index 0000000..f0d3861
+--- /dev/null
++++ b/drivers/acpi/smi_device_throttle.c
+@@ -0,0 +1,108 @@
++/*
++ *  smi_device_throttle.c - SMI Device Throttle Driver ($Revision: 1 $)
++ *
++ *  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/pci.h>
++#include <linux/pm.h>
++
++#include <linux/smi_thermal.h>
++
++MODULE_AUTHOR("Sujith Thomas");
++MODULE_DESCRIPTION("SMI throttle driver");
++MODULE_LICENSE("GPL");
++
++/*No:of devices using SMI interface for throttling*/
++#define SMI_THERMAL_DEVICE_COUNT 1
++
++/*Port and data associated with each device*/
++static struct smi_thermal_info smi_thermal_device_info[SMI_THERMAL_DEVICE_COUNT]
++    = {
++	{.name = "MEM0",
++	 .cmdport = 0xB2,
++	 .dataport = 0xB3,
++	 .setthrottlelimit = 0xDC,
++	 .getthrottlelimit = 0xDD,
++	 .getmaxthrottle = 0xDD,
++	 .maxdat = 0x00,
++	 .getdat = 0x01,
++	 .caps = DEVICE_CAPS_SW_PGM_THERMAL_EVENTS,
++	 .td = NULL,
++	 .driver = {
++		    .class = THERMAL_MEM_CLASS,
++		    .ops = NULL,
++		    },
++	 },
++};
++static int __init smi_devices_init(void)
++{
++	int result = 0;
++	int i;
++	struct thermal_device_ops *ops;
++
++	/*Query the ops interface from smi thermal driver*/
++	ops = smi_get_thermalops();
++	if (!ops)
++		return -EINVAL;
++	for (i = 0; i < SMI_THERMAL_DEVICE_COUNT; i++) {
++		smi_thermal_device_info[i].driver.ops = ops;
++
++		/*Register component driver with thermal zone driver*/
++		result =
++		    thermal_register_device_driver(&smi_thermal_device_info[i].
++						   driver);
++		if (result) {
++			return result;
++		}
++		/*Register singleton device with thermal zone driver*/
++		if (NULL ==
++		    (smi_thermal_device_info[i].td =
++		     thermal_register_device(smi_thermal_device_info[i].
++					     name,
++					     smi_thermal_device_info[i].
++					     driver.class,
++					     &smi_thermal_device_info[i]))) {
++			return -EFAULT;
++		}
++		if (result) {
++			thermal_unregister_device_driver
++			    (&smi_thermal_device_info[i].driver);
++			return result;
++		}
++	}
++	return 0;
++}
++static void __exit smi_devices_exit(void)
++{
++	int i;
++	for (i = 0; i < SMI_THERMAL_DEVICE_COUNT; i++) {
++		thermal_unregister_device(smi_thermal_device_info[i].td);
++		thermal_unregister_device_driver(&smi_thermal_device_info[i].
++						 driver);
++	}
++}
++
++module_init(smi_devices_init);
++module_exit(smi_devices_exit);
++MODULE_ALIAS("smi_device_throttle");
+diff --git a/drivers/acpi/smi_thermal.c b/drivers/acpi/smi_thermal.c
+new file mode 100644
+index 0000000..21e8e30
+--- /dev/null
++++ b/drivers/acpi/smi_thermal.c
+@@ -0,0 +1,193 @@
++/*
++ *  smi_thermal.c - SMI thermal Driver ($Revision: 1 $)
++ *
++ *  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/pci.h>
++#include <linux/delay.h>
++#include <linux/smi_thermal.h>
++
++MODULE_AUTHOR("Sujith Thomas");
++MODULE_DESCRIPTION("SMI Device Throttle Driver");
++MODULE_LICENSE("GPL");
++
++/*
++ * getmaxthrottlestate
++ * -----------------------------
++ * call back function for getting the device's maximum throttle limit
++ * sinfo : smi_thermal_info
++ */
++static int get_max_throttle_limit(struct smi_thermal_info *sinfo)
++{
++	int maxthrottlestate;
++
++	outb(sinfo->maxdat, sinfo->dataport);
++	outb(sinfo->getmaxthrottle, sinfo->cmdport);
++	msleep(100);
++	maxthrottlestate = inb(sinfo->dataport);
++
++	return maxthrottlestate;
++}
++
++/*
++ * smi_thermal_device_get_throttle_limit
++ * -----------------------------
++ * call back function for getting the device's current throttle limit
++ * data : smi_thermal_info
++ * buf : sysfs buffer that needs to be filled back
++ */
++static int smi_thermal_device_get_throttle_limit(void *data, char *buf)
++{
++	char *s = buf;
++	int throttlevalue = 0;
++
++	struct smi_thermal_info *sinfo = (struct smi_thermal_info *)data;
++
++	if (!buf || !data)
++		return -EINVAL;
++
++	/*Read the value*/
++	outb(sinfo->getdat, sinfo->dataport);
++	outb(sinfo->getthrottlelimit, sinfo->cmdport);
++	msleep(100);
++	throttlevalue = inb(sinfo->dataport);
++
++	s += sprintf(s, "%d\n", throttlevalue);
++
++	return 0;
++}
++
++/*
++ * smi_thermal_device_set_throttle_limit
++ * -----------------------------
++ * call back function for setting the device's new throttle limit
++ * data : smi_thermal_info
++ * buf : sysfs buffer that contains the new value
++ */
++static int smi_thermal_device_set_throttle_limit(enum throttle_set_type type,
++						 void *data, const char *buf)
++{
++	int new_state = 0;
++	int maxthrottlestate = 0;
++
++	struct smi_thermal_info *sinfo = (struct smi_thermal_info *)data;
++
++	if (!buf || !data)
++		return -EINVAL;
++
++	/*Only absolute value throttling is supported for time being*/
++	if (THROTTLE_ABS != type)
++		return -EINVAL;
++
++	maxthrottlestate = get_max_throttle_limit(sinfo);
++	new_state = simple_strtol(buf, NULL, 0);
++
++	/* we need to check if state is <= max */
++	if (new_state >= maxthrottlestate || new_state < 0) {
++		return -EINVAL;
++	}
++	/*Write new value*/
++	outb(new_state, sinfo->dataport);
++	outb(sinfo->setthrottlelimit, sinfo->cmdport);
++
++	return 0;
++}
++
++/*
++ * smi_thermal_device_get_throttle_limit
++ * -----------------------------
++ * call back function for getting the device's maximum throttle limit
++ * data : smi_thermal_info
++ * buf : sysfs buffer that needs to be filled back
++ */
++static int smi_thermal_device_get_maxthrottle_limit(void *data, char *buf)
++{
++	int maxthrottlestate = 0;
++	char *s = buf;
++	struct smi_thermal_info *sinfo = (struct smi_thermal_info *)data;
++
++	if (!buf || !data)
++		return -EINVAL;
++
++	maxthrottlestate = get_max_throttle_limit(sinfo);
++
++	s += sprintf(s, "%d\n", maxthrottlestate);
++
++	return (s - buf);
++}
++
++/*
++ * smi_thermal_device_get_caps
++ * -----------------------------
++ * call back function for getting the device's capabilities
++ * data : smi_thermal_info
++ * buf : sysfs buffer that needs to be filled back
++ */
++static int smi_thermal_device_get_caps(void *data, char *buf)
++{
++	char *s = buf;
++	struct smi_thermal_info *sinfo = NULL;
++
++	if (NULL == data || NULL == buf)
++		return -EINVAL;
++
++	sinfo = (struct smi_thermal_info *)data;
++
++	s += sprintf(buf, "%lu \n", sinfo->caps);
++
++	return (s - buf);
++}
++
++static struct thermal_device_ops smi_thermal_ops = {
++	.getthrottlelimit = smi_thermal_device_get_throttle_limit,
++	.setthrottlelimit = smi_thermal_device_set_throttle_limit,
++	.getmaxthrottlelimit = smi_thermal_device_get_maxthrottle_limit,
++	.getcaps = smi_thermal_device_get_caps,
++};
++
++/*
++ * smi_get_thermalops
++ * -------------------
++ * Interface for other drivers which uses SMI for throttling
++ */
++struct thermal_device_ops *smi_get_thermalops(void)
++{
++	return &smi_thermal_ops;
++}
++EXPORT_SYMBOL(smi_get_thermalops);
++
++static int __init smi_thermal_init(void)
++{
++	return 0;
++}
++
++static void __exit smi_thermal_exit(void)
++{
++
++}
++
++module_init(smi_thermal_init);
++module_exit(smi_thermal_exit);
++
++MODULE_ALIAS("smi_thermal");
+diff --git a/include/linux/smi_thermal.h b/include/linux/smi_thermal.h
+new file mode 100644
+index 0000000..ba428ad
+--- /dev/null
++++ b/include/linux/smi_thermal.h
+@@ -0,0 +1,60 @@
++/*
++*  smi_thermal.h - Generic smi driver for thermal extensions ($Revision: 1 $)
++*
++*  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++*  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++*
++*  This program is free software; you can redistribute it and/or modify
++*  it under the terms of the GNU General Public License as published by
++*  the Free Software Foundation; version 2 of the License.
++*
++*  This program is distributed in the hope that it will be useful, but
++*  WITHOUT ANY WARRANTY; without even the implied warranty of
++*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++*  General Public License for more details.
++*
++*  You should have received a copy of the GNU General Public License along
++*  with this program; if not, write to the Free Software Foundation, Inc.,
++*  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++*
++* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++*
++*
++*
++*/
++
++#include <linux/thermal.h>
++
++#define SMI_MAX_THROTTLE_LIMIT 8
++
++struct smi_thermal_info {
++	/*ACPI device name (eg:- TZ00)*/
++	char name[ACPI_MAX_CHAR];
++	/*Command port for SMI driver*/
++	unsigned int cmdport;
++	/*Data port for SMI driver*/
++	unsigned int dataport;
++	/*Command code for set new throttle limit*/
++	unsigned int setthrottlelimit;
++	/*Command code for get current throttle limit*/
++	unsigned int getthrottlelimit;
++	/*Command code for get max throttle limit*/
++	unsigned int getmaxthrottle;
++	/*Argument passed for getting max throttle limit*/
++	unsigned int maxdat;
++	/*Argument passed for getting current throttle limit*/
++	unsigned int getdat;
++
++	/*Device capabilities*/
++	unsigned long caps;
++	struct thermal_device *td;
++	struct thermal_device_driver driver;
++};
++
++/*
++ * smi_get_thermalops
++ * -------------------
++ * Interface for other drivers which uses SMI for throttling
++ * for getting the callback functions
++ */
++struct thermal_device_ops *smi_get_thermalops(void);
+-- 
+1.5.2.4
+

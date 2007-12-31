@@ -9,4 +9,5 @@ endif
 obj-$(CONFIG_MMC)		+= core/
 obj-$(CONFIG_MMC)		+= card/
 obj-$(CONFIG_MMC)		+= host/
+obj-$(CONFIG_MSS)		+= mss/
 
