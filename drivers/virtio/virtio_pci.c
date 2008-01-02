@@ -64,7 +64,8 @@ struct virtio_pci_vq_info
 
 /* We have to enumerate here all virtio PCI devices. */
 static struct pci_device_id virtio_pci_id_table[] = {
-	{ 0x5002, 0x2258, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 }, /* Dummy entry */
+	{ 0x1af4, 0x1000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 }, /* virtio net */
+	{ 0x1af4, 0x1001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 }, /* virtio blk */
 	{ 0 },
 };
 
