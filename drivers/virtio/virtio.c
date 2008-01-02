@@ -2,6 +2,8 @@
 #include <linux/spinlock.h>
 #include <linux/virtio_config.h>
 
+MODULE_LICENSE("GPL");
+
 static ssize_t device_show(struct device *_d,
 			   struct device_attribute *attr, char *buf)
 {

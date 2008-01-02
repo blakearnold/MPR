@@ -8,6 +8,8 @@
 
 #define VIRTIO_MAX_SG	(3+MAX_PHYS_SEGMENTS)
 
+MODULE_LICENSE("GPL");
+
 static unsigned char virtblk_index = 'a';
 struct virtio_blk
 {

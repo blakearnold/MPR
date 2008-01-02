@@ -27,6 +27,8 @@
 static int napi_weight = 128;
 module_param(napi_weight, int, 0444);
 
+MODULE_LICENSE("GPL");
+
 /* FIXME: MTU in config. */
 #define MAX_PACKET_LEN (ETH_HLEN+ETH_DATA_LEN)
 

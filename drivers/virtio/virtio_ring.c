@@ -20,6 +20,8 @@
 #include <linux/virtio_ring.h>
 #include <linux/device.h>
 
+MODULE_LICENSE("GPL");
+
 #ifdef DEBUG
 /* For development, we want to crash whenever the ring is screwed. */
 #define BAD_RING(vq, fmt...)			\
