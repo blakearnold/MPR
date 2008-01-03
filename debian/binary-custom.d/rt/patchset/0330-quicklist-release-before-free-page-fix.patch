@@ -3,11 +3,11 @@
  mm/quicklist.c            |    8 ++------
  2 files changed, 10 insertions(+), 17 deletions(-)
 
-Index: linux-2.6.24-rc5-rt1/include/linux/quicklist.h
+Index: ubuntu-hardy/include/linux/quicklist.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/quicklist.h
-+++ linux-2.6.24-rc5-rt1/include/linux/quicklist.h
-@@ -30,13 +30,10 @@ DECLARE_PER_CPU_LOCKED(struct quicklist,
+--- ubuntu-hardy.orig/include/linux/quicklist.h	2008-01-03 09:03:59.000000000 +0100
++++ ubuntu-hardy/include/linux/quicklist.h	2008-01-03 09:04:36.000000000 +0100
+@@ -30,13 +30,10 @@
   * The fast patch in quicklist_alloc touched only a per cpu cacheline and
   * the first cacheline of the page itself. There is minmal overhead involved.
   */
@@ -23,7 +23,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/quicklist.h
  	if (likely(p)) {
  		q->page = p[0];
  		p[0] = NULL;
-@@ -48,11 +45,11 @@ static inline void *__quicklist_alloc(in
+@@ -48,11 +45,11 @@
  static inline void *quicklist_alloc(int nr, gfp_t flags, void (*ctor)(void *))
  {
  	struct quicklist *q;
@@ -38,18 +38,11 @@ Index: linux-2.6.24-rc5-rt1/include/linux/quicklist.h
  	put_cpu_var_locked(quicklist, cpu);
  	if (likely(p))
  		return p;
-@@ -67,7 +64,7 @@ static inline void __quicklist_free(int 
+@@ -67,12 +64,13 @@
  	struct page *page)
  {
  	struct quicklist *q;
--	int nid = page_to_nid(page);
-+	int cpu, nid = page_to_nid(page);
- 
- 	if (unlikely(nid != numa_node_id())) {
- 		if (dtor)
-@@ -76,11 +73,11 @@ static inline void __quicklist_free(int 
- 		return;
- 	}
++	int cpu;
  
 -	q = &get_cpu_var(quicklist)[nr];
 +	q = &get_cpu_var_locked(quicklist, &cpu)[nr];
@@ -61,11 +54,11 @@ Index: linux-2.6.24-rc5-rt1/include/linux/quicklist.h
  }
  
  static inline void quicklist_free(int nr, void (*dtor)(void *), void *pp)
-Index: linux-2.6.24-rc5-rt1/mm/quicklist.c
+Index: ubuntu-hardy/mm/quicklist.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/mm/quicklist.c
-+++ linux-2.6.24-rc5-rt1/mm/quicklist.c
-@@ -58,11 +58,7 @@ void quicklist_trim(int nr, void (*dtor)
+--- ubuntu-hardy.orig/mm/quicklist.c	2008-01-03 09:03:59.000000000 +0100
++++ ubuntu-hardy/mm/quicklist.c	2008-01-03 09:04:03.000000000 +0100
+@@ -58,11 +58,7 @@
  		pages_to_free = min_pages_to_free(q, min_pages, max_free);
  
  		while (pages_to_free > 0) {
@@ -78,7 +71,7 @@ Index: linux-2.6.24-rc5-rt1/mm/quicklist.c
  
  			if (dtor)
  				dtor(p);
-@@ -80,7 +76,7 @@ unsigned long quicklist_total_size(void)
+@@ -80,7 +76,7 @@
  	struct quicklist *ql, *q;
  
  	for_each_online_cpu(cpu) {

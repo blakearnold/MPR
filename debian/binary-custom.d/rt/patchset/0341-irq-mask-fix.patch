@@ -45,26 +45,27 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/irq/chip.c |   17 +++++++++--------
  1 file changed, 9 insertions(+), 8 deletions(-)
 
-Index: linux-2.6.24-rc5-rt1/kernel/irq/chip.c
+Index: ubuntu-hardy/kernel/irq/chip.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/irq/chip.c
-+++ linux-2.6.24-rc5-rt1/kernel/irq/chip.c
-@@ -297,12 +297,11 @@ handle_simple_irq(unsigned int irq, stru
+--- ubuntu-hardy.orig/kernel/irq/chip.c	2008-01-03 09:02:18.000000000 +0100
++++ ubuntu-hardy/kernel/irq/chip.c	2008-01-03 09:05:36.000000000 +0100
+@@ -297,13 +297,12 @@
  
  	spin_lock(&desc->lock);
  
 -	if (unlikely(desc->status & IRQ_INPROGRESS))
 -		goto out_unlock;
+ 	desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
  	kstat_cpu(cpu).irqs[irq]++;
  
  	action = desc->action;
--	if (unlikely(!action || (desc->status & IRQ_DISABLED))) {
+-	if (unlikely(!action || (desc->status & IRQ_DISABLED)))
 +	if (unlikely(!action || (desc->status & (IRQ_INPROGRESS |
-+						 IRQ_DISABLED)))) {
- 		if (desc->chip->mask)
- 			desc->chip->mask(irq);
- 		desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
-@@ -325,6 +324,8 @@ handle_simple_irq(unsigned int irq, stru
++						 IRQ_DISABLED))))
+ 		goto out_unlock;
+ 
+ 	desc->status |= IRQ_INPROGRESS;
+@@ -320,6 +319,8 @@
  
  	spin_lock(&desc->lock);
  	desc->status &= ~IRQ_INPROGRESS;
@@ -73,7 +74,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/irq/chip.c
  out_unlock:
  	spin_unlock(&desc->lock);
  }
-@@ -403,18 +404,16 @@ handle_fasteoi_irq(unsigned int irq, str
+@@ -398,18 +399,16 @@
  
  	spin_lock(&desc->lock);
  
@@ -95,7 +96,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/irq/chip.c
  		desc->status |= IRQ_PENDING;
  		if (desc->chip->mask)
  			desc->chip->mask(irq);
-@@ -440,6 +439,8 @@ handle_fasteoi_irq(unsigned int irq, str
+@@ -435,6 +434,8 @@
  
  	spin_lock(&desc->lock);
  	desc->status &= ~IRQ_INPROGRESS;

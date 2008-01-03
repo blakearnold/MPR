@@ -39,10 +39,10 @@
  lib/spinlock_debug.c              |   64 +--
  38 files changed, 2933 insertions(+), 679 deletions(-)
 
-Index: linux-2.6.24-rc5-rt1/drivers/input/ff-memless.c
+Index: ubuntu-hardy/drivers/input/ff-memless.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/drivers/input/ff-memless.c
-+++ linux-2.6.24-rc5-rt1/drivers/input/ff-memless.c
+--- ubuntu-hardy.orig/drivers/input/ff-memless.c	2008-01-02 11:49:05.000000000 +0100
++++ ubuntu-hardy/drivers/input/ff-memless.c	2008-01-03 09:02:24.000000000 +0100
 @@ -28,6 +28,7 @@
  #include <linux/input.h>
  #include <linux/module.h>
@@ -51,11 +51,11 @@ Index: linux-2.6.24-rc5-rt1/drivers/input/ff-memless.c
  #include <linux/spinlock.h>
  #include <linux/jiffies.h>
  
-Index: linux-2.6.24-rc5-rt1/fs/proc/array.c
+Index: ubuntu-hardy/fs/proc/array.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/fs/proc/array.c
-+++ linux-2.6.24-rc5-rt1/fs/proc/array.c
-@@ -131,17 +131,19 @@ static inline char *task_name(struct tas
+--- ubuntu-hardy.orig/fs/proc/array.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/fs/proc/array.c	2008-01-03 09:02:24.000000000 +0100
+@@ -131,17 +131,19 @@
   */
  static const char *task_state_array[] = {
  	"R (running)",		/*  0 */
@@ -81,7 +81,7 @@ Index: linux-2.6.24-rc5-rt1/fs/proc/array.c
  					    TASK_INTERRUPTIBLE |
  					    TASK_UNINTERRUPTIBLE |
  					    TASK_STOPPED |
-@@ -305,6 +307,19 @@ static inline char *task_context_switch_
+@@ -305,6 +307,19 @@
  			    p->nivcsw);
  }
  
@@ -101,7 +101,7 @@ Index: linux-2.6.24-rc5-rt1/fs/proc/array.c
  int proc_pid_status(struct task_struct *task, char *buffer)
  {
  	char *orig = buffer;
-@@ -324,6 +339,7 @@ int proc_pid_status(struct task_struct *
+@@ -324,6 +339,7 @@
  	buffer = task_show_regs(task, buffer);
  #endif
  	buffer = task_context_switch_counts(task, buffer);
@@ -109,10 +109,10 @@ Index: linux-2.6.24-rc5-rt1/fs/proc/array.c
  	return buffer - orig;
  }
  
-Index: linux-2.6.24-rc5-rt1/include/linux/bit_spinlock.h
+Index: ubuntu-hardy/include/linux/bit_spinlock.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/bit_spinlock.h
-+++ linux-2.6.24-rc5-rt1/include/linux/bit_spinlock.h
+--- ubuntu-hardy.orig/include/linux/bit_spinlock.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/bit_spinlock.h	2008-01-03 09:02:24.000000000 +0100
 @@ -1,6 +1,8 @@
  #ifndef __LINUX_BIT_SPINLOCK_H
  #define __LINUX_BIT_SPINLOCK_H
@@ -122,7 +122,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/bit_spinlock.h
  /*
   *  bit-based spin_lock()
   *
-@@ -91,5 +93,7 @@ static inline int bit_spin_is_locked(int
+@@ -91,5 +93,7 @@
  #endif
  }
  
@@ -130,10 +130,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/bit_spinlock.h
 +
  #endif /* __LINUX_BIT_SPINLOCK_H */
  
-Index: linux-2.6.24-rc5-rt1/include/linux/init_task.h
+Index: ubuntu-hardy/include/linux/init_task.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/init_task.h
-+++ linux-2.6.24-rc5-rt1/include/linux/init_task.h
+--- ubuntu-hardy.orig/include/linux/init_task.h	2008-01-03 09:02:12.000000000 +0100
++++ ubuntu-hardy/include/linux/init_task.h	2008-01-03 09:02:24.000000000 +0100
 @@ -10,6 +10,7 @@
  #include <linux/pid_namespace.h>
  #include <linux/user_namespace.h>
@@ -142,7 +142,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/init_task.h
  
  #define INIT_FDTABLE \
  {							\
-@@ -165,7 +166,7 @@ extern struct group_info init_groups;
+@@ -165,7 +166,7 @@
  	.journal_info	= NULL,						\
  	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
  	.fs_excl	= ATOMIC_INIT(0),				\
@@ -151,10 +151,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/init_task.h
  	.pids = {							\
  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
-Index: linux-2.6.24-rc5-rt1/include/linux/mutex.h
+Index: ubuntu-hardy/include/linux/mutex.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/mutex.h
-+++ linux-2.6.24-rc5-rt1/include/linux/mutex.h
+--- ubuntu-hardy.orig/include/linux/mutex.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/mutex.h	2008-01-03 09:02:24.000000000 +0100
 @@ -12,11 +12,66 @@
  
  #include <linux/list.h>
@@ -222,17 +222,17 @@ Index: linux-2.6.24-rc5-rt1/include/linux/mutex.h
  /*
   * Simple, straightforward mutexes with strict semantics:
   *
-@@ -144,3 +199,5 @@ extern int fastcall mutex_trylock(struct
+@@ -144,3 +199,5 @@
  extern void fastcall mutex_unlock(struct mutex *lock);
  
  #endif
 +
 +#endif
-Index: linux-2.6.24-rc5-rt1/include/linux/plist.h
+Index: ubuntu-hardy/include/linux/plist.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/plist.h
-+++ linux-2.6.24-rc5-rt1/include/linux/plist.h
-@@ -81,7 +81,7 @@ struct plist_head {
+--- ubuntu-hardy.orig/include/linux/plist.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/plist.h	2008-01-03 09:02:24.000000000 +0100
+@@ -81,7 +81,7 @@
  	struct list_head prio_list;
  	struct list_head node_list;
  #ifdef CONFIG_DEBUG_PI_LIST
@@ -241,7 +241,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/plist.h
  #endif
  };
  
-@@ -125,7 +125,7 @@ struct plist_node {
+@@ -125,7 +125,7 @@
   * @lock:	list spinlock, remembered for debugging
   */
  static inline void
@@ -250,10 +250,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/plist.h
  {
  	INIT_LIST_HEAD(&head->prio_list);
  	INIT_LIST_HEAD(&head->node_list);
-Index: linux-2.6.24-rc5-rt1/include/linux/rt_lock.h
+Index: ubuntu-hardy/include/linux/rt_lock.h
 ===================================================================
---- /dev/null
-+++ linux-2.6.24-rc5-rt1/include/linux/rt_lock.h
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ ubuntu-hardy/include/linux/rt_lock.h	2008-01-03 09:02:24.000000000 +0100
 @@ -0,0 +1,334 @@
 +#ifndef __LINUX_RT_LOCK_H
 +#define __LINUX_RT_LOCK_H
@@ -589,10 +589,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rt_lock.h
 +
 +#endif
 +
-Index: linux-2.6.24-rc5-rt1/include/linux/rtmutex.h
+Index: ubuntu-hardy/include/linux/rtmutex.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/rtmutex.h
-+++ linux-2.6.24-rc5-rt1/include/linux/rtmutex.h
+--- ubuntu-hardy.orig/include/linux/rtmutex.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/rtmutex.h	2008-01-03 09:02:24.000000000 +0100
 @@ -24,7 +24,7 @@
   * @owner:	the mutex owner
   */
@@ -602,7 +602,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rtmutex.h
  	struct plist_head	wait_list;
  	struct task_struct	*owner;
  #ifdef CONFIG_DEBUG_RT_MUTEXES
-@@ -63,7 +63,7 @@ struct hrtimer_sleeper;
+@@ -63,7 +63,7 @@
  #endif
  
  #define __RT_MUTEX_INITIALIZER(mutexname) \
@@ -611,11 +611,11 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rtmutex.h
  	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list, mutexname.wait_lock) \
  	, .owner = NULL \
  	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
-Index: linux-2.6.24-rc5-rt1/include/linux/rwsem-spinlock.h
+Index: ubuntu-hardy/include/linux/rwsem-spinlock.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/rwsem-spinlock.h
-+++ linux-2.6.24-rc5-rt1/include/linux/rwsem-spinlock.h
-@@ -28,7 +28,7 @@ struct rwsem_waiter;
+--- ubuntu-hardy.orig/include/linux/rwsem-spinlock.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/rwsem-spinlock.h	2008-01-03 09:02:24.000000000 +0100
+@@ -28,7 +28,7 @@
   * - if activity is -1 then there is one active writer
   * - if wait_list is not empty, then there are processes waiting for the semaphore
   */
@@ -624,7 +624,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rwsem-spinlock.h
  	__s32			activity;
  	spinlock_t		wait_lock;
  	struct list_head	wait_list;
-@@ -43,33 +43,32 @@ struct rw_semaphore {
+@@ -43,33 +43,32 @@
  # define __RWSEM_DEP_MAP_INIT(lockname)
  #endif
  
@@ -674,10 +674,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rwsem-spinlock.h
  {
  	return (sem->activity != 0);
  }
-Index: linux-2.6.24-rc5-rt1/include/linux/rwsem.h
+Index: ubuntu-hardy/include/linux/rwsem.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/rwsem.h
-+++ linux-2.6.24-rc5-rt1/include/linux/rwsem.h
+--- ubuntu-hardy.orig/include/linux/rwsem.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/rwsem.h	2008-01-03 09:02:24.000000000 +0100
 @@ -9,6 +9,10 @@
  
  #include <linux/linkage.h>
@@ -759,7 +759,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rwsem.h
  
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  /*
-@@ -73,22 +88,79 @@ extern void downgrade_write(struct rw_se
+@@ -73,22 +88,79 @@
   * lockdep_set_class() at lock initialization time.
   * See Documentation/lockdep-design.txt for more details.)
   */
@@ -847,11 +847,11 @@ Index: linux-2.6.24-rc5-rt1/include/linux/rwsem.h
 +
  #endif /* __KERNEL__ */
  #endif /* _LINUX_RWSEM_H */
-Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
+Index: ubuntu-hardy/include/linux/sched.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/sched.h
-+++ linux-2.6.24-rc5-rt1/include/linux/sched.h
-@@ -179,15 +179,17 @@ print_cfs_rq(struct seq_file *m, int cpu
+--- ubuntu-hardy.orig/include/linux/sched.h	2008-01-03 09:02:20.000000000 +0100
++++ ubuntu-hardy/include/linux/sched.h	2008-01-03 09:02:24.000000000 +0100
+@@ -179,15 +179,17 @@
   * mistake.
   */
  #define TASK_RUNNING		0
@@ -876,7 +876,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  
  #define __set_task_state(tsk, state_value)		\
  	do { (tsk)->state = (state_value); } while (0)
-@@ -297,6 +299,10 @@ static inline void touch_all_softlockup_
+@@ -297,6 +299,10 @@
  }
  #endif
  
@@ -887,7 +887,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  #if defined(CONFIG_PREEMPT_TRACE) || defined(CONFIG_EVENT_TRACE)
    extern void print_traces(struct task_struct *task);
  #else
-@@ -1218,7 +1224,7 @@ struct task_struct {
+@@ -1218,7 +1224,7 @@
  	spinlock_t alloc_lock;
  
  	/* Protection of the PI data structures: */
@@ -896,7 +896,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  
  #ifdef CONFIG_RT_MUTEXES
  	/* PI waiters blocked on a rt_mutex held by this task */
-@@ -1254,13 +1260,32 @@ struct task_struct {
+@@ -1254,13 +1260,32 @@
  	unsigned int lockdep_recursion;
  #endif
  
@@ -930,7 +930,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  /* journalling filesystem info */
  	void *journal_info;
  
-@@ -1520,6 +1545,7 @@ static inline void put_task_struct(struc
+@@ -1520,6 +1545,7 @@
  #define PF_EXITING	0x00000004	/* getting shut down */
  #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
  #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
@@ -938,7 +938,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  #define PF_FORKNOEXEC	0x00000040	/* forked but didn't exec */
  #define PF_SUPERPRIV	0x00000100	/* used super-user privileges */
  #define PF_DUMPCORE	0x00000200	/* dumped core */
-@@ -1650,6 +1676,7 @@ extern struct task_struct *curr_task(int
+@@ -1650,6 +1676,7 @@
  extern void set_curr_task(int cpu, struct task_struct *p);
  
  void yield(void);
@@ -946,7 +946,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  
  /*
   * The default (Linux) execution domain.
-@@ -1721,6 +1748,9 @@ extern void do_timer(unsigned long ticks
+@@ -1721,6 +1748,9 @@
  
  extern int FASTCALL(wake_up_state(struct task_struct * tsk, unsigned int state));
  extern int FASTCALL(wake_up_process(struct task_struct * tsk));
@@ -956,7 +956,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  extern void FASTCALL(wake_up_new_task(struct task_struct * tsk,
  						unsigned long clone_flags));
  #ifdef CONFIG_SMP
-@@ -2032,7 +2062,22 @@ static inline int need_resched_delayed(v
+@@ -2032,7 +2062,22 @@
   * cond_resched_softirq() will enable bhs before scheduling.
   */
  extern int cond_resched(void);
@@ -980,7 +980,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  extern int cond_resched_softirq(void);
  extern int cond_resched_softirq_context(void);
  extern int cond_resched_hardirq_context(void);
-@@ -2041,12 +2086,18 @@ extern int cond_resched_hardirq_context(
+@@ -2041,12 +2086,18 @@
   * Does a critical section need to be broken due to another
   * task waiting?:
   */
@@ -1001,10 +1001,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/sched.h
  /*
   * Does a critical section need to be broken due to another
   * task waiting or preemption being signalled:
-Index: linux-2.6.24-rc5-rt1/include/linux/semaphore.h
+Index: ubuntu-hardy/include/linux/semaphore.h
 ===================================================================
---- /dev/null
-+++ linux-2.6.24-rc5-rt1/include/linux/semaphore.h
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ ubuntu-hardy/include/linux/semaphore.h	2008-01-03 09:02:24.000000000 +0100
 @@ -0,0 +1,49 @@
 +#ifndef _LINUX_SEMAPHORE_H
 +#define _LINUX_SEMAPHORE_H
@@ -1055,10 +1055,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/semaphore.h
 +#endif /* CONFIG_PREEMPT_RT */
 +
 +#endif /* _LINUX_SEMAPHORE_H */
-Index: linux-2.6.24-rc5-rt1/include/linux/seqlock.h
+Index: ubuntu-hardy/include/linux/seqlock.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/seqlock.h
-+++ linux-2.6.24-rc5-rt1/include/linux/seqlock.h
+--- ubuntu-hardy.orig/include/linux/seqlock.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/seqlock.h	2008-01-03 09:02:24.000000000 +0100
 @@ -32,46 +32,72 @@
  typedef struct {
  	unsigned sequence;
@@ -1143,7 +1143,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/seqlock.h
  {
  	int ret = spin_trylock(&sl->lock);
  
-@@ -83,7 +109,7 @@ static inline int write_tryseqlock(seqlo
+@@ -83,7 +109,7 @@
  }
  
  /* Start of read calculation -- fetch last complete writer token */
@@ -1152,7 +1152,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/seqlock.h
  {
  	unsigned ret = sl->sequence;
  	smp_rmb();
-@@ -98,12 +124,118 @@ static __always_inline unsigned read_seq
+@@ -98,12 +124,118 @@
   *    
   * Using xor saves one conditional branch.
   */
@@ -1272,7 +1272,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/seqlock.h
  
  /*
   * Version using sequence counter only.
-@@ -155,30 +287,51 @@ static inline void write_seqcount_end(se
+@@ -155,30 +287,51 @@
  	s->sequence++;
  }
  
@@ -1332,10 +1332,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/seqlock.h
  		ret;							\
  	})
  
-Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
+Index: ubuntu-hardy/include/linux/spinlock.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/spinlock.h
-+++ linux-2.6.24-rc5-rt1/include/linux/spinlock.h
+--- ubuntu-hardy.orig/include/linux/spinlock.h	2008-01-03 09:02:15.000000000 +0100
++++ ubuntu-hardy/include/linux/spinlock.h	2008-01-03 09:02:24.000000000 +0100
 @@ -44,6 +44,42 @@
   *                        builds the _spin_*() APIs.
   *
@@ -1411,7 +1411,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
   * Pull the raw_spinlock_t and raw_rwlock_t definitions:
   */
  #include <linux/spinlock_types.h>
-@@ -89,42 +110,10 @@ extern int __lockfunc generic__raw_read_
+@@ -89,42 +110,10 @@
  # include <linux/spinlock_up.h>
  #endif
  
@@ -1457,7 +1457,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
  
  /*
   * Pull the _spin_*()/_read_*()/_write_*() functions/declarations:
-@@ -136,16 +125,16 @@ do {								\
+@@ -136,16 +125,16 @@
  #endif
  
  #ifdef CONFIG_DEBUG_SPINLOCK
@@ -1484,7 +1484,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
  #else
  # define _raw_spin_lock(lock)		__raw_spin_lock(&(lock)->raw_lock)
  # define _raw_spin_lock_flags(lock, flags) \
-@@ -160,148 +149,590 @@ do {								\
+@@ -160,148 +149,590 @@
  # define _raw_write_unlock(rwlock)	__raw_write_unlock(&(rwlock)->raw_lock)
  #endif
  
@@ -2180,7 +2180,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
  	__acquires(l1)
  	__acquires(l2)
  {
-@@ -314,13 +745,15 @@ static inline void double_spin_lock(spin
+@@ -314,13 +745,15 @@
  	}
  }
  
@@ -2198,7 +2198,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
  	__releases(l1)
  	__releases(l2)
  {
-@@ -333,24 +766,19 @@ static inline void double_spin_unlock(sp
+@@ -333,24 +766,19 @@
  	}
  }
  
@@ -2237,11 +2237,11 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock.h
  
  #endif /* __LINUX_SPINLOCK_H */
 +
-Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_api_smp.h
+Index: ubuntu-hardy/include/linux/spinlock_api_smp.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/spinlock_api_smp.h
-+++ linux-2.6.24-rc5-rt1/include/linux/spinlock_api_smp.h
-@@ -19,43 +19,58 @@ int in_lock_functions(unsigned long addr
+--- ubuntu-hardy.orig/include/linux/spinlock_api_smp.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/spinlock_api_smp.h	2008-01-03 09:02:24.000000000 +0100
+@@ -19,43 +19,58 @@
  
  #define assert_spin_locked(x)	BUG_ON(!spin_is_locked(x))
  
@@ -2338,10 +2338,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_api_smp.h
 +								RELEASE_RW;
  
  #endif /* __LINUX_SPINLOCK_API_SMP_H */
-Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_api_up.h
+Index: ubuntu-hardy/include/linux/spinlock_api_up.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/spinlock_api_up.h
-+++ linux-2.6.24-rc5-rt1/include/linux/spinlock_api_up.h
+--- ubuntu-hardy.orig/include/linux/spinlock_api_up.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/spinlock_api_up.h	2008-01-03 09:02:24.000000000 +0100
 @@ -33,12 +33,22 @@
  #define __LOCK_IRQ(lock) \
    do { local_irq_disable(); __LOCK(lock); } while (0)
@@ -2433,10 +2433,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_api_up.h
 +#define __write_unlock_irqrestore(lock, flags)	__UNLOCK_IRQRESTORE(lock, flags)
  
  #endif /* __LINUX_SPINLOCK_API_UP_H */
-Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
+Index: ubuntu-hardy/include/linux/spinlock_types.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/spinlock_types.h
-+++ linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
+--- ubuntu-hardy.orig/include/linux/spinlock_types.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/spinlock_types.h	2008-01-03 09:02:24.000000000 +0100
 @@ -15,10 +15,27 @@
  # include <linux/spinlock_types_up.h>
  #endif
@@ -2466,7 +2466,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
  #if defined(CONFIG_PREEMPT) && defined(CONFIG_SMP)
  	unsigned int break_lock;
  #endif
-@@ -29,12 +46,12 @@ typedef struct {
+@@ -29,12 +46,12 @@
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  	struct lockdep_map dep_map;
  #endif
@@ -2481,7 +2481,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
  #if defined(CONFIG_PREEMPT) && defined(CONFIG_SMP)
  	unsigned int break_lock;
  #endif
-@@ -45,7 +62,7 @@ typedef struct {
+@@ -45,7 +62,7 @@
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  	struct lockdep_map dep_map;
  #endif
@@ -2490,7 +2490,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
  
  #define RWLOCK_MAGIC		0xdeaf1eed
  
-@@ -64,24 +81,24 @@ typedef struct {
+@@ -64,24 +81,24 @@
  #endif
  
  #ifdef CONFIG_DEBUG_SPINLOCK
@@ -2523,7 +2523,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
  				RW_DEP_MAP_INIT(lockname) }
  #endif
  
-@@ -91,10 +108,22 @@ typedef struct {
+@@ -91,10 +108,22 @@
   * Please use DEFINE_SPINLOCK()/DEFINE_RWLOCK() or
   * __SPIN_LOCK_UNLOCKED()/__RW_LOCK_UNLOCKED() as appropriate.
   */
@@ -2550,10 +2550,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types.h
 +		RAW_RW_LOCK_UNLOCKED(name)
  
  #endif /* __LINUX_SPINLOCK_TYPES_H */
-Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types_up.h
+Index: ubuntu-hardy/include/linux/spinlock_types_up.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/spinlock_types_up.h
-+++ linux-2.6.24-rc5-rt1/include/linux/spinlock_types_up.h
+--- ubuntu-hardy.orig/include/linux/spinlock_types_up.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/spinlock_types_up.h	2008-01-03 09:02:24.000000000 +0100
 @@ -16,13 +16,13 @@
  
  typedef struct {
@@ -2570,7 +2570,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types_up.h
  
  #define __RAW_SPIN_LOCK_UNLOCKED { }
  
-@@ -30,7 +30,7 @@ typedef struct { } raw_spinlock_t;
+@@ -30,7 +30,7 @@
  
  typedef struct {
  	/* no debug version on UP */
@@ -2579,10 +2579,10 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_types_up.h
  
  #define __RAW_RW_LOCK_UNLOCKED { }
  
-Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_up.h
+Index: ubuntu-hardy/include/linux/spinlock_up.h
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/include/linux/spinlock_up.h
-+++ linux-2.6.24-rc5-rt1/include/linux/spinlock_up.h
+--- ubuntu-hardy.orig/include/linux/spinlock_up.h	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/include/linux/spinlock_up.h	2008-01-03 09:02:24.000000000 +0100
 @@ -20,19 +20,19 @@
  #ifdef CONFIG_DEBUG_SPINLOCK
  #define __raw_spin_is_locked(x)		((x)->slock == 0)
@@ -2606,7 +2606,7 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_up.h
  {
  	char oldval = lock->slock;
  
-@@ -41,7 +41,7 @@ static inline int __raw_spin_trylock(raw
+@@ -41,7 +41,7 @@
  	return oldval > 0;
  }
  
@@ -2615,11 +2615,11 @@ Index: linux-2.6.24-rc5-rt1/include/linux/spinlock_up.h
  {
  	lock->slock = 1;
  }
-Index: linux-2.6.24-rc5-rt1/kernel/Makefile
+Index: ubuntu-hardy/kernel/Makefile
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/Makefile
-+++ linux-2.6.24-rc5-rt1/kernel/Makefile
-@@ -7,14 +7,17 @@ obj-y     = sched.o fork.o exec_domain.o
+--- ubuntu-hardy.orig/kernel/Makefile	2008-01-03 09:02:18.000000000 +0100
++++ ubuntu-hardy/kernel/Makefile	2008-01-03 09:02:24.000000000 +0100
+@@ -7,14 +7,17 @@
  	    sysctl.o capability.o ptrace.o timer.o user.o user_namespace.o \
  	    signal.o sys.o kmod.o workqueue.o pid.o \
  	    rcupdate.o extable.o params.o posix-timers.o \
@@ -2638,7 +2638,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/Makefile
  obj-$(CONFIG_LOCKDEP) += lockdep.o
  ifeq ($(CONFIG_PROC_FS),y)
  obj-$(CONFIG_LOCKDEP) += lockdep_proc.o
-@@ -26,6 +29,7 @@ endif
+@@ -26,6 +29,7 @@
  obj-$(CONFIG_RT_MUTEXES) += rtmutex.o
  obj-$(CONFIG_DEBUG_RT_MUTEXES) += rtmutex-debug.o
  obj-$(CONFIG_RT_MUTEX_TESTER) += rtmutex-tester.o
@@ -2646,11 +2646,11 @@ Index: linux-2.6.24-rc5-rt1/kernel/Makefile
  obj-$(CONFIG_GENERIC_ISA_DMA) += dma.o
  obj-$(CONFIG_SMP) += cpu.o spinlock.o
  obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
-Index: linux-2.6.24-rc5-rt1/kernel/fork.c
+Index: ubuntu-hardy/kernel/fork.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/fork.c
-+++ linux-2.6.24-rc5-rt1/kernel/fork.c
-@@ -959,6 +959,9 @@ static void rt_mutex_init_task(struct ta
+--- ubuntu-hardy.orig/kernel/fork.c	2008-01-03 09:02:18.000000000 +0100
++++ ubuntu-hardy/kernel/fork.c	2008-01-03 09:02:24.000000000 +0100
+@@ -959,6 +959,9 @@
  #ifdef CONFIG_RT_MUTEXES
  	plist_head_init(&p->pi_waiters, &p->pi_lock);
  	p->pi_blocked_on = NULL;
@@ -2660,7 +2660,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/fork.c
  #endif
  }
  
-@@ -1154,6 +1157,9 @@ static struct task_struct *copy_process(
+@@ -1154,6 +1157,9 @@
  	retval = copy_thread(0, clone_flags, stack_start, stack_size, p, regs);
  	if (retval)
  		goto bad_fork_cleanup_namespaces;
@@ -2670,11 +2670,11 @@ Index: linux-2.6.24-rc5-rt1/kernel/fork.c
  
  	if (pid != &init_struct_pid) {
  		retval = -ENOMEM;
-Index: linux-2.6.24-rc5-rt1/kernel/futex.c
+Index: ubuntu-hardy/kernel/futex.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/futex.c
-+++ linux-2.6.24-rc5-rt1/kernel/futex.c
-@@ -2104,7 +2104,11 @@ static int __init init(void)
+--- ubuntu-hardy.orig/kernel/futex.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/kernel/futex.c	2008-01-03 09:02:24.000000000 +0100
+@@ -2104,7 +2104,11 @@
  	}
  
  	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
@@ -2686,11 +2686,11 @@ Index: linux-2.6.24-rc5-rt1/kernel/futex.c
  		spin_lock_init(&futex_queues[i].lock);
  	}
  	return 0;
-Index: linux-2.6.24-rc5-rt1/kernel/hrtimer.c
+Index: ubuntu-hardy/kernel/hrtimer.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/hrtimer.c
-+++ linux-2.6.24-rc5-rt1/kernel/hrtimer.c
-@@ -1484,7 +1484,7 @@ static void migrate_hrtimers(int cpu)
+--- ubuntu-hardy.orig/kernel/hrtimer.c	2008-01-03 09:02:19.000000000 +0100
++++ ubuntu-hardy/kernel/hrtimer.c	2008-01-03 09:02:24.000000000 +0100
+@@ -1484,7 +1484,7 @@
  	tick_cancel_sched_timer(cpu);
  
  	local_irq_disable();
@@ -2699,7 +2699,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/hrtimer.c
  			 smp_processor_id() < cpu);
  
  	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
-@@ -1492,7 +1492,7 @@ static void migrate_hrtimers(int cpu)
+@@ -1492,7 +1492,7 @@
  				     &new_base->clock_base[i]);
  	}
  
@@ -2708,11 +2708,11 @@ Index: linux-2.6.24-rc5-rt1/kernel/hrtimer.c
  			   smp_processor_id() < cpu);
  	local_irq_enable();
  	put_cpu_var(hrtimer_bases);
-Index: linux-2.6.24-rc5-rt1/kernel/lockdep.c
+Index: ubuntu-hardy/kernel/lockdep.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/lockdep.c
-+++ linux-2.6.24-rc5-rt1/kernel/lockdep.c
-@@ -66,7 +66,7 @@ module_param(lock_stat, int, 0644);
+--- ubuntu-hardy.orig/kernel/lockdep.c	2008-01-03 09:02:17.000000000 +0100
++++ ubuntu-hardy/kernel/lockdep.c	2008-01-03 09:02:24.000000000 +0100
+@@ -66,7 +66,7 @@
   * to use a raw spinlock - we really dont want the spinlock
   * code to recurse back into the lockdep code...
   */
@@ -2721,10 +2721,10 @@ Index: linux-2.6.24-rc5-rt1/kernel/lockdep.c
  
  static int graph_lock(void)
  {
-Index: linux-2.6.24-rc5-rt1/kernel/rt.c
+Index: ubuntu-hardy/kernel/rt.c
 ===================================================================
---- /dev/null
-+++ linux-2.6.24-rc5-rt1/kernel/rt.c
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ ubuntu-hardy/kernel/rt.c	2008-01-03 09:02:24.000000000 +0100
 @@ -0,0 +1,571 @@
 +/*
 + * kernel/rt.c
@@ -3297,10 +3297,10 @@ Index: linux-2.6.24-rc5-rt1/kernel/rt.c
 +}
 +EXPORT_SYMBOL(__init_MUTEX);
 +
-Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
+Index: ubuntu-hardy/kernel/rtmutex-debug.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/rtmutex-debug.c
-+++ linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
+--- ubuntu-hardy.orig/kernel/rtmutex-debug.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/kernel/rtmutex-debug.c	2008-01-03 09:02:24.000000000 +0100
 @@ -16,6 +16,7 @@
   *
   * See rt.c in preempt-rt for proper credits and further information
@@ -3371,7 +3371,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  static void printk_task(struct task_struct *p)
  {
  	if (p)
-@@ -111,8 +57,8 @@ static void printk_lock(struct rt_mutex 
+@@ -111,8 +57,8 @@
  
  void rt_mutex_debug_task_free(struct task_struct *task)
  {
@@ -3382,7 +3382,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  }
  
  /*
-@@ -125,7 +71,7 @@ void debug_rt_mutex_deadlock(int detect,
+@@ -125,7 +71,7 @@
  {
  	struct task_struct *task;
  
@@ -3391,7 +3391,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  		return;
  
  	task = rt_mutex_owner(act_waiter->lock);
-@@ -139,14 +85,15 @@ void debug_rt_mutex_print_deadlock(struc
+@@ -139,14 +85,15 @@
  {
  	struct task_struct *task;
  
@@ -3409,7 +3409,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  
  	printk("\n============================================\n");
  	printk(  "[ BUG: circular locking deadlock detected! ]\n");
-@@ -176,7 +123,6 @@ void debug_rt_mutex_print_deadlock(struc
+@@ -176,7 +123,6 @@
  
  	printk("[ turning off deadlock detection."
  	       "Please report this trace. ]\n\n");
@@ -3417,7 +3417,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  }
  
  void debug_rt_mutex_lock(struct rt_mutex *lock)
-@@ -185,7 +131,8 @@ void debug_rt_mutex_lock(struct rt_mutex
+@@ -185,7 +131,8 @@
  
  void debug_rt_mutex_unlock(struct rt_mutex *lock)
  {
@@ -3427,7 +3427,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  }
  
  void
-@@ -195,7 +142,7 @@ debug_rt_mutex_proxy_lock(struct rt_mute
+@@ -195,7 +142,7 @@
  
  void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
  {
@@ -3436,7 +3436,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  }
  
  void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
-@@ -207,9 +154,9 @@ void debug_rt_mutex_init_waiter(struct r
+@@ -207,9 +154,9 @@
  
  void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
  {
@@ -3449,7 +3449,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
  	memset(waiter, 0x22, sizeof(*waiter));
  }
  
-@@ -225,9 +172,36 @@ void debug_rt_mutex_init(struct rt_mutex
+@@ -225,9 +172,36 @@
  void
  rt_mutex_deadlock_account_lock(struct rt_mutex *lock, struct task_struct *task)
  {
@@ -3487,11 +3487,11 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex-debug.c
 +#endif
  }
 -
-Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
+Index: ubuntu-hardy/kernel/rtmutex.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/rtmutex.c
-+++ linux-2.6.24-rc5-rt1/kernel/rtmutex.c
-@@ -97,6 +97,22 @@ static inline void mark_rt_mutex_waiters
+--- ubuntu-hardy.orig/kernel/rtmutex.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/kernel/rtmutex.c	2008-01-03 09:02:24.000000000 +0100
+@@ -97,6 +97,22 @@
  }
  #endif
  
@@ -3514,7 +3514,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  /*
   * Calculate task priority from the waiter list priority
   *
-@@ -253,13 +269,13 @@ static int rt_mutex_adjust_prio_chain(st
+@@ -253,13 +269,13 @@
  	plist_add(&waiter->list_entry, &lock->wait_list);
  
  	/* Release the task */
@@ -3530,7 +3530,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	if (waiter == rt_mutex_top_waiter(lock)) {
  		/* Boost the owner */
-@@ -277,10 +293,10 @@ static int rt_mutex_adjust_prio_chain(st
+@@ -277,10 +293,10 @@
  		__rt_mutex_adjust_prio(task);
  	}
  
@@ -3543,7 +3543,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	if (!detect_deadlock && waiter != top_waiter)
  		goto out_put_task;
-@@ -304,7 +320,6 @@ static inline int try_to_steal_lock(stru
+@@ -304,7 +320,6 @@
  {
  	struct task_struct *pendowner = rt_mutex_owner(lock);
  	struct rt_mutex_waiter *next;
@@ -3551,7 +3551,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	if (!rt_mutex_owner_pending(lock))
  		return 0;
-@@ -312,9 +327,9 @@ static inline int try_to_steal_lock(stru
+@@ -312,9 +327,9 @@
  	if (pendowner == current)
  		return 1;
  
@@ -3563,7 +3563,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  		return 0;
  	}
  
-@@ -324,7 +339,7 @@ static inline int try_to_steal_lock(stru
+@@ -324,7 +339,7 @@
  	 * priority.
  	 */
  	if (likely(!rt_mutex_has_waiters(lock))) {
@@ -3572,7 +3572,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  		return 1;
  	}
  
-@@ -332,7 +347,7 @@ static inline int try_to_steal_lock(stru
+@@ -332,7 +347,7 @@
  	next = rt_mutex_top_waiter(lock);
  	plist_del(&next->pi_list_entry, &pendowner->pi_waiters);
  	__rt_mutex_adjust_prio(pendowner);
@@ -3581,7 +3581,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	/*
  	 * We are going to steal the lock and a waiter was
-@@ -349,10 +364,10 @@ static inline int try_to_steal_lock(stru
+@@ -349,10 +364,10 @@
  	 * might be current:
  	 */
  	if (likely(next->task != current)) {
@@ -3594,7 +3594,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  	}
  	return 1;
  }
-@@ -411,14 +426,13 @@ static int try_to_take_rt_mutex(struct r
+@@ -411,14 +426,13 @@
   */
  static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
  				   struct rt_mutex_waiter *waiter,
@@ -3611,7 +3611,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  	__rt_mutex_adjust_prio(current);
  	waiter->task = current;
  	waiter->lock = lock;
-@@ -432,17 +446,17 @@ static int task_blocks_on_rt_mutex(struc
+@@ -432,17 +446,17 @@
  
  	current->pi_blocked_on = waiter;
  
@@ -3632,7 +3632,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  	}
  	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
  		chain_walk = 1;
-@@ -457,12 +471,12 @@ static int task_blocks_on_rt_mutex(struc
+@@ -457,12 +471,12 @@
  	 */
  	get_task_struct(owner);
  
@@ -3647,7 +3647,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	return res;
  }
-@@ -475,13 +489,12 @@ static int task_blocks_on_rt_mutex(struc
+@@ -475,13 +489,12 @@
   *
   * Called with lock->wait_lock held.
   */
@@ -3663,7 +3663,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	waiter = rt_mutex_top_waiter(lock);
  	plist_del(&waiter->list_entry, &lock->wait_list);
-@@ -498,7 +511,7 @@ static void wakeup_next_waiter(struct rt
+@@ -498,7 +511,7 @@
  
  	rt_mutex_set_owner(lock, pendowner, RT_MUTEX_OWNER_PENDING);
  
@@ -3672,7 +3672,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	/*
  	 * Clear the pi_blocked_on variable and enqueue a possible
-@@ -507,7 +520,7 @@ static void wakeup_next_waiter(struct rt
+@@ -507,7 +520,7 @@
  	 * waiter with higher priority than pending-owner->normal_prio
  	 * is blocked on the unboosted (pending) owner.
  	 */
@@ -3681,7 +3681,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	WARN_ON(!pendowner->pi_blocked_on);
  	WARN_ON(pendowner->pi_blocked_on != waiter);
-@@ -521,9 +534,12 @@ static void wakeup_next_waiter(struct rt
+@@ -521,9 +534,12 @@
  		next = rt_mutex_top_waiter(lock);
  		plist_add(&next->pi_list_entry, &pendowner->pi_waiters);
  	}
@@ -3696,7 +3696,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  }
  
  /*
-@@ -532,22 +548,22 @@ static void wakeup_next_waiter(struct rt
+@@ -532,22 +548,22 @@
   * Must be called with lock->wait_lock held
   */
  static void remove_waiter(struct rt_mutex *lock,
@@ -3724,7 +3724,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
  
-@@ -562,7 +578,7 @@ static void remove_waiter(struct rt_mute
+@@ -562,7 +578,7 @@
  		if (owner->pi_blocked_on)
  			chain_walk = 1;
  
@@ -3733,7 +3733,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  	}
  
  	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
-@@ -573,11 +589,11 @@ static void remove_waiter(struct rt_mute
+@@ -573,11 +589,11 @@
  	/* gets dropped in rt_mutex_adjust_prio_chain()! */
  	get_task_struct(owner);
  
@@ -3747,7 +3747,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  }
  
  /*
-@@ -598,14 +614,307 @@ void rt_mutex_adjust_pi(struct task_stru
+@@ -598,14 +614,307 @@
  		return;
  	}
  
@@ -4057,7 +4057,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
   * Slow path lock function:
   */
  static int __sched
-@@ -613,20 +922,29 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -613,20 +922,29 @@
  		  struct hrtimer_sleeper *timeout,
  		  int detect_deadlock)
  {
@@ -4090,7 +4090,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  	set_current_state(state);
  
  	/* Setup the timer, when timeout != NULL */
-@@ -635,6 +953,8 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -635,6 +953,8 @@
  			      HRTIMER_MODE_ABS);
  
  	for (;;) {
@@ -4099,7 +4099,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  		/* Try to acquire the lock: */
  		if (try_to_take_rt_mutex(lock))
  			break;
-@@ -660,7 +980,7 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -660,7 +980,7 @@
  		 */
  		if (!waiter.task) {
  			ret = task_blocks_on_rt_mutex(lock, &waiter,
@@ -4108,7 +4108,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  			/*
  			 * If we got woken up by the owner then start loop
  			 * all over without going into schedule to try
-@@ -679,22 +999,26 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -679,22 +999,26 @@
  			if (unlikely(ret))
  				break;
  		}
@@ -4138,7 +4138,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	/*
  	 * try_to_take_rt_mutex() sets the waiter bit
-@@ -702,7 +1026,7 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -702,7 +1026,7 @@
  	 */
  	fixup_rt_mutex_waiters(lock);
  
@@ -4147,7 +4147,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	/* Remove pending timer: */
  	if (unlikely(timeout))
-@@ -716,6 +1040,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -716,6 +1040,10 @@
  	if (unlikely(ret))
  		rt_mutex_adjust_prio(current);
  
@@ -4158,7 +4158,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  	debug_rt_mutex_free_waiter(&waiter);
  
  	return ret;
-@@ -727,12 +1055,15 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+@@ -727,12 +1055,15 @@
  static inline int
  rt_mutex_slowtrylock(struct rt_mutex *lock)
  {
@@ -4175,7 +4175,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  		ret = try_to_take_rt_mutex(lock);
  		/*
  		 * try_to_take_rt_mutex() sets the lock waiters
-@@ -741,7 +1072,7 @@ rt_mutex_slowtrylock(struct rt_mutex *lo
+@@ -741,7 +1072,7 @@
  		fixup_rt_mutex_waiters(lock);
  	}
  
@@ -4184,7 +4184,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	return ret;
  }
-@@ -752,7 +1083,9 @@ rt_mutex_slowtrylock(struct rt_mutex *lo
+@@ -752,7 +1083,9 @@
  static void __sched
  rt_mutex_slowunlock(struct rt_mutex *lock)
  {
@@ -4195,7 +4195,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	debug_rt_mutex_unlock(lock);
  
-@@ -760,13 +1093,13 @@ rt_mutex_slowunlock(struct rt_mutex *loc
+@@ -760,13 +1093,13 @@
  
  	if (!rt_mutex_has_waiters(lock)) {
  		lock->owner = NULL;
@@ -4212,20 +4212,20 @@ Index: linux-2.6.24-rc5-rt1/kernel/rtmutex.c
  
  	/* Undo pi boosting if necessary: */
  	rt_mutex_adjust_prio(current);
-Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
+Index: ubuntu-hardy/kernel/rwsem.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/rwsem.c
-+++ linux-2.6.24-rc5-rt1/kernel/rwsem.c
-@@ -15,7 +15,7 @@
+--- ubuntu-hardy.orig/kernel/rwsem.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/kernel/rwsem.c	2008-01-03 09:03:06.000000000 +0100
+@@ -16,7 +16,7 @@
  /*
   * lock for reading
   */
--void down_read(struct rw_semaphore *sem)
-+void compat_down_read(struct compat_rw_semaphore *sem)
+-void __sched down_read(struct rw_semaphore *sem)
++void __sched compat_down_read(struct compat_rw_semaphore *sem)
  {
  	might_sleep();
  	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
-@@ -23,12 +23,12 @@ void down_read(struct rw_semaphore *sem)
+@@ -24,12 +24,12 @@
  	LOCK_CONTENDED(sem, __down_read_trylock, __down_read);
  }
  
@@ -4240,7 +4240,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  {
  	int ret = __down_read_trylock(sem);
  
-@@ -37,12 +37,12 @@ int down_read_trylock(struct rw_semaphor
+@@ -38,12 +38,12 @@
  	return ret;
  }
  
@@ -4250,12 +4250,12 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  /*
   * lock for writing
   */
--void down_write(struct rw_semaphore *sem)
-+void compat_down_write(struct compat_rw_semaphore *sem)
+-void __sched down_write(struct rw_semaphore *sem)
++void __sched compat_down_write(struct compat_rw_semaphore *sem)
  {
  	might_sleep();
  	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
-@@ -50,12 +50,12 @@ void down_write(struct rw_semaphore *sem
+@@ -51,12 +51,12 @@
  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
  }
  
@@ -4270,7 +4270,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  {
  	int ret = __down_write_trylock(sem);
  
-@@ -64,36 +64,36 @@ int down_write_trylock(struct rw_semapho
+@@ -65,36 +65,36 @@
  	return ret;
  }
  
@@ -4313,7 +4313,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  {
  	/*
  	 * lockdep: a downgraded write will live on as a write
-@@ -102,11 +102,11 @@ void downgrade_write(struct rw_semaphore
+@@ -103,11 +103,11 @@
  	__downgrade_write(sem);
  }
  
@@ -4327,7 +4327,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  {
  	might_sleep();
  	rwsem_acquire_read(&sem->dep_map, subclass, 0, _RET_IP_);
-@@ -114,18 +114,18 @@ void down_read_nested(struct rw_semaphor
+@@ -115,18 +115,18 @@
  	LOCK_CONTENDED(sem, __down_read_trylock, __down_read);
  }
  
@@ -4350,7 +4350,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  {
  	might_sleep();
  	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
-@@ -133,14 +133,14 @@ void down_write_nested(struct rw_semapho
+@@ -134,14 +134,14 @@
  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
  }
  
@@ -4368,11 +4368,11 @@ Index: linux-2.6.24-rc5-rt1/kernel/rwsem.c
  
  #endif
  
-Index: linux-2.6.24-rc5-rt1/kernel/sched.c
+Index: ubuntu-hardy/kernel/sched.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/sched.c
-+++ linux-2.6.24-rc5-rt1/kernel/sched.c
-@@ -1514,7 +1514,8 @@ static int sched_balance_self(int cpu, i
+--- ubuntu-hardy.orig/kernel/sched.c	2008-01-03 09:02:20.000000000 +0100
++++ ubuntu-hardy/kernel/sched.c	2008-01-03 09:02:24.000000000 +0100
+@@ -1520,7 +1520,8 @@
   *
   * returns failure only if the task is already active.
   */
@@ -4382,7 +4382,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  {
  	int cpu, orig_cpu, this_cpu, success = 0;
  	unsigned long flags;
-@@ -1598,17 +1599,51 @@ out:
+@@ -1604,17 +1605,51 @@
  
  int fastcall wake_up_process(struct task_struct *p)
  {
@@ -4438,7 +4438,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  	mcount();
  	return ret;
  }
-@@ -3732,7 +3767,8 @@ asmlinkage void __sched preempt_schedule
+@@ -3738,7 +3773,8 @@
  int default_wake_function(wait_queue_t *curr, unsigned mode, int sync,
  			  void *key)
  {
@@ -4448,7 +4448,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  }
  EXPORT_SYMBOL(default_wake_function);
  
-@@ -3772,8 +3808,9 @@ void fastcall __wake_up(wait_queue_head_
+@@ -3778,8 +3814,9 @@
  	unsigned long flags;
  
  	spin_lock_irqsave(&q->lock, flags);
@@ -4459,7 +4459,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  }
  EXPORT_SYMBOL(__wake_up);
  
-@@ -3823,8 +3860,9 @@ void complete(struct completion *x)
+@@ -3829,8 +3866,9 @@
  	spin_lock_irqsave(&x->wait.lock, flags);
  	x->done++;
  	__wake_up_common(&x->wait, TASK_UNINTERRUPTIBLE | TASK_INTERRUPTIBLE,
@@ -4470,7 +4470,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  }
  EXPORT_SYMBOL(complete);
  
-@@ -3835,11 +3873,18 @@ void complete_all(struct completion *x)
+@@ -3841,11 +3879,18 @@
  	spin_lock_irqsave(&x->wait.lock, flags);
  	x->done += UINT_MAX/2;
  	__wake_up_common(&x->wait, TASK_UNINTERRUPTIBLE | TASK_INTERRUPTIBLE,
@@ -4490,7 +4490,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  static inline long __sched
  do_wait_for_common(struct completion *x, long timeout, int state)
  {
-@@ -4596,10 +4641,7 @@ asmlinkage long sys_sched_yield(void)
+@@ -4602,10 +4647,7 @@
  	 * Since we are going to call schedule() anyway, there's
  	 * no need to preempt or enable interrupts:
  	 */
@@ -4502,7 +4502,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  
  	schedule();
  
-@@ -4642,7 +4684,7 @@ EXPORT_SYMBOL(cond_resched);
+@@ -4648,7 +4690,7 @@
   * operations here to prevent schedule() from being called twice (once via
   * spin_unlock(), once by hand).
   */
@@ -4511,7 +4511,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  {
  	int ret = 0;
  
-@@ -4653,24 +4695,23 @@ int cond_resched_lock(spinlock_t *lock)
+@@ -4659,24 +4701,23 @@
  		spin_lock(lock);
  	}
  	if (need_resched() && system_state == SYSTEM_RUNNING) {
@@ -4540,7 +4540,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  	if (need_resched() && system_state == SYSTEM_RUNNING) {
  		local_bh_enable();
  		__cond_resched();
-@@ -4871,7 +4912,7 @@ out_unlock:
+@@ -4877,7 +4918,7 @@
  	return retval;
  }
  
@@ -4549,7 +4549,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  
  static void show_task(struct task_struct *p)
  {
-@@ -4879,19 +4920,23 @@ static void show_task(struct task_struct
+@@ -4885,19 +4926,23 @@
  	unsigned state;
  
  	state = p->state ? __ffs(p->state) + 1 : 0;
@@ -4577,10 +4577,10 @@ Index: linux-2.6.24-rc5-rt1/kernel/sched.c
  #ifdef CONFIG_DEBUG_STACK_USAGE
  	{
  		unsigned long *n = end_of_stack(p);
-Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
+Index: ubuntu-hardy/kernel/spinlock.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/kernel/spinlock.c
-+++ linux-2.6.24-rc5-rt1/kernel/spinlock.c
+--- ubuntu-hardy.orig/kernel/spinlock.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/kernel/spinlock.c	2008-01-03 09:02:24.000000000 +0100
 @@ -21,7 +21,7 @@
  #include <linux/debug_locks.h>
  #include <linux/module.h>
@@ -4590,7 +4590,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	preempt_disable();
  	if (_raw_spin_trylock(lock)) {
-@@ -32,9 +32,46 @@ int __lockfunc _spin_trylock(spinlock_t 
+@@ -32,9 +32,46 @@
  	preempt_enable();
  	return 0;
  }
@@ -4639,7 +4639,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	preempt_disable();
  	if (_raw_read_trylock(lock)) {
-@@ -45,9 +82,9 @@ int __lockfunc _read_trylock(rwlock_t *l
+@@ -45,9 +82,9 @@
  	preempt_enable();
  	return 0;
  }
@@ -4651,7 +4651,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	preempt_disable();
  	if (_raw_write_trylock(lock)) {
-@@ -58,7 +95,21 @@ int __lockfunc _write_trylock(rwlock_t *
+@@ -58,7 +95,21 @@
  	preempt_enable();
  	return 0;
  }
@@ -4674,7 +4674,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  
  /*
   * If lockdep is enabled then we use the non-preemption spin-ops
-@@ -66,17 +117,17 @@ EXPORT_SYMBOL(_write_trylock);
+@@ -66,17 +117,17 @@
   * not re-enabled during lock-acquire (which the preempt-spin-ops do):
   */
  #if !defined(CONFIG_PREEMPT) || !defined(CONFIG_SMP) || \
@@ -4696,7 +4696,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	unsigned long flags;
  
-@@ -95,27 +146,27 @@ unsigned long __lockfunc _spin_lock_irqs
+@@ -95,27 +146,27 @@
  #endif
  	return flags;
  }
@@ -4730,7 +4730,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	unsigned long flags;
  
-@@ -125,27 +176,27 @@ unsigned long __lockfunc _read_lock_irqs
+@@ -125,27 +176,27 @@
  	LOCK_CONTENDED(lock, _raw_read_trylock, _raw_read_lock);
  	return flags;
  }
@@ -4764,7 +4764,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	unsigned long flags;
  
-@@ -155,43 +206,43 @@ unsigned long __lockfunc _write_lock_irq
+@@ -155,43 +206,43 @@
  	LOCK_CONTENDED(lock, _raw_write_trylock, _raw_write_lock);
  	return flags;
  }
@@ -4817,7 +4817,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  
  #else /* CONFIG_PREEMPT: */
  
-@@ -204,7 +255,7 @@ EXPORT_SYMBOL(_write_lock);
+@@ -204,7 +255,7 @@
   */
  
  #define BUILD_LOCK_OPS(op, locktype)					\
@@ -4826,7 +4826,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {									\
  	for (;;) {							\
  		preempt_disable();					\
-@@ -214,15 +265,16 @@ void __lockfunc _##op##_lock(locktype##_
+@@ -214,15 +265,16 @@
  									\
  		if (!(lock)->break_lock)				\
  			(lock)->break_lock = 1;				\
@@ -4847,7 +4847,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {									\
  	unsigned long flags;						\
  									\
-@@ -236,23 +288,24 @@ unsigned long __lockfunc _##op##_lock_ir
+@@ -236,23 +288,24 @@
  									\
  		if (!(lock)->break_lock)				\
  			(lock)->break_lock = 1;				\
@@ -4879,7 +4879,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {									\
  	unsigned long flags;						\
  									\
-@@ -261,39 +314,40 @@ void __lockfunc _##op##_lock_bh(locktype
+@@ -261,39 +314,40 @@
  	/* irq-disabling. We use the generic preemption-aware	*/	\
  	/* function:						*/	\
  	/**/								\
@@ -4932,7 +4932,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	unsigned long flags;
  
-@@ -312,117 +366,130 @@ unsigned long __lockfunc _spin_lock_irqs
+@@ -312,117 +366,130 @@
  #endif
  	return flags;
  }
@@ -5099,7 +5099,7 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
  {
  	local_bh_disable();
  	preempt_disable();
-@@ -431,18 +498,30 @@ int __lockfunc _spin_trylock_bh(spinlock
+@@ -431,18 +498,30 @@
  		return 1;
  	}
  
@@ -5134,10 +5134,10 @@ Index: linux-2.6.24-rc5-rt1/kernel/spinlock.c
 +		WARN_ON(1);
 +	}
 +}
-Index: linux-2.6.24-rc5-rt1/lib/dec_and_lock.c
+Index: ubuntu-hardy/lib/dec_and_lock.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/dec_and_lock.c
-+++ linux-2.6.24-rc5-rt1/lib/dec_and_lock.c
+--- ubuntu-hardy.orig/lib/dec_and_lock.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/dec_and_lock.c	2008-01-03 09:02:24.000000000 +0100
 @@ -17,7 +17,7 @@
   * because the spin-lock and the decrement must be
   * "atomic".
@@ -5147,16 +5147,16 @@ Index: linux-2.6.24-rc5-rt1/lib/dec_and_lock.c
  {
  #ifdef CONFIG_SMP
  	/* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
-@@ -32,4 +32,4 @@ int _atomic_dec_and_lock(atomic_t *atomi
+@@ -32,4 +32,4 @@
  	return 0;
  }
  
 -EXPORT_SYMBOL(_atomic_dec_and_lock);
 +EXPORT_SYMBOL(__atomic_dec_and_spin_lock);
-Index: linux-2.6.24-rc5-rt1/lib/kernel_lock.c
+Index: ubuntu-hardy/lib/kernel_lock.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/kernel_lock.c
-+++ linux-2.6.24-rc5-rt1/lib/kernel_lock.c
+--- ubuntu-hardy.orig/lib/kernel_lock.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/kernel_lock.c	2008-01-03 09:02:24.000000000 +0100
 @@ -24,7 +24,7 @@
   *
   * Don't use in new code.
@@ -5166,7 +5166,7 @@ Index: linux-2.6.24-rc5-rt1/lib/kernel_lock.c
  
  /*
   * Re-acquire the kernel semaphore.
-@@ -44,7 +44,7 @@ int __lockfunc __reacquire_kernel_lock(v
+@@ -44,7 +44,7 @@
  	BUG_ON(saved_lock_depth < 0);
  
  	task->lock_depth = -1;
@@ -5175,11 +5175,11 @@ Index: linux-2.6.24-rc5-rt1/lib/kernel_lock.c
  
  	down(&kernel_sem);
  
-Index: linux-2.6.24-rc5-rt1/lib/locking-selftest.c
+Index: ubuntu-hardy/lib/locking-selftest.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/locking-selftest.c
-+++ linux-2.6.24-rc5-rt1/lib/locking-selftest.c
-@@ -940,6 +940,9 @@ static void dotest(void (*testcase_fn)(v
+--- ubuntu-hardy.orig/lib/locking-selftest.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/locking-selftest.c	2008-01-03 09:02:24.000000000 +0100
+@@ -940,6 +940,9 @@
  {
  	unsigned long saved_preempt_count = preempt_count();
  	int expected_failure = 0;
@@ -5189,7 +5189,7 @@ Index: linux-2.6.24-rc5-rt1/lib/locking-selftest.c
  
  	WARN_ON(irqs_disabled());
  
-@@ -989,6 +992,9 @@ static void dotest(void (*testcase_fn)(v
+@@ -989,6 +992,9 @@
  #endif
  
  	reset_locks();
@@ -5199,11 +5199,11 @@ Index: linux-2.6.24-rc5-rt1/lib/locking-selftest.c
  }
  
  static inline void print_testname(const char *testname)
-Index: linux-2.6.24-rc5-rt1/lib/plist.c
+Index: ubuntu-hardy/lib/plist.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/plist.c
-+++ linux-2.6.24-rc5-rt1/lib/plist.c
-@@ -53,7 +53,9 @@ static void plist_check_list(struct list
+--- ubuntu-hardy.orig/lib/plist.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/plist.c	2008-01-03 09:02:24.000000000 +0100
+@@ -53,7 +53,9 @@
  
  static void plist_check_head(struct plist_head *head)
  {
@@ -5213,11 +5213,11 @@ Index: linux-2.6.24-rc5-rt1/lib/plist.c
  	if (head->lock)
  		WARN_ON_SMP(!spin_is_locked(head->lock));
  	plist_check_list(&head->prio_list);
-Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
+Index: ubuntu-hardy/lib/rwsem-spinlock.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/rwsem-spinlock.c
-+++ linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
-@@ -20,7 +20,7 @@ struct rwsem_waiter {
+--- ubuntu-hardy.orig/lib/rwsem-spinlock.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/rwsem-spinlock.c	2008-01-03 09:02:24.000000000 +0100
+@@ -20,7 +20,7 @@
  /*
   * initialise the semaphore
   */
@@ -5226,7 +5226,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  		  struct lock_class_key *key)
  {
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -44,8 +44,8 @@ void __init_rwsem(struct rw_semaphore *s
+@@ -44,8 +44,8 @@
   * - woken process blocks are discarded from the list after having task zeroed
   * - writers are only woken if wakewrite is non-zero
   */
@@ -5237,7 +5237,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	struct rwsem_waiter *waiter;
  	struct task_struct *tsk;
-@@ -103,8 +103,8 @@ __rwsem_do_wake(struct rw_semaphore *sem
+@@ -103,8 +103,8 @@
  /*
   * wake a single writer
   */
@@ -5248,7 +5248,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	struct rwsem_waiter *waiter;
  	struct task_struct *tsk;
-@@ -125,7 +125,7 @@ __rwsem_wake_one_writer(struct rw_semaph
+@@ -125,7 +125,7 @@
  /*
   * get a read lock on the semaphore
   */
@@ -5257,7 +5257,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	struct rwsem_waiter waiter;
  	struct task_struct *tsk;
-@@ -168,7 +168,7 @@ void fastcall __sched __down_read(struct
+@@ -168,7 +168,7 @@
  /*
   * trylock for reading -- returns 1 if successful, 0 if contention
   */
@@ -5266,7 +5266,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	unsigned long flags;
  	int ret = 0;
-@@ -191,7 +191,8 @@ int fastcall __down_read_trylock(struct 
+@@ -191,7 +191,8 @@
   * get a write lock on the semaphore
   * - we increment the waiting count anyway to indicate an exclusive lock
   */
@@ -5276,7 +5276,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	struct rwsem_waiter waiter;
  	struct task_struct *tsk;
-@@ -231,7 +232,7 @@ void fastcall __sched __down_write_neste
+@@ -231,7 +232,7 @@
  	;
  }
  
@@ -5285,7 +5285,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	__down_write_nested(sem, 0);
  }
-@@ -239,7 +240,7 @@ void fastcall __sched __down_write(struc
+@@ -239,7 +240,7 @@
  /*
   * trylock for writing -- returns 1 if successful, 0 if contention
   */
@@ -5294,7 +5294,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	unsigned long flags;
  	int ret = 0;
-@@ -260,7 +261,7 @@ int fastcall __down_write_trylock(struct
+@@ -260,7 +261,7 @@
  /*
   * release a read lock on the semaphore
   */
@@ -5303,7 +5303,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	unsigned long flags;
  
-@@ -275,7 +276,7 @@ void fastcall __up_read(struct rw_semaph
+@@ -275,7 +276,7 @@
  /*
   * release a write lock on the semaphore
   */
@@ -5312,7 +5312,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	unsigned long flags;
  
-@@ -292,7 +293,7 @@ void fastcall __up_write(struct rw_semap
+@@ -292,7 +293,7 @@
   * downgrade a write lock into a read lock
   * - just wake up any readers at the front of the queue
   */
@@ -5321,7 +5321,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  {
  	unsigned long flags;
  
-@@ -305,7 +306,7 @@ void fastcall __downgrade_write(struct r
+@@ -305,7 +306,7 @@
  	spin_unlock_irqrestore(&sem->wait_lock, flags);
  }
  
@@ -5330,10 +5330,10 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem-spinlock.c
  EXPORT_SYMBOL(__down_read);
  EXPORT_SYMBOL(__down_read_trylock);
  EXPORT_SYMBOL(__down_write_nested);
-Index: linux-2.6.24-rc5-rt1/lib/rwsem.c
+Index: ubuntu-hardy/lib/rwsem.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/rwsem.c
-+++ linux-2.6.24-rc5-rt1/lib/rwsem.c
+--- ubuntu-hardy.orig/lib/rwsem.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/rwsem.c	2008-01-03 09:02:24.000000000 +0100
 @@ -11,8 +11,8 @@
  /*
   * Initialize an rwsem:
@@ -5345,7 +5345,7 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem.c
  {
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  	/*
-@@ -26,7 +26,7 @@ void __init_rwsem(struct rw_semaphore *s
+@@ -26,7 +26,7 @@
  	INIT_LIST_HEAD(&sem->wait_list);
  }
  
@@ -5354,10 +5354,10 @@ Index: linux-2.6.24-rc5-rt1/lib/rwsem.c
  
  struct rwsem_waiter {
  	struct list_head list;
-Index: linux-2.6.24-rc5-rt1/lib/semaphore-sleepers.c
+Index: ubuntu-hardy/lib/semaphore-sleepers.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/semaphore-sleepers.c
-+++ linux-2.6.24-rc5-rt1/lib/semaphore-sleepers.c
+--- ubuntu-hardy.orig/lib/semaphore-sleepers.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/semaphore-sleepers.c	2008-01-03 09:02:24.000000000 +0100
 @@ -15,6 +15,7 @@
  #include <linux/sched.h>
  #include <linux/err.h>
@@ -5381,7 +5381,7 @@ Index: linux-2.6.24-rc5-rt1/lib/semaphore-sleepers.c
  {
  	struct task_struct *tsk = current;
  	DECLARE_WAITQUEUE(wait, tsk);
-@@ -90,7 +91,7 @@ fastcall void __sched __down(struct sema
+@@ -90,7 +91,7 @@
  	tsk->state = TASK_RUNNING;
  }
  
@@ -5390,7 +5390,7 @@ Index: linux-2.6.24-rc5-rt1/lib/semaphore-sleepers.c
  {
  	int retval = 0;
  	struct task_struct *tsk = current;
-@@ -153,7 +154,7 @@ fastcall int __sched __down_interruptibl
+@@ -153,7 +154,7 @@
   * single "cmpxchg" without failure cases,
   * but then it wouldn't work on a 386.
   */
@@ -5399,7 +5399,7 @@ Index: linux-2.6.24-rc5-rt1/lib/semaphore-sleepers.c
  {
  	int sleepers;
  	unsigned long flags;
-@@ -174,3 +175,10 @@ fastcall int __down_trylock(struct semap
+@@ -174,3 +175,10 @@
  	spin_unlock_irqrestore(&sem->wait.lock, flags);
  	return 1;
  }
@@ -5410,10 +5410,10 @@ Index: linux-2.6.24-rc5-rt1/lib/semaphore-sleepers.c
 +}
 +
 +EXPORT_SYMBOL(compat_sem_is_locked);
-Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
+Index: ubuntu-hardy/lib/spinlock_debug.c
 ===================================================================
---- linux-2.6.24-rc5-rt1.orig/lib/spinlock_debug.c
-+++ linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
+--- ubuntu-hardy.orig/lib/spinlock_debug.c	2008-01-02 11:49:07.000000000 +0100
++++ ubuntu-hardy/lib/spinlock_debug.c	2008-01-03 09:02:24.000000000 +0100
 @@ -13,8 +13,8 @@
  #include <linux/delay.h>
  #include <linux/module.h>
@@ -5425,7 +5425,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  	/*
-@@ -23,16 +23,16 @@ void __spin_lock_init(spinlock_t *lock, 
+@@ -23,16 +23,16 @@
  	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
  	lockdep_init_map(&lock->dep_map, name, key, 0);
  #endif
@@ -5446,7 +5446,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  	/*
-@@ -41,15 +41,15 @@ void __rwlock_init(rwlock_t *lock, const
+@@ -41,15 +41,15 @@
  	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
  	lockdep_init_map(&lock->dep_map, name, key, 0);
  #endif
@@ -5465,7 +5465,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	struct task_struct *owner = NULL;
  
-@@ -73,7 +73,7 @@ static void spin_bug(spinlock_t *lock, c
+@@ -73,7 +73,7 @@
  #define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
  
  static inline void
@@ -5474,7 +5474,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	SPIN_BUG_ON(lock->magic != SPINLOCK_MAGIC, lock, "bad magic");
  	SPIN_BUG_ON(lock->owner == current, lock, "recursion");
-@@ -81,13 +81,13 @@ debug_spin_lock_before(spinlock_t *lock)
+@@ -81,13 +81,13 @@
  							lock, "cpu recursion");
  }
  
@@ -5490,7 +5490,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	SPIN_BUG_ON(lock->magic != SPINLOCK_MAGIC, lock, "bad magic");
  	SPIN_BUG_ON(!spin_is_locked(lock), lock, "already unlocked");
-@@ -98,7 +98,7 @@ static inline void debug_spin_unlock(spi
+@@ -98,7 +98,7 @@
  	lock->owner_cpu = -1;
  }
  
@@ -5499,7 +5499,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	u64 i;
  	u64 loops = loops_per_jiffy * HZ;
-@@ -125,7 +125,7 @@ static void __spin_lock_debug(spinlock_t
+@@ -125,7 +125,7 @@
  	}
  }
  
@@ -5508,7 +5508,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	debug_spin_lock_before(lock);
  	if (unlikely(!__raw_spin_trylock(&lock->raw_lock)))
-@@ -133,7 +133,7 @@ void _raw_spin_lock(spinlock_t *lock)
+@@ -133,7 +133,7 @@
  	debug_spin_lock_after(lock);
  }
  
@@ -5517,7 +5517,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	int ret = __raw_spin_trylock(&lock->raw_lock);
  
-@@ -148,13 +148,13 @@ int _raw_spin_trylock(spinlock_t *lock)
+@@ -148,13 +148,13 @@
  	return ret;
  }
  
@@ -5533,7 +5533,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	if (!debug_locks_off())
  		return;
-@@ -167,8 +167,8 @@ static void rwlock_bug(rwlock_t *lock, c
+@@ -167,8 +167,8 @@
  
  #define RWLOCK_BUG_ON(cond, lock, msg) if (unlikely(cond)) rwlock_bug(lock, msg)
  
@@ -5544,7 +5544,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	u64 i;
  	u64 loops = loops_per_jiffy * HZ;
-@@ -193,13 +193,13 @@ static void __read_lock_debug(rwlock_t *
+@@ -193,13 +193,13 @@
  }
  #endif
  
@@ -5561,7 +5561,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	int ret = __raw_read_trylock(&lock->raw_lock);
  
-@@ -212,13 +212,13 @@ int _raw_read_trylock(rwlock_t *lock)
+@@ -212,13 +212,13 @@
  	return ret;
  }
  
@@ -5577,7 +5577,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
  	RWLOCK_BUG_ON(lock->owner == current, lock, "recursion");
-@@ -226,13 +226,13 @@ static inline void debug_write_lock_befo
+@@ -226,13 +226,13 @@
  							lock, "cpu recursion");
  }
  
@@ -5593,7 +5593,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
  	RWLOCK_BUG_ON(lock->owner != current, lock, "wrong owner");
-@@ -242,8 +242,8 @@ static inline void debug_write_unlock(rw
+@@ -242,8 +242,8 @@
  	lock->owner_cpu = -1;
  }
  
@@ -5604,7 +5604,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	u64 i;
  	u64 loops = loops_per_jiffy * HZ;
-@@ -268,14 +268,14 @@ static void __write_lock_debug(rwlock_t 
+@@ -268,14 +268,14 @@
  }
  #endif
  
@@ -5622,7 +5622,7 @@ Index: linux-2.6.24-rc5-rt1/lib/spinlock_debug.c
  {
  	int ret = __raw_write_trylock(&lock->raw_lock);
  
-@@ -290,7 +290,7 @@ int _raw_write_trylock(rwlock_t *lock)
+@@ -290,7 +290,7 @@
  	return ret;
  }
  
