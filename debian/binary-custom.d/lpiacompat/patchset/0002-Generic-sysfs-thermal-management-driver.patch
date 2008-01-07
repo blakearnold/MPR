@@ -1,0 +1,1465 @@
+From 318e393f719e1af17a91b234ddbbcab34c53ff2c Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Wed, 12 Dec 2007 10:43:28 +0530
+Subject: [PATCH] Generic sysfs thermal management driver
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+
+In a nutshell this patch provides an infrastructure for userspace application to handle
+platform thermal managemetn
+Adds a 'Config' folder for user mode application to take over kernel mode algo
+---
+ drivers/base/thermal_sysfs.c | 1139 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/thermal.h      |  294 +++++++++++
+ 2 files changed, 1433 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/base/thermal_sysfs.c
+ create mode 100644 include/linux/thermal.h
+
+diff --git a/drivers/base/thermal_sysfs.c b/drivers/base/thermal_sysfs.c
+new file mode 100644
+index 0000000..8dd25a1
+--- /dev/null
++++ b/drivers/base/thermal_sysfs.c
+@@ -0,0 +1,1139 @@
++/*
++ *  thermal_sysfs.c - Generic sysfs implementation for thermal subsystem
++ *  ($Revision: 1 $)
++ *
++ *  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++ *
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * Accepts registration of thermal devices(sensors).
++ * Accepts registration for group of participants associated with this sensor
++ * Accepts registration of extra attributes over the standard attributes.
++ * Issues notification to registered drivers upon registration of new thermal
++ * devices
++ * Adds a 'Config' folder for user mode application to take over kernel mode
++ * algo
++ *
++ */
++
++#include <linux/thermal.h>
++#include <linux/kmod.h>
++#include <linux/sysdev.h>
++#include <linux/err.h>
++
++MODULE_AUTHOR("Sujith Thomas");
++MODULE_DESCRIPTION("Generic thermal sysfs driver");
++MODULE_LICENSE("GPL");
++
++static char *thermal_mode[THERMAL_MAX_MODE] = {
++	"user",
++	"kernel",
++};
++
++static struct thermal_config thermalconfig = {
++	.userenabled = THERMAL_USER_ENABLED,
++	.mode = THERMAL_KERNELSPACE,
++};
++
++/*Linked list of thermal devices*/
++static LIST_HEAD(thermal_device_list);
++static LIST_HEAD(thermal_sysfs_event_listener_list);
++
++/*Lock for accessing thermaldevice linked list*/
++DEFINE_SPINLOCK(td_list_lock);
++DEFINE_SPINLOCK(el_list_lock);
++
++#define EVENT_ENABLE 1
++#define EVENT_DISABLE 0
++
++static void __thermal_group_unregister(struct thermal_group *tg,
++				       int event_flag);
++static int dispatch_events(int event_type, void *data, const char *query_name);
++
++/* --------------------------------------------------------------------------
++			Attribute implementation functions - Thermal config
++----------------------------------------------------------------------------- */
++static ssize_t userenabled_show(struct thermal_config *tc, char *buf)
++{
++	char *s = buf;
++
++	if (!tc || !buf)
++		return -EINVAL;
++
++	s += sprintf(s, "%d \n", tc->userenabled);
++
++	return (s - buf);
++}
++
++static ssize_t mode_show(struct thermal_config *tc, char *buf)
++{
++	char *s = buf;
++
++	if (!tc || !buf)
++		return -EINVAL;
++
++	s += sprintf(s, "%s \n", thermal_mode[tc->mode]);
++
++	return (s - buf);
++}
++
++static ssize_t mode_store(struct thermal_config *tc, const char *buf,
++			  size_t count)
++{
++	int i;
++	if (!tc || !buf)
++		return -EINVAL;
++
++	if (THERMAL_USER_ENABLED == thermalconfig.userenabled) {
++		for (i = 0; i < THERMAL_MAX_MODE; i++) {
++			if (!strncmp
++			    (thermal_mode[i], buf, strlen(thermal_mode[i])))
++				tc->mode = i;
++		}
++	}
++
++	return count;
++}
++
++/* --------------------------------------------------------------------------
++			sysfs Interface - config
++-------------------------------------------------------------------------*/
++
++/*Call back function prototypes*/
++struct thermalconfig_attribute {
++	struct attribute attr;
++	 ssize_t(*show) (struct thermal_config *tc, char *buf);
++	 ssize_t(*store) (struct thermal_config *tc, const char *buf,
++			  size_t count);
++};
++
++/*Helper macros for using THERMALCONFIG attributes*/
++#define THERMALCONFIG_ATTR(_name, _mode, _show, _store) \
++struct thermalconfig_attribute thermalconfig_attr_##_name = {   \
++	.attr = { \
++		.name = __stringify(_name), \
++		.mode = _mode, \
++		.owner = THIS_MODULE \
++	}, \
++	.show = _show, \
++	.store = _store, \
++};
++
++#define to_thermalconfig_attr(_attr) \
++	(container_of(_attr, \
++		     struct thermalconfig_attribute, \
++		     attr))
++
++#define to_thermal_config(obj) \
++	container_of(obj, struct thermal_config, kobj)
++
++/*kobj_type callback function for 'show'*/
++static ssize_t
++thermalconfig_attr_show(struct kobject *kobj, struct attribute *attr, char *buf)
++{
++	struct thermal_config *tc = to_thermal_config(kobj);
++	struct thermalconfig_attribute *thermalconfig_attr =
++	    to_thermalconfig_attr(attr);
++	ssize_t ret = -EIO;
++
++	if (thermalconfig_attr->show)
++		ret = thermalconfig_attr->show(tc, buf);
++
++	return ret;
++}
++
++/*kobj_type callback function for 'store'*/
++static ssize_t
++thermalconfig_attr_store(struct kobject *kobj, struct attribute *attr,
++			 const char *buf, size_t len)
++{
++	struct thermal_config *tc = to_thermal_config(kobj);
++	struct thermalconfig_attribute *thermalconfig_attr =
++	    to_thermalconfig_attr(attr);
++
++	ssize_t ret = -EIO;
++
++	if (thermalconfig_attr->store)
++		ret = thermalconfig_attr->store(tc, buf, len);
++
++	return ret;
++}
++
++/*Enable/Disable userspace algo*/
++static THERMALCONFIG_ATTR(userenabled, 0444, userenabled_show, NULL);
++/*Kernel/user algo in execution*/
++static THERMALCONFIG_ATTR(mode, 0644, mode_show, mode_store);
++
++static struct thermalconfig_attribute *thermalconfig_attrs[] = {
++	&thermalconfig_attr_userenabled,
++	&thermalconfig_attr_mode,
++	NULL,
++};
++
++static struct attribute *def_attrs[] = {
++	NULL,
++};
++
++/*Populate the attributes of thermalconfig kobject*/
++static void thermalconfig_populate_dir(struct thermal_config *tc)
++{
++	struct thermalconfig_attribute *attr;
++	int error = 0;
++	int i;
++
++	for (i = 0; (attr = thermalconfig_attrs[i]) && !error; i++)
++		error = sysfs_create_file(&tc->kobj, &attr->attr);
++
++}
++
++/*Call back registration for thermal config*/
++static struct sysfs_ops thermalconfig_attr_ops = {
++	.show = thermalconfig_attr_show,
++	.store = thermalconfig_attr_store,
++};
++
++/*ktype for thermaconfig*/
++static struct kobj_type ktype_thermalconfig = {
++	.sysfs_ops = &thermalconfig_attr_ops,
++	.default_attrs = def_attrs,
++};
++
++/* --------------------------------------------------------------------------
++			Attribute implementation functions - TZ
++-------------------------------------------------------------------------*/
++
++/*
++ * ATTRIB_SHOW
++ * -----------
++ * Macro which defines sysfs callback routines for each attribute capable of
++ * 'show'
++ * td: Pointer to associated thermal_device
++ * attr: More attribute info
++ * buf: The buffer which needs to be filled by handler
++ */
++
++#define ATTRIB_SHOW(name) \
++static ssize_t name##_show(struct thermal_device *td, \
++			   struct thermal_device_attribute *attr, char *buf) \
++{                                                                \
++	char *s = buf;\
++	int data;\
++	int result = -EINVAL;\
++	if (!td || !buf)\
++		return 0;\
++	if (td->ops->thermal_get_##name)\
++		result = td->ops->thermal_get_##name(td->devdata\
++						     , attr, &data);\
++	if (!result)\
++		s += sprintf(buf, "%d\n", data);\
++	return (s - buf);\
++} \
++
++ATTRIB_SHOW(temperature);
++ATTRIB_SHOW(critical);
++ATTRIB_SHOW(hot);
++ATTRIB_SHOW(passive);
++ATTRIB_SHOW(polling_freq);
++
++static ssize_t state_show(struct thermal_device *td,
++			  struct thermal_device_attribute *attr, char *buf)
++{
++	if (!td || !buf)
++		return -EINVAL;
++
++	if (td->ops->thermal_get_state)
++		td->ops->thermal_get_state(td->devdata, attr, buf);
++
++	return strlen(buf);
++}
++
++static ssize_t cooling_mode_show(struct thermal_device *td,
++				 struct thermal_device_attribute *attr,
++				 char *buf)
++{
++	if (!td || !buf)
++		return -EINVAL;
++
++	/* Reading of actual cooling mode not supportd */
++	sprintf(buf, "0 - Active; 1 - Pasive\n");
++	return strlen(buf);
++}
++
++/*
++ * ATTRIB_STORE
++ * ------------
++ * Macro which defines sysfs callback routines
++ * for each attribute capable of 'store'
++ * td: Pointer to associated thermal_device
++ * attr: More attribute info
++ * buf: The buffer which contains the input value
++ */
++#define ATTRIB_STORE(name) \
++static ssize_t name##_store(struct thermal_device *td\
++			    , struct thermal_device_attribute *attr\
++			    , const char *buf, size_t count) \
++{                                                                 \
++	int data;                                                 \
++	if (!td || !buf)                                          \
++		return -EINVAL;                                   \
++	/*Sanity check; should be integer*/                       \
++	if (!sscanf(buf, "%d", &data))                          \
++		return -EINVAL;                                   \
++	if (td->ops->thermal_set_##name)                           \
++	  td->ops->thermal_set_##name(td->devdata, attr, data);         \
++	return count;                                         \
++}                                                                 \
++
++ATTRIB_STORE(cooling_mode);
++
++/* --------------------------------------------------------------------------
++			sysfs Interface - TZ
++----------------------------------------------------------------------------- */
++
++/*_CRT*/
++static THERMAL_DEVICE_ATTR(critical, 0444, critical_show, NULL);
++/*_HOT*/
++static THERMAL_DEVICE_ATTR(hot, 0444, hot_show, NULL);
++/*_PSV*/
++static THERMAL_DEVICE_ATTR(passive, 0444, passive_show, NULL);
++/*current temperature*/
++static THERMAL_DEVICE_ATTR(temperature, 0444,
++			   temperature_show, NULL);
++/*current state*/
++static THERMAL_DEVICE_ATTR(state, 0444, state_show, NULL);
++/*cooling mode*/
++static THERMAL_DEVICE_ATTR(cooling_mode, 0444,
++			   cooling_mode_show, cooling_mode_store);
++/*polliing frequency*/
++static THERMAL_DEVICE_ATTR(polling_freq, 0444,
++			   polling_freq_show, NULL);
++
++static struct thermal_device_attribute *thermal_device_attrs[] = {
++	&thermal_device_attr_temperature,
++	&thermal_device_attr_critical,
++	&thermal_device_attr_hot,
++	&thermal_device_attr_passive,
++	&thermal_device_attr_cooling_mode,
++	&thermal_device_attr_polling_freq,
++	&thermal_device_attr_state,
++	NULL,
++};
++
++/*Populate the attributes of thermal device kobject*/
++static void thermal_device_populate_dir(struct thermal_device *td)
++{
++	struct thermal_device_attribute *attr;
++	int error = 0;
++	int i;
++
++	if (!td)
++		return;
++
++	for (i = 0; (attr = thermal_device_attrs[i]) && !error; i++) {
++		if (!strcmp(THERMAL_ATTRIB_TEMPERATURE, attr->attr.name)) {
++			if (!td->ops->thermal_get_temperature)
++				continue;
++		} else if (!strcmp(THERMAL_ATTRIB_CRITICAL, attr->attr.name)) {
++			if (!td->ops->thermal_get_critical)
++				continue;
++		} else if (!strcmp(THERMAL_ATTRIB_HOT, attr->attr.name)) {
++			if (!td->ops->thermal_get_hot)
++				continue;
++		} else  if (!strcmp(THERMAL_ATTRIB_PASSIVE, attr->attr.name)) {
++			if (!td->ops->thermal_get_passive)
++				continue;
++		} else if (!strcmp(THERMAL_ATTRIB_POLLING_FREQ,
++				 attr->attr.name)) {
++			if (!td->ops->thermal_get_polling_freq)
++				continue;
++		} else if (!strcmp(THERMAL_ATTRIB_COOLING_MODE,
++				 attr->attr.name)) {
++			if (!td->ops->thermal_set_cooling_mode)
++				continue;
++		} else if (!strcmp(THERMAL_ATTRIB_STATE, attr->attr.name)) {
++			if (!td->ops->thermal_get_state)
++				continue;
++		}
++
++		error = sysfs_create_file(&td->kobj, &attr->attr);
++	}
++
++}
++
++/*kobj_type callback function for 'show'*/
++static ssize_t
++thermal_device_attr_show(struct kobject *kobj, struct attribute *attr,
++			 char *buf)
++{
++	struct thermal_device *td = to_thermal_device(kobj);
++	struct thermal_device_attribute *thermal_device_attr =
++	    to_thermal_device_attr(attr);
++	ssize_t ret = -EIO;
++
++	/*Call attribute callback function */
++	if (thermal_device_attr->show)
++		ret = thermal_device_attr->show(td, thermal_device_attr, buf);
++
++	return ret;
++
++}
++
++/*kobj_type callback function for 'store'*/
++static ssize_t
++thermal_device_attr_store(struct kobject *kobj, struct attribute *attr,
++			  const char *buf, size_t len)
++{
++	struct thermal_device *td = to_thermal_device(kobj);
++	struct thermal_device_attribute *thermal_device_attr =
++	    to_thermal_device_attr(attr);
++
++	ssize_t ret = -EIO;
++
++	/*Call attribute callback function */
++	if (thermal_device_attr->store)
++		ret =
++		    thermal_device_attr->store(td, thermal_device_attr, buf,
++					       len);
++	return ret;
++}
++
++/*Call back registration for thermaldevice*/
++static struct sysfs_ops thermal_device_attr_ops = {
++	.show = thermal_device_attr_show,
++	.store = thermal_device_attr_store,
++};
++
++/*ktype for thermaldevice*/
++static struct kobj_type ktype_thermal_device = {
++	.sysfs_ops = &thermal_device_attr_ops,
++	.default_attrs = def_attrs,
++};
++
++static decl_subsys(thermal, &ktype_thermal_device, NULL);
++
++/* --------------------------------------------------------------------------
++			Register/Unregister functions
++----------------------------------------------------------------------------- */
++/*
++ * thermal_device_register
++ * ------------------------
++ * Method for registering thermal devices(sensors) with sysfs
++ * name: The name that should appear in sysfs
++ * devdata : Device private context
++ * ops : List of call back functions for various attributes
++ */
++struct thermal_device *thermal_device_register(const char *name,
++					       void *devdata,
++					       struct thermal_device_ops *ops)
++{
++	int result;
++	struct thermal_device *new_td;
++	struct list_head *entry_td;
++
++	if (!name || !ops)
++		return ERR_PTR(-EINVAL);
++
++	/* Check whether there is a thermal device by the same name */
++	spin_lock(&td_list_lock);
++	list_for_each(entry_td, &thermal_device_list) {
++		struct thermal_device *old_td;
++		old_td = list_entry(entry_td, struct thermal_device, node);
++		if (!strcmp(name, old_td->name)) {
++			spin_unlock(&td_list_lock);
++			return ERR_PTR(-EEXIST);
++		}
++	}
++	spin_unlock(&td_list_lock);
++
++	pr_debug("thermal_device_alloc: name=%s\n", name);
++
++	new_td = kzalloc(sizeof(struct thermal_device), GFP_KERNEL);
++	if (!new_td)
++		return ERR_PTR(-ENOMEM);
++
++	new_td->ops = ops;
++	new_td->devdata = devdata;
++	strlcpy(new_td->name, name, KOBJ_NAME_LEN);
++
++	INIT_LIST_HEAD(&new_td->group_node);
++
++	/* kobject registering for thermaldevice */
++	kobject_set_name(&new_td->kobj, name);
++	kobj_set_kset_s(new_td, thermal_subsys);
++	new_td->kobj.parent = &thermal_subsys.kobj;
++
++	result = kobject_register(&new_td->kobj);
++	if (result) {
++		kfree(new_td);
++		return ERR_PTR(-EFAULT);
++	}
++
++	/* Populate the attributes for new thermal device */
++	thermal_device_populate_dir(new_td);
++
++	spin_lock(&td_list_lock);
++	list_add(&(new_td->node), &thermal_device_list);
++	spin_unlock(&td_list_lock);
++
++	/* Notify other drivers about new thermal zone */
++	dispatch_events(THERMAL_SYSFS_EVENT_ADD_TD, new_td, new_td->name);
++
++	return new_td;
++}
++EXPORT_SYMBOL(thermal_device_register);
++
++static int thermal_is_td_exist(struct thermal_device *td)
++{
++	struct list_head *entry_td;
++
++	/*Check whether td is a valid registration */
++	spin_lock(&td_list_lock);
++	list_for_each(entry_td, &thermal_device_list) {
++		struct thermal_device *old_td;
++		old_td = list_entry(entry_td, struct thermal_device, node);
++		if (old_td == td) {
++			spin_unlock(&td_list_lock);
++			return 0;
++		}
++	}
++	spin_unlock(&td_list_lock);
++	return -ENODEV;
++}
++
++/*
++ * thermal_device_unregister
++ * ------------------------
++ * Method for unregistering thermal devices(sensors) with sysfs
++ * td: Pointer to thermal_device
++ */
++int thermal_device_unregister(struct thermal_device *td)
++{
++	struct list_head *pos, *q;
++	int result;
++
++	if (!td)
++		return -EINVAL;
++
++	result = thermal_is_td_exist(td);
++	if (result)
++		return result;
++
++	spin_lock(&td_list_lock);
++	/* If any group exists for this device unregister those as well */
++	list_for_each_safe(pos, q, &td->group_node) {
++		struct thermal_group *tg;
++		tg = list_entry(pos, struct thermal_group, node);
++		__thermal_group_unregister(tg, EVENT_ENABLE);
++	}
++
++	list_del(&(td->node));
++	spin_unlock(&td_list_lock);
++
++	/* Notify other drivers about removal of this thermal_device */
++	dispatch_events(THERMAL_SYSFS_EVENT_RMV_TD, td, td->name);
++	kobject_unregister(&td->kobj);
++	kfree(td);
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_device_unregister);
++
++static int thermal_is_group_exist(struct thermal_device *td, const char *name)
++{
++	struct list_head *entry_tg;
++
++	if (!td || !name)
++		return -EINVAL;
++
++	spin_lock(&td_list_lock);
++	list_for_each(entry_tg, &td->group_node) {
++		struct thermal_group *tg;
++		tg = list_entry(entry_tg, struct thermal_group, node);
++		if (!strcmp(tg->name, name)) {
++			spin_unlock(&td_list_lock);
++			return 0;
++		}
++	}
++
++	spin_unlock(&td_list_lock);
++	return -ENODEV;
++}
++
++/*
++ * thermal_group_register
++ * ------------------------
++ * Method for registering groups such as ACPI _TZD with sysfs
++ * name: The name that should appear in sysfs
++ * td : Device under which this group is to be created
++ * participant_count : No:of participants in this group
++ * participants: Pointer to an array of participants
++ */
++int thermal_group_register(const char *name, struct thermal_device *td,
++			   int participant_count,
++			   struct thermal_participant *participant)
++{
++	int i;
++	int result;
++	struct thermal_group *group;
++
++	if (!name || !td || thermal_is_td_exist(td)
++	    || participant_count <= 0
++	    || (participant_count && !participant))
++		return -EINVAL;
++
++	/* Check that group by this name doesn't exist */
++	result = thermal_is_group_exist(td, name);
++	if (!result)
++		return -EEXIST;
++
++	group = kzalloc(sizeof(struct thermal_group), GFP_KERNEL);
++	if (!group)
++		return -ENOMEM;
++
++	/* Fill the thermal_group struct */
++	strlcpy(group->name, name, KOBJ_NAME_LEN);
++	group->td = td;
++	group->participant_count = participant_count;
++
++	/* Make an entry under sysfs */
++	kobject_set_name(&group->kobj, group->name);
++	group->kobj.parent = &group->td->kobj;
++	result = kobject_register(&group->kobj);
++
++	if (result) {
++		kfree(group);
++		return result;
++	}
++
++	group->participant =
++	    kzalloc(participant_count * sizeof(struct thermal_participant),
++		    GFP_KERNEL);
++
++	if (!group->participant) {
++		kobject_unregister(&group->kobj);
++		kfree(group);
++		return -ENOMEM;
++	}
++
++	memcpy(group->participant, participant,
++	       participant_count * sizeof(struct thermal_participant));
++
++
++
++	/* Create symbolic links for all the participants to
++	   their default exposed location in sysfs */
++	for (i = 0; i < group->participant_count; i++) {
++		group->participant[i].group = group;
++		if (group->participant[i].kobj) {
++			result =
++			    sysfs_create_link(&group->kobj,
++					      group->participant[i].kobj,
++					      group->participant
++					      [i].kobj->k_name);
++			if (result) {
++				kobject_unregister(&group->kobj);
++				kfree(group->participant);
++				kfree(group);
++				return -EFAULT;
++			} else
++			  dispatch_events(THERMAL_SYSFS_EVENT_ADD_PART,
++					  &group->participant[i],
++					  group->participant[i].name);
++		}
++	}
++
++	spin_lock(&td_list_lock);
++	list_add(&(group->node), &td->group_node);
++	spin_unlock(&td_list_lock);
++
++	/* Notify other drivers about the creation of new group */
++	dispatch_events(THERMAL_SYSFS_EVENT_ADD_GRP, group, group->name);
++	return 0;
++}
++EXPORT_SYMBOL(thermal_group_register);
++
++/* Always will be called with spin locked td_list_lock*/
++static void __thermal_group_unregister(struct thermal_group *tg, int event_flag)
++{
++	int j;
++
++	if (!tg)
++		return;
++
++	if (EVENT_ENABLE == event_flag) {
++		spin_unlock(&td_list_lock);
++		for (j = 0; j < tg->participant_count; j++) {
++			struct thermal_participant *participant;
++			participant = &tg->participant[j];
++			dispatch_events(THERMAL_SYSFS_EVENT_RMV_PART,
++					participant, participant->name);
++		}
++		dispatch_events(THERMAL_SYSFS_EVENT_RMV_GRP, tg, tg->name);
++		spin_lock(&td_list_lock);
++	}
++
++	list_del(&tg->node);
++	kobject_unregister(&tg->kobj);
++	kfree(tg->participant);
++	kfree(tg);
++}
++
++/*
++ * thermal_group_unregister
++ * ------------------------
++ * Method for unregistering groups within a thermal device
++ * td: Pointer to thermal_device from where the group should be removed
++ * name : Name of the group given during registration
++ */
++int thermal_group_unregister(struct thermal_device *td, const char *name)
++{
++	struct list_head *pos, *q;
++
++	if (!td || thermal_is_td_exist(td) || !name)
++		return -EINVAL;
++
++	/* check whether device is already registered */
++	spin_lock(&td_list_lock);
++
++	list_for_each_safe(pos, q, &td->group_node) {
++		struct thermal_group *tg;
++		tg = list_entry(pos, struct thermal_group, node);
++		/* Get the matching group */
++		if (!strcmp(tg->name, name)) {
++			__thermal_group_unregister(tg, EVENT_ENABLE);
++			spin_unlock(&td_list_lock);
++			return 0;
++		}
++	}
++
++	spin_unlock(&td_list_lock);
++	return -ENODEV;
++}
++EXPORT_SYMBOL(thermal_group_unregister);
++
++/*
++ * thermal_attribute_register
++ * ------------------------
++ * Method for registering extra attributes with sysfs
++ * td : Device under which attributes should be created
++ * thermal_device_attrs : array of attributes to be added
++ */
++int thermal_attribute_register(struct thermal_device *td,
++			       struct thermal_device_attribute
++			       **thermal_device_attrs)
++{
++	struct thermal_device_attribute *attr;
++	int result = 0;
++	int i;
++
++	if (!td || thermal_is_td_exist(td) || !thermal_device_attrs)
++		return -EINVAL;
++
++	for (i = 0; (attr = thermal_device_attrs[i]) && !result; i++) {
++		result = sysfs_create_file(&td->kobj, &attr->attr);
++		if (result)
++			return result;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_attribute_register);
++
++/*
++ * thermal_attribute_unregister
++ * ------------------------
++ * Method for unregistering extra attributes with sysfs
++ * td : Device under which attributes should be removed
++ * thermal_device_attrs : array of attributes to be removed
++ */
++int thermal_attribute_unregister(struct thermal_device *td,
++				  struct thermal_device_attribute
++				  **thermal_device_attrs)
++{
++	struct thermal_device_attribute *attr;
++	int i;
++
++	if (!td || thermal_is_td_exist(td) || !thermal_device_attrs)
++		return -EINVAL;
++
++	for (i = 0; (attr = thermal_device_attrs[i]); i++)
++		sysfs_remove_file(&td->kobj, &attr->attr);
++
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_attribute_unregister);
++
++/*
++ * dispatch_events
++ * ------------------------
++ * Go through the list of event listeners and call their handlers
++ * event_typ: as defined in thermal.h
++ * data : payload depending on type of event
++ * query_name : if the event needs to be received from some particular entity
++ */
++static int dispatch_events(int event_type, void *data, const char *query_name)
++{
++	struct list_head *entry_el;
++
++	if (!data)
++		return -EINVAL;
++
++	spin_lock(&el_list_lock);
++	list_for_each(entry_el, &thermal_sysfs_event_listener_list) {
++		struct thermal_sysfs_event_listener *event_listener;
++		event_listener =
++		    list_entry(entry_el, struct thermal_sysfs_event_listener,
++			       node);
++		if (event_listener->event_type & event_type) {
++			if (query_name && event_listener->query_name) {
++				if (!strcmp
++				    (event_listener->query_name, query_name))
++					event_listener->
++					    thermal_sysfs_event_handler
++					    (event_type, data,
++					     event_listener->private);
++
++			} else {
++				event_listener->
++				    thermal_sysfs_event_handler(event_type,
++								data,
++								event_listener->
++								private);
++			}
++		}
++	}
++	spin_unlock(&el_list_lock);
++	return 0;
++}
++
++/* Invoke the handler for each thermal_device which have already registered */
++int dispatch_existing_td_events(struct thermal_sysfs_event_listener *listener,
++				unsigned int event_type)
++{
++	struct list_head *pos, *q;
++
++	if (!listener)
++		return -EINVAL;
++
++	spin_lock(&td_list_lock);
++	list_for_each_safe(pos, q, &thermal_device_list) {
++		struct thermal_device *old_td;
++		old_td = list_entry(pos, struct thermal_device, node);
++		spin_unlock(&td_list_lock);
++		if (listener->query_name) {
++			if (!strcmp(listener->query_name, old_td->name))
++				listener->
++				    thermal_sysfs_event_handler(event_type,
++								old_td,
++								listener->
++								private);
++
++		} else {
++			listener->thermal_sysfs_event_handler(event_type,
++							      old_td,
++							      listener->
++							      private);
++		}
++		spin_lock(&td_list_lock);
++
++	}
++	spin_unlock(&td_list_lock);
++	return 0;
++}
++
++/* Invoke the handler for each thermal_group which have already registered */
++int dispatch_existing_group_events(struct thermal_sysfs_event_listener
++				   *listener, unsigned int event_type)
++{
++	struct list_head *pos_td, *pos_tg, *q_td, *q_tg;
++
++	if (!listener)
++		return -EINVAL;
++
++	spin_lock(&td_list_lock);
++	list_for_each_safe(pos_td, q_td, &thermal_device_list) {
++		struct thermal_device *old_td;
++		old_td = list_entry(pos_td, struct thermal_device, node);
++		list_for_each_safe(pos_tg, q_tg, &old_td->group_node) {
++			struct thermal_group *tg;
++			tg = list_entry(pos_tg, struct thermal_group, node);
++			spin_unlock(&td_list_lock);
++			if (listener->query_name) {
++				if (!strcmp(listener->query_name, tg->name))
++					listener->
++					    thermal_sysfs_event_handler
++					    (event_type, tg, listener->private);
++
++			} else {
++				listener->
++				    thermal_sysfs_event_handler(event_type, tg,
++								listener->
++								private);
++			}
++			spin_lock(&td_list_lock);
++
++		}
++	}
++	spin_unlock(&td_list_lock);
++	return 0;
++}
++
++/* Invoke the handler for each thermal_participant
++which have already registered */
++int dispatch_existing_participant_events(struct thermal_sysfs_event_listener
++					 *listener, unsigned int event_type)
++{
++	struct list_head *pos_td, *pos_tg, *q_td, *q_tg;
++	int j;
++
++	if (!listener)
++		return -EINVAL;
++
++	spin_lock(&td_list_lock);
++	list_for_each_safe(pos_td, q_td, &thermal_device_list) {
++		struct thermal_device *old_td;
++		old_td = list_entry(pos_td, struct thermal_device, node);
++
++		list_for_each_safe(pos_tg, q_tg, &old_td->group_node) {
++			struct thermal_group *tg;
++			tg = list_entry(pos_tg, struct thermal_group, node);
++
++			for (j = 0; j < tg->participant_count; j++) {
++				struct thermal_participant *participant;
++				participant = &tg->participant[j];
++				spin_unlock(&td_list_lock);
++				if (listener->query_name) {
++					if (!strcmp
++					    (listener->query_name,
++					     participant->name))
++						listener->
++						    thermal_sysfs_event_handler
++						    (event_type, participant,
++						     listener->private);
++
++				} else {
++					listener->
++					    thermal_sysfs_event_handler
++					    (event_type, participant,
++					     listener->private);
++				}
++				spin_lock(&td_list_lock);
++			}
++
++		}
++	}
++	spin_unlock(&td_list_lock);
++	return 0;
++}
++
++static int thermal_is_listener_exist(struct thermal_sysfs_event_listener
++				     *listener)
++{
++	struct list_head *entry_el;
++
++	spin_lock(&el_list_lock);
++	list_for_each(entry_el, &thermal_sysfs_event_listener_list) {
++		struct thermal_sysfs_event_listener *event_listener;
++		event_listener =
++		    list_entry(entry_el, struct thermal_sysfs_event_listener,
++			       node);
++		if (listener == event_listener) {
++			spin_unlock(&el_list_lock);
++			return 0;
++		}
++	}
++	spin_unlock(&el_list_lock);
++	return -ENODEV;
++}
++
++/*
++ * thermal_event_register
++ * ----------------------
++ * Register for add/rmv of device/group/participant notification
++ * handler: thermal_event_handler containing callback func pointer
++ * report_type: Set this flag if callbacks needs to be invoked
++ * for existing device/group/participants
++ */
++int thermal_event_register(struct thermal_sysfs_event_listener *listener,
++			   unsigned int report_type)
++{
++	unsigned int event_type;
++	if (!listener)
++		return -EINVAL;
++
++	if (!thermal_is_listener_exist(listener))
++		return -EEXIST;
++
++	event_type = listener->event_type;
++
++	/* Check if the event requested by listener is supported */
++	if (!(event_type & THERMAL_SYSFS_EVENT_ADD_TD
++	      || event_type & THERMAL_SYSFS_EVENT_ADD_GRP
++	      || event_type & THERMAL_SYSFS_EVENT_ADD_PART
++	      || event_type & THERMAL_SYSFS_EVENT_RMV_TD
++	      || event_type & THERMAL_SYSFS_EVENT_RMV_GRP
++	      || event_type & THERMAL_SYSFS_EVENT_RMV_PART))
++		return -EINVAL;
++
++
++	spin_lock(&el_list_lock);
++	list_add(&(listener->node), &thermal_sysfs_event_listener_list);
++	spin_unlock(&el_list_lock);
++
++	if (THERMAL_SYSFS_REPORT_EXISTING == report_type) {
++		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_TD)
++			dispatch_existing_td_events(
++				listener,
++				THERMAL_SYSFS_EVENT_ADD_TD);
++
++
++		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_GRP)
++			dispatch_existing_group_events(
++				listener,
++				THERMAL_SYSFS_EVENT_ADD_GRP);
++
++
++		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_PART)
++			dispatch_existing_participant_events(listener,
++					    THERMAL_SYSFS_EVENT_ADD_PART);
++
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_event_register);
++
++/*
++ * thermal_event_unregister
++ * ----------------------
++ * UnRegister for add/rmv of device/group/participant notification
++ * handler: thermal_event_handler containing callback func pointer
++ * report_type: Set this flag if callbacks needs to be invoked
++ * for existing device/group/participants
++ */
++int thermal_event_unregister(struct thermal_sysfs_event_listener *listener,
++			     unsigned int report_type)
++{
++	int result;
++	if (!listener)
++		return -EINVAL;
++
++	result = thermal_is_listener_exist(listener);
++	if (result)
++		return result;
++
++	if (THERMAL_SYSFS_REPORT_EXISTING == report_type) {
++		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_TD)
++			dispatch_existing_td_events(listener,
++						    THERMAL_SYSFS_EVENT_RMV_TD);
++
++
++		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_GRP)
++			dispatch_existing_group_events(
++				listener,
++				THERMAL_SYSFS_EVENT_RMV_GRP);
++
++
++		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_PART)
++			dispatch_existing_participant_events(
++				listener,
++				THERMAL_SYSFS_EVENT_RMV_PART);
++
++	}
++
++	spin_lock(&el_list_lock);
++	list_del(&listener->node);
++	spin_unlock(&el_list_lock);
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_event_unregister);
++
++/*
++ * thermal_get_algo_mode
++ * ----------------------
++ * Method to know whether the user mode application has taken over
++ */
++int thermal_get_algo_mode(void)
++{
++	return thermalconfig.mode;
++}
++EXPORT_SYMBOL(thermal_get_algo_mode);
++
++/*
++ * thermal_sysfs_generate_event
++ * ---------------------------
++ * Drivers managing thermal devices can invoke this method to notify
++ * user applications about thermal events
++ */
++int thermal_sysfs_generate_event(struct thermal_device *td,
++				 enum kobject_action action)
++{
++	return kobject_uevent(&td->kobj, action);
++}
++EXPORT_SYMBOL(thermal_sysfs_generate_event);
++
++/*
++ * thermal_set_userenabled
++ * -----------------------
++ * Interface function for platform sensor driver to disable userspace algo
++ * ue: enable / disable userspace algo based on BIOS configuration
++ */
++int thermal_set_userenabled(enum thermal_userenabled ue)
++{
++	thermalconfig.userenabled = ue;
++
++	if (THERMAL_USER_DISABLED == ue)
++		thermalconfig.mode = THERMAL_KERNELSPACE;
++
++	return 0;
++}
++EXPORT_SYMBOL(thermal_set_userenabled);
++
++static int __init thermal_sysfs_init(void)
++{
++	int result = 0;
++	result = subsystem_register(&thermal_subsys);
++	if (result)
++		return result;
++
++	/* Register the 'Config' folder under sysfs */
++	kobject_set_name(&thermalconfig.kobj, THERMAL_SYSFS_CONFIG);
++	thermalconfig.kobj.parent = &thermal_subsys.kobj;
++	thermalconfig.kobj.ktype = &ktype_thermalconfig;
++
++	result = kobject_register(&thermalconfig.kobj);
++
++	if (result)
++		return result;
++
++	/* Fill the attributes under 'Config' folder */
++	thermalconfig_populate_dir(&thermalconfig);
++
++	return 0;
++}
++
++static void __exit thermal_sysfs_exit(void)
++{
++	kobject_unregister(&thermalconfig.kobj);
++	subsystem_unregister(&thermal_subsys);
++}
++
++postcore_initcall(thermal_sysfs_init);
++module_exit(thermal_sysfs_exit);
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+new file mode 100644
+index 0000000..fb4f224
+--- /dev/null
++++ b/include/linux/thermal.h
+@@ -0,0 +1,294 @@
++/*
++ *  thermal.h - Thermal device interface ($Revision: 1 $)
++ *
++ *  Copyright (C) 2006, 2007 Sujith Thomas <sujith.thomas@intel.com>
++
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation;  version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * Provide infrastructure from kernel to enable user-space
++ * thermal management algorithm
++ * Accepts registration of thermal devices(sensors).
++ * Accepts registration for group of participants associated with this sensor
++ * Accepts registration of extra attributes over the standard attributes.
++ * Issues notification to registered drivers upon registration of new thermal
++ * devices
++ * Adds a 'Config' folder for user mode application to take over kernel mode
++ * algo
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/list.h>
++
++#define KELVIN_TO_CELSIUS(t) \
++	(long)(((long)t-2732 >= 0) ? ((long)t-2732+5)/10 : ((long)t-2732-5)/10)
++#define CELSIUS_TO_KELVIN(t)	((t*10) + 2732)
++
++/* --------------------------------------------------------------------------
++			Component Driver Interface
++   -------------------------------------------------------------------------- */
++
++struct thermal_device;
++
++/*thermal device attributes*/
++struct thermal_device_attribute {
++	struct attribute attr;
++	 ssize_t(*show) (struct thermal_device *td,
++			 struct thermal_device_attribute *attr, char *buf);
++	 ssize_t(*store) (struct thermal_device *td,
++			  struct thermal_device_attribute *attr,
++			  const char *buf, size_t count);
++};
++
++/*Helper macros for using THERMAL DEVICE attributes*/
++#define THERMAL_DEVICE_ATTR(_name, _mode, _show, _store) \
++struct thermal_device_attribute thermal_device_attr_##_name = {   \
++	.attr = {  \
++		.name = __stringify(_name), \
++		.mode = _mode,       \
++		.owner = THIS_MODULE,  \
++	}, \
++	.show = _show, \
++	.store = _store, \
++};
++
++#define to_thermal_device_attr(_attr) \
++	(container_of(_attr, \
++		     struct thermal_device_attribute, \
++		     attr))
++
++#define to_thermal_device(obj) \
++	container_of(obj, struct thermal_device, kobj)
++
++#define THERMAL_ATTRIB_TEMPERATURE "temperature"
++#define THERMAL_ATTRIB_CRITICAL "critical"
++#define THERMAL_ATTRIB_HOT "hot"
++#define THERMAL_ATTRIB_PASSIVE "passive"
++#define THERMAL_ATTRIB_POLLING_FREQ "polling_freq"
++#define THERMAL_ATTRIB_COOLING_MODE "cooling_mode"
++#define THERMAL_ATTRIB_STATE "state"
++
++/* The attributes which will be displayed for any thermal device */
++struct thermal_device_ops {
++	int (*thermal_get_temperature) (void *devdata,
++					struct thermal_device_attribute *attr,
++					int *temperature);
++	int (*thermal_get_critical) (void *devdata,
++				     struct thermal_device_attribute *attr,
++				     int *temperature);
++	int (*thermal_get_hot) (void *devdata,
++				struct thermal_device_attribute *attr,
++				int *temperature);
++	int (*thermal_get_passive) (void *devdata,
++				    struct thermal_device_attribute *attr,
++				    int *temperature);
++	int (*thermal_set_cooling_mode) (void *devdata,
++					 struct thermal_device_attribute *attr,
++					 int cooilng_mode);
++	int (*thermal_get_polling_freq) (void *devdata,
++					 struct thermal_device_attribute *attr,
++					 int *polling_freq);
++	int (*thermal_get_state) (void *devdata,
++				  struct thermal_device_attribute *attr,
++				  char *buf);
++};
++
++/* The participant which may be associated with a sensor
++   For eg: CPU,Fan etc.. */
++struct thermal_participant {
++	char name[KOBJ_NAME_LEN];	/*Name of the participant*/
++	struct thermal_group *group;	/*Group in which it belongs*/
++	/*Pointer to kobj associated with default location in sysfs*/
++	struct kobject *kobj;
++};
++
++/* The 'group' of devices associated with a sensor
++   For Eg: passive_devices, active_devices */
++struct thermal_group {
++	struct list_head node;	/*Linked list management*/
++	char name[KOBJ_NAME_LEN];	/*Name of the group*/
++	/*Pointer to thermal device which contains this group*/
++	struct thermal_device *td;
++	int participant_count;	/*No:of participants in this group*/
++	struct thermal_participant *participant;/*Array of participants*/
++	struct kobject kobj;	/* Group's Kobject */
++};
++
++/* The thermal device information */
++struct thermal_device {
++	struct list_head node;	/* Linked list management*/
++	struct thermal_device_ops *ops;	/*Callback routines*/
++	char name[KOBJ_NAME_LEN];	/* Name of thermal device*/
++	void *devdata;		/* Device's private data*/
++	/* List of groups associated with this thermal device*/
++	struct list_head group_node;
++	struct kobject kobj;	/* Thermal device's Kobject*/
++};
++
++#define THERMAL_SYSFS_EVENT_ADD_TD 0x01
++#define THERMAL_SYSFS_EVENT_ADD_GRP 0x02
++#define THERMAL_SYSFS_EVENT_ADD_PART 0x04
++#define THERMAL_SYSFS_EVENT_RMV_TD  0x08
++#define THERMAL_SYSFS_EVENT_RMV_GRP 0x10
++#define THERMAL_SYSFS_EVENT_RMV_PART 0x20
++
++#define THERMAL_SYSFS_REPORT_EXISTING 0x0
++#define THERMAL_SYSFS_NOREPORT_EXISTING 0x1
++
++struct thermal_sysfs_event_listener {
++	struct list_head node;
++	/*Call back function (handler) upon receiving an event */
++	int (*thermal_sysfs_event_handler) (int event_type
++					    , void *sysfs_data
++					    , void *private);
++	int event_type;
++	/* Event only from query_name will be notified*/
++	char *query_name;
++	/* Context of the registering driver*/
++	void *private;
++
++};
++
++/* --------------------------------------------------------------------------
++			Configuration Interface
++   -------------------------------------------------------------------------- */
++
++#define THERMAL_SYSFS_CONFIG "config"
++
++#define THERMAL_MAX_MODE 2
++enum thermal_userenabled { THERMAL_USER_DISABLED, THERMAL_USER_ENABLED };
++enum thermal_mode { THERMAL_USERSPACE, THERMAL_KERNELSPACE };
++
++struct thermal_config {
++	u8 userenabled:1;/* 1 if user application is allowed to take over */
++	u8 mode:1;		/* 0 if userspace algorithm has taken over */
++	struct kobject kobj;	/*Syfs stuff */
++};
++
++/* --------------------------------------------------------------------------
++			Registration functions
++----------------------------------------------------------------------------- */
++
++/*
++ * thermal_device_register
++ * ------------------------
++ * Method for registering thermal devices(sensors) with sysfs
++ * name: The name that should appear in sysfs
++ * devdata : Device private context
++ * ops : List of call back functions for various attributes
++ */
++struct thermal_device *thermal_device_register(const char *name,
++					       void *devdata,
++					       struct thermal_device_ops *ops);
++/*
++ * thermal_group_register
++ * ------------------------
++ * Method for registering groups such as ACPI _TZD with sysfs
++ * name: The name that should appear in sysfs
++ * td : Device under which this group is to be created
++ * participant_count : No:of participants in this group
++ * participants: Pointer to an array of participants
++ */
++int thermal_group_register(const char *name, struct thermal_device *td,
++			   int participant_count,
++			   struct thermal_participant *participant);
++
++/*
++ * thermal_attribute_register
++ * ------------------------
++ * Method for registering extra attributes with sysfs
++ * td : Device under which attributes should be created
++ * thermal_device_attrs : array of attributes to be added
++ */
++int thermal_attribute_register(struct thermal_device *td,
++			       struct thermal_device_attribute
++			       **thermal_device_attrs);
++
++/*
++ * thermal_event_register
++ * ----------------------
++ * Register for add/rmv of device/group/participant notification
++ * handler: thermal_event_handler containing callback func pointer
++ * report_type: Set this flag if callbacks needs to be invoked
++ * for existing device/group/participants
++ */
++int thermal_event_register(struct thermal_sysfs_event_listener *listener,
++			   unsigned int report_type);
++
++/*
++ * thermal_device_unregister
++ * ------------------------
++ * Method for unregistering thermal devices(sensors) with sysfs
++ * td: Pointer to thermal_device
++ */
++int thermal_device_unregister(struct thermal_device *td);
++
++/*
++ * thermal_group_unregister
++ * ------------------------
++ * Method for unregistering groups within a thermal device
++ * td: Pointer to thermal_device from where the group should be removed
++ * name : Name of the group given during registration
++ */
++int thermal_group_unregister(struct thermal_device *td, const char *name);
++
++/*
++ * thermal_attribute_unregister
++ * ------------------------
++ * Method for unregistering extra attributes with sysfs
++ * td : Device under which attributes should be removed
++ * thermal_device_attrs : array of attributes to be removed
++ */
++int thermal_attribute_unregister(struct thermal_device *td,
++				  struct thermal_device_attribute
++				  **thermal_device_attrs);
++/*
++ * thermal_event_unregister
++ * ----------------------
++ * UnRegister for add/rmv of device/group/participant notification
++ * handler: thermal_event_handler containing callback func pointer
++ * report_type: Set this flag if callbacks needs to be invoked
++ * for existing device/group/participants
++ */
++int thermal_event_unregister(struct thermal_sysfs_event_listener *listener,
++			     unsigned int report_type);
++/*
++ * thermal_get_algo_mode
++ * ----------------------
++ * Method to know whether the user mode application has taken over
++ */
++int thermal_get_algo_mode(void);
++
++/*
++ * thermal_sysfs_generate_event
++ * ---------------------------
++ * Drivers managing thermal devices can invoke this method to notify
++ * user applications about thermal events
++ */
++int thermal_sysfs_generate_event(struct thermal_device *td,
++				 enum kobject_action action);
++
++/*
++ * thermal_set_userenabled
++ * -----------------------
++ * Interface function for platform sensor driver to disble userspace algo
++ * ue: enable / disable userspace algo based on BIOS configuration
++ */
++int thermal_set_userenabled(enum thermal_userenabled um);
+-- 
+1.5.3.7-dirty
+
