@@ -59,7 +59,7 @@ Description: Linux kernel specific documentation for version 2.6.24
  information about the problems, which may result by upgrading your
  kernel.
 
-Package: linux-headers-2.6.24-3
+Package: linux-headers-2.6.24-4
 Architecture: all
 Section: devel
 Priority: optional
@@ -68,7 +68,7 @@ Provides: linux-headers, linux-headers-2.6
 Description: Header files related to Linux kernel version 2.6.24
  This package provides kernel header files for version 2.6.24, for sites
  that want the latest kernel headers. Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details
 
 Package: linux-libc-dev
 Architecture: amd64 i386 powerpc sparc ia64 hppa lpia
@@ -82,7 +82,7 @@ Description: Linux Kernel Headers for development
  are used by the installed headers for GNU glibc and other system
  libraries.
 
-Package: linux-image-2.6.24-3-386
+Package: linux-image-2.6.24-4-386
 Architecture: i386
 Section: base
 Priority: optional
@@ -108,20 +108,20 @@ Description: Linux kernel image for version 2.6.24 on i386
  the linux-386 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-386
+Package: linux-headers-2.6.24-4-386
 Architecture: i386
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on i386
  This package provides kernel header files for version 2.6.24 on
  i386.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.24-3-386
+Package: linux-image-debug-2.6.24-4-386
 Architecture: i386
 Section: devel
 Priority: optional
@@ -135,7 +135,7 @@ Description: Linux kernel debug image for version 2.6.24 on i386
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.24-3-generic
+Package: linux-image-2.6.24-4-generic
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -161,20 +161,20 @@ Description: Linux kernel image for version 2.6.24 on x86/x86_64
  the linux-generic meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-generic
+Package: linux-headers-2.6.24-4-generic
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on x86/x86_64
  This package provides kernel header files for version 2.6.24 on
  x86/x86_64.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.24-3-generic
+Package: linux-image-debug-2.6.24-4-generic
 Architecture: i386 amd64
 Section: devel
 Priority: optional
@@ -188,7 +188,7 @@ Description: Linux kernel debug image for version 2.6.24 on x86/x86_64
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.24-3-hppa32
+Package: linux-image-2.6.24-4-hppa32
 Architecture: hppa
 Section: base
 Priority: optional
@@ -214,20 +214,20 @@ Description: Linux kernel image for version 2.6.24 on 32-bit HP PA-RISC SMP
  the linux-hppa32 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-hppa32
+Package: linux-headers-2.6.24-4-hppa32
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 32-bit HP PA-RISC SMP
  This package provides kernel header files for version 2.6.24 on
  32-bit HP PA-RISC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-hppa64
+Package: linux-image-2.6.24-4-hppa64
 Architecture: hppa
 Section: base
 Priority: optional
@@ -253,20 +253,20 @@ Description: Linux kernel image for version 2.6.24 on 64-bit HP PA-RISC SMP
  the linux-hppa64 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-hppa64
+Package: linux-headers-2.6.24-4-hppa64
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit HP PA-RISC SMP
  This package provides kernel header files for version 2.6.24 on
  64-bit HP PA-RISC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-itanium
+Package: linux-image-2.6.24-4-itanium
 Architecture: ia64
 Section: base
 Priority: optional
@@ -292,20 +292,20 @@ Description: Linux kernel image for version 2.6.24 on Itanium SMP
  the linux-itanium meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-itanium
+Package: linux-headers-2.6.24-4-itanium
 Architecture: ia64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on Itanium SMP
  This package provides kernel header files for version 2.6.24 on
  Itanium SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-mckinley
+Package: linux-image-2.6.24-4-mckinley
 Architecture: ia64
 Section: base
 Priority: optional
@@ -331,20 +331,20 @@ Description: Linux kernel image for version 2.6.24 on Itanium II SMP
  the linux-mckinley meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-mckinley
+Package: linux-headers-2.6.24-4-mckinley
 Architecture: ia64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on Itanium II SMP
  This package provides kernel header files for version 2.6.24 on
  Itanium II SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-powerpc
+Package: linux-image-2.6.24-4-powerpc
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -370,20 +370,20 @@ Description: Linux kernel image for version 2.6.24 on 32-bit PowerPC
  the linux-powerpc meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-powerpc
+Package: linux-headers-2.6.24-4-powerpc
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC
  This package provides kernel header files for version 2.6.24 on
  32-bit PowerPC.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-powerpc64-smp
+Package: linux-image-2.6.24-4-powerpc64-smp
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -409,20 +409,20 @@ Description: Linux kernel image for version 2.6.24 on 64-bit PowerPC SMP
  the linux-powerpc64-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-powerpc64-smp
+Package: linux-headers-2.6.24-4-powerpc64-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit PowerPC SMP
  This package provides kernel header files for version 2.6.24 on
  64-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-powerpc-smp
+Package: linux-image-2.6.24-4-powerpc-smp
 Architecture: powerpc
 Section: base
 Priority: optional
@@ -448,20 +448,20 @@ Description: Linux kernel image for version 2.6.24 on 32-bit PowerPC SMP
  the linux-powerpc-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-powerpc-smp
+Package: linux-headers-2.6.24-4-powerpc-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC SMP
  This package provides kernel header files for version 2.6.24 on
  32-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-server
+Package: linux-image-2.6.24-4-server
 Architecture: i386 amd64
 Section: base
 Priority: optional
@@ -487,20 +487,20 @@ Description: Linux kernel image for version 2.6.24 on x86/x86_64
  the linux-server meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-server
+Package: linux-headers-2.6.24-4-server
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on x86/x86_64
  This package provides kernel header files for version 2.6.24 on
  x86/x86_64.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.24-3-server
+Package: linux-image-debug-2.6.24-4-server
 Architecture: i386 amd64
 Section: devel
 Priority: optional
@@ -514,7 +514,7 @@ Description: Linux kernel debug image for version 2.6.24 on x86/x86_64
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.24-3-sparc64
+Package: linux-image-2.6.24-4-sparc64
 Architecture: sparc
 Section: base
 Priority: optional
@@ -540,20 +540,20 @@ Description: Linux kernel image for version 2.6.24 on 64-bit UltraSPARC
  the linux-sparc64 meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-sparc64
+Package: linux-headers-2.6.24-4-sparc64
 Architecture: sparc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit UltraSPARC
  This package provides kernel header files for version 2.6.24 on
  64-bit UltraSPARC.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-sparc64-smp
+Package: linux-image-2.6.24-4-sparc64-smp
 Architecture: sparc
 Section: base
 Priority: optional
@@ -579,20 +579,20 @@ Description: Linux kernel image for version 2.6.24 on 64-bit UltraSPARC SMP
  the linux-sparc64-smp meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-sparc64-smp
+Package: linux-headers-2.6.24-4-sparc64-smp
 Architecture: sparc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit UltraSPARC SMP
  This package provides kernel header files for version 2.6.24 on
  64-bit UltraSPARC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-virtual
+Package: linux-image-2.6.24-4-virtual
 Architecture: i386
 Section: base
 Priority: optional
@@ -618,20 +618,20 @@ Description: Linux kernel image for version 2.6.24 on x86
  the linux-virtual meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-virtual
+Package: linux-headers-2.6.24-4-virtual
 Architecture: i386
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on x86
  This package provides kernel header files for version 2.6.24 on
  x86.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-debug-2.6.24-3-virtual
+Package: linux-image-debug-2.6.24-4-virtual
 Architecture: i386
 Section: devel
 Priority: optional
@@ -645,7 +645,7 @@ Description: Linux kernel debug image for version 2.6.24 on x86
  The kernel image contained in this package is NOT meant to boot from. It
  is uncompressed, and unstripped.
 
-Package: linux-image-2.6.24-3-lpia
+Package: linux-image-2.6.24-4-lpia
 Architecture: lpia
 Section: universe/base
 Priority: optional
@@ -671,20 +671,20 @@ Description: Linux kernel image for version 2.6.24 on Ubuntu Moblie and Embedded
  the linux-lpia meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-lpia
+Package: linux-headers-2.6.24-4-lpia
 Architecture: lpia
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on Ubuntu Moblie and Embedded LPIA edition
  This package provides kernel header files for version 2.6.24 on
  Ubuntu Moblie and Embedded LPIA edition.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-rt
+Package: linux-image-2.6.24-4-rt
 Architecture: i386 amd64
 Section: universe/base
 Priority: optional
@@ -710,20 +710,20 @@ Description: Linux kernel image for version 2.6.24 on Ingo Molnar's full real ti
  the linux-rt meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-rt
+Package: linux-headers-2.6.24-4-rt
 Architecture: i386 amd64
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc5-rt1)
  This package provides kernel header files for version 2.6.24 on
  Ingo Molnar's full real time preemption patch (2.6.24-rc5-rt1).
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: linux-image-2.6.24-3-lpiacompat
+Package: linux-image-2.6.24-4-lpiacompat
 Architecture: lpia
 Section: universe/base
 Priority: optional
@@ -749,24 +749,24 @@ Description: Linux kernel image for version 2.6.24 on Ubuntu Moblie and Embedded
  the linux-lpiacompat meta-package, which will ensure that upgrades work
  correctly, and that supporting packages are also installed.
 
-Package: linux-headers-2.6.24-3-lpiacompat
+Package: linux-headers-2.6.24-4-lpiacompat
 Architecture: lpia
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-3, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-4, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on Ubuntu Moblie and Embedded-x86 compat edition
  This package provides kernel header files for version 2.6.24 on
  Ubuntu Moblie and Embedded-x86 compat edition.
  .
  This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-3/debian.README.gz for details.
+ /usr/share/doc/linux-headers-2.6.24-4/debian.README.gz for details.
 
-Package: kernel-image-2.6.24-3-386-di
+Package: kernel-image-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: kernel-image
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: extra
 Description: Linux kernel binary image for the Debian installer
@@ -774,344 +774,344 @@ Description: Linux kernel binary image for the Debian installer
  boot images. It does _not_ provide a usable kernel for your full
  Debian system.
 
-Package: nic-modules-2.6.24-3-386-di
+Package: nic-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: nic-modules
-Depends: kernel-image-2.6.24-3-386-di, nic-shared-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, nic-shared-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Network interface support
 
-Package: nic-shared-modules-2.6.24-3-386-di
+Package: nic-shared-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: nic-shared-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Shared NIC drivers
  This package contains NIC drivers needed by combinations of nic-modules,
  nic-extra-modules, and nic-pcmcia-modules.
 
-Package: serial-modules-2.6.24-3-386-di
+Package: serial-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: serial-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Serial port support
 
-Package: ppp-modules-2.6.24-3-386-di
+Package: ppp-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: ppp-modules
-Depends: kernel-image-2.6.24-3-386-di, nic-shared-modules-2.6.24-3-386-di, serial-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, nic-shared-modules-2.6.24-4-386-di, serial-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: PPP (serial port) networking support
 
-Package: socket-modules-2.6.24-3-386-di
+Package: socket-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: socket-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Unix socket support
 
-Package: ide-modules-2.6.24-3-386-di
+Package: ide-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: ide-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: IDE support
 
-Package: firewire-core-modules-2.6.24-3-386-di
+Package: firewire-core-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: firewire-core-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Firewire (IEEE-1394) Support
 
-Package: scsi-modules-2.6.24-3-386-di
+Package: scsi-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: scsi-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: SCSI storage support
 
-Package: plip-modules-2.6.24-3-386-di
+Package: plip-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: plip-modules
-Depends: kernel-image-2.6.24-3-386-di, nic-shared-modules-2.6.24-3-386-di, parport-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, nic-shared-modules-2.6.24-4-386-di, parport-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: PLIP (parallel port) networking support
 
-Package: floppy-modules-2.6.24-3-386-di
+Package: floppy-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: floppy-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Floppy driver support
 
-Package: ipv6-modules-2.6.24-3-386-di
+Package: ipv6-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: ipv6-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Support for IPv6 networking
 
-Package: fat-modules-2.6.24-3-386-di
+Package: fat-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: fat-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: FAT filesystem support
  This includes Windows FAT and VFAT support.
 
-Package: nfs-modules-2.6.24-3-386-di
+Package: nfs-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: nfs-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: NFS filesystem drivers
  Includes the NFS client driver, and supporting modules.
 
-Package: md-modules-2.6.24-3-386-di
+Package: md-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: md-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Multi-device support (raid, device-mapper, lvm)
 
-Package: usb-modules-2.6.24-3-386-di
+Package: usb-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: usb-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Core USB support
 
-Package: pcmcia-storage-modules-2.6.24-3-386-di
+Package: pcmcia-storage-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: pcmcia-storage-modules
-Depends: kernel-image-2.6.24-3-386-di, scsi-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, scsi-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: PCMCIA storage support
 
-Package: fb-modules-2.6.24-3-386-di
+Package: fb-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: fb-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Framebuffer modules
 
-Package: input-modules-2.6.24-3-386-di
+Package: input-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: input-modules
-Depends: kernel-image-2.6.24-3-386-di, usb-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, usb-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Support for various input methods
 
-Package: irda-modules-2.6.24-3-386-di
+Package: irda-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: irda-modules
-Depends: kernel-image-2.6.24-3-386-di, nic-shared-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, nic-shared-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Support for Infrared protocols
 
-Package: parport-modules-2.6.24-3-386-di
+Package: parport-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: parport-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Parallel port support
 
-Package: nic-pcmcia-modules-2.6.24-3-386-di
+Package: nic-pcmcia-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: nic-pcmcia-modules
-Depends: kernel-image-2.6.24-3-386-di, nic-shared-modules-2.6.24-3-386-di, nic-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, nic-shared-modules-2.6.24-4-386-di, nic-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: PCMCIA network interface support
 
-Package: pcmcia-modules-2.6.24-3-386-di
+Package: pcmcia-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: pcmcia-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: PCMCIA Modules
 
-Package: nic-usb-modules-2.6.24-3-386-di
+Package: nic-usb-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: nic-usb-modules
-Depends: kernel-image-2.6.24-3-386-di, nic-shared-modules-2.6.24-3-386-di, usb-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, nic-shared-modules-2.6.24-4-386-di, usb-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: USB network interface support
 
-Package: sata-modules-2.6.24-3-386-di
+Package: sata-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: sata-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: SATA storage support
 
-Package: acpi-modules-2.6.24-3-386-di
+Package: acpi-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: acpi-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Support for ACPI
 
-Package: crypto-modules-2.6.24-3-386-di
+Package: crypto-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: crypto-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: extra
 Description: crypto modules
  This package contains crypto modules.
 
-Package: fs-core-modules-2.6.24-3-386-di
+Package: fs-core-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: fs-core-modules, ext2-modules, ext3-modules, jfs-modules, reiserfs-modules, xfs-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Base filesystem modules
  This includes ext2, ext3, jfs, reiserfs and xfs.
 
-Package: fs-secondary-modules-2.6.24-3-386-di
+Package: fs-secondary-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: fs-secondary-modules, ntfs-modules, ufs-modules, hfs-modules, affs-modules
-Depends: kernel-image-2.6.24-3-386-di, fat-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, fat-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Extra filesystem modules
  This includes support for Windows NTFS, SysV UFS, MacOS HFS and HFSPlus and
  Amiga AFFS.
 
-Package: pata-modules-2.6.24-3-386-di
+Package: pata-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: pata-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: PATA support modules
 
-Package: storage-core-modules-2.6.24-3-386-di
+Package: storage-core-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: storage-core-modules, loop-modules
-Depends: kernel-image-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Core storage support
  Includes core SCSI, LibATA, USB-Storage. Also includes related block
  devices for CD, Disk and Tape medium (and IDE Floppy).
 
-Package: block-modules-2.6.24-3-386-di
+Package: block-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: block-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di, parport-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di, parport-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Block storage devices
  This package contains the block storage devices, including DAC960 and
  paraide.
 
-Package: message-modules-2.6.24-3-386-di
+Package: message-modules-2.6.24-4-386-di
 XC-Package-Type: udeb
 Provides: message-modules
-Depends: kernel-image-2.6.24-3-386-di, storage-core-modules-2.6.24-3-386-di, scsi-modules-2.6.24-3-386-di
+Depends: kernel-image-2.6.24-4-386-di, storage-core-modules-2.6.24-4-386-di, scsi-modules-2.6.24-4-386-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-386
+XB-Kernel-Version: 2.6.24-4-386
 Section: debian-installer
 Priority: standard
 Description: Fusion and i2o storage modules
  This package containes the fusion and i2o storage modules.
 
-Package: kernel-image-2.6.24-3-generic-di
+Package: kernel-image-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: kernel-image
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: extra
 Description: Linux kernel binary image for the Debian installer
@@ -1119,334 +1119,334 @@ Description: Linux kernel binary image for the Debian installer
  boot images. It does _not_ provide a usable kernel for your full
  Debian system.
 
-Package: nic-modules-2.6.24-3-generic-di
+Package: nic-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: nic-modules
-Depends: kernel-image-2.6.24-3-generic-di, nic-shared-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, nic-shared-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Network interface support
 
-Package: nic-shared-modules-2.6.24-3-generic-di
+Package: nic-shared-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: nic-shared-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Shared NIC drivers
  This package contains NIC drivers needed by combinations of nic-modules,
  nic-extra-modules, and nic-pcmcia-modules.
 
-Package: serial-modules-2.6.24-3-generic-di
+Package: serial-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: serial-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Serial port support
 
-Package: ppp-modules-2.6.24-3-generic-di
+Package: ppp-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: ppp-modules
-Depends: kernel-image-2.6.24-3-generic-di, nic-shared-modules-2.6.24-3-generic-di, serial-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, nic-shared-modules-2.6.24-4-generic-di, serial-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: PPP (serial port) networking support
 
-Package: socket-modules-2.6.24-3-generic-di
+Package: socket-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: socket-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Unix socket support
 
-Package: ide-modules-2.6.24-3-generic-di
+Package: ide-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: ide-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: IDE support
 
-Package: firewire-core-modules-2.6.24-3-generic-di
+Package: firewire-core-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: firewire-core-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Firewire (IEEE-1394) Support
 
-Package: scsi-modules-2.6.24-3-generic-di
+Package: scsi-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: scsi-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: SCSI storage support
 
-Package: plip-modules-2.6.24-3-generic-di
+Package: plip-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: plip-modules
-Depends: kernel-image-2.6.24-3-generic-di, nic-shared-modules-2.6.24-3-generic-di, parport-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, nic-shared-modules-2.6.24-4-generic-di, parport-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: PLIP (parallel port) networking support
 
-Package: floppy-modules-2.6.24-3-generic-di
+Package: floppy-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: floppy-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Floppy driver support
 
-Package: ipv6-modules-2.6.24-3-generic-di
+Package: ipv6-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: ipv6-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Support for IPv6 networking
 
-Package: fat-modules-2.6.24-3-generic-di
+Package: fat-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: fat-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: FAT filesystem support
  This includes Windows FAT and VFAT support.
 
-Package: nfs-modules-2.6.24-3-generic-di
+Package: nfs-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: nfs-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: NFS filesystem drivers
  Includes the NFS client driver, and supporting modules.
 
-Package: md-modules-2.6.24-3-generic-di
+Package: md-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: md-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Multi-device support (raid, device-mapper, lvm)
 
-Package: usb-modules-2.6.24-3-generic-di
+Package: usb-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: usb-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Core USB support
 
-Package: pcmcia-storage-modules-2.6.24-3-generic-di
+Package: pcmcia-storage-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: pcmcia-storage-modules
-Depends: kernel-image-2.6.24-3-generic-di, scsi-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, scsi-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: PCMCIA storage support
 
-Package: fb-modules-2.6.24-3-generic-di
+Package: fb-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: fb-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Framebuffer modules
 
-Package: input-modules-2.6.24-3-generic-di
+Package: input-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: input-modules
-Depends: kernel-image-2.6.24-3-generic-di, usb-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, usb-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Support for various input methods
 
-Package: irda-modules-2.6.24-3-generic-di
+Package: irda-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: irda-modules
-Depends: kernel-image-2.6.24-3-generic-di, nic-shared-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, nic-shared-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Support for Infrared protocols
 
-Package: parport-modules-2.6.24-3-generic-di
+Package: parport-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: parport-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Parallel port support
 
-Package: nic-pcmcia-modules-2.6.24-3-generic-di
+Package: nic-pcmcia-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: nic-pcmcia-modules
-Depends: kernel-image-2.6.24-3-generic-di, nic-shared-modules-2.6.24-3-generic-di, nic-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, nic-shared-modules-2.6.24-4-generic-di, nic-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: PCMCIA network interface support
 
-Package: pcmcia-modules-2.6.24-3-generic-di
+Package: pcmcia-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: pcmcia-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: PCMCIA Modules
 
-Package: nic-usb-modules-2.6.24-3-generic-di
+Package: nic-usb-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: nic-usb-modules
-Depends: kernel-image-2.6.24-3-generic-di, nic-shared-modules-2.6.24-3-generic-di, usb-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, nic-shared-modules-2.6.24-4-generic-di, usb-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: USB network interface support
 
-Package: sata-modules-2.6.24-3-generic-di
+Package: sata-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: sata-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: SATA storage support
 
-Package: acpi-modules-2.6.24-3-generic-di
+Package: acpi-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: acpi-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Support for ACPI
 
-Package: crypto-modules-2.6.24-3-generic-di
+Package: crypto-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: crypto-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: extra
 Description: crypto modules
  This package contains crypto modules.
 
-Package: fs-core-modules-2.6.24-3-generic-di
+Package: fs-core-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: fs-core-modules, ext2-modules, ext3-modules, jfs-modules, reiserfs-modules, xfs-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Base filesystem modules
  This includes ext2, ext3, jfs, reiserfs and xfs.
 
-Package: fs-secondary-modules-2.6.24-3-generic-di
+Package: fs-secondary-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: fs-secondary-modules, ntfs-modules, ufs-modules, hfs-modules, affs-modules
-Depends: kernel-image-2.6.24-3-generic-di, fat-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, fat-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Extra filesystem modules
  This includes support for Windows NTFS, SysV UFS, MacOS HFS and HFSPlus and
  Amiga AFFS.
 
-Package: pata-modules-2.6.24-3-generic-di
+Package: pata-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: pata-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: PATA support modules
 
-Package: storage-core-modules-2.6.24-3-generic-di
+Package: storage-core-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: storage-core-modules, loop-modules
-Depends: kernel-image-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Core storage support
  Includes core SCSI, LibATA, USB-Storage. Also includes related block
  devices for CD, Disk and Tape medium (and IDE Floppy).
 
-Package: block-modules-2.6.24-3-generic-di
+Package: block-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: block-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di, parport-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di, parport-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Block storage devices
  This package contains the block storage devices, including DAC960 and
  paraide.
 
-Package: message-modules-2.6.24-3-generic-di
+Package: message-modules-2.6.24-4-generic-di
 XC-Package-Type: udeb
 Provides: message-modules
-Depends: kernel-image-2.6.24-3-generic-di, storage-core-modules-2.6.24-3-generic-di, scsi-modules-2.6.24-3-generic-di
+Depends: kernel-image-2.6.24-4-generic-di, storage-core-modules-2.6.24-4-generic-di, scsi-modules-2.6.24-4-generic-di
 Architecture: i386
-XB-Kernel-Version: 2.6.24-3-generic
+XB-Kernel-Version: 2.6.24-4-generic
 Section: debian-installer
 Priority: standard
 Description: Fusion and i2o storage modules
