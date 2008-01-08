@@ -297,13 +297,16 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 
+CC		= $(CROSS_COMPILE)gcc
+
 #
-# gcc-4.2 won't build powerpc64-smp.
+# gcc-4.2 won't build powerpc64-smp or ia64.
 #
 ifeq ($(ARCH),powerpc)
 CC		= /usr/bin/gcc-4.1
-else
-CC		= $(CROSS_COMPILE)gcc
+endif
+ifeq ($(ARCH),ia64)
+CC		= /usr/bin/gcc-4.1
 endif
 
 AS		= $(CROSS_COMPILE)as
