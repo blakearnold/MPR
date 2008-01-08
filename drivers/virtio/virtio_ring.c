@@ -196,6 +196,8 @@ static void *vring_get_buf(struct virtqueue *_vq, unsigned int *len)
 
 	if (!more_used(vq)) {
 		pr_debug("No more buffers in queue\n");
+		/* We notify *even if* VRING_USED_F_NO_NOTIFY is set here. */
+		vq->notify(&vq->vq);
 		END_USE(vq);
 		return NULL;
 	}
