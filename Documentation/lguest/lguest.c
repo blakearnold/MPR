@@ -1528,8 +1528,8 @@ static void setup_block_file(const char *filename)
 
 	/* Create stack for thread and run it */
 	stack = malloc(32768);
-	/* SIGCHLD - We dont "wait" for our cloned thread, so prevent it from becoming
-	 * a zombie. */
+	/* SIGCHLD - We dont "wait" for our cloned thread, so prevent it from
+	 * becoming a zombie. */
 	if (clone(io_thread, stack + 32768,  CLONE_VM | SIGCHLD, dev) == -1)
 		err(1, "Creating clone");
 
@@ -1588,26 +1588,22 @@ static void setup_rng(void)
 
 	verbose("device %u: rng\n", devices.device_num);
 }
-/* That's the end of device setup. */
+/* That's the end of device setup. :*/
 
-/* Restart the guest */
-static void restart_guest(void)
+/* Reboot */
+static void __attribute__((noreturn)) restart_guest(void)
 {
-	struct device *dev;
-	struct vblk_info *vblk;
+	unsigned int i;
 
-	/* Closing the waked_fd causes the waker thread to die */
-	close  (waker_fd);
-	/* Closing the workpipe[1] causes io_thread thread to die */
-	for(dev = devices.device;dev!= NULL;dev = dev->next) {
-		if (strcmp(dev->name, "block") == 0) {
-			vblk = dev->priv;
-			close (vblk->workpipe[1]);
-		}
-	}
-	if(execv(main_args[0],main_args))
-		errx(1,"Could not exec %s", main_args[0]);
+	/* Closing pipes causes the waker thread and io_threads to die, and
+	 * closing /dev/lguest cleans up the Guest.  Since we don't track all
+	 * open fds, we simply close everything beyond stderr. */
+	for (i = 3; i < FD_SETSIZE; i++)
+		close(i);
+	execv(main_args[0], main_args);
+	err(1, "Could not exec %s", main_args[0]);
 }
+
 /*L:220 Finally we reach the core of the Launcher, which runs the Guest, serves
  * its input and output, and finally, lays it to rest. */
 static void __attribute__((noreturn)) run_guest(int lguest_fd)
@@ -1682,6 +1678,7 @@ int main(int argc, char *argv[])
 	/* If they specify an initrd file to load. */
 	const char *initrd_name = NULL;
 
+	/* Save the args: we "reboot" by execing ourselves again. */
 	main_args = argv;
 	/* We don't "wait" for the children, so prevent them from becoming
 	 * zombies. */
