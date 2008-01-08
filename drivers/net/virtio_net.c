@@ -52,13 +52,12 @@ static inline void vnet_hdr_to_sg(struct scatterlist *sg, struct sk_buff *skb)
 	sg_init_one(sg, skb_vnet_hdr(skb), sizeof(struct virtio_net_hdr));
 }
 
-static bool skb_xmit_done(struct virtqueue *rvq)
+static void skb_xmit_done(struct virtqueue *rvq)
 {
 	struct virtnet_info *vi = rvq->vdev->priv;
 
 	/* In case we were waiting for output buffers. */
 	netif_wake_queue(vi->dev);
-	return true;
 }
 
 static void receive_skb(struct net_device *dev, struct sk_buff *skb,
@@ -170,12 +169,12 @@ static void try_fill_recv(struct virtnet_info *vi)
 	vi->rvq->vq_ops->kick(vi->rvq);
 }
 
-static bool skb_recv_done(struct virtqueue *rvq)
+static void skb_recv_done(struct virtqueue *rvq)
 {
 	struct virtnet_info *vi = rvq->vdev->priv;
-	netif_rx_schedule(vi->dev, &vi->napi);
 	/* Suppress further interrupts. */
-	return false;
+	rvq->vq_ops->disable_cb(rvq);
+	netif_rx_schedule(vi->dev, &vi->napi);
 }
 
 static int virtnet_poll(struct napi_struct *napi, int budget)
@@ -201,7 +200,7 @@ again:
 	/* Out of packets? */
 	if (received < budget) {
 		netif_rx_complete(vi->dev, napi);
-		if (unlikely(!vi->rvq->vq_ops->restart(vi->rvq))
+		if (unlikely(!vi->rvq->vq_ops->enable_cb(vi->rvq))
 		    && netif_rx_reschedule(vi->dev, napi))
 			goto again;
 	}

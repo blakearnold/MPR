@@ -190,7 +190,7 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
 
 /* the config->find_vq() implementation */
 static struct virtqueue *vp_find_vq(struct virtio_device *vdev, unsigned index,
-				    bool (*callback)(struct virtqueue *vq))
+				    void (*callback)(struct virtqueue *vq))
 {
 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
 	struct virtio_pci_vq_info *info;
