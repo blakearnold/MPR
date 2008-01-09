@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.24-rc7
-# Mon Jan  7 16:59:27 2008
+# Tue Jan  8 20:57:07 2008
 #
 CONFIG_64BIT=y
 # CONFIG_X86_32 is not set
@@ -56,7 +56,10 @@ CONFIG_SYSVIPC_SYSCTL=y
 CONFIG_POSIX_MQUEUE=y
 CONFIG_BSD_PROCESS_ACCT=y
 CONFIG_BSD_PROCESS_ACCT_V3=y
-# CONFIG_TASKSTATS is not set
+CONFIG_TASKSTATS=y
+# CONFIG_TASK_DELAY_ACCT is not set
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
 # CONFIG_USER_NS is not set
 # CONFIG_PID_NS is not set
 CONFIG_AUDIT=y
