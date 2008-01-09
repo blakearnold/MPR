@@ -393,7 +393,6 @@ CONFIG_SCHED_SMT=y
 # CONFIG_SCSI_PPA is not set
 # CONFIG_SCSI_QLA_FC is not set
 # CONFIG_SCSI_QLA_ISCSI is not set
-# CONFIG_SCSI_QLOGIC_1280 is not set
 # CONFIG_SCSI_SCAN_ASYNC is not set
 # CONFIG_SCSI_SRP is not set
 # CONFIG_SCSI_SRP_ATTRS is not set
