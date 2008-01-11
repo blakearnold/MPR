@@ -6,4 +6,4 @@ provides="redhat-cluster-modules, ivtv-modules"
 arch="powerpc"
 
 # Keep in sync with debian/control.stub.in Build-Depends.
-header-depends="gcc-4.1,"
+header_depends="gcc-4.1,"
