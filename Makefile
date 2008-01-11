@@ -302,11 +302,8 @@ CC		= $(CROSS_COMPILE)gcc
 #
 # gcc-4.2 won't build powerpc64-smp or ia64.
 #
-ifeq ($(ARCH),powerpc)
-CC		= /usr/bin/gcc-4.1
-endif
-ifeq ($(ARCH),ia64)
-CC		= /usr/bin/gcc-4.1
+ifneq (,$(findstring $(ARCH), powerpc ia64))
+CC		= gcc-4.1
 endif
 
 AS		= $(CROSS_COMPILE)as
