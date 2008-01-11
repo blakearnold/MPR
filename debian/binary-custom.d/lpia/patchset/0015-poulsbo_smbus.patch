@@ -1,28 +1,9 @@
-From dc233fc98293bdca09d379b69420bc2e3b558230 Mon Sep 17 00:00:00 2001
-From: Jacob Pan <jacob@putvin.dp.intel.com>
-Date: Thu, 13 Dec 2007 11:22:20 +0200
-Subject: [PATCH] LPIA: Poulsbo SMBus Controller
-
-Based on piix4 smbus controller driver. But since poulsbo smbus controller
-is not a pci device, and there is a huge differences in register level
-programming interface, I added it as a separate driver.
-
-Limited testing has been done due to HW limitation at the moment. Tested
-SMBUS commands are quick, byte, byte read.
-
-Signed-off-by: Amit Kucheria <amit.kucheria@ubuntu.com>
----
- drivers/i2c/busses/Kconfig   |   11 ++
- drivers/i2c/busses/Makefile  |    1 +
- drivers/i2c/busses/i2c-sch.c |  393 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 405 insertions(+), 0 deletions(-)
- create mode 100644 drivers/i2c/busses/i2c-sch.c
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index c466c6c..06a3873 100644
+index c466c6c..85abf0a 100644
 --- a/drivers/i2c/busses/Kconfig
 +++ b/drivers/i2c/busses/Kconfig
-@@ -239,6 +239,17 @@ config I2C_PIIX4
+@@ -239,6 +239,15 @@ config I2C_PIIX4
  	  This driver can also be built as a module.  If so, the module
  	  will be called i2c-piix4.
  
@@ -35,23 +16,21 @@ index c466c6c..06a3873 100644
 +           Intel  POULSBO
 +         will be called i2c-sch.
 +
-+
-+
  config I2C_IBM_IIC
  	tristate "IBM PPC 4xx on-chip I2C interface"
  	depends on IBM_OCP
 diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 81d43c2..cfd7e1a 100644
+index 81d43c2..ece538a 100644
 --- a/drivers/i2c/busses/Makefile
 +++ b/drivers/i2c/busses/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_I2C_PCA_ISA)	+= i2c-pca-isa.o
+@@ -33,6 +33,7 @@ obj-$(CONFIG_I2C_PASEMI)	+= i2c-pasemi.o
+ obj-$(CONFIG_I2C_PCA_ISA)	+= i2c-pca-isa.o
  obj-$(CONFIG_I2C_PIIX4)		+= i2c-piix4.o
  obj-$(CONFIG_I2C_PMCMSP)	+= i2c-pmcmsp.o
++obj-$(CONFIG_I2C_POULSBO)      += i2c-sch.o
  obj-$(CONFIG_I2C_PNX)		+= i2c-pnx.o
-+obj-$(CONFIG_I2C_POULSBO)	+= i2c-sch.o
  obj-$(CONFIG_I2C_PROSAVAGE)	+= i2c-prosavage.o
  obj-$(CONFIG_I2C_PXA)		+= i2c-pxa.o
- obj-$(CONFIG_I2C_S3C2410)	+= i2c-s3c2410.o
 diff --git a/drivers/i2c/busses/i2c-sch.c b/drivers/i2c/busses/i2c-sch.c
 new file mode 100644
 index 0000000..8940362
@@ -451,6 +430,3 @@ index 0000000..8940362
 +
 +module_init(i2c_poulsbo_init);
 +module_exit(i2c_poulsbo_exit);
--- 
-1.5.2.GIT
-

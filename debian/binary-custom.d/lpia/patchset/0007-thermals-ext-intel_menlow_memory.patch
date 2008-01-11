@@ -1,26 +1,11 @@
-From 0c3f4c7f168aa37d17b3fce2a34e1c454371a4c1 Mon Sep 17 00:00:00 2001
-From: Sujith Thomas <sujith.thomas@intel.com>
-Date: Wed, 12 Dec 2007 11:20:25 +0530
-Subject: [PATCH] Intel menlow platform specific memory controller driver
-
-Signed-off-by: Sujith Thomas <sujth.thomas@intel.com>
-
-This driver exposes interfacs to control bandwidth to userspace through sysfs
-Driver internally uses platform specific ASL methods in BIOS
----
- drivers/acpi/Kconfig               |    8 +
- drivers/acpi/Makefile              |    1 +
- drivers/acpi/intel_menlow_memory.c |  287 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 296 insertions(+), 0 deletions(-)
- create mode 100644 drivers/acpi/intel_menlow_memory.c
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 0ab6c35..fad14c5 100644
+index 71b408e..c78c415 100644
 --- a/drivers/acpi/Kconfig
 +++ b/drivers/acpi/Kconfig
-@@ -191,6 +191,14 @@ config ACPI_THERMAL
- 	  recommended that this option be enabled, as your processor(s)
- 	  may be damaged without it.
+@@ -198,6 +198,13 @@ config INTEL_MENLOW_SENSOR
+ 	help
+ 	  This driver adds support for AUX trip programming of sensors withing ACPI thermal zones. This is an intel platform specific driver.
  
 +config INTEL_MENLOW_MEMORY
 +	tristate "Intel's Menlow memory controller driver"
@@ -29,28 +14,27 @@ index 0ab6c35..fad14c5 100644
 +	help
 +	  This driver adds support for throttling of memoyr device based on proprietory ACPI methods. This is an intel platform specific driver.
 +
-+
  config ACPI_NUMA
  	bool "NUMA support"
  	depends on NUMA
 diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 456446f..e152230 100644
+index 5f098ba..4c43d5b 100644
 --- a/drivers/acpi/Makefile
 +++ b/drivers/acpi/Makefile
-@@ -52,6 +52,7 @@ obj-$(CONFIG_ACPI_POWER)	+= power.o
- obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+@@ -53,6 +53,7 @@ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
  obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
  obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
+ obj-$(CONFIG_INTEL_MENLOW_SENSOR)+= intel_menlow_sensor.o
 +obj-$(CONFIG_INTEL_MENLOW_MEMORY)+= intel_menlow_memory.o
  obj-$(CONFIG_ACPI_SYSTEM)	+= system.o event.o
  obj-$(CONFIG_ACPI_DEBUG)	+= debug.o
  obj-$(CONFIG_ACPI_NUMA)		+= numa.o
 diff --git a/drivers/acpi/intel_menlow_memory.c b/drivers/acpi/intel_menlow_memory.c
 new file mode 100644
-index 0000000..7ada9ce
+index 0000000..6d41446
 --- /dev/null
 +++ b/drivers/acpi/intel_menlow_memory.c
-@@ -0,0 +1,287 @@
+@@ -0,0 +1,279 @@
 +/*
 +*  intel_menlow_memory.c - Memory Throttle Driver for menlow platform
 +* ($Revision: 1 $)
@@ -102,7 +86,6 @@ index 0000000..7ada9ce
 +	char *set_bandwidth;
 +	struct memory_controller_device *mc;
 +	struct device *dev;
-+	int symlink_created;
 +};
 +
 +static struct menlow_memory memory = {
@@ -164,9 +147,9 @@ index 0000000..7ada9ce
 +	if (ACPI_FAILURE(status)) {
 +		return -EINVAL;
 +	} else {
-+		if (out_value)
++		if (out_value) {
 +			*out_value = out_obj.integer.value;
-+
++		}
 +	}
 +
 +	return 0;
@@ -272,23 +255,16 @@ index 0000000..7ada9ce
 +
 +	switch (event_type) {
 +	case THERMAL_SYSFS_EVENT_ADD_PART:
-+		if (!memory->symlink_created) {
-+			result =
-+				sysfs_create_link(participant->kobj,
-+						  &memory->mc->class_dev.kobj,
-+						  memory->name);
-+			if (result)
-+				return result;
-+			else
-+				memory->symlink_created = 1;
-+		}
++		result =
++		    sysfs_create_link(participant->kobj,
++				      &memory->mc->class_dev.kobj,
++				      memory->name);
++		if (result)
++			return result;
 +		break;
 +
 +	case THERMAL_SYSFS_EVENT_RMV_PART:
-+		if (memory->symlink_created) {
-+			sysfs_remove_link(participant->kobj, memory->name);
-+			memory->symlink_created = 0;
-+		}
++		sysfs_remove_link(participant->kobj, memory->name);
 +		break;
 +	}
 +
@@ -330,14 +306,14 @@ index 0000000..7ada9ce
 +static void __exit memory_devices_exit(void)
 +{
 +	if (memory.mc) {
-+		thermal_event_unregister(&memory_thermal_event_listener,
-+					 THERMAL_SYSFS_REPORT_EXISTING);
-+		memory_controller_device_unregister(memory.mc);
++	thermal_event_unregister(&memory_thermal_event_listener,
++				 THERMAL_SYSFS_REPORT_EXISTING);
++	memory_controller_device_unregister(memory.mc);
 +	}
 +}
 +
 +module_init(memory_devices_init);
 +module_exit(memory_devices_exit);
 -- 
-1.5.3.7-dirty
+1.5.2.5
 

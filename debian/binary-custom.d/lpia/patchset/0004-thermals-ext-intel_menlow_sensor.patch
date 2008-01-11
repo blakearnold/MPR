@@ -1,25 +1,9 @@
-From 84654796017b0f3b36b4a24004901f8c84c6c524 Mon Sep 17 00:00:00 2001
-From: Sujith Thomas <sujith.thomas@intel.com>
-Date: Wed, 12 Dec 2007 11:24:51 +0530
-Subject: [PATCH] Intel menlow platform specific thermal sensor driver
-
-Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
-
-This driver exposes interfaces to program aux trips for thermal sensors
-to userspace through sysfs.
-Driver internally uses platform specific ASL methods in BIOS
----
- drivers/acpi/Kconfig               |    8 +-
- drivers/acpi/Makefile              |    1 +
- drivers/acpi/intel_menlow_sensor.c |  376 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 384 insertions(+), 1 deletions(-)
- create mode 100644 drivers/acpi/intel_menlow_sensor.c
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index fad14c5..f61a017 100644
+index 89441b6..a9c8743 100644
 --- a/drivers/acpi/Kconfig
 +++ b/drivers/acpi/Kconfig
-@@ -191,6 +191,13 @@ config ACPI_THERMAL
+@@ -190,6 +190,13 @@ config ACPI_THERMAL
  	  recommended that this option be enabled, as your processor(s)
  	  may be damaged without it.
  
@@ -30,19 +14,11 @@ index fad14c5..f61a017 100644
 +	help
 +	  This driver adds support for AUX trip programming of sensors withing ACPI thermal zones. This is an intel platform specific driver.
 +
- config INTEL_MENLOW_MEMORY
- 	tristate "Intel's Menlow memory controller driver"
- 	depends on MEMORY_SYSFS && THERMAL_SYSFS
-@@ -198,7 +205,6 @@ config INTEL_MENLOW_MEMORY
- 	help
- 	  This driver adds support for throttling of memoyr device based on proprietory ACPI methods. This is an intel platform specific driver.
- 
--
  config ACPI_NUMA
  	bool "NUMA support"
  	depends on NUMA
 diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index e152230..4c43d5b 100644
+index 456446f..5f098ba 100644
 --- a/drivers/acpi/Makefile
 +++ b/drivers/acpi/Makefile
 @@ -52,6 +52,7 @@ obj-$(CONFIG_ACPI_POWER)	+= power.o
@@ -50,12 +26,12 @@ index e152230..4c43d5b 100644
  obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
  obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
 +obj-$(CONFIG_INTEL_MENLOW_SENSOR)+= intel_menlow_sensor.o
- obj-$(CONFIG_INTEL_MENLOW_MEMORY)+= intel_menlow_memory.o
  obj-$(CONFIG_ACPI_SYSTEM)	+= system.o event.o
  obj-$(CONFIG_ACPI_DEBUG)	+= debug.o
+ obj-$(CONFIG_ACPI_NUMA)		+= numa.o
 diff --git a/drivers/acpi/intel_menlow_sensor.c b/drivers/acpi/intel_menlow_sensor.c
 new file mode 100644
-index 0000000..1a5a848
+index 0000000..36dabed
 --- /dev/null
 +++ b/drivers/acpi/intel_menlow_sensor.c
 @@ -0,0 +1,376 @@
@@ -162,9 +138,9 @@ index 0000000..1a5a848
 +	if (ACPI_FAILURE(status)) {
 +		return -EINVAL;
 +	} else {
-+		if (out_value)
++		if (out_value) {
 +			*out_value = out_obj.integer.value;
-+
++		}
 +	}
 +
 +	return 0;
@@ -436,5 +412,5 @@ index 0000000..1a5a848
 +module_init(thermalsensor_start);
 +module_exit(thermalsensor_end);
 -- 
-1.5.3.7-dirty
+1.5.2.5
 

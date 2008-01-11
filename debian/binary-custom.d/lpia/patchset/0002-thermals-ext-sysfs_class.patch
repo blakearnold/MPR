@@ -1,28 +1,29 @@
-From 4a26addbee545f99828cbc7bee1e2b493c890c75 Mon Sep 17 00:00:00 2001
-From: Sujith Thomas <sujith.thomas@intel.com>
-Date: Wed, 12 Dec 2007 11:00:06 +0530
-Subject: [PATCH] Generic fan and memory controller sysfs class driver
-
-Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
-
-header files for generic fan and memory_controller sysfs class drivers
-Generic fan sysfs driver: exposes state & max_state attributes
-Generic memory controller sysfs driver : exposes state & max_state attributes
----
- drivers/sysfsclass/Kconfig        |   30 +++++
- drivers/sysfsclass/Makefile       |    7 ++
- drivers/sysfsclass/fan_sysfs.c    |  210 +++++++++++++++++++++++++++++++++++++
- drivers/sysfsclass/memory_sysfs.c |  208 ++++++++++++++++++++++++++++++++++++
- include/linux/fan.h               |   66 ++++++++++++
- include/linux/memory_controller.h |   75 +++++++++++++
- 6 files changed, 596 insertions(+), 0 deletions(-)
- create mode 100644 drivers/sysfsclass/Kconfig
- create mode 100644 drivers/sysfsclass/Makefile
- create mode 100644 drivers/sysfsclass/fan_sysfs.c
- create mode 100644 drivers/sysfsclass/memory_sysfs.c
- create mode 100644 include/linux/fan.h
- create mode 100644 include/linux/memory_controller.h
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index f4076d9..9f3b661 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -14,6 +14,8 @@ source "drivers/parport/Kconfig"
+ 
+ source "drivers/pnp/Kconfig"
+ 
++source "drivers/sysfsclass/Kconfig"
++
+ source "drivers/block/Kconfig"
+ 
+ # misc before ide - BLK_DEV_SGIIOC4 depends on SGI_IOC4
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 8cb37e3..d5bd174 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_PCI)		+= pci/
+ obj-$(CONFIG_PARISC)		+= parisc/
+ obj-$(CONFIG_RAPIDIO)		+= rapidio/
+ obj-y				+= video/
++obj-$(CONFIG_SYSFS_DEV_CLASS)	+= sysfsclass/
+ obj-$(CONFIG_ACPI)		+= acpi/
+ # PnP must come after ACPI since it will eventually need to check if acpi
+ # was used and do nothing if so
 diff --git a/drivers/sysfsclass/Kconfig b/drivers/sysfsclass/Kconfig
 new file mode 100644
 index 0000000..ea02da6
@@ -74,10 +75,10 @@ index 0000000..293b5b4
 +obj-$(CONFIG_MEMORY_SYSFS)	+= memory_sysfs.o
 diff --git a/drivers/sysfsclass/fan_sysfs.c b/drivers/sysfsclass/fan_sysfs.c
 new file mode 100644
-index 0000000..f345c71
+index 0000000..610d2c9
 --- /dev/null
 +++ b/drivers/sysfsclass/fan_sysfs.c
-@@ -0,0 +1,210 @@
+@@ -0,0 +1,200 @@
 +/*
 +*  fan.c - Fan sysfs driver ($Revision: 1 $)
 +*
@@ -118,16 +119,13 @@ index 0000000..f345c71
 +static ssize_t state_show(struct class_device *cdev, char *buf)
 +{
 +	struct fan_device *fd;
-+	int result;
 +	if (!cdev || !buf)
 +		return 0;
 +
 +	fd = to_fan_device(cdev);
-+	if (fd->ops && fd->ops->get_cur_state) {
-+		result = fd->ops->get_cur_state(fd, buf);
-+		if (result)
-+			return result;
-+	}
++	if (fd->ops && fd->ops->get_cur_state)
++		if (fd->ops->get_cur_state(fd, buf))
++			return -EIO;
 +
 +	return strlen(buf);
 +}
@@ -136,18 +134,14 @@ index 0000000..f345c71
 +			   size_t count)
 +{
 +	struct fan_device *fd;
-+	int result;
 +
 +	if (!cdev || !buf)
 +		return count;
 +
 +	fd = to_fan_device(cdev);
-+	if (fd->ops && fd->ops->set_cur_state) {
-+		result = fd->ops->set_cur_state(fd, buf);
-+		printk("Fan store result is %d\n",result);
-+		if (result)
-+			return result;
-+	}
++	if (fd->ops && fd->ops->set_cur_state)
++		if (fd->ops->set_cur_state(fd, buf))
++			return -EIO;
 +
 +	return count;
 +}
@@ -155,16 +149,13 @@ index 0000000..f345c71
 +static ssize_t max_state_show(struct class_device *cdev, char *buf)
 +{
 +	struct fan_device *fd;
-+	int result;
 +	if (!cdev || !buf)
 +		return 0;
 +
 +	fd = to_fan_device(cdev);
-+	if (fd->ops && fd->ops->get_max_state) {
-+		result = fd->ops->get_max_state(fd, buf);
-+		if (result)
-+			return result;
-+	}
++	if (fd->ops && fd->ops->get_max_state)
++		if (fd->ops->get_max_state(fd, buf))
++			return -EIO;
 +
 +	return strlen(buf);
 +}
@@ -290,10 +281,10 @@ index 0000000..f345c71
 +module_exit(fan_device_exit);
 diff --git a/drivers/sysfsclass/memory_sysfs.c b/drivers/sysfsclass/memory_sysfs.c
 new file mode 100644
-index 0000000..6642336
+index 0000000..c881775
 --- /dev/null
 +++ b/drivers/sysfsclass/memory_sysfs.c
-@@ -0,0 +1,208 @@
+@@ -0,0 +1,199 @@
 +/*
 +*  memory_controller.c - Memory controller sysfs driver ($Revision: 1 $)
 +*
@@ -334,17 +325,14 @@ index 0000000..6642336
 +static ssize_t bandwidth_show(struct class_device *cdev, char *buf)
 +{
 +	struct memory_controller_device *mc;
-+	int result;
 +
 +	if (!cdev || !buf)
 +		return 0;
 +
 +	mc = to_memory_controller_device(cdev);
-+	if (mc->ops && mc->ops->get_cur_bandwidth) {
-+		result = mc->ops->get_cur_bandwidth(mc, buf);
-+		if (result)
-+			return result;
-+	}
++	if (mc->ops && mc->ops->get_cur_bandwidth)
++		if (mc->ops->get_cur_bandwidth(mc, buf))
++			return -EIO;
 +
 +	return strlen(buf);
 +}
@@ -353,16 +341,13 @@ index 0000000..6642336
 +			       size_t count)
 +{
 +	struct memory_controller_device *mc;
-+	int result;
 +	if (!cdev || !buf)
 +		return count;
 +
 +	mc = to_memory_controller_device(cdev);
-+	if (mc->ops && mc->ops->set_cur_bandwidth) {
-+		result = mc->ops->set_cur_bandwidth(mc, buf);
-+		if (result)
-+			return result;
-+	}
++	if (mc->ops && mc->ops->set_cur_bandwidth)
++		if (mc->ops->set_cur_bandwidth(mc, buf))
++			return -EIO;
 +
 +	return count;
 +}
@@ -370,16 +355,13 @@ index 0000000..6642336
 +static ssize_t max_bandwidth_show(struct class_device *cdev, char *buf)
 +{
 +	struct memory_controller_device *mc;
-+	int result;
 +	if (!cdev || !buf)
 +		return 0;
 +
 +	mc = to_memory_controller_device(cdev);
-+	if (mc->ops && mc->ops->get_max_bandwidth) {
-+		result = mc->ops->get_max_bandwidth(mc, buf);
-+		if (result)
-+			return result;
-+	}
++	if (mc->ops && mc->ops->get_max_bandwidth)
++		if (mc->ops->get_max_bandwidth(mc, buf))
++			return -EIO;
 +
 +	return strlen(buf);
 +}
@@ -656,5 +638,5 @@ index 0000000..a7564c8
 +#define to_memory_controller_device(obj) \
 +container_of(obj, struct memory_controller_device, class_dev)
 -- 
-1.5.3.7-dirty
+1.5.2.5
 

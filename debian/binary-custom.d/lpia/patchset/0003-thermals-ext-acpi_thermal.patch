@@ -1,34 +1,16 @@
-From bd243e4020f4bbce600330fd074af31973089cca Mon Sep 17 00:00:00 2001
-From: Sujith Thomas <sujith.thomas@intel.com>
-Date: Wed, 12 Dec 2007 11:07:18 +0530
-Subject: [PATCH] ACPI thermal driver registering with generic thermal sysfs driver
-
-Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
-
-Callbacks for various attributes(critical,hot...) are added
-Provided infrastructure for user mode applicatio to take over platform thermal management
----
- drivers/acpi/Kconfig   |    5 +-
- drivers/acpi/thermal.c |  508 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 507 insertions(+), 6 deletions(-)
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index ac09a5c..b065d16 100644
+index b9f923e..89441b6 100644
 --- a/drivers/acpi/Kconfig
 +++ b/drivers/acpi/Kconfig
-@@ -3,10 +3,11 @@
- #
- 
- menuconfig ACPI
--	bool "ACPI (Advanced Configuration and Power Interface) Support"
-+	bool "ACPI Support (Advanced Configuration and Power Interface) Support"
- 	depends on !X86_NUMAQ
+@@ -8,6 +8,7 @@ menuconfig ACPI
  	depends on !X86_VISWS
  	depends on !IA64_HP_SIM
-+	depends on PM || THERMAL_SYSFS
  	depends on IA64 || X86
++	depends on PM || THERMAL_SYSFS
  	depends on PCI
  	depends on PM
+ 	select PNP
 @@ -181,7 +182,7 @@ config ACPI_HOTPLUG_CPU
  
  config ACPI_THERMAL
@@ -39,7 +21,7 @@ index ac09a5c..b065d16 100644
  	help
  	  This driver adds support for ACPI thermal zones.  Most mobile and
 diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
-index 5f79b44..417deed 100644
+index 5f79b44..fee173d 100644
 --- a/drivers/acpi/thermal.c
 +++ b/drivers/acpi/thermal.c
 @@ -28,6 +28,8 @@
@@ -69,18 +51,18 @@ index 5f79b44..417deed 100644
  #define _COMPONENT		ACPI_THERMAL_COMPONENT
  ACPI_MODULE_NAME("thermal");
  
-@@ -99,6 +99,11 @@ static int psv;
- module_param(psv, int, 0644);
- MODULE_PARM_DESC(psv, "Disable or override all passive trip points.");
+@@ -87,6 +87,11 @@ static int tzp;
+ module_param(tzp, int, 0444);
+ MODULE_PARM_DESC(tzp, "Thermal zone polling frequency, in 1/10 seconds.");
  
 +#define ACPI_THERMAL_GROUP_TZD "thermalzone_devices"
 +#define ACPI_THERMAL_GROUP_PSL "passive_devices"
 +#define ACPI_THERMAL_GROUP_ALX "active_devices_x"
 +#define ACPI_THERMAL_TRIP_ACTIVE "active_x"
 +
- static int acpi_thermal_add(struct acpi_device *device);
- static int acpi_thermal_remove(struct acpi_device *device, int type);
- static int acpi_thermal_resume(struct acpi_device *device);
+ static int nocrt;
+ module_param(nocrt, int, 0);
+ MODULE_PARM_DESC(nocrt, "Set to take no action upon ACPI thermal zone critical trips points.");
 @@ -196,6 +201,9 @@ struct acpi_thermal {
  	struct acpi_handle_list devices;
  	struct timer_list timer;
@@ -103,27 +85,45 @@ index 5f79b44..417deed 100644
  /* --------------------------------------------------------------------------
                               Thermal Zone Management
     -------------------------------------------------------------------------- */
-@@ -757,6 +770,16 @@ static void acpi_thermal_check(void *data)
+@@ -757,19 +770,30 @@ static void acpi_thermal_check(void *data)
  			     tz->trips.active[i].temperature);
  
  	/*
+-	 * Invoke Policy
+-	 * -------------
+-	 * Separated from the above check to allow individual policy to 
+-	 * determine when to exit a given state.
 +	 * Check for user/kernel algo
 +	 * -------------------------
 +	 *If there is a thermal management application in userspace
 +	 *Or there are non CPU devices in this thermal zone
 +	 *Kernelspace solution won't handle this
-+	 */
+ 	 */
+-	if (state.critical)
+-		acpi_thermal_critical(tz);
+-	if (state.hot)
+-		acpi_thermal_hot(tz);
+-	if (state.passive)
+-		acpi_thermal_passive(tz);
+-	if (state.active)
+-		acpi_thermal_active(tz);
 +
 +	if (THERMAL_KERNELSPACE == thermal_get_algo_mode()) {
 +
 +		/*
- 	 * Invoke Policy
- 	 * -------------
- 	 * Separated from the above check to allow individual policy to 
-@@ -770,6 +793,7 @@ static void acpi_thermal_check(void *data)
- 		acpi_thermal_passive(tz);
- 	if (state.active)
- 		acpi_thermal_active(tz);
++		 * Invoke Policy
++		 * -------------
++		 * Separated from the above check to allow individual policy to
++		 * determine when to exit a given state.
++		 */
++		if (state.critical)
++			acpi_thermal_critical(tz);
++		if (state.hot)
++			acpi_thermal_hot(tz);
++		if (state.passive)
++			acpi_thermal_passive(tz);
++		if (state.active)
++			acpi_thermal_active(tz);
 +	}
  
  	/*
@@ -176,13 +176,14 @@ index 5f79b44..417deed 100644
  static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
  {
  	struct acpi_thermal *tz = data;
-@@ -1178,18 +1243,33 @@ static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
+@@ -1178,21 +1243,37 @@ static void acpi_thermal_notify(acpi_handle handle, u32 event, void *data)
  
  	switch (event) {
  	case ACPI_THERMAL_NOTIFY_TEMPERATURE:
 +		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 +				  "Received event from TZ: %s event type:%x \n",
 +				  tz->name, event));
++		/*kernel space algorithm */
  		acpi_thermal_check(tz);
 +		/*Event for user space algorithm */
 +		thermal_sysfs_generate_event(tz->td, KOBJ_CHANGE);
@@ -204,14 +205,19 @@ index 5f79b44..417deed 100644
 +			thermal_group_unregister(tz->td,
 +						 ACPI_THERMAL_GROUP_TZD);
  			acpi_thermal_get_devices(tz);
+-		acpi_bus_generate_proc_event(device, event, 0);
+-		acpi_bus_generate_netlink_event(device->pnp.device_class,
++			acpi_bus_generate_proc_event(device, event, 0);
++			acpi_bus_generate_netlink_event(device->pnp.device_class,
+ 						  device->dev.bus_id, event, 0);
 +			acpi_thermal_one_group_register(tz,
 +							ACPI_THERMAL_GROUP_TZD,
 +							&tz->devices);
 +		}
- 		acpi_bus_generate_proc_event(device, event, 0);
- 		acpi_bus_generate_netlink_event(device->pnp.device_class,
- 						  device->dev.bus_id, event, 0);
-@@ -1240,6 +1320,419 @@ static int acpi_thermal_get_info(struct acpi_thermal *tz)
+ 		break;
+ 	default:
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+@@ -1240,6 +1321,421 @@ static int acpi_thermal_get_info(struct acpi_thermal *tz)
  	return 0;
  }
  
@@ -506,8 +512,9 @@ index 5f79b44..417deed 100644
 +		result =
 +		    acpi_thermal_one_group_register(tz, ACPI_THERMAL_GROUP_PSL,
 +						    &tz->trips.passive.devices);
-+		if (result)
++		if (result) {
 +			goto end;
++		}
 +
 +		/*_TC1,_TC2,_TSP attribute registration */
 +		thermal_attribute_register(tz->td, thermal_device_attrs);
@@ -518,8 +525,9 @@ index 5f79b44..417deed 100644
 +		result =
 +		    acpi_thermal_one_group_register(tz, ACPI_THERMAL_GROUP_TZD,
 +						    &tz->devices);
-+		if (result)
++		if (result) {
 +			goto end;
++		}
 +	}
 +
 +	for (i = 0; i < ACPI_THERMAL_MAX_ACTIVE; i++) {
@@ -576,9 +584,9 @@ index 5f79b44..417deed 100644
 +	}
 +
 +end:
-+	if (result)
++	if (result) {
 +		thermal_device_unregister(tz->td);
-+
++	}
 +
 +	return result;
 +}
@@ -631,18 +639,19 @@ index 5f79b44..417deed 100644
  static int acpi_thermal_add(struct acpi_device *device)
  {
  	int result = 0;
-@@ -1268,6 +1761,10 @@ static int acpi_thermal_add(struct acpi_device *device)
+@@ -1265,6 +1761,11 @@ static int acpi_thermal_add(struct acpi_device *device)
+ 		goto end;
+ 
+ 	result = acpi_thermal_add_fs(device);
++	if (result) {
++		goto end;
++	}
++
++	result = acpi_thermal_sysfs_register(tz);
  	if (result)
  		goto end;
  
-+	result = acpi_thermal_sysfs_register(tz);
-+	if (result)
-+		goto end;
-+
- 	init_timer(&tz->timer);
- 
- 	acpi_thermal_check(tz);
-@@ -1287,6 +1784,7 @@ static int acpi_thermal_add(struct acpi_device *device)
+@@ -1287,6 +1788,7 @@ static int acpi_thermal_add(struct acpi_device *device)
        end:
  	if (result) {
  		acpi_thermal_remove_fs(device);
@@ -650,16 +659,14 @@ index 5f79b44..417deed 100644
  		kfree(tz);
  	}
  
-@@ -1329,7 +1827,9 @@ static int acpi_thermal_remove(struct acpi_device *device, int type)
+@@ -1329,6 +1831,7 @@ static int acpi_thermal_remove(struct acpi_device *device, int type)
  	}
  
  	acpi_thermal_remove_fs(device);
 +	acpi_thermal_sysfs_unregister(tz);
  	mutex_destroy(&tz->lock);
-+
  	kfree(tz);
  	return 0;
- }
 -- 
-1.5.3.7-dirty
+1.5.2.5
 

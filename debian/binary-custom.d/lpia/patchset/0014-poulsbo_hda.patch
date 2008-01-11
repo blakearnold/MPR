@@ -1,0 +1,196 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index 3fa0f97..0b0c0bc 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -75,6 +75,12 @@ MODULE_PARM_DESC(single_cmd, "Use single command to communicate with codecs "
+ module_param(enable_msi, int, 0);
+ MODULE_PARM_DESC(enable_msi, "Enable Message Signaled Interrupt (MSI)");
+ 
++/* For workaround Poulsbo SI bugs, it affects stream descriptor offset and
++ * corresponding control bits
++ */
++static int sd_offset_fixup= 0;
++static int sd_bit_fixup=0;
++
+ #ifdef CONFIG_SND_HDA_POWER_SAVE
+ /* power_save option is defined in hda_codec.c */
+ 
+@@ -269,6 +275,10 @@ enum {
+ #define NVIDIA_HDA_TRANSREG_ADDR      0x4e
+ #define NVIDIA_HDA_ENABLE_COHBITS     0x0f
+ 
++/* Defines for Intel SCH HDA snoop control */
++#define INTEL_SCH_HDA_DEVC      0x78
++#define INTEL_SCH_HDA_DEVC_NOSNOOP       (0x1<<11)
++
+ /*
+  */
+ 
+@@ -788,8 +798,20 @@ static void azx_int_clear(struct azx *chip)
+ static void azx_stream_start(struct azx *chip, struct azx_dev *azx_dev)
+ {
+ 	/* enable SIE */
+-	azx_writeb(chip, INTCTL,
+-		   azx_readb(chip, INTCTL) | (1 << azx_dev->index));
++	if (!sd_bit_fixup) {
++		azx_writeb(chip, INTCTL,
++			azx_readb(chip, INTCTL) | (1 << azx_dev->index));
++	}
++	else {
++		if (azx_dev->index < sd_bit_fixup) {
++			azx_writel(chip, INTCTL,
++				azx_readl(chip, INTCTL) | (1 << azx_dev->index));
++		} else {
++			azx_writel(chip, INTCTL,
++				azx_readl(chip, INTCTL) | (1 << (azx_dev->index+sd_bit_fixup)));
++		}
++	}
++
+ 	/* set DMA start and interrupt mask */
+ 	azx_sd_writeb(azx_dev, SD_CTL, azx_sd_readb(azx_dev, SD_CTL) |
+ 		      SD_CTL_DMA_START | SD_INT_MASK);
+@@ -803,8 +825,18 @@ static void azx_stream_stop(struct azx *chip, struct azx_dev *azx_dev)
+ 		      ~(SD_CTL_DMA_START | SD_INT_MASK));
+ 	azx_sd_writeb(azx_dev, SD_STS, SD_INT_MASK); /* to be sure */
+ 	/* disable SIE */
+-	azx_writeb(chip, INTCTL,
+-		   azx_readb(chip, INTCTL) & ~(1 << azx_dev->index));
++	if (!sd_bit_fixup) {
++		azx_writeb(chip, INTCTL,
++			azx_readb(chip, INTCTL) & ~(1 << azx_dev->index));
++	} else {
++		if (azx_dev->index < sd_bit_fixup ) {
++			azx_writeb(chip, INTCTL,
++		   		azx_readb(chip, INTCTL) & ~(1 << azx_dev->index));
++		} else {
++			 azx_writeb(chip, INTCTL,
++				azx_readb(chip, INTCTL) & ~(1 << (azx_dev->index+sd_bit_fixup)));
++		}
++	}
+ }
+ 
+ 
+@@ -851,6 +883,7 @@ static void update_pci_byte(struct pci_dev *pci, unsigned int reg,
+ 
+ static void azx_init_pci(struct azx *chip)
+ {
++	unsigned short reg16;
+ 	/* Clear bits 0-2 of PCI register TCSEL (at offset 0x44)
+ 	 * TCSEL == Traffic Class Select Register, which sets PCI express QOS
+ 	 * Ensuring these bits are 0 clears playback static on some HD Audio
+@@ -871,6 +904,19 @@ static void azx_init_pci(struct azx *chip)
+ 				NVIDIA_HDA_TRANSREG_ADDR,
+ 				0x0f, NVIDIA_HDA_ENABLE_COHBITS);
+ 		break;
++	case AZX_DRIVER_ICH:
++		/* For SCH (Poulsbo), enable snoop */
++		if (chip->pci->device == PCI_DEVICE_ID_INTEL_POULSBO_HDA) {
++			pci_read_config_word(chip->pci, INTEL_SCH_HDA_DEVC, &reg16);
++			if (reg16 & INTEL_SCH_HDA_DEVC_NOSNOOP) {
++				pci_write_config_word(chip->pci, INTEL_SCH_HDA_DEVC, \
++					reg16 & (~INTEL_SCH_HDA_DEVC_NOSNOOP));
++				pci_read_config_word(chip->pci, INTEL_SCH_HDA_DEVC, &reg16);
++				snd_printk(KERN_INFO "HDA snoop disabled, try to enable ... %s\n", \
++					(reg16 & INTEL_SCH_HDA_DEVC_NOSNOOP)?"Failed":"OK");	
++			}
++		}
++		break;
+         }
+ }
+ 
+@@ -1467,11 +1513,24 @@ static int __devinit azx_init_stream(struct azx *chip)
+ 		struct azx_dev *azx_dev = &chip->azx_dev[i];
+ 		azx_dev->bdl = (u32 *)(chip->bdl.area + off);
+ 		azx_dev->bdl_addr = chip->bdl.addr + off;
+-		azx_dev->posbuf = (u32 __iomem *)(chip->posbuf.area + i * 8);
+ 		/* offset: SDI0=0x80, SDI1=0xa0, ... SDO3=0x160 */
+-		azx_dev->sd_addr = chip->remap_addr + (0x20 * i + 0x80);
+-		/* int mask: SDI0=0x01, SDI1=0x02, ... SDO3=0x80 */
+-		azx_dev->sd_int_sta_mask = 1 << i;
++		if (!sd_bit_fixup) {
++			azx_dev->posbuf = (u32 __iomem *)(chip->posbuf.area + i * 8);
++			azx_dev->sd_addr = chip->remap_addr + (0x20 * i + 0x80);
++			/* int mask: SDI0=0x01, SDI1=0x02, ... SDO3=0x80 */
++			azx_dev->sd_int_sta_mask = 1 << i;
++		} else {
++			if (i<sd_bit_fixup) {
++				azx_dev->posbuf = (u32 __iomem *)(chip->posbuf.area + i * 8);
++				azx_dev->sd_addr = chip->remap_addr + (0x20 * i + 0x80);
++				azx_dev->sd_int_sta_mask = 1 << i;
++			} else {
++				azx_dev->sd_addr = chip->remap_addr + (0x20 * i + 0x80 + sd_offset_fixup);
++				azx_dev->posbuf = (u32 __iomem *)(chip->posbuf.area + (2+i) * 8);
++				azx_dev->sd_int_sta_mask = 1 << (i+sd_bit_fixup);
++			}
++		}
++
+ 		/* stream tag: must be non-zero and unique */
+ 		azx_dev->index = i;
+ 		azx_dev->stream_tag = i + 1;
+@@ -1702,9 +1761,11 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
+ {
+ 	struct azx *chip;
+ 	int err;
++	unsigned short stepping;
+ 	static struct snd_device_ops ops = {
+ 		.dev_free = azx_dev_free,
+ 	};
++	unsigned short gcap;
+ 
+ 	*rchip = NULL;
+ 	
+@@ -1783,10 +1844,41 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
+ 		chip->capture_index_offset = ATIHDMI_CAPTURE_INDEX;
+ 		break;
+ 	default:
+-		chip->playback_streams = ICH6_NUM_PLAYBACK;
+-		chip->capture_streams = ICH6_NUM_CAPTURE;
+-		chip->playback_index_offset = ICH6_PLAYBACK_INDEX;
+-		chip->capture_index_offset = ICH6_CAPTURE_INDEX;
++		/* read number of streams from GCAP regiser instead of using
++		 * hardcoded value
++		 */
++		gcap = azx_readw(chip, GCAP);
++		if (!gcap) {
++			snd_printk(KERN_ERR "Device has no streams \n");
++			goto errout;
++		};
++		chip->playback_streams = (gcap&(0xF<<12))>>12;
++		chip->capture_streams = (gcap&(0xF<<8))>>8;
++		chip->playback_index_offset = (gcap&(0xF<<12))>>12;
++		chip->capture_index_offset = 0;
++		/* do fixup for poulsbo */
++		if (pci->device == PCI_DEVICE_ID_INTEL_POULSBO_HDA) {
++			snd_printk(KERN_INFO "Do fixup for Poulsbo ");
++			pci_bus_read_config_word(pci->bus, 0, 0x8, &stepping);
++			switch (stepping) {
++				case 0:
++					/* A2 has wrong OSD0 offset and control bits */
++					snd_printk(KERN_INFO "A2 stepping\n");
++					sd_offset_fixup = 0x40;
++					sd_bit_fixup = 0x2;
++					break;
++				case 2:
++				case 3:
++				case 4:
++					/* B0/1 and C0 moved OSD0 offset but not control bits */
++					snd_printk(KERN_INFO "B0/1 or C0 stepping\n");
++					sd_bit_fixup = 0x2;
++					break;
++				default:
++					snd_printk(KERN_ERR "Unknow stepping\n");
++					break;
++			}
++		}
+ 		break;
+ 	}
+ 	chip->num_streams = chip->playback_streams + chip->capture_streams;
+@@ -1936,6 +2028,7 @@ static struct pci_device_id azx_ids[] = {
+ 	{ 0x8086, 0x284b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH8 */
+ 	{ 0x8086, 0x293e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH9 */
+ 	{ 0x8086, 0x293f, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH9 */
++	{ 0x8086, 0x811b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* POULSBO */
+ 	{ 0x1002, 0x437b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ATI }, /* ATI SB450 */
+ 	{ 0x1002, 0x4383, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ATI }, /* ATI SB600 */
+ 	{ 0x1002, 0x793b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ATIHDMI }, /* ATI RS600 HDMI */

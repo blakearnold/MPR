@@ -1,3 +1,4 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
 index f81d08d..8d71885 100644
 --- a/drivers/usb/gadget/Kconfig

@@ -1,26 +1,253 @@
-From 318e393f719e1af17a91b234ddbbcab34c53ff2c Mon Sep 17 00:00:00 2001
-From: Sujith Thomas <sujith.thomas@intel.com>
-Date: Wed, 12 Dec 2007 10:43:28 +0530
-Subject: [PATCH] Generic sysfs thermal management driver
-
-Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
-
-In a nutshell this patch provides an infrastructure for userspace application to handle
-platform thermal managemetn
-Adds a 'Config' folder for user mode application to take over kernel mode algo
----
- drivers/base/thermal_sysfs.c | 1139 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/thermal.h      |  294 +++++++++++
- 2 files changed, 1433 insertions(+), 0 deletions(-)
- create mode 100644 drivers/base/thermal_sysfs.c
- create mode 100644 include/linux/thermal.h
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
+diff --git a/Documentation/ThermalExtensions.txt b/Documentation/ThermalExtensions.txt
+new file mode 100644
+index 0000000..87e7811
+--- /dev/null
++++ b/Documentation/ThermalExtensions.txt
+@@ -0,0 +1,197 @@
++Thermal extensions How-to
++=========================
++
++Written by Sujith Thomas <sujith.thomas@intel.com>
++
++Updated: 18 October 2007
++
++Copyright (c)  2007 Intel Corporation
++
++
++0. Introduction
++
++The thermal extensions provide a set of interfaces for thermal devices (sensors)
++to register with the thermal management solution and to be a part of it.
++This how-to focusses on enabling a new sensor to participate
++in thermal management.
++
++Thermal extensions expose a set of interfaces for sensor drivers to expose
++their attributes as well as devices associated with this sensor. This solution
++is platform independent and any type of sensor should be able to make use of the
++infrastructure.
++
++The main task of the thermal extensions is to expose sensor attributes as well
++as thermal events to the user space. In addition, attributes for controlling
++devices associated with a sensor is also exposed through sysfs. An intelligent
++thermal management application can make decisions based on inputs from sensor and
++throttle appropriate devices.
++
++1. Sysfs directory structure
++
++ The sysfs entry will be made under /sys/thermal and it will have the
++ following group of attributes.
++
++ -/sys/thermal/config       (thermal management related configuration)
++ -/sys/thermal/<TZ#>        (thermal zone related data)
++ -/sys/thermal/<TZ#>/<Group> (info about a device in a thermal zone)
++
++ 1.1 /sys/thermal/config
++
++ This folder has the following attributes
++
++ -mode (user = user-space thermal managemnt ; kernel = kernel-space thermal management)
++ -userenabled (0 if kernel is not willing to give control to application else 1)
++
++
++ 1.2 /sys/thermal/<TZ#>
++
++ The below attributes will appear for all thermal devices (sensors)
++
++ -critical      (critical temperature at which system will shutdown)
++ -hot           (temperature at which system will hibernate)
++ -passive       (temperature at which passive cooling will be started)
++ -temperature   (current temperature)
++ -cooling_mode  (active/passive)
++ -polling_freq  (frequency at which sensor is polled for temperature changes)
++ -state         (ok/critical/hot/passive/active[x])
++
++ The below attributes will appear only if Intel's platform sensor
++ driver is loaded.
++
++ -aux0        (lower AUX value interface for platform sensor driver)
++ -aux1        (upper AUX value interface for platform sensor driver)
++
++ 1.3 /sys/thermal/<TZ#>/<Group>
++
++ 'Group' entry depends on the registration of groups from 'thermal device driver'.
++ In the case of ACPI thermal driver, groups like 'thermalzone_devices',
++ 'active_device' & 'passive_devices' are created and devices are filled on
++ basis of what BIOS reports.
++
++2. Thermal device interface functions
++   ==================================
++
++There are a set of interface functions available for 'thermal device driver' to
++register with 'thermal sysfs driver'. 'Thermal device driver' is the driver
++which directly interacts with the sensor and has the list of devices associated
++with this sensor. 'Thermal sysfs driver' is the driver for exposing attributes
++of various sensors to userspace through sysfs.
++
++2.1 thermal_device_register
++/*
++ * thermal_device_register
++ * ------------------------
++ * Method for registering thermal devices(sensors) with sysfs
++ * name: The name that should appear in sysfs
++ * devdata : Device private context
++ * ops : List of call back functions for various attributes
++ */
++
++ This interface is used by 'Thermal device driver' to make an entry of the new
++ sensor to /sys/thermal folder. This step is mandatory.
++
++2.2 thermal_group_register
++/*
++ * thermal_group_register
++ * ------------------------
++ * Method for registering groups such as ACPI _TZD with sysfs
++ * name: The name that should appear in sysfs
++ * td : Device under which this group is to be created
++ * participant_count : No:of participants in this group
++ * participants: Pointer to an array of participants
++ */
++ This interface is used by 'Thermal device driver' to register a new 'group'
++ of devices. Example for groups are 'active devices' , 'passive devices' etc.
++ This step needs to be done only if there are a set of devices associated
++ with this sensor.
++
++2.3 thermal_attribute_register
++ /*
++  * thermal_attribute_register
++  * ------------------------
++  * Method for registering extra attributes with sysfs
++  * td : Device under which attributes should be created
++  * thermal_device_attrs : array of attributes to be added
++  */
++  This interface is used by 'Thermal device driver' to expose some of extra
++  attributes (other than standard attributes defined in thermal.h) with sysfs.
++
++2.4 thermal_event_register
++ /*
++  * thermal_event_register
++  * ----------------------
++  * Register for add/rmv of device/group/participant notification
++  * handler: thermal_event_handler containing callback func pointer
++  * report_type: Set this flag if callbacks needs to be invoked
++  * for existing device/group/participants
++  */
++  This inteface can be used by any driver to get notification about add/remove
++  of entities like 'thermal device', 'group' or 'devices within a group'.
++
++2.5 thermal_device_unregister
++ /*
++  * thermal_device_unregister
++  * ------------------------
++  * Method for unregistering thermal devices(sensors) with sysfs
++  * td: Pointer to thermal_device
++  */
++
++2.6 thermal_group_unregister
++ /*
++  * thermal_group_unregister
++  * ------------------------
++  * Method for unregistering groups within a thermal device
++  * td: Pointer to thermal_device from where the group should be removed
++  * name : Name of the group given during registration
++  */
++
++2.7 thermal_attribute_unregister
++ /*
++  * thermal_attribute_unregister
++  * ------------------------
++  * Method for unregistering extra attributes with sysfs
++  * td : Device under which attributes should be removed
++  * thermal_device_attrs : array of attributes to be removed
++  */
++
++2.8 thermal_event_unregister
++ /*
++  * thermal_event_unregister
++  * ----------------------
++  * UnRegister for add/rmv of device/group/participant notification
++  * handler: thermal_event_handler containing callback func pointer
++  * report_type: Set this flag if callbacks needs to be invoked
++  * for existing device/group/participants
++  */
++
++2.9 thermal_sysfs_generate_event
++ /*
++  * thermal_sysfs_generate_event
++  * ---------------------------
++  * Drivers managing thermal devices can invoke this method to notify
++  * user applications about thermal events
++  */
++  This interface can be used by 'thermal device drivers' to sent a
++  notification about trip point events to the user application.
++
++2.10 thermal_get_algo_mode
++ /*
++  * thermal_get_algo_mode
++  * ----------------------
++  * Method to know whether the user mode application has taken over
++  */
++
++2.11 thermal_set_userenabled
++ /*
++  * thermal_set_userenabled
++  * -----------------------
++  * Interface function for platform sensor driver to disble userspace algo
++  * ue: enable / disable userspace algo based on BIOS configuration
++  */
++  This can be called by any driver to prevent the overriding of thermal
++  management from userspace. One scenario is to call this API based on
++  enable/disable option given in BIOS.
++
++
++
++
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 80b7ba4..9fd3410 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1219,7 +1219,7 @@ config OUT_OF_LINE_PFN_TO_PAGE
+ 	def_bool X86_64
+ 	depends on DISCONTIGMEM
+ 
+-menu "Power management options"
++menu "Power and Thermal management options"
+ 	depends on !X86_VOYAGER
+ 
+ config ARCH_HIBERNATION_HEADER
+@@ -1229,6 +1229,14 @@ config ARCH_HIBERNATION_HEADER
+ 
+ source "kernel/power/Kconfig"
+ 
++config THERMAL_SYSFS
++	tristate "Thermal Management support"
++	default y
++	---help---
++	  Support thermal management in Sysfs. Thermal devices(sensors)
++	  are exposed to sysfs with relevant attributes so that a user app
++	  can do thermal management for the platform.
++
+ source "drivers/acpi/Kconfig"
+ 
+ menuconfig APM
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index b39ea3f..14884cd 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_NUMA)	+= node.o
+ obj-$(CONFIG_MEMORY_HOTPLUG_SPARSE) += memory.o
+ obj-$(CONFIG_SMP)	+= topology.o
+ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
++obj-$(CONFIG_THERMAL_SYSFS) += thermal_sysfs.o
+ 
+ ifeq ($(CONFIG_DEBUG_DRIVER),y)
+ EXTRA_CFLAGS += -DDEBUG
 diff --git a/drivers/base/thermal_sysfs.c b/drivers/base/thermal_sysfs.c
 new file mode 100644
-index 0000000..8dd25a1
+index 0000000..657189e
 --- /dev/null
 +++ b/drivers/base/thermal_sysfs.c
-@@ -0,0 +1,1139 @@
+@@ -0,0 +1,1138 @@
 +/*
 + *  thermal_sysfs.c - Generic sysfs implementation for thermal subsystem
 + *  ($Revision: 1 $)
@@ -219,9 +446,9 @@ index 0000000..8dd25a1
 +	int error = 0;
 +	int i;
 +
-+	for (i = 0; (attr = thermalconfig_attrs[i]) && !error; i++)
++	for (i = 0; (attr = thermalconfig_attrs[i]) && !error; i++) {
 +		error = sysfs_create_file(&tc->kobj, &attr->attr);
-+
++	}
 +}
 +
 +/*Call back registration for thermal config*/
@@ -265,7 +492,7 @@ index 0000000..8dd25a1
 +	if (!result)\
 +		s += sprintf(buf, "%d\n", data);\
 +	return (s - buf);\
-+} \
++}\
 +
 +ATTRIB_SHOW(temperature);
 +ATTRIB_SHOW(critical);
@@ -393,7 +620,7 @@ index 0000000..8dd25a1
 +				continue;
 +		}
 +
-+		error = sysfs_create_file(&td->kobj, &attr->attr);
++			error = sysfs_create_file(&td->kobj, &attr->attr);
 +	}
 +
 +}
@@ -646,7 +873,7 @@ index 0000000..8dd25a1
 +	group->participant =
 +	    kzalloc(participant_count * sizeof(struct thermal_participant),
 +		    GFP_KERNEL);
-+
++	
 +	if (!group->participant) {
 +		kobject_unregister(&group->kobj);
 +		kfree(group);
@@ -666,8 +893,7 @@ index 0000000..8dd25a1
 +			result =
 +			    sysfs_create_link(&group->kobj,
 +					      group->participant[i].kobj,
-+					      group->participant
-+					      [i].kobj->k_name);
++					      group->participant[i].kobj->k_name);
 +			if (result) {
 +				kobject_unregister(&group->kobj);
 +				kfree(group->participant);
@@ -794,9 +1020,9 @@ index 0000000..8dd25a1
 +	if (!td || thermal_is_td_exist(td) || !thermal_device_attrs)
 +		return -EINVAL;
 +
-+	for (i = 0; (attr = thermal_device_attrs[i]); i++)
++	for (i = 0; (attr = thermal_device_attrs[i]); i++) {
 +		sysfs_remove_file(&td->kobj, &attr->attr);
-+
++	}
 +
 +	return 0;
 +}
@@ -826,13 +1052,13 @@ index 0000000..8dd25a1
 +		if (event_listener->event_type & event_type) {
 +			if (query_name && event_listener->query_name) {
 +				if (!strcmp
-+				    (event_listener->query_name, query_name))
++				    (event_listener->query_name, query_name)) {
 +					event_listener->
 +					    thermal_sysfs_event_handler
 +					    (event_type, data,
 +					     event_listener->private);
-+
-+			} else {
++				}
++			} else {;
 +				event_listener->
 +				    thermal_sysfs_event_handler(event_type,
 +								data,
@@ -860,13 +1086,13 @@ index 0000000..8dd25a1
 +		old_td = list_entry(pos, struct thermal_device, node);
 +		spin_unlock(&td_list_lock);
 +		if (listener->query_name) {
-+			if (!strcmp(listener->query_name, old_td->name))
++			if (!strcmp(listener->query_name, old_td->name)) {
 +				listener->
 +				    thermal_sysfs_event_handler(event_type,
 +								old_td,
 +								listener->
 +								private);
-+
++			}
 +		} else {
 +			listener->thermal_sysfs_event_handler(event_type,
 +							      old_td,
@@ -898,11 +1124,11 @@ index 0000000..8dd25a1
 +			tg = list_entry(pos_tg, struct thermal_group, node);
 +			spin_unlock(&td_list_lock);
 +			if (listener->query_name) {
-+				if (!strcmp(listener->query_name, tg->name))
++				if (!strcmp(listener->query_name, tg->name)) {
 +					listener->
 +					    thermal_sysfs_event_handler
 +					    (event_type, tg, listener->private);
-+
++				}
 +			} else {
 +				listener->
 +				    thermal_sysfs_event_handler(event_type, tg,
@@ -944,12 +1170,12 @@ index 0000000..8dd25a1
 +				if (listener->query_name) {
 +					if (!strcmp
 +					    (listener->query_name,
-+					     participant->name))
++					     participant->name)) {
 +						listener->
 +						    thermal_sysfs_event_handler
 +						    (event_type, participant,
 +						     listener->private);
-+
++					}
 +				} else {
 +					listener->
 +					    thermal_sysfs_event_handler
@@ -1011,31 +1237,31 @@ index 0000000..8dd25a1
 +	      || event_type & THERMAL_SYSFS_EVENT_ADD_PART
 +	      || event_type & THERMAL_SYSFS_EVENT_RMV_TD
 +	      || event_type & THERMAL_SYSFS_EVENT_RMV_GRP
-+	      || event_type & THERMAL_SYSFS_EVENT_RMV_PART))
++	      || event_type & THERMAL_SYSFS_EVENT_RMV_PART)) {
 +		return -EINVAL;
-+
++	}
 +
 +	spin_lock(&el_list_lock);
 +	list_add(&(listener->node), &thermal_sysfs_event_listener_list);
 +	spin_unlock(&el_list_lock);
 +
 +	if (THERMAL_SYSFS_REPORT_EXISTING == report_type) {
-+		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_TD)
++		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_TD) {
 +			dispatch_existing_td_events(
 +				listener,
 +				THERMAL_SYSFS_EVENT_ADD_TD);
++		}
 +
-+
-+		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_GRP)
++		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_GRP) {
 +			dispatch_existing_group_events(
 +				listener,
 +				THERMAL_SYSFS_EVENT_ADD_GRP);
++		}
 +
-+
-+		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_PART)
++		if (listener->event_type & THERMAL_SYSFS_EVENT_ADD_PART) {
 +			dispatch_existing_participant_events(listener,
 +					    THERMAL_SYSFS_EVENT_ADD_PART);
-+
++		}
 +	}
 +
 +	return 0;
@@ -1062,22 +1288,22 @@ index 0000000..8dd25a1
 +		return result;
 +
 +	if (THERMAL_SYSFS_REPORT_EXISTING == report_type) {
-+		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_TD)
++		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_TD) {
 +			dispatch_existing_td_events(listener,
 +						    THERMAL_SYSFS_EVENT_RMV_TD);
++		}
 +
-+
-+		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_GRP)
++		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_GRP) {
 +			dispatch_existing_group_events(
 +				listener,
 +				THERMAL_SYSFS_EVENT_RMV_GRP);
++		}
 +
-+
-+		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_PART)
++		if (listener->event_type & THERMAL_SYSFS_EVENT_RMV_PART) {
 +			dispatch_existing_participant_events(
 +				listener,
 +				THERMAL_SYSFS_EVENT_RMV_PART);
-+
++		}
 +	}
 +
 +	spin_lock(&el_list_lock);
@@ -1162,10 +1388,10 @@ index 0000000..8dd25a1
 +module_exit(thermal_sysfs_exit);
 diff --git a/include/linux/thermal.h b/include/linux/thermal.h
 new file mode 100644
-index 0000000..fb4f224
+index 0000000..5ac90fc
 --- /dev/null
 +++ b/include/linux/thermal.h
-@@ -0,0 +1,294 @@
+@@ -0,0 +1,295 @@
 +/*
 + *  thermal.h - Thermal device interface ($Revision: 1 $)
 + *
@@ -1206,7 +1432,8 @@ index 0000000..fb4f224
 +#include <linux/list.h>
 +
 +#define KELVIN_TO_CELSIUS(t) \
-+	(long)(((long)t-2732 >= 0) ? ((long)t-2732+5)/10 : ((long)t-2732-5)/10)
++	(long)(((long)t-2732 >= 0) ? ((long)t-2732+5)/10 \
++	: ((long)t-2732-5)/10)
 +#define CELSIUS_TO_KELVIN(t)	((t*10) + 2732)
 +
 +/* --------------------------------------------------------------------------
@@ -1461,5 +1688,5 @@ index 0000000..fb4f224
 + */
 +int thermal_set_userenabled(enum thermal_userenabled um);
 -- 
-1.5.3.7-dirty
+1.5.2.5
 

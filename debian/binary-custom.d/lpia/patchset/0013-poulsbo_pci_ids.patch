@@ -1,18 +1,9 @@
-From 89d01e7b9fa2ef180ba18cd2a2f54a3f8aa94de4 Mon Sep 17 00:00:00 2001
-From: Jacob Pan <jacob@putvin.dp.intel.com>
-Date: Thu, 13 Dec 2007 11:15:26 +0200
-Subject: [PATCH] LPIA: Poulsbo PCI IDs
-
-Signed-off-by: Amit Kucheria <amit.kucheria@ubuntu.com>
----
- include/linux/pci_ids.h |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 111aa10..2808014 100644
+index 1ee009e..cf03fe8 100644
 --- a/include/linux/pci_ids.h
 +++ b/include/linux/pci_ids.h
-@@ -2368,6 +2368,20 @@
+@@ -2364,6 +2364,20 @@
  #define PCI_DEVICE_ID_INTEL_82443GX_0	0x71a0
  #define PCI_DEVICE_ID_INTEL_82443GX_2	0x71a2
  #define PCI_DEVICE_ID_INTEL_82372FB_1	0x7601
@@ -33,6 +24,3 @@ index 111aa10..2808014 100644
  #define PCI_DEVICE_ID_INTEL_82454GX	0x84c4
  #define PCI_DEVICE_ID_INTEL_82450GX	0x84c5
  #define PCI_DEVICE_ID_INTEL_82451NX	0x84ca
--- 
-1.5.2.GIT
-

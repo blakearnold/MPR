@@ -1,15 +1,6 @@
-From 75f29e093adc386e429a16cf2c50e411034cc1f8 Mon Sep 17 00:00:00 2001
-From: Rusty Lynch <rusty.lynch@intel.com>
-Date: Thu, 13 Dec 2007 10:41:05 +0200
-Subject: [PATCH] LPIA: Poulsbo HDA Sigmatel codec
-
-Signed-off-by: Amit Kucheria <amit.kucheria@ubuntu.com>
----
- sound/pci/hda/patch_sigmatel.c |  267 +++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 264 insertions(+), 3 deletions(-)
-
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 0401223..9dabea4 100644
+index 0401223..18bd160 100644
 --- a/sound/pci/hda/patch_sigmatel.c
 +++ b/sound/pci/hda/patch_sigmatel.c
 @@ -34,6 +34,9 @@
@@ -26,38 +17,51 @@ index 0401223..9dabea4 100644
  };
  
  enum {
-+        STAC_9202_REF,
++	STAC_9202_REF,
 +	STAC_9202_TEST1,
-+        STAC_9202_MODELS
++	STAC_9202_MODELS
 +};
 +
 +enum {
  	STAC_9205_REF,
  	STAC_9205_DELL_M42,
  	STAC_9205_DELL_M43,
-@@ -171,6 +180,22 @@ static hda_nid_t stac9200_dac_nids[1] = {
+@@ -171,16 +180,32 @@ static hda_nid_t stac9200_dac_nids[1] = {
          0x02,
  };
  
 +static hda_nid_t stac9202_adc_nids[1] = {
-+        0x03,
++	0x03,
 +};
 +
 +static hda_nid_t stac9202_mux_nids[1] = {
-+        0x0f,
++	0x0f,
 +};
 +
 +static hda_nid_t stac9202_dac_nids[1] = {
-+        0x02,
++	0x02,
 +};
 +
 +static hda_nid_t stac9202_dmic_nids[2] = {
-+        0x15, 0
++	0x15, 0
 +};
 +
  static hda_nid_t stac925x_adc_nids[1] = {
-         0x03,
+-        0x03,
++	0x03,
  };
+ 
+ static hda_nid_t stac925x_mux_nids[1] = {
+-        0x0f,
++	0x0f,
+ };
+ 
+ static hda_nid_t stac925x_dac_nids[1] = {
+-        0x02,
++	0x02,
+ };
+ 
+ #define STAC925X_NUM_DMICS	1
 @@ -222,6 +247,11 @@ static hda_nid_t stac9200_pin_nids[8] = {
  	0x0f, 0x10, 0x11, 0x12,
  };
@@ -167,23 +171,7 @@ index 0401223..9dabea4 100644
  static struct snd_kcontrol_new stac925x_mixer[] = {
  	STAC_INPUT_SOURCE(1),
  	HDA_CODEC_VOLUME("Capture Volume", 0x09, 0, HDA_OUTPUT),
-@@ -492,11 +605,15 @@ static int stac92xx_build_controls(struct hda_codec *codec)
- 	if (err < 0)
- 		return err;
- 
-+
-+	////printk(" num_mixers = %d\n", spec->num_mixers);
-+
- 	for (i = 0; i < spec->num_mixers; i++) {
- 		err = snd_hda_add_new_ctls(codec, spec->mixers[i]);
- 		if (err < 0)
- 			return err;
- 	}
-+	//printk("\n2222222\n");
- 
- 	if (spec->multiout.dig_out_nid) {
- 		err = snd_hda_create_spdif_out_ctls(codec, spec->multiout.dig_out_nid);
-@@ -628,6 +745,30 @@ static unsigned int dell9200_m27_pin_configs[8] = {
+@@ -628,6 +741,30 @@ static unsigned int dell9200_m27_pin_configs[8] = {
  };
  
  
@@ -214,7 +202,7 @@ index 0401223..9dabea4 100644
  static unsigned int *stac9200_brd_tbl[STAC_9200_MODELS] = {
  	[STAC_REF] = ref9200_pin_configs,
  	[STAC_9200_DELL_D21] = dell9200_d21_pin_configs,
-@@ -657,6 +798,16 @@ static const char *stac9200_models[STAC_9200_MODELS] = {
+@@ -657,6 +794,16 @@ static const char *stac9200_models[STAC_9200_MODELS] = {
  	[STAC_9200_GATEWAY] = "gateway",
  };
  
@@ -231,7 +219,7 @@ index 0401223..9dabea4 100644
  static struct snd_pci_quirk stac9200_cfg_tbl[] = {
  	/* SigmaTel reference board */
  	SND_PCI_QUIRK(PCI_VENDOR_ID_INTEL, 0x2668,
-@@ -731,6 +882,14 @@ static struct snd_pci_quirk stac9200_cfg_tbl[] = {
+@@ -731,6 +878,14 @@ static struct snd_pci_quirk stac9200_cfg_tbl[] = {
  	{} /* terminator */
  };
  
@@ -246,7 +234,7 @@ index 0401223..9dabea4 100644
  static unsigned int ref925x_pin_configs[8] = {
  	0x40c003f0, 0x424503f2, 0x01813022, 0x02a19021,
  	0x90a70320, 0x02214210, 0x400003f1, 0x9033032e,
-@@ -2178,6 +2337,37 @@ static int stac9200_parse_auto_config(struct hda_codec *codec)
+@@ -2178,6 +2333,37 @@ static int stac9200_parse_auto_config(struct hda_codec *codec)
  	return 1;
  }
  
@@ -284,20 +272,19 @@ index 0401223..9dabea4 100644
  /*
   * Early 2006 Intel Macintoshes with STAC9220X5 codecs seem to have a
   * funky external mute control using GPIO pins.
-@@ -2478,10 +2668,80 @@ static int patch_stac9200(struct hda_codec *codec)
+@@ -2478,7 +2664,7 @@ static int patch_stac9200(struct hda_codec *codec)
  	return 0;
  }
  
+-static int patch_stac925x(struct hda_codec *codec)
 +static int patch_stac9202(struct hda_codec *codec)
-+{
-+	struct sigmatel_spec *spec;
-+	int err;
-+
-+	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
-+	if (spec == NULL)
-+		return -ENOMEM;
-+
-+	codec->spec = spec;
+ {
+ 	struct sigmatel_spec *spec;
+ 	int err;
+@@ -2488,6 +2674,75 @@ static int patch_stac925x(struct hda_codec *codec)
+ 		return -ENOMEM;
+ 
+ 	codec->spec = spec;
 +	spec->num_pins = 9;
 +	spec->pin_nids = stac9202_pin_nids;
 +	spec->board_config = snd_hda_check_board_config(codec, STAC_9202_MODELS,
@@ -357,23 +344,20 @@ index 0401223..9dabea4 100644
 +
 +
 +
- static int patch_stac925x(struct hda_codec *codec)
- {
- 	struct sigmatel_spec *spec;
- 	int err;
++static int patch_stac925x(struct hda_codec *codec)
++{
++	struct sigmatel_spec *spec;
++	int err;
 +	
- 
- 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
- 	if (spec == NULL)
-@@ -2493,6 +2753,7 @@ static int patch_stac925x(struct hda_codec *codec)
- 	spec->board_config = snd_hda_check_board_config(codec, STAC_925x_MODELS,
- 							stac925x_models,
- 							stac925x_cfg_tbl);
++	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
++	if (spec == NULL)
++		return -ENOMEM;
 +
-  again:
- 	if (spec->board_config < 0) {
- 		snd_printdd(KERN_INFO "hda_codec: Unknown model for STAC925x," 
-@@ -2530,7 +2791,7 @@ static int patch_stac925x(struct hda_codec *codec)
++	codec->spec = spec;
+ 	spec->num_pins = ARRAY_SIZE(stac925x_pin_nids);
+ 	spec->pin_nids = stac925x_pin_nids;
+ 	spec->board_config = snd_hda_check_board_config(codec, STAC_925x_MODELS,
+@@ -2530,7 +2785,7 @@ static int patch_stac925x(struct hda_codec *codec)
  
  	spec->init = stac925x_core_init;
  	spec->mixer = stac925x_mixer;
@@ -382,7 +366,7 @@ index 0401223..9dabea4 100644
  	err = stac92xx_parse_auto_config(codec, 0x8, 0x7);
  	if (!err) {
  		if (spec->board_config < 0) {
-@@ -3083,8 +3344,8 @@ struct hda_codec_preset snd_hda_preset_sigmatel[] = {
+@@ -3083,8 +3338,8 @@ struct hda_codec_preset snd_hda_preset_sigmatel[] = {
   	{ .id = 0x83847627, .name = "STAC9271D", .patch = patch_stac927x },
   	{ .id = 0x83847628, .name = "STAC9274X5NH", .patch = patch_stac927x },
   	{ .id = 0x83847629, .name = "STAC9274D5NH", .patch = patch_stac927x },
@@ -393,6 +377,3 @@ index 0401223..9dabea4 100644
  	{ .id = 0x83847634, .name = "STAC9250", .patch = patch_stac925x },
  	{ .id = 0x83847635, .name = "STAC9250D", .patch = patch_stac925x },
  	{ .id = 0x83847636, .name = "STAC9251", .patch = patch_stac925x },
--- 
-1.5.2.GIT
-
