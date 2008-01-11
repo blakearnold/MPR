@@ -281,6 +281,11 @@ extern int aa_net_perm(struct aa_profile *profile, char *operation,
 			int family, int type, int protocol);
 extern int aa_revalidate_sk(struct sock *sk, char *operation);
 
+/* lsm.c */
+extern int apparmor_initialized;
+extern void info_message(const char *str);
+extern void apparmor_disable(void);
+
 /* list.c */
 extern struct aa_namespace *__aa_find_namespace(const char *name,
 						struct list_head *list);

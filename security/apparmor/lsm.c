@@ -23,16 +23,8 @@
 #include "apparmor.h"
 #include "inline.h"
 
-/* Boot time disable flag */
-int apparmor_enabled = CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE;
-
-static int __init apparmor_enabled_setup(char *str)
-{
-	apparmor_enabled = simple_strtol(str, NULL, 0);
-	return 1;
-}
-__setup("apparmor=", apparmor_enabled_setup);
-
+/* Flag indicating whether initialization completed */
+int apparmor_initialized = 0;
 
 static int param_set_aabool(const char *val, struct kernel_param *kp);
 static int param_get_aabool(char *buffer, struct kernel_param *kp);
@@ -75,6 +67,19 @@ unsigned int apparmor_path_max = 2 * PATH_MAX;
 module_param_named(path_max, apparmor_path_max, aauint, S_IRUSR | S_IWUSR);
 MODULE_PARM_DESC(apparmor_path_max, "Maximum pathname length allowed");
 
+/* Boot time disable flag */
+#ifdef CONFIG_SECURITY_APPARMOR_DISABLE
+#define AA_ENABLED_PERMS 0600
+#else
+#define AA_ENABLED_PERMS 0400
+#endif
+static int param_set_aa_enabled(const char *val, struct kernel_param *kp);
+unsigned int apparmor_enabled = CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE;
+module_param_call(enabled, param_set_aa_enabled, param_get_aauint,
+		  &apparmor_enabled, AA_ENABLED_PERMS);
+MODULE_PARM_DESC(apparmor_enabled, "Enable/Disable Apparmor on boot");
+
+
 static int param_set_aabool(const char *val, struct kernel_param *kp)
 {
 	if (aa_task_context(current))
@@ -101,6 +106,34 @@ static int param_get_aauint(char *buffer, struct kernel_param *kp)
 	if (aa_task_context(current))
 		return -EPERM;
 	return param_get_uint(buffer, kp);
+}
+
+static int param_set_aa_enabled(const char *val, struct kernel_param *kp)
+{
+	char *endp;
+	unsigned long l;
+
+	if (!apparmor_initialized) {
+		apparmor_enabled = 0;
+		return 0;
+	}
+
+	if (aa_task_context(current))
+		return -EPERM;
+
+	if (!apparmor_enabled)
+		return -EINVAL;
+
+	if (!val)
+		return -EINVAL;
+
+	l = simple_strtoul(val, &endp, 0);
+	if (endp == val || l != 0)
+		return -EINVAL;
+
+	apparmor_enabled = 0;
+	apparmor_disable();
+	return 0;
 }
 
 static int aa_reject_syscall(struct task_struct *task, gfp_t flags,
@@ -879,14 +912,15 @@ struct security_operations apparmor_ops = {
 	.socket_shutdown =		apparmor_socket_shutdown,
 };
 
-static void info_message(const char *str)
+void info_message(const char *str)
 {
 	struct aa_audit sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.gfp_mask = GFP_KERNEL;
 	sa.info = str;
-	printk(KERN_INFO "AppArmor: %s", str);
-	aa_audit_message(NULL, &sa, AUDIT_APPARMOR_STATUS);
+	printk(KERN_INFO "AppArmor: %s\n", str);
+	if (audit_enabled)
+		aa_audit_message(NULL, &sa, AUDIT_APPARMOR_STATUS);
 }
 
 static int __init apparmor_init(void)
@@ -913,6 +947,8 @@ static int __init apparmor_init(void)
 		goto register_security_out;
 	}
 
+	/* Report that AppArmor successfully initialized */
+	apparmor_initialized = 1;
 	if (apparmor_complain)
 		info_message("AppArmor initialized: complainmode enabled");
 	else
@@ -931,7 +967,31 @@ createfs_out:
 
 }
 
-module_init(apparmor_init);
+security_initcall(apparmor_init);
+
+void apparmor_disable(void)
+{
+	/* Remove and release all the profiles on the profile list. */
+	mutex_lock(&aa_interface_lock);
+	aa_profile_ns_list_release();
+
+	/* FIXME: cleanup profiles references on files */
+	free_default_namespace();
+
+	/*
+	 * Delay for an rcu cycle to make sure that all active task
+	 * context readers have finished, and all profiles have been
+	 * freed by their rcu callbacks.
+	 */
+	synchronize_rcu();
+
+	destroy_apparmorfs();
+	mutex_unlock(&aa_interface_lock);
+
+	apparmor_initialized = 0;
+
+	info_message("AppArmor protection removed");
+}
 
 MODULE_DESCRIPTION("AppArmor process confinement");
 MODULE_AUTHOR("Novell/Immunix, http://bugs.opensuse.org");

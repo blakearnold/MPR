@@ -99,6 +99,22 @@ static struct file_operations apparmorfs_matching_fops = {
 	.read = 	aa_matching_read,
 };
 
+/* apparmor/features */
+static ssize_t aa_features_read(struct file *file, char __user *buf,
+				size_t size, loff_t *ppos)
+{
+	const char *features = "file=3.0 capability=1.0 network=1.0 "
+			       "change_hat=1.3 change_profile=1.0 "
+			       "aanamespaces=1.0";
+
+	return simple_read_from_buffer(buf, size, ppos, features,
+				       strlen(features));
+}
+
+static struct file_operations apparmorfs_features_fops = {
+	.read = 	aa_features_read,
+};
+
 /* apparmor/.load */
 static ssize_t aa_profile_load(struct file *f, const char __user *buf,
 			       size_t size, loff_t *pos)
@@ -204,6 +220,7 @@ void destroy_apparmorfs(void)
 		aafs_remove(".replace");
 		aafs_remove(".load");
 		aafs_remove("matching");
+		aafs_remove("features");
 		aafs_remove("profiles");
 		securityfs_remove(apparmor_dentry);
 		apparmor_dentry = NULL;
@@ -213,6 +230,9 @@ void destroy_apparmorfs(void)
 int create_apparmorfs(void)
 {
 	int error;
+
+	if (!apparmor_initialized)
+		return 0;
 
 	if (apparmor_dentry) {
 		AA_ERROR("%s: AppArmor securityfs already exists\n",
@@ -232,6 +252,9 @@ int create_apparmorfs(void)
 	error = aafs_create("matching", 0444, &apparmorfs_matching_fops);
 	if (error)
 		goto error;
+	error = aafs_create("features", 0444, &apparmorfs_features_fops);
+	if (error)
+		goto error;
 	error = aafs_create(".load", 0640, &apparmorfs_profile_load);
 	if (error)
 		goto error;
@@ -242,11 +265,16 @@ int create_apparmorfs(void)
 	if (error)
 		goto error;
 
+	/* Report that AppArmor fs is enabled */
+	info_message("AppArmor Filesystem Enabled");
 	return 0;
 
 error:
 	destroy_apparmorfs();
 	AA_ERROR("Error creating AppArmor securityfs\n");
+	apparmor_disable();
 	return error;
 }
+
+fs_initcall(create_apparmorfs);
 
