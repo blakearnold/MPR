@@ -29,4 +29,5 @@ cat $stub | grep -v '^#' | sed			\
 	-e "s#BOOTLOADER#$bootloader#g" 	\
 	-e "s#=PROVIDES=#$provides#g"		\
 	-e "s#SECTION_IMAGE#$section_image#g"	\
-	-e "s#SECTION_HEADERS#$section_headers#g"
+	-e "s#SECTION_HEADERS#$section_headers#g" \
+	-e "s#=HEADER_DEPENDS=#$header-depends#g"
