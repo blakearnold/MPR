@@ -374,7 +374,6 @@ pktgen
 powernow-k6
 powernow-k7
 powernow-k8
-power_supply
 ppdev
 ppp_async
 ppp_deflate

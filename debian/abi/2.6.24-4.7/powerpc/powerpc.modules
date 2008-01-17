@@ -1077,7 +1077,6 @@ pmac_zilog
 pmc551
 pmu_battery
 powermate
-power_supply
 ppa
 ppdev
 ppp_async
