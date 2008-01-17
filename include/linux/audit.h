@@ -33,7 +33,7 @@
  * 1200 - 1299 messages internal to the audit daemon
  * 1300 - 1399 audit event messages
  * 1400 - 1499 SE Linux use
- * 1500 - 1599 kernel LSPP events
+ * 1500 - 1599 AppArmor use
  * 1600 - 1699 kernel crypto events
  * 1700 - 1799 kernel anomaly records
  * 1800 - 1999 future kernel use (maybe integrity labels and related events)
@@ -116,10 +116,19 @@
 #define AUDIT_MAC_IPSEC_DELSPD	1414	/* Not used */
 #define AUDIT_MAC_IPSEC_EVENT	1415	/* Audit an IPSec event */
 
+#define AUDIT_APPARMOR_AUDIT	1501	/* AppArmor audited grants */
+#define AUDIT_APPARMOR_ALLOWED	1502	/* Allowed Access for learning */
+#define AUDIT_APPARMOR_DENIED	1503
+#define AUDIT_APPARMOR_HINT	1504	/* Process Tracking information */
+#define AUDIT_APPARMOR_STATUS	1505	/* Changes in config */
+#define AUDIT_APPARMOR_ERROR	1506	/* Internal AppArmor Errors */
+
 #define AUDIT_FIRST_KERN_ANOM_MSG   1700
 #define AUDIT_LAST_KERN_ANOM_MSG    1799
 #define AUDIT_ANOM_PROMISCUOUS      1700 /* Device changed promiscuous mode */
 #define AUDIT_ANOM_ABEND            1701 /* Process ended abnormally */
+
+#define AUDIT_SD		1500	/* AppArmor (SubDomain) audit */
 
 #define AUDIT_KERNEL		2000	/* Asynchronous audit record. NOT A REQUEST. */
 
@@ -513,6 +522,9 @@ extern void		    audit_log(struct audit_context *ctx, gfp_t gfp_mask,
 				      __attribute__((format(printf,4,5)));
 
 extern struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask, int type);
+extern void		    audit_log_vformat(struct audit_buffer *ab,
+					      const char *fmt, va_list args)
+			    __attribute__((format(printf,2,0)));
 extern void		    audit_log_format(struct audit_buffer *ab,
 					     const char *fmt, ...)
 			    __attribute__((format(printf,2,3)));

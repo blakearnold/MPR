@@ -144,6 +144,7 @@ static struct usb_device_id blacklist_ids[] = {
 	{ USB_DEVICE(0x1131, 0x1001), .driver_info = HCI_RESET },
 
 	/* RTX Telecom based adapters with buggy SCO support */
+	{ USB_DEVICE(0x0e5e, 0x6622), .driver_info = HCI_BROKEN_ISOC },
 	{ USB_DEVICE(0x0400, 0x0807), .driver_info = HCI_BROKEN_ISOC },
 	{ USB_DEVICE(0x0400, 0x080a), .driver_info = HCI_BROKEN_ISOC },
 

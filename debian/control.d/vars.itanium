@@ -1,0 +1,9 @@
+supported="Itanium SMP"
+target="Geared toward desktop or server systems."
+desc="Itanium SMP"
+bootloader="elilo (>= 3.6-1)"
+provides="redhat-cluster-modules, ivtv-modules"
+arch="ia64"
+
+# Keep in sync with debian/control.stub.in Build-Depends.
+header_depends="gcc-4.1,"

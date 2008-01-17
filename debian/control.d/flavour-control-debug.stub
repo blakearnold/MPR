@@ -1,0 +1,26 @@
+# Items that get replaced:
+# FLAVOUR
+# DESC
+# ARCH
+# SUPPORTED
+# TARGET
+# BOOTLOADER
+# =PROVIDES=
+#
+# Items marked with =FOO= are optional
+#
+# XXX: Leave the blank line before the first package!!
+
+Package: linux-image-debug-PKGVER-ABINUM-FLAVOUR
+Architecture: ARCH
+Section: devel
+Priority: optional
+Provides: linux-debug
+Description: Linux kernel debug image for version PKGVER on DESC
+ This package provides a kernel debug image for version PKGVER on
+ DESC.
+ .
+ This is for sites that wish to debug the kernel.
+ .
+ The kernel image contained in this package is NOT meant to boot from. It
+ is uncompressed, and unstripped.

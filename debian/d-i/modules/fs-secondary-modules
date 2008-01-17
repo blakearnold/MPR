@@ -1,0 +1,13 @@
+# Windows filesystems; fuse is needed for ntfs-3g.
+fuse ?
+ntfs ?
+
+# UFS (Unix SysV)
+ufs ?
+
+# Mac HFS
+hfs ?
+hfsplus ?
+
+# Amiga fs ?
+affs ?
