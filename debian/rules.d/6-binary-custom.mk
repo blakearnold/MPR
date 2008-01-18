@@ -54,7 +54,7 @@ custom-install-%: $(stampdir)/stamp-custom-build-%
 	# The main image
 	# xen doesnt put stuff in the same directory. its quirky that way
 	if [ $(target_flavour) == "xen" ];  then \
-		install -m644 -D $(srcdir)/vmlinuz $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$* ; \
+		install -m644 -D $(srcdir)/arch/x86/boot/vmlinuz $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$* ; \
 	else \
 		install -m644 -D $(srcdir)/$(kfile) $(pkgdir)/boot/$(install_file)-$(release)$(debnum)-$* ; \
 	fi
