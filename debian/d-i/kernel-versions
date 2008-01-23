@@ -1,0 +1,15 @@
+# arch	version		flavour		installedname			suffix	bdep
+amd64	2.6.24-5	generic			2.6.24-5-generic		-	
+
+hppa	2.6.24-5	hppa32			2.6.24-5-hppa32		y	
+hppa	2.6.24-5	hppa64			2.6.24-5-hppa64		y	
+
+i386	2.6.24-5	386				2.6.24-5-386			-	
+i386	2.6.24-5	generic			2.6.24-5-generic		-	
+
+ia64	2.6.24-5	itanium			2.6.24-5-itanium		-	
+
+powerpc	2.6.24-5	powerpc			2.6.24-5-powerpc		-	
+powerpc	2.6.24-5	powerpc64-smp	2.6.24-5-powerpc64-smp	-	
+
+sparc	2.6.24-5	sparc64			2.6.24-5-sparc64		-	

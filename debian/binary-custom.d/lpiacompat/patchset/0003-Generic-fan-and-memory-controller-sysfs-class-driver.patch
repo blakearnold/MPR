@@ -1,0 +1,50 @@
+From 4cebaef75bdf97b58dca37c2b66efe835f7d9c06 Mon Sep 17 00:00:00 2001
+From: Sujith Thomas <sujith.thomas@intel.com>
+Date: Wed, 12 Dec 2007 10:54:14 +0530
+Subject: [PATCH] Generic fan and memory controller sysfs class driver
+
+Signed-off-by: Sujith Thomas <sujith.thomas@intel.com>
+
+Generic sysfs fan driver: Exposes state & max_state attributes
+Generic sysfs memory_controller driver : Exposes state & max_state attributes
+---
+ drivers/Kconfig  |    3 ++-
+ drivers/Makefile |    1 +
+ 2 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index f4076d9..b535385 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -14,6 +14,8 @@ source "drivers/parport/Kconfig"
+ 
+ source "drivers/pnp/Kconfig"
+ 
++source "drivers/sysfsclass/Kconfig"
++
+ source "drivers/block/Kconfig"
+ 
+ # misc before ide - BLK_DEV_SGIIOC4 depends on SGI_IOC4
+@@ -87,7 +89,6 @@ source "drivers/rtc/Kconfig"
+ source "drivers/dma/Kconfig"
+ 
+ source "drivers/dca/Kconfig"
+-
+ source "drivers/auxdisplay/Kconfig"
+ 
+ source "drivers/kvm/Kconfig"
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 314f0df..e210b25 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_PCI)		+= pci/
+ obj-$(CONFIG_PARISC)		+= parisc/
+ obj-$(CONFIG_RAPIDIO)		+= rapidio/
+ obj-y				+= video/
++obj-$(CONFIG_SYSFS_DEV_CLASS)	+= sysfsclass/
+ obj-$(CONFIG_ACPI)		+= acpi/
+ # PnP must come after ACPI since it will eventually need to check if acpi
+ # was used and do nothing if so
+-- 
+1.5.3.7-dirty
+

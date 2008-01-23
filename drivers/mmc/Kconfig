@@ -2,6 +2,8 @@
 # MMC subsystem configuration
 #
 
+menu "MMC/SD/SDIO support, can only select one arch from MMC and MSS"
+
 menuconfig MMC
 	tristate "MMC/SD card support"
 	depends on HAS_IOMEM
@@ -17,7 +19,6 @@ config MMC_DEBUG
 	help
 	  This is an option for use by developers; most people should
 	  say N here.  This enables MMC core and driver debugging.
-
 if MMC
 
 source "drivers/mmc/core/Kconfig"
@@ -27,3 +28,22 @@ source "drivers/mmc/card/Kconfig"
 source "drivers/mmc/host/Kconfig"
 
 endif # MMC
+
+config MSS
+	tristate "MSS architecture MMC/SD/SDIO Interface support"
+	help
+	  MSS is an advanced version of the MMC protocol drivers
+	  which abstracts the control layer to encompass multiple
+	  media card formats. Simply define the protocols you
+	  wish to use (one is MMC for instance, another is SD).
+
+	  If you want MSS support, you should say M here and also
+	  to the specific drivers for your MSS interface.
+
+if MSS
+
+source "drivers/mmc/mss/Kconfig"
+
+endif
+
+endmenu
