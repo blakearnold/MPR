@@ -34,16 +34,3 @@ Index: linux-2.6.24-rc8-rt1/drivers/media/video/zoran_driver.c
  
  					spin_lock_irqsave(&zr->spinlock, flags);
  					zr36057_set_memgrab(zr, 0);
-Index: linux-2.6.24-rc8-rt1/drivers/media/video/saa7134/saa7134-core.c
-===================================================================
---- linux-2.6.24-rc8-rt1.orig/drivers/media/video/saa7134/saa7134-core.c	2008-01-16 22:27:17.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/drivers/media/video/saa7134/saa7134-core.c	2008-01-16 22:29:24.000000000 -0500
-@@ -1204,7 +1204,7 @@ static int saa7134_resume(struct pci_dev
- {
- 
- 	struct saa7134_dev *dev = pci_get_drvdata(pci_dev);
--	unsigned int flags;
-+	unsigned long flags;
- 
- 	pci_restore_state(pci_dev);
- 	pci_set_power_state(pci_dev, PCI_D0);
