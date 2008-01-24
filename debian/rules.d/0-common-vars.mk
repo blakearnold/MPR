@@ -95,7 +95,8 @@ conc_level		= -j$(CONCURRENCY_LEVEL)
 kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour) \
 	SUBLEVEL=$(SUBLEVEL)
 
-all_custom_flavours = lpia rt lpiacompat xen
+#all_custom_flavours = xen rt ume lpiacompat lpia
+all_custom_flavours = lpia rt lpiacompat
 
 # Checks if a var is overriden by the custom rules. Called with var and
 # flavour as arguments.
