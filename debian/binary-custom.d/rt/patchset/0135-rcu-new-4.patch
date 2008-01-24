@@ -47,10 +47,10 @@ Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
  kernel/rcupreempt.c        |   50 +++++------------------
  7 files changed, 158 insertions(+), 147 deletions(-)
 
-Index: linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h
+Index: ubuntu-hardy/include/linux/rcuclassic.h
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/include/linux/rcuclassic.h	2008-01-16 22:28:21.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h	2008-01-16 22:28:21.000000000 -0500
+--- ubuntu-hardy.orig/include/linux/rcuclassic.h	2008-01-24 15:00:10.000000000 +0100
++++ ubuntu-hardy/include/linux/rcuclassic.h	2008-01-24 15:00:17.000000000 +0100
 @@ -42,80 +42,19 @@
  #include <linux/cpumask.h>
  #include <linux/seqlock.h>
@@ -135,7 +135,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h
  #define __rcu_read_lock() \
  	do { \
  		preempt_disable(); \
-@@ -139,9 +78,15 @@ extern int rcu_needs_cpu(int cpu);
+@@ -139,9 +78,15 @@
  
  #define __synchronize_sched() synchronize_rcu()
  
@@ -154,11 +154,11 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h
  
  #endif /* __KERNEL__ */
  #endif /* __LINUX_RCUCLASSIC_H */
-Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
+Index: ubuntu-hardy/include/linux/rcupdate.h
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/include/linux/rcupdate.h	2008-01-16 22:28:21.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/include/linux/rcupdate.h	2008-01-16 22:28:21.000000000 -0500
-@@ -220,8 +220,11 @@ extern struct lockdep_map rcu_lock_map;
+--- ubuntu-hardy.orig/include/linux/rcupdate.h	2008-01-24 15:00:10.000000000 +0100
++++ ubuntu-hardy/include/linux/rcupdate.h	2008-01-24 15:00:17.000000000 +0100
+@@ -220,8 +220,11 @@
   * delimited by rcu_read_lock() and rcu_read_unlock(),
   * and may be nested.
   */
@@ -172,7 +172,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
  
  /**
   * call_rcu_bh - Queue an RCU for invocation after a quicker grace period.
-@@ -249,9 +252,28 @@ extern long rcu_batches_completed(void);
+@@ -249,9 +252,28 @@
  extern long rcu_batches_completed_bh(void);
  
  /* Internal to kernel */
@@ -203,10 +203,10 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
  
  #endif /* __KERNEL__ */
  #endif /* __LINUX_RCUPDATE_H */
-Index: linux-2.6.24-rc8-rt1/include/linux/rcupreempt.h
+Index: ubuntu-hardy/include/linux/rcupreempt.h
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/include/linux/rcupreempt.h	2008-01-16 22:28:21.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/include/linux/rcupreempt.h	2008-01-16 22:28:21.000000000 -0500
+--- ubuntu-hardy.orig/include/linux/rcupreempt.h	2008-01-24 15:00:10.000000000 +0100
++++ ubuntu-hardy/include/linux/rcupreempt.h	2008-01-24 15:00:17.000000000 +0100
 @@ -42,25 +42,26 @@
  #include <linux/cpumask.h>
  #include <linux/seqlock.h>
@@ -247,11 +247,11 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupreempt.h
  
  #ifdef CONFIG_RCU_TRACE
  struct rcupreempt_trace;
-Index: linux-2.6.24-rc8-rt1/kernel/Makefile
+Index: ubuntu-hardy/kernel/Makefile
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/Makefile	2008-01-16 22:28:21.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/Makefile	2008-01-16 22:28:21.000000000 -0500
-@@ -58,7 +58,7 @@ obj-$(CONFIG_GENERIC_HARDIRQS) += irq/
+--- ubuntu-hardy.orig/kernel/Makefile	2008-01-24 15:00:10.000000000 +0100
++++ ubuntu-hardy/kernel/Makefile	2008-01-24 15:00:17.000000000 +0100
+@@ -58,7 +58,7 @@
  obj-$(CONFIG_SECCOMP) += seccomp.o
  obj-$(CONFIG_RCU_TORTURE_TEST) += rcutorture.o
  obj-$(CONFIG_CLASSIC_RCU) += rcuclassic.o
@@ -260,10 +260,10 @@ Index: linux-2.6.24-rc8-rt1/kernel/Makefile
  ifeq ($(CONFIG_PREEMPT_RCU),y)
  obj-$(CONFIG_RCU_TRACE) += rcupreempt_trace.o
  endif
-Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
+Index: ubuntu-hardy/kernel/rcuclassic.c
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/rcuclassic.c	2008-01-16 22:28:20.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/rcuclassic.c	2008-01-16 22:28:21.000000000 -0500
+--- ubuntu-hardy.orig/kernel/rcuclassic.c	2008-01-24 15:00:09.000000000 +0100
++++ ubuntu-hardy/kernel/rcuclassic.c	2008-01-24 15:00:17.000000000 +0100
 @@ -45,10 +45,53 @@
  #include <linux/moduleparam.h>
  #include <linux/percpu.h>
@@ -319,7 +319,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  /* Definition for rcupdate control block. */
  static struct rcu_ctrlblk rcu_ctrlblk = {
  	.cur = -300,
-@@ -63,11 +106,11 @@ static struct rcu_ctrlblk rcu_bh_ctrlblk
+@@ -63,11 +106,11 @@
  	.cpumask = CPU_MASK_NONE,
  };
  
@@ -334,7 +334,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  static int blimit = 10;
  static int qhimark = 10000;
  static int qlowmark = 100;
-@@ -110,8 +153,8 @@ static inline void force_quiescent_state
+@@ -110,8 +153,8 @@
   * sections are delimited by rcu_read_lock() and rcu_read_unlock(),
   * and may be nested.
   */
@@ -345,7 +345,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  {
  	unsigned long flags;
  	struct rcu_data *rdp;
-@@ -128,7 +171,9 @@ void fastcall call_rcu(struct rcu_head *
+@@ -128,7 +171,9 @@
  	}
  	local_irq_restore(flags);
  }
@@ -356,7 +356,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  
  /**
   * call_rcu_bh - Queue an RCU for invocation after a quicker grace period.
-@@ -166,7 +211,9 @@ void fastcall call_rcu_bh(struct rcu_hea
+@@ -166,7 +211,9 @@
  
  	local_irq_restore(flags);
  }
@@ -366,7 +366,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  
  /*
   * Return the number of RCU batches processed thus far.  Useful
-@@ -176,7 +223,9 @@ long rcu_batches_completed(void)
+@@ -176,7 +223,9 @@
  {
  	return rcu_ctrlblk.completed;
  }
@@ -376,7 +376,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  
  /*
   * Return the number of RCU batches processed thus far.  Useful
-@@ -186,7 +235,11 @@ long rcu_batches_completed_bh(void)
+@@ -186,7 +235,11 @@
  {
  	return rcu_bh_ctrlblk.completed;
  }
@@ -388,7 +388,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  
  /*
   * Invoke the completed RCU callbacks. They are expected to be in
-@@ -217,7 +270,7 @@ static void rcu_do_batch(struct rcu_data
+@@ -217,7 +270,7 @@
  	if (!rdp->donelist)
  		rdp->donetail = &rdp->donelist;
  	else
@@ -397,7 +397,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  /*
-@@ -294,7 +347,7 @@ static void rcu_check_quiescent_state(st
+@@ -294,7 +347,7 @@
  	if (rdp->quiescbatch != rcp->cur) {
  		/* start new grace period: */
  		rdp->qs_pending = 1;
@@ -406,7 +406,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  		rdp->quiescbatch = rcp->cur;
  		return;
  	}
-@@ -310,7 +363,7 @@ static void rcu_check_quiescent_state(st
+@@ -310,7 +363,7 @@
  	 * Was there a quiescent state since the beginning of the grace
  	 * period? If no, then exit and wait for the next call.
  	 */
@@ -415,7 +415,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  		return;
  	rdp->qs_pending = 0;
  
-@@ -369,7 +422,6 @@ static void rcu_offline_cpu(int cpu)
+@@ -369,7 +422,6 @@
  					&per_cpu(rcu_bh_data, cpu));
  	put_cpu_var(rcu_data);
  	put_cpu_var(rcu_bh_data);
@@ -423,7 +423,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  #else
-@@ -381,7 +433,7 @@ static void rcu_offline_cpu(int cpu)
+@@ -381,7 +433,7 @@
  #endif
  
  /*
@@ -432,7 +432,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
   */
  static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp,
  					struct rcu_data *rdp)
-@@ -426,10 +478,11 @@ static void __rcu_process_callbacks(stru
+@@ -426,10 +478,11 @@
  		rcu_do_batch(rdp);
  }
  
@@ -445,7 +445,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  static int __rcu_pending(struct rcu_ctrlblk *rcp, struct rcu_data *rdp)
-@@ -464,7 +517,8 @@ static int __rcu_pending(struct rcu_ctrl
+@@ -464,7 +517,8 @@
  int notrace rcu_pending(int cpu)
  {
  	return __rcu_pending(&rcu_ctrlblk, &per_cpu(rcu_data, cpu)) ||
@@ -455,7 +455,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  /*
-@@ -478,7 +532,8 @@ int rcu_needs_cpu(int cpu)
+@@ -478,7 +532,8 @@
  	struct rcu_data *rdp = &per_cpu(rcu_data, cpu);
  	struct rcu_data *rdp_bh = &per_cpu(rcu_bh_data, cpu);
  
@@ -465,7 +465,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  void rcu_check_callbacks(int cpu, int user)
-@@ -490,7 +545,8 @@ void rcu_check_callbacks(int cpu, int us
+@@ -490,7 +545,8 @@
  		rcu_bh_qsctr_inc(cpu);
  	} else if (!in_softirq())
  		rcu_bh_qsctr_inc(cpu);
@@ -475,7 +475,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  static void rcu_init_percpu_data(int cpu, struct rcu_ctrlblk *rcp,
-@@ -512,8 +568,9 @@ static void __devinit rcu_online_cpu(int
+@@ -512,8 +568,9 @@
  	struct rcu_data *bh_rdp = &per_cpu(rcu_bh_data, cpu);
  
  	rcu_init_percpu_data(cpu, &rcu_ctrlblk, rdp);
@@ -486,7 +486,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
-@@ -545,12 +602,14 @@ static struct notifier_block __cpuinitda
+@@ -545,12 +602,14 @@
   * Note that rcu_qsctr and friends are implicitly
   * initialized due to the choice of ``0'' for RCU_CTR_INVALID.
   */
@@ -502,11 +502,11 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
  }
  
  module_param(blimit, int, 0);
-Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
+Index: ubuntu-hardy/kernel/rcupdate.c
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/rcupdate.c	2008-01-16 22:28:20.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/rcupdate.c	2008-01-16 22:28:21.000000000 -0500
-@@ -59,6 +59,7 @@ struct rcu_synchronize {
+--- ubuntu-hardy.orig/kernel/rcupdate.c	2008-01-24 15:00:09.000000000 +0100
++++ ubuntu-hardy/kernel/rcupdate.c	2008-01-24 15:00:55.000000000 +0100
+@@ -59,6 +59,7 @@
  	struct completion completion;
  };
  
@@ -514,7 +514,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
  static DEFINE_PER_CPU(struct rcu_head, rcu_barrier_head) = {NULL};
  static atomic_t rcu_barrier_cpu_count;
  static DEFINE_MUTEX(rcu_barrier_mutex);
-@@ -95,6 +96,22 @@ void synchronize_rcu(void)
+@@ -95,6 +96,22 @@
  }
  EXPORT_SYMBOL_GPL(synchronize_rcu);
  
@@ -537,7 +537,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
  static void rcu_barrier_callback(struct rcu_head *notused)
  {
  	if (atomic_dec_and_test(&rcu_barrier_cpu_count))
-@@ -138,8 +155,3 @@ void rcu_barrier(void)
+@@ -138,9 +155,3 @@
  	mutex_unlock(&rcu_barrier_mutex);
  }
  EXPORT_SYMBOL_GPL(rcu_barrier);
@@ -546,11 +546,12 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
 -{
 -	__rcu_init();
 -}
-Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
+-
+Index: ubuntu-hardy/kernel/rcupreempt.c
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/rcupreempt.c	2008-01-16 22:28:21.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/rcupreempt.c	2008-01-16 22:28:21.000000000 -0500
-@@ -61,7 +61,6 @@ struct rcu_data {
+--- ubuntu-hardy.orig/kernel/rcupreempt.c	2008-01-24 15:00:10.000000000 +0100
++++ ubuntu-hardy/kernel/rcupreempt.c	2008-01-24 15:00:17.000000000 +0100
+@@ -61,7 +61,6 @@
  	spinlock_t	lock;		/* Protect rcu_data fields. */
  	long		completed;	/* Number of last completed batch. */
  	int		waitlistcount;
@@ -558,7 +559,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  	struct rcu_head *nextlist;
  	struct rcu_head **nexttail;
  	struct rcu_head *waitlist[GP_STAGES];
-@@ -550,7 +549,7 @@ static void rcu_check_mb(int cpu)
+@@ -550,7 +549,7 @@
  	}
  }
  
@@ -567,7 +568,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	unsigned long oldirq;
  	struct rcu_data *rdp = RCU_DATA_CPU(cpu);
-@@ -561,19 +560,14 @@ void rcu_check_callbacks(int cpu, int us
+@@ -561,19 +560,14 @@
  	spin_lock_irqsave(&rdp->lock, oldirq);
  	RCU_TRACE_RDP(rcupreempt_trace_check_callbacks, rdp);
  	__rcu_advance_callbacks(rdp);
@@ -590,7 +591,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	unsigned long oldirq;
  	struct rcu_data *rdp = RCU_DATA_CPU(cpu);
-@@ -589,7 +583,7 @@ void rcu_advance_callbacks(int cpu, int 
+@@ -589,7 +583,7 @@
  	spin_unlock_irqrestore(&rdp->lock, oldirq);
  }
  
@@ -599,7 +600,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	unsigned long flags;
  	struct rcu_head *next, *list;
-@@ -613,8 +607,8 @@ static void rcu_process_callbacks(struct
+@@ -613,8 +607,8 @@
  	}
  }
  
@@ -610,7 +611,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	unsigned long oldirq;
  	struct rcu_data *rdp;
-@@ -631,28 +625,7 @@ void fastcall call_rcu(struct rcu_head *
+@@ -631,28 +625,7 @@
  	spin_unlock(&rdp->lock);
  	local_irq_restore(oldirq);
  }
@@ -640,7 +641,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  
  /*
   * Check to see if any future RCU-related work will need to be done
-@@ -663,7 +636,7 @@ EXPORT_SYMBOL_GPL(__synchronize_sched);
+@@ -663,7 +636,7 @@
   * This function is part of the RCU implementation; it is -not-
   * an exported member of the RCU API.
   */
@@ -649,7 +650,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	struct rcu_data *rdp = RCU_DATA_CPU(cpu);
  
-@@ -672,7 +645,7 @@ int rcu_needs_cpu(int cpu)
+@@ -672,7 +645,7 @@
  		rdp->nextlist != NULL);
  }
  
@@ -658,7 +659,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	struct rcu_data *rdp = RCU_DATA_CPU(cpu);
  
-@@ -699,7 +672,7 @@ int rcu_pending(int cpu)
+@@ -699,7 +672,7 @@
  	return 0;
  }
  
@@ -667,7 +668,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupreempt.c
  {
  	int cpu;
  	int i;
-@@ -720,7 +693,6 @@ void __init __rcu_init(void)
+@@ -720,7 +693,6 @@
  		rdp->donelist = NULL;
  		rdp->donetail = &rdp->donelist;
  	}

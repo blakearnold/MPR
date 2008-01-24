@@ -27,10 +27,10 @@ Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
  kernel/rcupdate.c          |  557 +-------------------------------------------
  5 files changed, 777 insertions(+), 642 deletions(-)
 
-Index: linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h
+Index: ubuntu-hardy/include/linux/rcuclassic.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h	2008-01-16 22:28:20.000000000 -0500
++++ ubuntu-hardy/include/linux/rcuclassic.h	2008-01-24 14:45:19.000000000 +0100
 @@ -0,0 +1,149 @@
 +/*
 + * Read-Copy Update mechanism for mutual exclusion (classic version)
@@ -181,10 +181,10 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcuclassic.h
 +
 +#endif /* __KERNEL__ */
 +#endif /* __LINUX_RCUCLASSIC_H */
-Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
+Index: ubuntu-hardy/include/linux/rcupdate.h
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/include/linux/rcupdate.h	2008-01-16 22:27:42.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/include/linux/rcupdate.h	2008-01-16 22:28:20.000000000 -0500
+--- ubuntu-hardy.orig/include/linux/rcupdate.h	2008-01-18 09:54:36.000000000 +0100
++++ ubuntu-hardy/include/linux/rcupdate.h	2008-01-24 14:45:19.000000000 +0100
 @@ -15,7 +15,7 @@
   * along with this program; if not, write to the Free Software
   * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -194,7 +194,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
   *
   * Author: Dipankar Sarma <dipankar@in.ibm.com>
   * 
-@@ -53,6 +53,8 @@ struct rcu_head {
+@@ -53,6 +53,8 @@
  	void (*func)(struct rcu_head *head);
  };
  
@@ -203,7 +203,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
  #define RCU_HEAD_INIT 	{ .next = NULL, .func = NULL }
  #define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
  #define INIT_RCU_HEAD(ptr) do { \
-@@ -61,79 +63,6 @@ struct rcu_head {
+@@ -61,79 +63,6 @@
  
  
  
@@ -283,7 +283,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  extern struct lockdep_map rcu_lock_map;
  # define rcu_read_acquire()	lock_acquire(&rcu_lock_map, 0, 0, 2, 1, _THIS_IP_)
-@@ -172,24 +101,14 @@ extern struct lockdep_map rcu_lock_map;
+@@ -172,24 +101,14 @@
   *
   * It is illegal to block while in an RCU read-side critical section.
   */
@@ -310,7 +310,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
  
  /*
   * So where is rcu_write_lock()?  It does not exist, as there is no
-@@ -212,24 +131,14 @@ extern struct lockdep_map rcu_lock_map;
+@@ -212,24 +131,14 @@
   * can use just rcu_read_lock().
   *
   */
@@ -337,7 +337,7 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
  
  /*
   * Prevent the compiler from merging or refetching accesses.  The compiler
-@@ -293,21 +202,49 @@ extern struct lockdep_map rcu_lock_map;
+@@ -293,21 +202,49 @@
   * In "classic RCU", these two guarantees happen to be one and
   * the same, but can differ in realtime RCU implementations.
   */
@@ -397,11 +397,11 @@ Index: linux-2.6.24-rc8-rt1/include/linux/rcupdate.h
 +
  #endif /* __KERNEL__ */
  #endif /* __LINUX_RCUPDATE_H */
-Index: linux-2.6.24-rc8-rt1/kernel/Makefile
+Index: ubuntu-hardy/kernel/Makefile
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/Makefile	2008-01-16 22:28:11.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/Makefile	2008-01-16 22:28:20.000000000 -0500
-@@ -6,7 +6,7 @@ obj-y     = sched.o fork.o exec_domain.o
+--- ubuntu-hardy.orig/kernel/Makefile	2008-01-24 14:45:10.000000000 +0100
++++ ubuntu-hardy/kernel/Makefile	2008-01-24 14:45:19.000000000 +0100
+@@ -6,7 +6,7 @@
  	    exit.o itimer.o time.o softirq.o resource.o \
  	    sysctl.o capability.o ptrace.o timer.o user.o user_namespace.o \
  	    signal.o sys.o kmod.o workqueue.o pid.o \
@@ -410,10 +410,10 @@ Index: linux-2.6.24-rc8-rt1/kernel/Makefile
  	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
  	    hrtimer.o rwsem.o latency.o nsproxy.o srcu.o \
  	    utsname.o notifier.o
-Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
+Index: ubuntu-hardy/kernel/rcuclassic.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24-rc8-rt1/kernel/rcuclassic.c	2008-01-16 22:28:20.000000000 -0500
++++ ubuntu-hardy/kernel/rcuclassic.c	2008-01-24 14:45:19.000000000 +0100
 @@ -0,0 +1,558 @@
 +/*
 + * Read-Copy Update mechanism for mutual exclusion
@@ -973,10 +973,10 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcuclassic.c
 +module_param(blimit, int, 0);
 +module_param(qhimark, int, 0);
 +module_param(qlowmark, int, 0);
-Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
+Index: ubuntu-hardy/kernel/rcupdate.c
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/rcupdate.c	2008-01-16 22:27:54.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/rcupdate.c	2008-01-16 22:28:20.000000000 -0500
+--- ubuntu-hardy.orig/kernel/rcupdate.c	2008-01-24 14:45:07.000000000 +0100
++++ ubuntu-hardy/kernel/rcupdate.c	2008-01-24 14:59:58.000000000 +0100
 @@ -15,7 +15,7 @@
   * along with this program; if not, write to the Free Software
   * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -1001,7 +1001,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
  #include <linux/percpu.h>
  #include <linux/notifier.h>
  #include <linux/cpu.h>
-@@ -56,144 +54,46 @@ struct lockdep_map rcu_lock_map =
+@@ -56,144 +54,46 @@
  EXPORT_SYMBOL_GPL(rcu_lock_map);
  #endif
  
@@ -1167,7 +1167,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
  
  static void rcu_barrier_callback(struct rcu_head *notused)
  {
-@@ -207,10 +107,8 @@ static void rcu_barrier_callback(struct 
+@@ -207,10 +107,8 @@
  static void rcu_barrier_func(void *notused)
  {
  	int cpu = smp_processor_id();
@@ -1179,7 +1179,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
  	atomic_inc(&rcu_barrier_cpu_count);
  	call_rcu(head, rcu_barrier_callback);
  }
-@@ -231,414 +129,7 @@ void rcu_barrier(void)
+@@ -231,414 +129,8 @@
  }
  EXPORT_SYMBOL_GPL(rcu_barrier);
  
@@ -1501,7 +1501,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
 -	rdp->blimit = blimit;
 -}
 -
--static void __devinit rcu_online_cpu(int cpu)
+-static void __cpuinit rcu_online_cpu(int cpu)
 -{
 -	struct rcu_data *rdp = &per_cpu(rcu_data, cpu);
 -	struct rcu_data *bh_rdp = &per_cpu(rcu_bh_data, cpu);
@@ -1548,7 +1548,7 @@ Index: linux-2.6.24-rc8-rt1/kernel/rcupdate.c
 -	register_cpu_notifier(&rcu_nb);
 +	__rcu_init();
  }
--
+ 
 -struct rcu_synchronize {
 -	struct rcu_head head;
 -	struct completion completion;
