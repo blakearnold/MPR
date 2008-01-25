@@ -694,9 +694,9 @@ Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), modul
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
-Description: Linux kernel image for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc5-rt1)
+Description: Linux kernel image for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1)
  This package contains the Linux kernel image for version 2.6.24 on
- Ingo Molnar's full real time preemption patch (2.6.24-rc5-rt1).
+ Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1).
  .
  Also includes the corresponding System.map file, the modules built by the
  packager, and scripts that try to ensure that the system is not left in an
@@ -716,9 +716,9 @@ Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-5,  ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc5-rt1)
+Description: Linux kernel headers for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1)
  This package provides kernel header files for version 2.6.24 on
- Ingo Molnar's full real time preemption patch (2.6.24-rc5-rt1).
+ Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1).
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.24-5/debian.README.gz for details.
