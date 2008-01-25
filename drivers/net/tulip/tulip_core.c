@@ -230,8 +230,12 @@ static struct pci_device_id tulip_pci_tbl[] = {
 	{ 0x1259, 0xa120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
 	{ 0x11F6, 0x9881, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMPEX9881 },
 	{ 0x8086, 0x0039, PCI_ANY_ID, PCI_ANY_ID, 0, 0, I21145 },
+	/* Ubuntu: On non-sparc, this seems to be handled better by the
+	 * dmfe driver. */
+#ifdef __sparc__
 	{ 0x1282, 0x9100, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DM910X },
 	{ 0x1282, 0x9102, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DM910X },
+#endif
 	{ 0x1113, 0x1216, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
 	{ 0x1113, 0x1217, PCI_ANY_ID, PCI_ANY_ID, 0, 0, MX98715 },
 	{ 0x1113, 0x9511, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
@@ -393,6 +397,11 @@ static void tulip_up(struct net_device *dev)
 					   dev->name, medianame[looking_for]);
 				goto media_picked;
 			}
+	}
+	if (tp->chip_id == PCI_ULI5261_ID || tp->chip_id == PCI_ULI5263_ID) {
+		for (i = tp->mtable->leafcount - 1; i >= 0; i--)
+			if (tulip_media_cap[tp->mtable->mleaf[i].media] & MediaIsMII)
+				goto media_picked;
 	}
 	/* Start sensing first non-full-duplex media. */
 	for (i = tp->mtable->leafcount - 1;

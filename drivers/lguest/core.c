@@ -174,20 +174,22 @@ void __lgwrite(struct lguest *lg, unsigned long addr, const void *b,
 /*H:030 Let's jump straight to the the main loop which runs the Guest.
  * Remember, this is called by the Launcher reading /dev/lguest, and we keep
  * going around and around until something interesting happens. */
-int run_guest(struct lguest *lg, unsigned long __user *user)
+int run_guest(struct lg_cpu *cpu, unsigned long __user *user)
 {
+	struct lguest *lg = cpu->lg;
+
 	/* We stop running once the Guest is dead. */
 	while (!lg->dead) {
 		/* First we run any hypercalls the Guest wants done. */
-		if (lg->hcall)
-			do_hypercalls(lg);
+		if (cpu->hcall)
+			do_hypercalls(cpu);
 
 		/* It's possible the Guest did a NOTIFY hypercall to the
 		 * Launcher, in which case we return from the read() now. */
-		if (lg->pending_notify) {
-			if (put_user(lg->pending_notify, user))
+		if (cpu->pending_notify) {
+			if (put_user(cpu->pending_notify, user))
 				return -EFAULT;
-			return sizeof(lg->pending_notify);
+			return sizeof(cpu->pending_notify);
 		}
 
 		/* Check for signals */
@@ -195,13 +197,13 @@ int run_guest(struct lguest *lg, unsigned long __user *user)
 			return -ERESTARTSYS;
 
 		/* If Waker set break_out, return to Launcher. */
-		if (lg->break_out)
+		if (cpu->break_out)
 			return -EAGAIN;
 
 		/* Check if there are any interrupts which can be delivered
 		 * now: if so, this sets up the hander to be executed when we
 		 * next run the Guest. */
-		maybe_do_interrupt(lg);
+		maybe_do_interrupt(cpu);
 
 		/* All long-lived kernel loops need to check with this horrible
 		 * thing called the freezer.  If the Host is trying to suspend,
@@ -215,7 +217,7 @@ int run_guest(struct lguest *lg, unsigned long __user *user)
 
 		/* If the Guest asked to be stopped, we sleep.  The Guest's
 		 * clock timer or LHCALL_BREAK from the Waker will wake us. */
-		if (lg->halted) {
+		if (cpu->halted) {
 			set_current_state(TASK_INTERRUPTIBLE);
 			schedule();
 			continue;
@@ -226,15 +228,17 @@ int run_guest(struct lguest *lg, unsigned long __user *user)
 		local_irq_disable();
 
 		/* Actually run the Guest until something happens. */
-		lguest_arch_run_guest(lg);
+		lguest_arch_run_guest(cpu);
 
 		/* Now we're ready to be interrupted or moved to other CPUs */
 		local_irq_enable();
 
 		/* Now we deal with whatever happened to the Guest. */
-		lguest_arch_handle_trap(lg);
+		lguest_arch_handle_trap(cpu);
 	}
 
+	if (lg->dead == ERR_PTR(-ERESTART))
+		return -ERESTART;
 	/* The Guest is dead => "No such file or directory" */
 	return -ENOENT;
 }

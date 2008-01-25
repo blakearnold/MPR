@@ -264,6 +264,10 @@ static void notify_update(struct vc_data *vc)
 #define DO_UPDATE(vc)	CON_IS_VISIBLE(vc)
 #endif
 
+#ifdef CONFIG_PROM_CONSOLE
+static int force_prom_console;
+#endif
+
 static inline unsigned short *screenpos(struct vc_data *vc, int offset, int viewed)
 {
 	unsigned short *p;
@@ -2882,6 +2886,17 @@ static const struct tty_operations con_ops = {
 	.unthrottle = con_unthrottle,
 };
 
+#ifdef CONFIG_PROM_CONSOLE
+static int __init check_prom_console(char *str)
+{
+	force_prom_console = 1;
+	printk ("PROM console forced!\n");
+	return 1;
+}
+
+__setup("forcepromconsole", check_prom_console);
+#endif
+
 int __init vty_init(void)
 {
 	vcs_init();
@@ -2904,7 +2919,8 @@ int __init vty_init(void)
 	kbd_init();
 	console_map_init();
 #ifdef CONFIG_PROM_CONSOLE
-	prom_con_init();
+	if (force_prom_console)
+		prom_con_init();
 #endif
 #ifdef CONFIG_MDA_CONSOLE
 	mda_console_init();

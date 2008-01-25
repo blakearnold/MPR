@@ -29,6 +29,7 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/errno.h>
+#include <linux/timer.h>
 
 #include <linux/device.h>
 #include <linux/firmware.h>
@@ -42,7 +43,7 @@
 #define BT_DBG(D...)
 #endif
 
-#define VERSION "1.1"
+#define VERSION "1.0"
 
 static int ignore = 0;
 
@@ -71,7 +72,7 @@ struct bcm203x_data {
 
 	unsigned long		state;
 
-	struct work_struct	work;
+	struct timer_list	timer;
 
 	struct urb		*urb;
 	unsigned char		*buffer;
@@ -104,7 +105,7 @@ static void bcm203x_complete(struct urb *urb)
 
 		data->state = BCM203X_SELECT_MEMORY;
 
-		schedule_work(&data->work);
+		mod_timer(&data->timer, jiffies + (HZ / 10));
 		break;
 
 	case BCM203X_SELECT_MEMORY:
@@ -157,10 +158,9 @@ static void bcm203x_complete(struct urb *urb)
 	}
 }
 
-static void bcm203x_work(struct work_struct *work)
+static void bcm203x_timer(unsigned long user_data)
 {
-	struct bcm203x_data *data =
-		container_of(work, struct bcm203x_data, work);
+	struct bcm203x_data *data = (struct bcm203x_data *) user_data;
 
 	if (usb_submit_urb(data->urb, GFP_ATOMIC) < 0)
 		BT_ERR("Can't submit URB");
@@ -247,11 +247,13 @@ static int bcm203x_probe(struct usb_interface *intf, const struct usb_device_id 
 
 	release_firmware(firmware);
 
-	INIT_WORK(&data->work, bcm203x_work);
+	init_timer(&data->timer);
+	data->timer.function = bcm203x_timer;
+	data->timer.data = (unsigned long) data;
 
 	usb_set_intfdata(intf, data);
 
-	schedule_work(&data->work);
+	mod_timer(&data->timer, jiffies + HZ);
 
 	return 0;
 }

@@ -24,6 +24,11 @@
 #include <linux/virtio_net.h>
 #include <linux/scatterlist.h>
 
+static int napi_weight = 128;
+module_param(napi_weight, int, 0444);
+
+MODULE_LICENSE("GPL");
+
 /* FIXME: MTU in config. */
 #define MAX_PACKET_LEN (ETH_HLEN+ETH_DATA_LEN)
 
@@ -52,13 +57,14 @@ static inline void vnet_hdr_to_sg(struct scatterlist *sg, struct sk_buff *skb)
 	sg_init_one(sg, skb_vnet_hdr(skb), sizeof(struct virtio_net_hdr));
 }
 
-static bool skb_xmit_done(struct virtqueue *rvq)
+static void skb_xmit_done(struct virtqueue *svq)
 {
-	struct virtnet_info *vi = rvq->vdev->priv;
+	struct virtnet_info *vi = svq->vdev->priv;
 
-	/* In case we were waiting for output buffers. */
+	/* Suppress further interrupts. */
+	svq->vq_ops->disable_cb(svq);
+	/* We were waiting for more output buffers. */
 	netif_wake_queue(vi->dev);
-	return true;
 }
 
 static void receive_skb(struct net_device *dev, struct sk_buff *skb,
@@ -170,12 +176,12 @@ static void try_fill_recv(struct virtnet_info *vi)
 	vi->rvq->vq_ops->kick(vi->rvq);
 }
 
-static bool skb_recv_done(struct virtqueue *rvq)
+static void skb_recv_done(struct virtqueue *rvq)
 {
 	struct virtnet_info *vi = rvq->vdev->priv;
-	netif_rx_schedule(vi->dev, &vi->napi);
 	/* Suppress further interrupts. */
-	return false;
+	rvq->vq_ops->disable_cb(rvq);
+	netif_rx_schedule(vi->dev, &vi->napi);
 }
 
 static int virtnet_poll(struct napi_struct *napi, int budget)
@@ -201,7 +207,7 @@ again:
 	/* Out of packets? */
 	if (received < budget) {
 		netif_rx_complete(vi->dev, napi);
-		if (unlikely(!vi->rvq->vq_ops->restart(vi->rvq))
+		if (unlikely(!vi->rvq->vq_ops->enable_cb(vi->rvq))
 		    && netif_rx_reschedule(vi->dev, napi))
 			goto again;
 	}
@@ -209,10 +215,10 @@ again:
 	return received;
 }
 
-static void free_old_xmit_skbs(struct virtnet_info *vi)
+static unsigned free_old_xmit_skbs(struct virtnet_info *vi)
 {
 	struct sk_buff *skb;
-	unsigned int len;
+	unsigned int len, i = 0;
 
 	while ((skb = vi->svq->vq_ops->get_buf(vi->svq, &len)) != NULL) {
 		pr_debug("Sent skb %p\n", skb);
@@ -220,7 +226,9 @@ static void free_old_xmit_skbs(struct virtnet_info *vi)
 		vi->dev->stats.tx_bytes += len;
 		vi->dev->stats.tx_packets++;
 		kfree_skb(skb);
+		i++;
 	}
+	return i;
 }
 
 static int start_xmit(struct sk_buff *skb, struct net_device *dev)
@@ -235,8 +243,6 @@ static int start_xmit(struct sk_buff *skb, struct net_device *dev)
 	sg_init_table(sg, 1+MAX_SKB_FRAGS);
 
 	pr_debug("%s: xmit %p %s\n", dev->name, skb, print_mac(mac, dest));
-
-	free_old_xmit_skbs(vi);
 
 	/* Encode metadata header at front. */
 	hdr = skb_vnet_hdr(skb);
@@ -269,11 +275,26 @@ static int start_xmit(struct sk_buff *skb, struct net_device *dev)
 	vnet_hdr_to_sg(sg, skb);
 	num = skb_to_sgvec(skb, sg+1, 0, skb->len) + 1;
 	__skb_queue_head(&vi->send, skb);
+
+again:
 	err = vi->svq->vq_ops->add_buf(vi->svq, sg, num, 0, skb);
 	if (err) {
+		/* Can we free any used skbs? */
+		if (free_old_xmit_skbs(vi))
+			goto again;
+
 		pr_debug("%s: virtio not prepared to send\n", dev->name);
-		skb_unlink(skb, &vi->send);
 		netif_stop_queue(dev);
+
+		/* Activate callback for using skbs: if this fails it
+		 * means some were used in the meantime. */
+		if (unlikely(!vi->svq->vq_ops->enable_cb(vi->svq))) {
+			printk("Unlikely: restart svq failed\n");
+			netif_start_queue(dev);
+			goto again;
+		}
+		__skb_unlink(skb, &vi->send);
+
 		return NETDEV_TX_BUSY;
 	}
 	vi->svq->vq_ops->kick(vi->svq);
@@ -292,6 +313,13 @@ static int virtnet_open(struct net_device *dev)
 		return -ENOMEM;
 
 	napi_enable(&vi->napi);
+
+	/* If all buffers were filled by other side before we napi_enabled, we
+	 * won't get another interrupt, so process any outstanding packets
+	 * now.  virtnet_poll wants re-enable the queue, so we disable here. */
+	vi->rvq->vq_ops->disable_cb(vi->rvq);
+	netif_rx_schedule(vi->dev, &vi->napi);
+
 	return 0;
 }
 
@@ -320,10 +348,8 @@ static int virtnet_close(struct net_device *dev)
 static int virtnet_probe(struct virtio_device *vdev)
 {
 	int err;
-	unsigned int len;
 	struct net_device *dev;
 	struct virtnet_info *vi;
-	void *token;
 
 	/* Allocate ourselves a network device with room for our info */
 	dev = alloc_etherdev(sizeof(struct virtnet_info));
@@ -331,7 +357,6 @@ static int virtnet_probe(struct virtio_device *vdev)
 		return -ENOMEM;
 
 	/* Set up network device as normal. */
-	ether_setup(dev);
 	dev->open = virtnet_open;
 	dev->stop = virtnet_close;
 	dev->hard_start_xmit = start_xmit;
@@ -339,42 +364,41 @@ static int virtnet_probe(struct virtio_device *vdev)
 	SET_NETDEV_DEV(dev, &vdev->dev);
 
 	/* Do we support "hardware" checksums? */
-	token = vdev->config->find(vdev, VIRTIO_CONFIG_NET_F, &len);
-	if (virtio_use_bit(vdev, token, len, VIRTIO_NET_F_NO_CSUM)) {
+	if (vdev->config->feature(vdev, VIRTIO_NET_F_NO_CSUM)) {
 		/* This opens up the world of extra features. */
 		dev->features |= NETIF_F_HW_CSUM|NETIF_F_SG|NETIF_F_FRAGLIST;
-		if (virtio_use_bit(vdev, token, len, VIRTIO_NET_F_TSO4))
+		if (vdev->config->feature(vdev, VIRTIO_NET_F_TSO4))
 			dev->features |= NETIF_F_TSO;
-		if (virtio_use_bit(vdev, token, len, VIRTIO_NET_F_UFO))
+		if (vdev->config->feature(vdev, VIRTIO_NET_F_UFO))
 			dev->features |= NETIF_F_UFO;
-		if (virtio_use_bit(vdev, token, len, VIRTIO_NET_F_TSO4_ECN))
+		if (vdev->config->feature(vdev, VIRTIO_NET_F_TSO4_ECN))
 			dev->features |= NETIF_F_TSO_ECN;
-		if (virtio_use_bit(vdev, token, len, VIRTIO_NET_F_TSO6))
+		if (vdev->config->feature(vdev, VIRTIO_NET_F_TSO6))
 			dev->features |= NETIF_F_TSO6;
 	}
 
 	/* Configuration may specify what MAC to use.  Otherwise random. */
-	token = vdev->config->find(vdev, VIRTIO_CONFIG_NET_MAC_F, &len);
-	if (token) {
-		dev->addr_len = len;
-		vdev->config->get(vdev, token, dev->dev_addr, len);
+	if (vdev->config->feature(vdev, VIRTIO_NET_F_MAC)) {
+		vdev->config->get(vdev,
+				  offsetof(struct virtio_net_config, mac),
+				  dev->dev_addr, dev->addr_len);
 	} else
 		random_ether_addr(dev->dev_addr);
 
 	/* Set up our device-specific information */
 	vi = netdev_priv(dev);
-	netif_napi_add(dev, &vi->napi, virtnet_poll, 16);
+	netif_napi_add(dev, &vi->napi, virtnet_poll, napi_weight);
 	vi->dev = dev;
 	vi->vdev = vdev;
 
 	/* We expect two virtqueues, receive then send. */
-	vi->rvq = vdev->config->find_vq(vdev, skb_recv_done);
+	vi->rvq = vdev->config->find_vq(vdev, 0, skb_recv_done);
 	if (IS_ERR(vi->rvq)) {
 		err = PTR_ERR(vi->rvq);
 		goto free;
 	}
 
-	vi->svq = vdev->config->find_vq(vdev, skb_xmit_done);
+	vi->svq = vdev->config->find_vq(vdev, 1, skb_xmit_done);
 	if (IS_ERR(vi->svq)) {
 		err = PTR_ERR(vi->svq);
 		goto free_recv;

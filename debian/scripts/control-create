@@ -1,0 +1,33 @@
+#!/bin/bash
+
+stub=debian/control.d/flavour-control.stub
+dstub=debian/control.d/flavour-control-debug.stub
+vars=$1
+
+# Defaults
+section_image=base
+section_headers=devel
+
+. $vars
+
+flavour=$(basename $vars | sed 's/.*\.//')
+# Custom is a little different
+if [ "$flavour" = "vars" ]; then
+	flavour=$(basename `dirname $vars`)
+fi
+
+if [ -n "$do_debug" ]; then
+	stub="$stub $dstub"
+fi
+
+cat $stub | grep -v '^#' | sed			\
+	-e "s#FLAVOUR#$flavour#g"		\
+	-e "s#DESC#$desc#g"			\
+	-e "s#ARCH#$arch#g"			\
+	-e "s#SUPPORTED#$supported#g"		\
+	-e "s#TARGET#$target#g"			\
+	-e "s#BOOTLOADER#$bootloader#g" 	\
+	-e "s#=PROVIDES=#$provides#g"		\
+	-e "s#SECTION_IMAGE#$section_image#g"	\
+	-e "s#SECTION_HEADERS#$section_headers#g" \
+	-e "s#=HEADER_DEPENDS=#$header_depends#g"

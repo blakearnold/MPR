@@ -1,0 +1,12 @@
+atkbd ?
+evdev ?
+hil_kbd ?
+hilkbd ?
+hil_mlc ?
+hp_sdc ?
+hp_sdc_mlc ?
+i8042 ?
+mousedev ?
+psmouse ?
+usbhid ?
+usbkbd ?

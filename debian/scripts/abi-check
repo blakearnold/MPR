@@ -1,0 +1,44 @@
+#!/bin/bash -e
+
+flavour="$1"
+prev_abinum="$2"
+abinum="$3"
+prev_abidir="$4"
+abidir="$5"
+skipabi="$6"
+
+echo -n "Checking ABI for $flavour..."
+
+if [ -f "$prev_abidir/ignore" -o -f "$prev_abidir/$flavour.ignore" -o -n "$skipabi" ]; then
+	echo "explicitly asked to ignore ABI (probably not good)"
+	exit
+fi
+
+if [ "$prev_abinum" = "0" -o "$prev_abinum" != "$abinum" ]; then
+	echo "different ABI numbers, no check needed."
+	exit
+fi
+
+if [ ! -f "$abidir/$flavour" -o ! -f "$prev_abidir/$flavour" ]; then
+	echo "previous or current ABI file missing!"
+	echo "   $abidir/$flavour"
+	echo "   $prev_abidir/$flavour"
+	exit 1
+fi
+
+if [ "`diff -u $prev_abidir/$flavour $abidir/$flavour | grep ^-[^-] | wc -l`" != "0" ]
+then
+	echo "check FAILED (nice one Tonto, go get the Lone Ranger)"
+	diff -u $prev_abidir/$flavour $abidir/$flavour
+	exit 1
+fi
+
+if [ "`diff -u $prev_abidir/$flavour $abidir/$flavour | grep ^+[^+] | wc -l`" != "0" ]
+then
+	echo "new symbols in ABI (continuing reluctantly)"
+	diff -u $prev_abidir/$flavour $abidir/$flavour || true
+	exit
+fi
+
+echo "check PASSED (good job, you saved yourself some work)"
+exit

@@ -2,6 +2,8 @@
 #include <linux/spinlock.h>
 #include <linux/virtio_config.h>
 
+MODULE_LICENSE("GPL");
+
 static ssize_t device_show(struct device *_d,
 			   struct device_attribute *attr, char *buf)
 {
@@ -103,7 +105,8 @@ static int virtio_dev_remove(struct device *_d)
 						 struct virtio_driver, driver);
 
 	dev->config->set_status(dev, dev->config->get_status(dev)
-				& ~VIRTIO_CONFIG_S_DRIVER);
+				& ~(VIRTIO_CONFIG_S_DRIVER
+				    | VIRTIO_CONFIG_S_DRIVER_OK));
 	drv->remove(dev);
 	return 0;
 }
@@ -123,11 +126,17 @@ void unregister_virtio_driver(struct virtio_driver *driver)
 }
 EXPORT_SYMBOL_GPL(unregister_virtio_driver);
 
+static void virtio_device_release(struct device *_d)
+{
+	pr_debug("%s\n" , __FUNCTION__);
+}
+
 int register_virtio_device(struct virtio_device *dev)
 {
 	int err;
 
 	dev->dev.bus = &virtio_bus;
+	dev->dev.release = virtio_device_release;
 	sprintf(dev->dev.bus_id, "%u", dev->index);
 
 	/* Acknowledge that we've seen the device. */
@@ -147,51 +156,6 @@ void unregister_virtio_device(struct virtio_device *dev)
 	device_unregister(&dev->dev);
 }
 EXPORT_SYMBOL_GPL(unregister_virtio_device);
-
-int __virtio_config_val(struct virtio_device *vdev,
-			u8 type, void *val, size_t size)
-{
-	void *token;
-	unsigned int len;
-
-	token = vdev->config->find(vdev, type, &len);
-	if (!token)
-		return -ENOENT;
-
-	if (len != size)
-		return -EIO;
-
-	vdev->config->get(vdev, token, val, size);
-	return 0;
-}
-EXPORT_SYMBOL_GPL(__virtio_config_val);
-
-int virtio_use_bit(struct virtio_device *vdev,
-		   void *token, unsigned int len, unsigned int bitnum)
-{
-	unsigned long bits[16];
-
-	/* This makes it convenient to pass-through find() results. */
-	if (!token)
-		return 0;
-
-	/* bit not in range of this bitfield? */
-	if (bitnum * 8 >= len / 2)
-		return 0;
-
-	/* Giant feature bitfields are silly. */
-	BUG_ON(len > sizeof(bits));
-	vdev->config->get(vdev, token, bits, len);
-
-	if (!test_bit(bitnum, bits))
-		return 0;
-
-	/* Set acknowledge bit, and write it back. */
-	set_bit(bitnum + len * 8 / 2, bits);
-	vdev->config->set(vdev, token, bits, len);
-	return 1;
-}
-EXPORT_SYMBOL_GPL(virtio_use_bit);
 
 static int virtio_init(void)
 {

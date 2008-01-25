@@ -1,0 +1,8 @@
+efi-modules
+serial-modules
+cdrom-modules
+plip-modules
+md-modules
+pcmcia-storage-modules
+nic-pcmcia-modules
+pcmcia-modules

@@ -20,6 +20,8 @@
 #include <linux/virtio_ring.h>
 #include <linux/device.h>
 
+MODULE_LICENSE("GPL");
+
 #ifdef DEBUG
 /* For development, we want to crash whenever the ring is screwed. */
 #define BAD_RING(vq, fmt...)			\
@@ -196,6 +198,8 @@ static void *vring_get_buf(struct virtqueue *_vq, unsigned int *len)
 
 	if (!more_used(vq)) {
 		pr_debug("No more buffers in queue\n");
+		/* We notify *even if* VRING_USED_F_NO_NOTIFY is set here. */
+		vq->notify(&vq->vq);
 		END_USE(vq);
 		return NULL;
 	}
@@ -220,7 +224,17 @@ static void *vring_get_buf(struct virtqueue *_vq, unsigned int *len)
 	return ret;
 }
 
-static bool vring_restart(struct virtqueue *_vq)
+static void vring_disable_cb(struct virtqueue *_vq)
+{
+	struct vring_virtqueue *vq = to_vvq(_vq);
+
+	START_USE(vq);
+	BUG_ON(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT);
+	vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+	END_USE(vq);
+}
+
+static bool vring_enable_cb(struct virtqueue *_vq)
 {
 	struct vring_virtqueue *vq = to_vvq(_vq);
 
@@ -253,18 +267,28 @@ irqreturn_t vring_interrupt(int irq, void *_vq)
 	if (unlikely(vq->broken))
 		return IRQ_HANDLED;
 
+	/* Other side may have missed us turning off the interrupt,
+	 * but we should preserve disable semantic for virtio users. */
+	if (unlikely(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
+		pr_debug("virtqueue interrupt after disable for %p\n", vq);
+		return IRQ_HANDLED;
+	}
+
 	pr_debug("virtqueue callback for %p (%p)\n", vq, vq->vq.callback);
-	if (vq->vq.callback && !vq->vq.callback(&vq->vq))
-		vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+	if (vq->vq.callback)
+		vq->vq.callback(&vq->vq);
 
 	return IRQ_HANDLED;
 }
+
+EXPORT_SYMBOL_GPL(vring_interrupt);
 
 static struct virtqueue_ops vring_vq_ops = {
 	.add_buf = vring_add_buf,
 	.get_buf = vring_get_buf,
 	.kick = vring_kick,
-	.restart = vring_restart,
+	.disable_cb = vring_disable_cb,
+	.enable_cb = vring_enable_cb,
 	.shutdown = vring_shutdown,
 };
 
@@ -272,7 +296,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
 				      struct virtio_device *vdev,
 				      void *pages,
 				      void (*notify)(struct virtqueue *),
-				      bool (*callback)(struct virtqueue *))
+				      void (*callback)(struct virtqueue *))
 {
 	struct vring_virtqueue *vq;
 	unsigned int i;
@@ -312,8 +336,11 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
 	return &vq->vq;
 }
 
+EXPORT_SYMBOL_GPL(vring_new_virtqueue);
+
 void vring_del_virtqueue(struct virtqueue *vq)
 {
 	kfree(to_vvq(vq));
 }
 
+EXPORT_SYMBOL_GPL(vring_del_virtqueue);

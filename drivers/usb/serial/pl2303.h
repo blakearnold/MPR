@@ -107,3 +107,7 @@
 /* Corega CG-USBRS232R Serial Adapter */
 #define COREGA_VENDOR_ID	0x07aa
 #define COREGA_PRODUCT_ID	0x002a
+
+/* Sanwa KB-USB2 multimeter cable (ID: 11ad:0001) */
+#define SANWA_VENDOR_ID               0x11ad
+#define SANWA_PRODUCT_ID      0x0001

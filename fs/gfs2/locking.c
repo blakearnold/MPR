@@ -181,4 +181,7 @@ void gfs2_withdraw_lockproto(struct lm_lockstruct *lockstruct)
 
 EXPORT_SYMBOL_GPL(gfs2_register_lockproto);
 EXPORT_SYMBOL_GPL(gfs2_unregister_lockproto);
+EXPORT_SYMBOL_GPL(gfs2_unmount_lockproto);
+EXPORT_SYMBOL_GPL(gfs2_mount_lockproto);
+EXPORT_SYMBOL_GPL(gfs2_withdraw_lockproto);
 
