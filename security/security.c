@@ -410,6 +410,7 @@ int security_inode_follow_link(struct dentry *dentry, struct nameidata *nd)
 		return 0;
 	return security_ops->inode_follow_link(dentry, nd);
 }
+EXPORT_SYMBOL(security_inode_permission);
 
 int security_inode_permission(struct inode *inode, int mask, struct nameidata *nd)
 {
