@@ -3,7 +3,7 @@
 #
 # CONFIG_60XX_WDT is not set
 # CONFIG_8139CP is not set
-# CONFIG_8139TOO is not set
+# CONFIG_8139TOO_8129 is not set
 # CONFIG_9P_FS is not set
 # CONFIG_ACENIC is not set
 # CONFIG_ACPI_ASUS is not set
