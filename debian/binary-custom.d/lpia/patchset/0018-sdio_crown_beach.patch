@@ -1,7 +1,21 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index b966674..17d1d16 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -645,6 +645,10 @@ void mmc_rescan(struct work_struct *work)
+ 		mmc_claim_host(host);
+ 
+ 		mmc_power_up(host);
++
++		/* add a 100ms delay for SiB workaround */
++		mmc_delay(100);
++
+ 		mmc_go_idle(host);
+ 
+ 		mmc_send_if_cond(host, host->ocr_avail);
 diff --git a/drivers/mmc/core/sdio_cis.c b/drivers/mmc/core/sdio_cis.c
-old mode 100644
-new mode 100755
-index d5e51b1..962b8be
+index d5e51b1..962b8be 100644
 --- a/drivers/mmc/core/sdio_cis.c
 +++ b/drivers/mmc/core/sdio_cis.c
 @@ -151,7 +151,8 @@ static int cistpl_funce(struct mmc_card *card, struct sdio_func *func,
@@ -15,9 +29,7 @@ index d5e51b1..962b8be
  
  	return 0;
 diff --git a/drivers/mmc/core/sdio_io.c b/drivers/mmc/core/sdio_io.c
-old mode 100644
-new mode 100755
-index 625b92c..edfb547
+index 625b92c..f4c62c0 100644
 --- a/drivers/mmc/core/sdio_io.c
 +++ b/drivers/mmc/core/sdio_io.c
 @@ -546,3 +546,72 @@ void sdio_f0_writeb(struct sdio_func *func, unsigned char b, unsigned int addr,
@@ -26,77 +38,75 @@ index 625b92c..edfb547
  EXPORT_SYMBOL_GPL(sdio_f0_writeb);
 +
 +static char* sdio_version[4] = {
-+        "version 1.00",
-+        "version 1.10",
-+        "version 1.20",
-+        "version 2.00"
++	"version 1.00",
++	"version 1.10",
++	"version 1.20",
++	"version 2.00"
 +};
 +
 +static char* sd_phy_version[4] = {
-+        "version 1.01",
-+        "version 1.10",
-+        "version 2.00"
++	"version 1.01",
++	"version 1.10",
++	"version 2.00"
 +};
 +
 +void sdio_dump_cccr(struct sdio_func *func)
 +{
-+        struct mmc_card *card = func->card;
-+        u8       data, val;
-+        u8      *str;
-+        int      i;
++	struct mmc_card *card = func->card;
++	u8       data, val;
++	u8      *str;
++	int      i;
 +
-+        printk(KERN_INFO "\nStart to dump SDIO CCCR registers:\n");
++	printk(KERN_INFO "\nStart to dump SDIO CCCR registers:\n");
 +
-+        /* dump sdio version */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_CCCR, 0, &data);
-+        val = (data >> 4) & 0xf;
-+        if (val <= 3)
-+                printk(KERN_INFO "SDIO Spec: %s\n", sdio_version[val]);
-+        else
-+                printk(KERN_INFO "This card doesn't comply with any SDIO spec version!!\n");
++	/* dump sdio version */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_CCCR, 0, &data);
++	val = (data >> 4) & 0xf;
++	if (val <= 3)
++		printk(KERN_INFO "SDIO Spec: %s\n", sdio_version[val]);
++	else
++		printk(KERN_INFO "This card doesn't comply with any SDIO spec version!!\n");
 +                
-+        /* dump sd PHY version */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_SD, 0, &data);
-+        val = data & 0xf;
-+        if (val <= 2)
-+                printk(KERN_INFO "SD PHY spec: %s\n", sd_phy_version[val]);
-+        else
-+                printk(KERN_INFO "This card doesn't comply with any SD PHY spec version!!\n");
++	/* dump sd PHY version */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_SD, 0, &data);
++	val = data & 0xf;
++	if (val <= 2)
++		printk(KERN_INFO "SD PHY spec: %s\n", sd_phy_version[val]);
++	else
++		printk(KERN_INFO "This card doesn't comply with any SD PHY spec version!!\n");
 +
-+        /* dump IO Enalbe reg */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IOEx, 0, &data);
-+        printk(KERN_INFO "IO Enable Reg: 0x%02x\n", data); 
++	/* dump IO Enalbe reg */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IOEx, 0, &data);
++	printk(KERN_INFO "IO Enable Reg: 0x%02x\n", data); 
 +
-+        /* dump IO Ready reg */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IORx, 0, &data);
-+        printk(KERN_INFO "IO Ready Reg: 0x%02x\n", data); 
++	/* dump IO Ready reg */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IORx, 0, &data);
++	printk(KERN_INFO "IO Ready Reg: 0x%02x\n", data); 
 +        
-+        /* dump INT Enable reg */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IENx, 0, &data);
-+        printk(KERN_INFO "INT Enable Reg: 0x%02x\n", data); 
++	/* dump INT Enable reg */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IENx, 0, &data);
++	printk(KERN_INFO "INT Enable Reg: 0x%02x\n", data); 
 +
-+        /* dump INT Pending reg */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &data);
-+        printk(KERN_INFO "INT Pending Reg: 0x%02x\n", data); 
++	/* dump INT Pending reg */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &data);
++	printk(KERN_INFO "INT Pending Reg: 0x%02x\n", data); 
 +
-+        /* dump Bus Interface reg */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IF, 0, &data);
-+        val = data & 0x3;
-+        printk(KERN_INFO "Bus Width: %d bit\n", (val ? 4 : 1));
++	/* dump Bus Interface reg */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_IF, 0, &data);
++	val = data & 0x3;
++	printk(KERN_INFO "Bus Width: %d bit\n", (val ? 4 : 1));
 +
-+        /* dump capability reg */
-+        mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_CAPS, 0, &data);
-+        printk(KERN_INFO "Multi-Block support: %s\n", (data & SDIO_CCCR_CAP_SMB) ? "YES" : "NO");
-+        printk(KERN_INFO "Suspend/Resume support: %s\n", (data & SDIO_CCCR_CAP_SBS) ? "YES" : "NO");
-+        printk(KERN_INFO "Low Speed Card: %s\n", (data & SDIO_CCCR_CAP_LSC) ? "YES" : "NO");
-+        printk(KERN_INFO "4 bits Low Speed Card: %s\n", (data & SDIO_CCCR_CAP_4BLS) ? "YES" : "NO");
++	/* dump capability reg */
++	mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_CAPS, 0, &data);
++	printk(KERN_INFO "Multi-Block support: %s\n", (data & SDIO_CCCR_CAP_SMB) ? "YES" : "NO");
++	printk(KERN_INFO "Suspend/Resume support: %s\n", (data & SDIO_CCCR_CAP_SBS) ? "YES" : "NO");
++	printk(KERN_INFO "Low Speed Card: %s\n", (data & SDIO_CCCR_CAP_LSC) ? "YES" : "NO");
++	printk(KERN_INFO "4 bits Low Speed Card: %s\n", (data & SDIO_CCCR_CAP_4BLS) ? "YES" : "NO");
 +}
 +EXPORT_SYMBOL_GPL(sdio_dump_cccr);
 +
 diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
-old mode 100644
-new mode 100755
-index d0c3abe..a5f4bd3
+index d0c3abe..a5f4bd3 100644
 --- a/include/linux/mmc/core.h
 +++ b/include/linux/mmc/core.h
 @@ -150,4 +150,20 @@ static inline void mmc_claim_host(struct mmc_host *host)
