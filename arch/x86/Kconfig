@@ -116,6 +116,10 @@ config ARCH_SUPPORTS_OPROFILE
 	bool
 	default y
 
+config ARCH_SUPPORTS_KVM
+	bool
+	default y
+
 
 config ZONE_DMA32
 	bool
@@ -1618,5 +1622,7 @@ source "arch/x86/Kconfig.debug"
 source "security/Kconfig"
 
 source "crypto/Kconfig"
+
+source "arch/x86/kvm/Kconfig"
 
 source "lib/Kconfig"
