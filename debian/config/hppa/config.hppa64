@@ -144,7 +144,6 @@ CONFIG_SLAB=y
 # CONFIG_SLIP is not set
 # CONFIG_SLUB is not set
 # CONFIG_SMP is not set
-# CONFIG_SOUND is not set
 # CONFIG_SPI is not set
 # CONFIG_SPI_MASTER is not set
 CONFIG_SPLIT_PTLOCK_CPUS=4
