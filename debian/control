@@ -762,6 +762,45 @@ Description: Linux kernel headers for version 2.6.24 on Ubuntu Moblie and Embedd
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.24-6/debian.README.gz for details.
 
+Package: linux-image-2.6.24-6-xen
+Architecture: i386 amd64
+Section: universe/base
+Priority: optional
+Pre-Depends: dpkg (>= 1.10.24)
+Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Conflicts: hotplug (<< 0.0.20040105-1)
+Recommends: grub
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on This kernel can be used for Xen dom0 and domU
+ This package contains the Linux kernel image for version 2.6.24 on
+ This kernel can be used for Xen dom0 and domU.
+ .
+ Also includes the corresponding System.map file, the modules built by the
+ packager, and scripts that try to ensure that the system is not left in an
+ unbootable state after an update.
+ .
+ Supports Generic processors.
+ .
+ Xen domO/domU
+ .
+ You likely do not want to install this package directly. Instead, install
+ the linux-xen meta-package, which will ensure that upgrades work
+ correctly, and that supporting packages are also installed.
+
+Package: linux-headers-2.6.24-6-xen
+Architecture: i386 amd64
+Section: devel
+Priority: optional
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-6,  ${shlibs:Depends}
+Provides: linux-headers, linux-headers-2.6
+Description: Linux kernel headers for version 2.6.24 on This kernel can be used for Xen dom0 and domU
+ This package provides kernel header files for version 2.6.24 on
+ This kernel can be used for Xen dom0 and domU.
+ .
+ This is for sites that want the latest kernel headers.  Please read
+ /usr/share/doc/linux-headers-2.6.24-6/debian.README.gz for details.
+
 Package: kernel-image-2.6.24-6-386-di
 XC-Package-Type: udeb
 Provides: kernel-image
