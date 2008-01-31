@@ -10,6 +10,8 @@ help:
 	@echo
 	@echo "  updateconfigs   : Update debian/config/*"
 	@echo
+	@echo "  editconfigs     : Update debian/config/* interactively"
+	@echo
 	@echo "  printchanges    : Print the current changelog entries (from git)"
 	@echo
 	@echo "  insertchanges   : Insert current changelog entries (from git)"
@@ -34,6 +36,13 @@ updateconfigs:
 	dh_testdir
 	@for arch in i386 amd64 ia64 hppa powerpc sparc lpia; do	\
 		$(SHELL) debian/scripts/misc/oldconfig $$arch;		\
+	done
+	rm -rf build
+
+editconfigs:
+	dh_testdir
+	@for arch in i386 amd64 ia64 hppa powerpc sparc lpia; do	\
+		$(SHELL) debian/scripts/misc/doconfig $$arch;		\
 	done
 	rm -rf build
 
