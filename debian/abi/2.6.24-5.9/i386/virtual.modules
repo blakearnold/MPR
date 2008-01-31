@@ -4,7 +4,6 @@
 9pnet_fd
 9pnet_virtio
 ac
-ac97_bus
 acpi-cpufreq
 act_gact
 act_ipt
