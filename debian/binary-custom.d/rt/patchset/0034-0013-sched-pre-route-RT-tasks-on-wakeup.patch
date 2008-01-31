@@ -31,10 +31,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/sched_rt.c |   19 +++++++++++++++++++
  1 file changed, 19 insertions(+)
 
-Index: linux-2.6.24-rc8-rt1/kernel/sched_rt.c
+Index: linux-2.6.24-rt1/kernel/sched_rt.c
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/kernel/sched_rt.c	2008-01-16 22:27:59.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/kernel/sched_rt.c	2008-01-16 22:27:59.000000000 -0500
+--- linux-2.6.24-rt1.orig/kernel/sched_rt.c	2008-01-25 15:06:59.000000000 -0500
++++ linux-2.6.24-rt1/kernel/sched_rt.c	2008-01-25 15:06:59.000000000 -0500
 @@ -147,8 +147,27 @@ yield_task_rt(struct rq *rq)
  }
  

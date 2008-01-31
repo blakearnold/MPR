@@ -11,10 +11,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  include/linux/topology.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.24-rc8-rt1/include/linux/topology.h
+Index: linux-2.6.24-rt1/include/linux/topology.h
 ===================================================================
---- linux-2.6.24-rc8-rt1.orig/include/linux/topology.h	2008-01-16 22:27:48.000000000 -0500
-+++ linux-2.6.24-rc8-rt1/include/linux/topology.h	2008-01-16 22:28:03.000000000 -0500
+--- linux-2.6.24-rt1.orig/include/linux/topology.h	2008-01-25 15:06:48.000000000 -0500
++++ linux-2.6.24-rt1/include/linux/topology.h	2008-01-25 15:07:04.000000000 -0500
 @@ -5,7 +5,7 @@
   *
   * Copyright (C) 2002, IBM Corp.
