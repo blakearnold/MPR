@@ -567,7 +567,6 @@ ib_umad
 ib_uverbs
 icplus
 ide-cd
-ide-core
 ide-disk
 ide-floppy
 ide_platform
