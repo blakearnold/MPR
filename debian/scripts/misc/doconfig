@@ -53,6 +53,8 @@ for config in $configs; do
 
 	cat $confdir/$config > .config
 
+	echo About to configure $arch $config
+	read 
 	make -C ../ O=`pwd` ARCH=$kernarch menuconfig
 
 	cat .config > $confdir/$config
