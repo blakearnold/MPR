@@ -108,6 +108,10 @@
 #define COREGA_VENDOR_ID	0x07aa
 #define COREGA_PRODUCT_ID	0x002a
 
+/* HL HL-340 (ID: 4348:5523) */
+#define HL340_VENDOR_ID		0x4348
+#define HL340_PRODUCT_ID	0x5523
+
 /* Sanwa KB-USB2 multimeter cable (ID: 11ad:0001) */
-#define SANWA_VENDOR_ID               0x11ad
-#define SANWA_PRODUCT_ID      0x0001
+#define SANWA_VENDOR_ID		0x11ad
+#define SANWA_PRODUCT_ID	0x0001
