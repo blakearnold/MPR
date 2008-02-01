@@ -432,6 +432,7 @@ CONFIG_SMP=y
 # CONFIG_SMSC_PHY is not set
 # CONFIG_SONYPI is not set
 # CONFIG_SONY_LAPTOP is not set
+# CONFIG_SOUND is not set
 # CONFIG_SPI is not set
 # CONFIG_SPI_MASTER is not set
 # CONFIG_SSB_DRIVER_PCICORE is not set
