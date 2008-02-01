@@ -57,7 +57,6 @@ endif
 		INSTALL_MOD_PATH=$(pkgdir)/
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/build
 	rm -f $(pkgdir)/lib/modules/$(release)$(debnum)-$*/source
-	find $(pkgdir)/lib/modules/$(release)$(debnum)-$*/kernel/sound -type f -name "*.ko" | sed '/soundcore/d' | xargs rm -vf
 ifeq ($(no_image_strip),)
 	find $(pkgdir)/ -name \*.ko -print | xargs strip --strip-debug
 endif

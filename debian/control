@@ -88,7 +88,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -141,7 +141,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -194,7 +194,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: palo
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -233,7 +233,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: palo
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -272,7 +272,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: elilo (>= 3.6-1)
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -311,7 +311,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: elilo (>= 3.6-1)
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -350,7 +350,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -389,7 +389,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -428,7 +428,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: yaboot
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -467,7 +467,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, kvm-api-4, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -520,7 +520,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: silo
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -559,7 +559,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: silo
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -598,7 +598,7 @@ Section: base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -651,7 +651,7 @@ Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -690,13 +690,13 @@ Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
-Description: Linux kernel image for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1)
+Description: Linux kernel image for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rt1)
  This package contains the Linux kernel image for version 2.6.24 on
- Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1).
+ Ingo Molnar's full real time preemption patch (2.6.24-rt1).
  .
  Also includes the corresponding System.map file, the modules built by the
  packager, and scripts that try to ensure that the system is not left in an
@@ -716,9 +716,9 @@ Section: devel
 Priority: optional
 Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-6,  ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1)
+Description: Linux kernel headers for version 2.6.24 on Ingo Molnar's full real time preemption patch (2.6.24-rt1)
  This package provides kernel header files for version 2.6.24 on
- Ingo Molnar's full real time preemption patch (2.6.24-rc8-rt1).
+ Ingo Molnar's full real time preemption patch (2.6.24-rt1).
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.24-6/debian.README.gz for details.
@@ -729,7 +729,7 @@ Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: lilo (>= 19.1) | grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
@@ -768,7 +768,7 @@ Section: universe/base
 Priority: optional
 Pre-Depends: dpkg (>= 1.10.24)
 Provides: linux-image, linux-image-2.6, fuse-module, kvm-api-4, redhat-cluster-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.2.1-0ubuntu1)
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
 Conflicts: hotplug (<< 0.0.20040105-1)
 Recommends: grub
 Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
