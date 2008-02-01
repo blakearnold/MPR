@@ -210,7 +210,7 @@ static int do_uevent(struct dlm_ls *ls, int in)
 }
 
 
-int dlm_lockspace_init(void)
+int __init dlm_lockspace_init(void)
 {
 	int error;
 
