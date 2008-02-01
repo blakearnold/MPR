@@ -5,7 +5,7 @@ libata ?
 scsi_mod ?
 
 # IDE Core support
-ide-core
+ide-core ?
 
 # USB Core for usb-storage ?
 usbcore ?
