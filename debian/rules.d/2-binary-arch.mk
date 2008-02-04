@@ -10,6 +10,7 @@ $(stampdir)/stamp-prepare-%: $(confdir)/config $(confdir)/config.%
 	@echo "Preparing $*..."
 	install -d $(builddir)/build-$*
 	cat $^ | sed -e 's/.*CONFIG_VERSION_SIGNATURE.*/CONFIG_VERSION_SIGNATURE="Ubuntu $(release)-$(revision)-$*"/' > $(builddir)/build-$*/.config
+	find $(builddir)/build-$* -name "*.ko" | xargs rm
 	$(kmake) O=$(builddir)/build-$* silentoldconfig prepare scripts
 	touch $@
 
