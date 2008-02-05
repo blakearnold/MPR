@@ -40,3 +40,7 @@ usb-storage ?
 # Loop modules (loop is built-in on sparc64)
 loop ?
 cloop ?
+
+# virtio modules
+virtio_pci ?
+virtio_blk ?
