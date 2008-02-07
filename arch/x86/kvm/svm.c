@@ -313,7 +313,6 @@ static void svm_hardware_enable(void *garbage)
 	svm_data->asid_generation = 1;
 	svm_data->max_asid = cpuid_ebx(SVM_CPUID_FUNC) - 1;
 	svm_data->next_asid = svm_data->max_asid + 1;
-	svm_features = cpuid_edx(SVM_CPUID_FUNC);
 
 	asm volatile ("sgdt %0" : "=m"(gdt_descr));
 	gdt = (struct desc_struct *)gdt_descr.address;
