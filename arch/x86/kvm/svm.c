@@ -411,6 +411,22 @@ static __init int svm_hardware_setup(void)
 		if (r)
 			goto err_2;
 	}
+
+	svm_features = cpuid_edx(SVM_CPUID_FUNC);
+
+	if (!svm_has(SVM_FEATURE_NPT))
+		npt_enabled = false;
+
+	if (npt_enabled && !npt) {
+		printk(KERN_INFO "kvm: Nested Paging disabled\n");
+		npt_enabled = false;
+	}
+
+	if (npt_enabled) {
+		printk(KERN_INFO "kvm: Nested Paging enabled\n");
+		kvm_enable_tdp();
+	}
+
 	return 0;
 
 err_2:
