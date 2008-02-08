@@ -98,6 +98,12 @@ linux (2.6.24-8.13) hardy; urgency=low
  -- Tim Gardner <tim.gardner@canonical.com>  Thu, 07 Feb 2008 06:50:13 -0700
 
 linux (2.6.24-7.12) hardy; urgency=low
+  
+  [Jay Chetty]
+
+  * Added patch to fix legacy USB interrupt issue
+  * Enabled Poulsbo PATA udma5 support
+  * Add touchscreen doubleclick workaround
 
   [Amit Kucheria]
 
@@ -113,7 +119,7 @@ linux (2.6.24-7.12) hardy; urgency=low
 
   * Added vendor id for Dell 5720 broadband modem
 
- -- Tim Gardner <tim.gardner@canonical.com>  Tue, 05 Feb 2008 12:58:43 -0700
+ -- Jay Chetty <jay.chetty@intel.com>  Wed, 06 Feb 2008 14:13:41 -0800
 
 linux (2.6.24-7.11) hardy; urgency=low
 

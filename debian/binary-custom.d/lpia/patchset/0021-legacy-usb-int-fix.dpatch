@@ -1,0 +1,49 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index c225159..2b4387e 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -51,6 +51,12 @@
+ #define EHCI_USBLEGCTLSTS	4		/* legacy control/status */
+ #define EHCI_USBLEGCTLSTS_SOOE	(1 << 13)	/* SMI on ownership change */
+ 
++void uhci_clear_usb_int(unsigned long base)
++{
++	outw(0, base + UHCI_USBINTR);
++	return;
++}
++EXPORT_SYMBOL (uhci_clear_usb_int);
+ 
+ /*
+  * Make sure the controller is completely inactive, unable to
+diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+index ec98789..0c2b47d 100644
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -898,6 +898,18 @@ static const struct pci_device_id uhci_pci_ids[] = { {
+ 
+ MODULE_DEVICE_TABLE(pci, uhci_pci_ids);
+ 
++extern void uhci_clear_usb_int(unsigned long base);
++static int usb_hcd_resume_early(struct pci_dev *dev)
++{
++	struct usb_hcd  *hcd;
++	struct uhci_hcd *uhci;
++
++	hcd = pci_get_drvdata(dev);
++	uhci = hcd_to_uhci(hcd);
++	uhci_clear_usb_int(uhci->io_addr);
++	return 0;
++}
++
+ static struct pci_driver uhci_pci_driver = {
+ 	.name =		(char *)hcd_name,
+ 	.id_table =	uhci_pci_ids,
+@@ -907,6 +919,7 @@ static struct pci_driver uhci_pci_driver = {
+ 	.shutdown =	uhci_shutdown,
+ 
+ #ifdef	CONFIG_PM
++	.resume_early =	usb_hcd_resume_early,
+ 	.suspend =	usb_hcd_pci_suspend,
+ 	.resume =	usb_hcd_pci_resume,
+ #endif	/* PM */
