@@ -4,7 +4,7 @@ linux (2.6.24-7.13) UNRELEASED; urgency=low
   CHANGELOG: Use the printchanges target to see the curent changes.
   CHANGELOG: Use the insertchanges target to create the final log.
 
- -- Tim Gardner <rtg@ubuntu.com>  Thu, 07 Feb 2008 06:50:13 -0700
+ -- Amit Kucheria <amit.kucheria@ubuntu.com>  Thu, 07 Feb 2008 06:50:13 -0700
 
 linux (2.6.24-7.12) hardy; urgency=low
 
