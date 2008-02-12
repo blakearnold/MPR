@@ -72,10 +72,9 @@ Description: Header files related to Linux kernel version 2.6.24
 
 Package: linux-libc-dev
 Architecture: amd64 i386 powerpc sparc ia64 hppa lpia
-Conflicts: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6), amd64-libs-dev (<= 1.1)
+Conflicts: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6), amd64-libs-dev (<= 1.1), linux-kernel-headers
 Replaces: libc6-dev (<< 2.3.2.ds1-6), libc6.1-dev (<< 2.3.2.ds1-6), dvb-dev (<< 1.0.1-6)
 Provides: linux-kernel-headers
-Conflicts: linux-kernel-headers
 Replaces: linux-kernel-headers
 Description: Linux Kernel Headers for development
  This package provides headers from the Linux kernel.  These headers
