@@ -517,4 +517,16 @@ config FAULT_INJECTION_STACKTRACE_FILTER
 	help
 	  Provide stacktrace filter for fault-injection capabilities
 
+config LATENCYTOP
+	bool "Latency measuring infrastructure"
+	select FRAME_POINTER if !MIPS
+	select KALLSYMS
+	select KALLSYMS_ALL
+	select STACKTRACE
+	depends on SCHEDSTATS
+	help
+	  Enable this option if you want to use the LatencyTOP tool
+	  to find out which userspace is blocking on what kernel operations.
+
+
 source "samples/Kconfig"
