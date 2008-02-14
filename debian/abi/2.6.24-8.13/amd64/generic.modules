@@ -529,7 +529,6 @@ gamecon
 gameport
 garmin_gps
 gdth
-generic
 generic_serial
 gen_probe
 g_ether
@@ -660,7 +659,6 @@ ichxrom
 icplus
 ide-cd
 ide-core
-ide-cs
 ide-disk
 ide-floppy
 ide-generic
@@ -785,8 +783,6 @@ isdnhdlc
 isl6421
 isofs
 isp116x-hcd
-it8213
-it821x
 it87
 it8712f_wdt
 iTCO_vendor_support
@@ -804,7 +800,6 @@ jbd
 jedec_probe
 jffs2
 jfs
-jmicron
 joydev
 joydump
 jsm
@@ -1171,7 +1166,6 @@ pcwd_usb
 pd
 pd6729
 pda_power
-pdc202xx_new
 pdc202xx_old
 pdc_adma
 pegasus
@@ -1186,7 +1180,6 @@ phidgetservo
 phonedev
 phram
 physmap
-piix
 pktcdvd
 pktgen
 pl2303
@@ -1302,7 +1295,6 @@ rtc-x1205
 rtl8150
 rtl8187
 rxkad
-rz1000
 s1d13xxxfb
 s2io
 s3fb
@@ -1395,7 +1387,6 @@ serio_raw
 sermouse
 serpent
 serport
-serverworks
 sg
 sha1_generic
 sha256_generic
@@ -1404,11 +1395,9 @@ shaper
 shpchp
 sidewinder
 sierra
-siimage
 sir-dev
 sis
 sis190
-sis5513
 sis5595
 sis900
 sis-agp
@@ -1420,7 +1409,6 @@ skge
 sky2
 sl811_cs
 sl811-hcd
-slc90e66
 slhc
 slip
 slram
@@ -1668,7 +1656,6 @@ tpm_tis
 trancevibrator
 trident
 tridentfb
-triflex
 trix
 trm290
 ts5500_flash

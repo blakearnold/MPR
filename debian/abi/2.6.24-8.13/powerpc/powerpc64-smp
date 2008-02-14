@@ -5368,6 +5368,10 @@ EXPORT_SYMBOL_GPL drivers/ieee1394/ieee1394 0xcbd9c48d	hpsb_config_rom_ip1394_ad
 EXPORT_SYMBOL_GPL drivers/ieee1394/ieee1394 0xec8d18cf	hpsb_disable_irm
 EXPORT_SYMBOL_GPL drivers/infiniband/hw/ipath/ib_ipath 0x1514b2b2	ipath_debug
 EXPORT_SYMBOL_GPL drivers/input/ff-memless 0x65432233	input_ff_create_memless
+EXPORT_SYMBOL_GPL drivers/leds/led-class 0x1c2cd7bb	led_classdev_unregister
+EXPORT_SYMBOL_GPL drivers/leds/led-class 0x99ee1af1	led_classdev_resume
+EXPORT_SYMBOL_GPL drivers/leds/led-class 0xe97c6156	led_classdev_suspend
+EXPORT_SYMBOL_GPL drivers/leds/led-class 0xfc0b74d2	led_classdev_register
 EXPORT_SYMBOL_GPL drivers/macintosh/windfarm_core 0x316f8efe	wf_get_control
 EXPORT_SYMBOL_GPL drivers/macintosh/windfarm_core 0x425fba66	wf_unregister_sensor
 EXPORT_SYMBOL_GPL drivers/macintosh/windfarm_core 0x513c80c6	wf_register_control
@@ -6426,7 +6430,6 @@ EXPORT_SYMBOL_GPL vmlinux 0x1b1c33f6	driver_for_each_device
 EXPORT_SYMBOL_GPL vmlinux 0x1b9aca3f	jprobe_return
 EXPORT_SYMBOL_GPL vmlinux 0x1bc5d738	remove_memory
 EXPORT_SYMBOL_GPL vmlinux 0x1c24e52e	dma_get_required_mask
-EXPORT_SYMBOL_GPL vmlinux 0x1c2cd7bb	led_classdev_unregister
 EXPORT_SYMBOL_GPL vmlinux 0x1c4c30f0	__srcu_notifier_call_chain
 EXPORT_SYMBOL_GPL vmlinux 0x1c74c394	register_pernet_device
 EXPORT_SYMBOL_GPL vmlinux 0x1ceebb1a	srcu_notifier_chain_register
@@ -6840,7 +6843,6 @@ EXPORT_SYMBOL_GPL vmlinux 0x97d9c66a	nf_net_netfilter_sysctl_path
 EXPORT_SYMBOL_GPL vmlinux 0x9942514f	platform_get_irq_byname
 EXPORT_SYMBOL_GPL vmlinux 0x9944f14b	__rtnl_register
 EXPORT_SYMBOL_GPL vmlinux 0x9997727e	class_unregister
-EXPORT_SYMBOL_GPL vmlinux 0x99ee1af1	led_classdev_resume
 EXPORT_SYMBOL_GPL vmlinux 0x9a84cea2	fb_deferred_io_init
 EXPORT_SYMBOL_GPL vmlinux 0x9ac617d3	cbe_set_ctr_size
 EXPORT_SYMBOL_GPL vmlinux 0x9aea63f6	spu_management_ops
@@ -7105,7 +7107,6 @@ EXPORT_SYMBOL_GPL vmlinux 0xe88c7ca7	input_ff_destroy
 EXPORT_SYMBOL_GPL vmlinux 0xe8b8a3e2	queue_work
 EXPORT_SYMBOL_GPL vmlinux 0xe8c4968a	__ip_route_output_key
 EXPORT_SYMBOL_GPL vmlinux 0xe93e49c3	devres_free
-EXPORT_SYMBOL_GPL vmlinux 0xe97c6156	led_classdev_suspend
 EXPORT_SYMBOL_GPL vmlinux 0xe9c13439	crypto_alloc_base
 EXPORT_SYMBOL_GPL vmlinux 0xea065e01	task_handoff_unregister
 EXPORT_SYMBOL_GPL vmlinux 0xead69e7f	bus_register
@@ -7165,7 +7166,6 @@ EXPORT_SYMBOL_GPL vmlinux 0xfb623cdf	nf_unregister_afinfo
 EXPORT_SYMBOL_GPL vmlinux 0xfb65378b	transport_configure_device
 EXPORT_SYMBOL_GPL vmlinux 0xfba21ce3	tty_buffer_request_room
 EXPORT_SYMBOL_GPL vmlinux 0xfbf9be5d	register_oom_notifier
-EXPORT_SYMBOL_GPL vmlinux 0xfc0b74d2	led_classdev_register
 EXPORT_SYMBOL_GPL vmlinux 0xfc47b9ab	disk_round_stats
 EXPORT_SYMBOL_GPL vmlinux 0xfca0da3b	device_reprobe
 EXPORT_SYMBOL_GPL vmlinux 0xfd625744	hrtimer_start
