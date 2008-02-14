@@ -26,6 +26,7 @@
 #include <linux/poison.h>
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
+#include <linux/efi.h>
 #include <linux/memory_hotplug.h>
 #include <linux/nmi.h>
 
@@ -511,6 +512,71 @@ int __add_pages(struct zone *z, unsigned long start_pfn, unsigned long nr_pages)
 	return err;
 }
 #endif
+
+int page_is_ram(unsigned long pagenr)
+{
+	int i;
+	unsigned long addr, end;
+
+	if (efi_enabled) {
+		efi_memory_desc_t *md;
+		void *p;
+
+		for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+			md = p;
+			if (!is_available_memory(md))
+				continue;
+			addr = (md->phys_addr+PAGE_SIZE-1) >> PAGE_SHIFT;
+			end = (md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT)) >> PAGE_SHIFT;
+
+			if ((pagenr >= addr) && (pagenr < end))
+				return 1;
+		}
+		return 0;
+	}
+
+	for (i = 0; i < e820.nr_map; i++) {
+		/*
+		 * Not usable memory:
+		 */
+		if (e820.map[i].type != E820_RAM)
+			continue;
+		addr = (e820.map[i].addr + PAGE_SIZE-1) >> PAGE_SHIFT;
+		end = (e820.map[i].addr + e820.map[i].size) >> PAGE_SHIFT;
+
+		/*
+		 * Sanity check: Some BIOSen report areas as RAM that
+		 * are not. Notably the 640->1Mb area, which is the
+		 * PCI BIOS area.
+		 */
+		if (addr >= (BIOS_BEGIN >> PAGE_SHIFT) &&
+		    end < (BIOS_END >> PAGE_SHIFT))
+			continue;
+
+		if ((pagenr >= addr) && (pagenr < end))
+			return 1;
+	}
+	return 0;
+}
+
+/*
+ * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+ * is valid. The argument is a physical page number.
+ *
+ *
+ * On x86, access has to be given to the first megabyte of ram because that area
+ * contains bios code and data regions used by X and dosemu and similar apps.
+ * Access has to be given to non-kernel-ram areas as well, these contain the PCI
+ * mmio resources as well as potential bios/acpi data regions.
+ */
+int devmem_is_allowed(unsigned long pagenr)
+{
+	if (pagenr <= 256)
+		return 1;
+	if (!page_is_ram(pagenr))
+		return 1;
+	return 0;
+}
 
 static struct kcore_list kcore_mem, kcore_vmalloc, kcore_kernel, kcore_modules,
 			 kcore_vsyscall;

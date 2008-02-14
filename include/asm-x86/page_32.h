@@ -166,6 +166,7 @@ extern unsigned int __VMALLOC_RESERVE;
 extern int sysctl_legacy_va_layout;
 
 extern int page_is_ram(unsigned long pagenr);
+extern int devmem_is_allowed(unsigned long pagenr);
 
 #endif /* __ASSEMBLY__ */
 
