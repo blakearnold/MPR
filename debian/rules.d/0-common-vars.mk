@@ -110,7 +110,7 @@ kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour)
 kmake += SUBLEVEL=$(SUBLEVEL)
 kmake += CFLAGS=
 kmake += CFLAGS_APPEND=
-ifeq ($(findstring sparc, $(build_arch)),)
+ifeq ($(findstring sparc, $(arch)),)
 kmake += LDFLAGS=
 endif
 ifneq ($(LOCAL_ENV_CC),)
