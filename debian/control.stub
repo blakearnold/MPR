@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>
 Standards-Version: 3.6.1
-Build-Depends: debhelper (>= 3), module-init-tools, kernel-wedge (>= 2.24ubuntu1), gcc-4.1-hppa64 [hppa], binutils-hppa64 [hppa], device-tree-compiler [powerpc], gcc-4.1 [powerpc ia64], gawk [amd64 i386]
+Build-Depends: debhelper (>= 3), module-init-tools, kernel-wedge (>= 2.24ubuntu1), gcc-4.1-hppa64 [hppa], binutils-hppa64 [hppa], device-tree-compiler [powerpc], gcc-4.1 [ia64], gawk [amd64 i386]
 Build-Depends-Indep: xmlto, docbook-utils, gs, transfig, bzip2, sharutils
 
 Package: linux-kernel-devel
@@ -372,7 +372,7 @@ Package: linux-headers-2.6.24-9-powerpc
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9, gcc-4.1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9,  ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC
  This package provides kernel header files for version 2.6.24 on
@@ -411,7 +411,7 @@ Package: linux-headers-2.6.24-9-powerpc64-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9, gcc-4.1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9,  ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit PowerPC SMP
  This package provides kernel header files for version 2.6.24 on
@@ -450,7 +450,7 @@ Package: linux-headers-2.6.24-9-powerpc-smp
 Architecture: powerpc
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9, gcc-4.1, ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9,  ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC SMP
  This package provides kernel header files for version 2.6.24 on

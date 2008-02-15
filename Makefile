@@ -300,9 +300,9 @@ include $(srctree)/scripts/Kbuild.include
 CC		= $(CROSS_COMPILE)gcc
 
 #
-# gcc-4.2 won't build powerpc64-smp or ia64.
+# gcc-4.2 won't build ia64.
 #
-ifneq (,$(findstring $(ARCH), powerpc ia64))
+ifneq (,$(findstring $(ARCH), ia64))
 CC		= gcc-4.1
 endif
 
