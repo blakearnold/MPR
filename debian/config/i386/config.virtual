@@ -76,6 +76,7 @@ CONFIG_BLK_DEV_IDE=y
 # CONFIG_BT is not set
 # CONFIG_CASSINI is not set
 # CONFIG_CFG80211 is not set
+# CONFIG_CGROUPS is not set
 # CONFIG_CHELSIO_T1 is not set
 # CONFIG_CHELSIO_T3 is not set
 # CONFIG_CHR_DEV_OSST is not set
