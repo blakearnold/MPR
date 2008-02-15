@@ -21,6 +21,6 @@ loader		= grub
 # No custom binaries for the PPA build.
 #
 ifeq ($(is_ppa_build),)
-#custom_flavours	= xen rt ume
-custom_flavours	= rt xen
+#custom_flavours	= xen rt
+custom_flavours	= 
 endif
