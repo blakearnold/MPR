@@ -1,9 +1,9 @@
 #! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 328ce8a..22b0c44 100644
+index b406b39..57e4990 100644
 --- a/drivers/ata/ata_piix.c
 +++ b/drivers/ata/ata_piix.c
-@@ -209,6 +209,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
+@@ -214,6 +214,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
  	/* ICH7/7-R (i945, i975) UDMA 100*/
  	{ 0x8086, 0x27DF, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
  	{ 0x8086, 0x269E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
@@ -11,27 +11,40 @@ index 328ce8a..22b0c44 100644
  	/* ICH8 Mobile PATA Controller */
  	{ 0x8086, 0x2850, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
  
-@@ -679,7 +680,14 @@ static int piix_pata_prereset(struct ata_link *link, unsigned long deadline)
+@@ -731,6 +732,12 @@ static int ich_pata_cable_detect(struct ata_port *ap)
+ 		lap++;
+ 	}
+ 
++	/* workaround for Poulsbo PATA controller, this controller's
++	 * IOCFG register is "reserved"
++	 */
++	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
++		pdev->device == PCI_DEVICE_ID_INTEL_POULSBO_IDE)
++		return ATA_CBL_PATA80;
+ 	/* check BIOS cable detect results */
+ 	mask = ap->port_no == 0 ? PIIX_80C_PRI : PIIX_80C_SEC;
+ 	pci_read_config_byte(pdev, PIIX_IOCFG, &tmp);
+@@ -752,8 +759,13 @@ static int piix_pata_prereset(struct ata_link *link, unsigned long deadline)
+ 	struct ata_port *ap = link->ap;
  	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
  
- 	if (!pci_test_config_bits(pdev, &piix_enable_bits[ap->port_no]))
+-	if (!pci_test_config_bits(pdev, &piix_enable_bits[ap->port_no]))
 -		return -ENOENT;
-+/* Although a PCI quirk function is added to ~/drivers/pci/quirks.c to
-+ * handle that, but currently, the quirk function won't work because
-+ * Poulsbo chipset regards these "reserved" registers read 00 and wrote no
-+ * effect
-+ */
-+		if (pdev->vendor != PCI_VENDOR_ID_INTEL ||
-+			pdev->device != PCI_DEVICE_ID_INTEL_POULSBO_IDE)
++	/* workaround for Poulsbo PATA controller, this controller's port
++	 * enable registers are "reserved"
++	 */
++	if (pdev->vendor != PCI_VENDOR_ID_INTEL ||
++		pdev->device != PCI_DEVICE_ID_INTEL_POULSBO_IDE)
++		if (!pci_test_config_bits(pdev, &piix_enable_bits[ap->port_no]))
 +			return -ENOENT;
  	return ata_std_prereset(link, deadline);
  }
  
 diff --git a/drivers/ide/pci/piix.c b/drivers/ide/pci/piix.c
-index 63625a0..a9c4074 100644
+index 27781d2..6070358 100644
 --- a/drivers/ide/pci/piix.c
 +++ b/drivers/ide/pci/piix.c
-@@ -437,6 +437,7 @@ static const struct ide_port_info piix_pci_info[] __devinitdata = {
+@@ -438,6 +438,7 @@ static const struct ide_port_info piix_pci_info[] __devinitdata = {
  	/* 22 */ DECLARE_ICH_DEV("ICH4",	ATA_UDMA5),
  	/* 23 */ DECLARE_ICH_DEV("ESB2",	ATA_UDMA5),
  	/* 24 */ DECLARE_ICH_DEV("ICH8M",	ATA_UDMA5),
@@ -39,7 +52,7 @@ index 63625a0..a9c4074 100644
  };
  
  /**
-@@ -510,6 +511,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
+@@ -511,6 +512,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_82801DB_1),  22 },
  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ESB2_18),    23 },
  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ICH8_6),     24 },
@@ -47,41 +60,3 @@ index 63625a0..a9c4074 100644
  	{ 0, },
  };
  MODULE_DEVICE_TABLE(pci, piix_pci_tbl);
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 26cc4dc..0030add 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1749,3 +1749,33 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
- 			quirk_msi_intx_disable_bug);
- 
- #endif /* CONFIG_PCI_MSI */
-+
-+/* The Intel Poulsbo chipset pata controller IDE decode enable bit holds wrong value
-+ * it will always be 0. Actually on current stepping, this quirk function won't work
-+ * either (write to this bit has no effect). But we still put it here, for upcoming
-+ * steppings.
-+ */
-+static void __devinit quirk_intel_poulsbo_ide_enable(struct pci_dev *dev)
-+{
-+	unsigned char value;
-+
-+	pci_read_config_byte(dev, 0x41, &value);
-+	if (!(value & 0x80)) {
-+		printk(KERN_ERR "PCI: PIIX4: Fixing Poulsbo PATA port 1 IDE decode enabling bit\n");
-+		value |= 0x80;
-+		pci_write_config_byte(dev, 0x41, value);
-+		pci_read_config_byte(dev, 0x41, &value);
-+		printk(KERN_ERR "Re-read enabling bit:%d\n", value);
-+	}
-+	pci_read_config_byte(dev, 0x43, &value);
-+	if (!(value & 0x80)) {
-+		printk(KERN_ERR "PCI: PIIX4: Fixing Poulsbo PATA port 2 IDE decode enabling bit\n");
-+		value |= 0x80;
-+		pci_write_config_byte(dev, 0x43, value);
-+		pci_read_config_byte(dev, 0x43, &value);
-+		printk(KERN_ERR "Re-read enabling bit:%d\n", value);
-+	}
-+}
-+
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_POULSBO_IDE,
-+			quirk_intel_poulsbo_ide_enable);

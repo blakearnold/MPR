@@ -1,3 +1,4 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
 diff --git a/drivers/net/wireless/8686_wlan/Makefile b/drivers/net/wireless/8686_wlan/Makefile
 new file mode 100644
 index 0000000..50d3eb4
