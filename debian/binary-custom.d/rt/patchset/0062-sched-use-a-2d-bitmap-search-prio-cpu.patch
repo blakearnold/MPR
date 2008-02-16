@@ -24,22 +24,22 @@ CC: Christoph Lameter <clameter@sgi.com>
  kernel/sched_rt.c     |   85 ++++++------------------
  5 files changed, 243 insertions(+), 61 deletions(-)
 
-Index: linux-2.6.24-rt1/kernel/Makefile
+Index: test/kernel/Makefile
 ===================================================================
---- linux-2.6.24-rt1.orig/kernel/Makefile	2008-01-25 15:06:47.000000000 -0500
-+++ linux-2.6.24-rt1/kernel/Makefile	2008-01-25 15:07:05.000000000 -0500
-@@ -57,6 +57,7 @@ obj-$(CONFIG_SYSCTL) += utsname_sysctl.o
- obj-$(CONFIG_TASK_DELAY_ACCT) += delayacct.o
+--- test.orig/kernel/Makefile	2008-02-15 21:46:23.000000000 +0100
++++ test/kernel/Makefile	2008-02-16 22:05:44.000000000 +0100
+@@ -58,6 +58,7 @@
  obj-$(CONFIG_TASKSTATS) += taskstats.o tsacct.o
  obj-$(CONFIG_MARKERS) += marker.o
+ obj-$(CONFIG_LATENCYTOP) += latencytop.o
 +obj-$(CONFIG_SMP) += sched_cpupri.o
  
  ifneq ($(CONFIG_SCHED_NO_NO_OMIT_FRAME_POINTER),y)
  # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
-Index: linux-2.6.24-rt1/kernel/sched.c
+Index: test/kernel/sched.c
 ===================================================================
---- linux-2.6.24-rt1.orig/kernel/sched.c	2008-01-25 15:07:04.000000000 -0500
-+++ linux-2.6.24-rt1/kernel/sched.c	2008-01-25 15:07:05.000000000 -0500
+--- test.orig/kernel/sched.c	2008-02-16 22:05:16.000000000 +0100
++++ test/kernel/sched.c	2008-02-16 22:05:19.000000000 +0100
 @@ -69,6 +69,8 @@
  #include <asm/tlb.h>
  #include <asm/irq_regs.h>
@@ -49,7 +49,7 @@ Index: linux-2.6.24-rt1/kernel/sched.c
  /*
   * Scheduler clock - returns current time in nanosec units.
   * This is default implementation.
-@@ -298,6 +300,9 @@ struct root_domain {
+@@ -298,6 +300,9 @@
  	 */
  	cpumask_t rto_mask;
  	atomic_t rto_count;
@@ -59,7 +59,7 @@ Index: linux-2.6.24-rt1/kernel/sched.c
  };
  
  static struct root_domain def_root_domain;
-@@ -5835,6 +5840,9 @@ static void init_rootdomain(struct root_
+@@ -5835,6 +5840,9 @@
  
  	rd->span = *map;
  	cpus_and(rd->online, rd->span, cpu_online_map);
@@ -69,10 +69,10 @@ Index: linux-2.6.24-rt1/kernel/sched.c
  }
  
  static void init_defrootdomain(void)
-Index: linux-2.6.24-rt1/kernel/sched_cpupri.c
+Index: test/kernel/sched_cpupri.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24-rt1/kernel/sched_cpupri.c	2008-01-25 15:07:05.000000000 -0500
++++ test/kernel/sched_cpupri.c	2008-02-16 22:05:19.000000000 +0100
 @@ -0,0 +1,174 @@
 +/*
 + *  kernel/sched_cpupri.c
@@ -248,10 +248,10 @@ Index: linux-2.6.24-rt1/kernel/sched_cpupri.c
 +}
 +
 +
-Index: linux-2.6.24-rt1/kernel/sched_cpupri.h
+Index: test/kernel/sched_cpupri.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24-rt1/kernel/sched_cpupri.h	2008-01-25 15:07:05.000000000 -0500
++++ test/kernel/sched_cpupri.h	2008-02-16 22:05:19.000000000 +0100
 @@ -0,0 +1,36 @@
 +#ifndef _LINUX_CPUPRI_H
 +#define _LINUX_CPUPRI_H
@@ -289,11 +289,11 @@ Index: linux-2.6.24-rt1/kernel/sched_cpupri.h
 +#endif
 +
 +#endif /* _LINUX_CPUPRI_H */
-Index: linux-2.6.24-rt1/kernel/sched_rt.c
+Index: test/kernel/sched_rt.c
 ===================================================================
---- linux-2.6.24-rt1.orig/kernel/sched_rt.c	2008-01-25 15:07:05.000000000 -0500
-+++ linux-2.6.24-rt1/kernel/sched_rt.c	2008-01-25 15:07:05.000000000 -0500
-@@ -73,8 +73,10 @@ static inline void inc_rt_tasks(struct t
+--- test.orig/kernel/sched_rt.c	2008-02-16 22:05:16.000000000 +0100
++++ test/kernel/sched_rt.c	2008-02-16 22:05:19.000000000 +0100
+@@ -73,8 +73,10 @@
  	WARN_ON(!rt_task(p));
  	rq->rt.rt_nr_running++;
  #ifdef CONFIG_SMP
@@ -305,7 +305,7 @@ Index: linux-2.6.24-rt1/kernel/sched_rt.c
  	if (p->nr_cpus_allowed > 1)
  		rq->rt.rt_nr_migratory++;
  
-@@ -84,6 +86,8 @@ static inline void inc_rt_tasks(struct t
+@@ -84,6 +86,8 @@
  
  static inline void dec_rt_tasks(struct task_struct *p, struct rq *rq)
  {
@@ -314,7 +314,7 @@ Index: linux-2.6.24-rt1/kernel/sched_rt.c
  	WARN_ON(!rt_task(p));
  	WARN_ON(!rq->rt.rt_nr_running);
  	rq->rt.rt_nr_running--;
-@@ -103,6 +107,9 @@ static inline void dec_rt_tasks(struct t
+@@ -103,6 +107,9 @@
  	if (p->nr_cpus_allowed > 1)
  		rq->rt.rt_nr_migratory--;
  
@@ -324,7 +324,7 @@ Index: linux-2.6.24-rt1/kernel/sched_rt.c
  	update_rt_migration(rq);
  #endif /* CONFIG_SMP */
  }
-@@ -293,69 +300,17 @@ static DEFINE_PER_CPU(cpumask_t, local_c
+@@ -293,69 +300,17 @@
  
  static int find_lowest_cpus(struct task_struct *task, cpumask_t *lowest_mask)
  {
@@ -401,7 +401,7 @@ Index: linux-2.6.24-rt1/kernel/sched_rt.c
  }
  
  static inline int pick_optimal_cpu(int this_cpu, cpumask_t *mask)
-@@ -379,8 +334,12 @@ static int find_lowest_rq(struct task_st
+@@ -379,8 +334,12 @@
  	cpumask_t *lowest_mask = &__get_cpu_var(local_cpu_mask);
  	int this_cpu = smp_processor_id();
  	int cpu      = task_cpu(task);
@@ -415,7 +415,7 @@ Index: linux-2.6.24-rt1/kernel/sched_rt.c
  	if (!count)
  		return -1; /* No targets found */
  
-@@ -734,6 +693,8 @@ static void join_domain_rt(struct rq *rq
+@@ -734,6 +693,8 @@
  {
  	if (rq->rt.overloaded)
  		rt_set_overload(rq);
@@ -424,7 +424,7 @@ Index: linux-2.6.24-rt1/kernel/sched_rt.c
  }
  
  /* Assumes rq->lock is held */
-@@ -741,6 +702,8 @@ static void leave_domain_rt(struct rq *r
+@@ -741,6 +702,8 @@
  {
  	if (rq->rt.overloaded)
  		rt_clear_overload(rq);
