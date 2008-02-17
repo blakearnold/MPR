@@ -22,5 +22,5 @@ loader		= grub
 #
 ifeq ($(is_ppa_build),)
 #custom_flavours	= xen rt
-custom_flavours	= 
+custom_flavours	= rt
 endif
