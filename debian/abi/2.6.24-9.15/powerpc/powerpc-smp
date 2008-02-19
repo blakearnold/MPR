@@ -5355,6 +5355,7 @@ EXPORT_SYMBOL_GPL drivers/macintosh/windfarm_core 0xe8eccc0f	wf_get_control
 EXPORT_SYMBOL_GPL drivers/macintosh/windfarm_core 0xed82a14f	wf_clear_overtemp
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x06dc74b7	dm_path_uevent
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x10435f8f	dm_create_error_table
+EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x297c81a5	dm_disk
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x3c59fa05	dm_device_name
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x3cff4198	dm_noflush_suspending
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x813e3fec	dm_set_device_limits

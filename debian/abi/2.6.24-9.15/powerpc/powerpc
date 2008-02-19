@@ -5270,6 +5270,7 @@ EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x702fce3d	dm_put
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x996fcd8c	dm_create_error_table
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xa400fe59	dm_device_name
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xb14136ae	dm_noflush_suspending
+EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xc191d3a3	dm_disk
 EXPORT_SYMBOL_GPL drivers/md/dm-multipath 0x074e4d33	dm_unregister_hw_handler
 EXPORT_SYMBOL_GPL drivers/md/dm-multipath 0x12647a8e	dm_register_hw_handler
 EXPORT_SYMBOL_GPL drivers/md/dm-multipath 0x6de93f28	dm_scsi_err_handler

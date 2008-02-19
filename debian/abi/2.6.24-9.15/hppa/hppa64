@@ -3399,6 +3399,7 @@ EXPORT_SYMBOL_GPL drivers/ide/ide-core 0xeb936b7c	ide_end_dequeued_request
 EXPORT_SYMBOL_GPL drivers/ide/ide-core 0xec7f1697	ideprobe_init
 EXPORT_SYMBOL_GPL drivers/ide/ide-core 0xed9c8a01	ide_dma_setup
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x1f9a5e69	dm_put
+EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x329a4163	dm_disk
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x43ac9cf2	dm_set_device_limits
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x531a46e0	dm_noflush_suspending
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x60edde7d	dm_create_error_table

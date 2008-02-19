@@ -5396,6 +5396,7 @@ EXPORT_SYMBOL_GPL drivers/macintosh/windfarm_smu_sat 0xe05851d5	smu_sat_get_sdb_
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x2afe5ab8	dm_set_device_limits
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x2bb6dd51	dm_create_error_table
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x30f90086	dm_send_uevents
+EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x7acbb3bf	dm_disk
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x7af5910f	dm_noflush_suspending
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x9f4c4d71	dm_path_uevent
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xb1b28ead	dm_put

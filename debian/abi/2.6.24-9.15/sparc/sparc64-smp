@@ -4518,6 +4518,7 @@ EXPORT_SYMBOL_GPL drivers/leds/led-class 0xeb3499d0	led_classdev_unregister
 EXPORT_SYMBOL_GPL drivers/leds/led-class 0xeee8aa4f	led_classdev_register
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x417b97bd	dm_set_device_limits
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x61f71f3c	dm_device_name
+EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xa54b733c	dm_disk
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xa72a6600	dm_put
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xb56cbaae	dm_send_uevents
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xbdcc6bac	dm_noflush_suspending

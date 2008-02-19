@@ -3554,6 +3554,7 @@ EXPORT_SYMBOL vmlinux 0x57c5cfaa	iov_iter_copy_from_user_atomic
 EXPORT_SYMBOL vmlinux 0x57cd686a	current_fs_time
 EXPORT_SYMBOL vmlinux 0x57ce7846	__init_rwsem
 EXPORT_SYMBOL vmlinux 0x57da18b5	atm_dev_lookup
+EXPORT_SYMBOL vmlinux 0x57f0cba8	dma_ops
 EXPORT_SYMBOL vmlinux 0x57f46cef	_spin_lock_irq
 EXPORT_SYMBOL vmlinux 0x5800ea3a	proc_dointvec_minmax
 EXPORT_SYMBOL vmlinux 0x580179ab	nla_reserve_nohdr
@@ -3877,7 +3878,6 @@ EXPORT_SYMBOL vmlinux 0x77a108df	_write_unlock_irqrestore
 EXPORT_SYMBOL vmlinux 0x77a61af7	register_key_type
 EXPORT_SYMBOL vmlinux 0x77d06ac6	_spin_unlock_irq
 EXPORT_SYMBOL vmlinux 0x77d28be2	iov_iter_copy_from_user
-EXPORT_SYMBOL vmlinux 0x77d79b9a	dma_ops
 EXPORT_SYMBOL vmlinux 0x77e463d7	pci_enable_bridges
 EXPORT_SYMBOL vmlinux 0x77e86035	icmp_send
 EXPORT_SYMBOL vmlinux 0x77ecac9f	zlib_inflateEnd
@@ -5664,6 +5664,7 @@ EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x41b9da65	dm_create_error_table
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x509a1852	dm_put
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x62dbe0fe	dm_path_uevent
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0x89b25805	dm_send_uevents
+EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xb94a1a69	dm_disk
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xccd4ca62	dm_noflush_suspending
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xe599a48c	dm_device_name
 EXPORT_SYMBOL_GPL drivers/md/dm-mod 0xf8bfc517	dm_set_device_limits
