@@ -63,7 +63,7 @@ Package: linux-headers-2.6.24-9
 Architecture: all
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), gcc-4.1-hppa64 [hppa], binutils-hppa64 [hppa]
+Depends: coreutils | fileutils (>= 4.0)
 Provides: linux-headers, linux-headers-2.6
 Description: Header files related to Linux kernel version 2.6.24
  This package provides kernel header files for version 2.6.24, for sites
@@ -216,7 +216,7 @@ Package: linux-headers-2.6.24-9-hppa32
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9,  ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9, gcc-4.1, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 32-bit HP PA-RISC SMP
  This package provides kernel header files for version 2.6.24 on
@@ -255,7 +255,7 @@ Package: linux-headers-2.6.24-9-hppa64
 Architecture: hppa
 Section: devel
 Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9,  ${shlibs:Depends}
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-9, gcc-4.1-hppa64, binutils-hppa64, ${shlibs:Depends}
 Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit HP PA-RISC SMP
  This package provides kernel header files for version 2.6.24 on

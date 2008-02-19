@@ -6,4 +6,4 @@ provides="redhat-cluster-modules"
 arch="hppa"
 
 # Keep in sync with debian/control.stub.in Build-Depends.
-header_depends="gcc-4.1-hppa64, binutils-hppa64,"
+header_depends="gcc-4.1,"
