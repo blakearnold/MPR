@@ -1,0 +1,811 @@
+#
+# base tree: 2.6.23-rc4
+#
+
+#
+# Mainline fixes
+#
+
+# MCOUNT tracing
+0001-mcount-add-basic-support-for-gcc-profiler-instrum.patch
+0002-mcount-annotate-generic-code.patch
+0003-mcount-add-x86_64-notrace-annotations.patch
+0004-mcount-add-x86-vdso-notrace-annotations.patch
+0005-mcount-nmi-notrace-annotations.patch
+0006-mcount-add-time-notrace-annotations.patch
+0007-mcount-lockdep-notrace-annotations.patch
+0008-mcount-preemptcount-notrace-annotations.patch
+0009-mcount-fault-notrace-annotations.patch
+0010-mcount-irqs-notrace-annotations.patch
+0011-mcount-rcu-notrace-annotations.patch
+
+0012-ppc-rename-xmon-mcount.patch
+0013-ppc-add-mcount.patch
+0014-ppc-mcount-dummy-functions.patch
+0015-ppc-mark-notrace-mainline.patch
+0016-ppc-add-ppc32-mcount.patch
+0017-ppc-select-mcount.patch
+
+# monotonic cycles
+0018-time-accumulate-over-delay.patch
+0019-timekeeping-add-cycle-monotonic.patch
+0020-initialize-clocksource-to-jiffies.patch
+0021-get-monotonic-cycles.patch
+
+#
+# RT Balancing code
+#
+# Taken from sched-devel.git
+#
+
+0022-0001-sched-count-of-queued-RT-tasks.patch
+0023-0002-sched-track-highest-prio-task-queued.patch
+0024-0003-sched-add-RT-task-pushing.patch
+0025-0004-sched-add-rt-overload-tracking.patch
+0026-0005-sched-pull-RT-tasks-from-overloaded-runqueues.patch
+0027-0006-sched-push-RT-tasks-from-overloaded-CPUs.patch
+0028-0007-sched-disable-standard-balancer-for-RT-tasks.patch
+0029-0008-sched-add-RT-balance-cpu-weight.patch
+0030-0009-sched-clean-up-this_rq-use-in-kernel-sched_rt.c.patch
+0031-0010-sched-de-SCHED_OTHER-ize-the-RT-path.patch
+0032-0011-sched-break-out-search-for-RT-tasks.patch
+0033-0012-sched-RT-balancing-include-current-CPU.patch
+0034-0013-sched-pre-route-RT-tasks-on-wakeup.patch
+0035-0014-sched-optimize-RT-affinity.patch
+0036-0015-sched-wake-balance-fixes.patch
+0037-0016-sched-RT-balance-avoid-overloading.patch
+0038-0017-sched-break-out-early-if-RT-task-cannot-be-migrated.patch
+0039-0018-sched-RT-balance-optimize.patch
+0040-0019-sched-RT-balance-optimize-cpu-search.patch
+0041-0020-sched-RT-balance-on-new-task.patch
+0042-0021-sched-clean-up-pick_next_highest_task_rt.patch
+0043-0022-sched-clean-up-find_lock_lowest_rq.patch
+# 0023-sched-clean-up-overlong-line-in-kernel-sched_debug.patch
+0044-0024-sched-clean-up-kernel-sched_rt.c.patch
+0045-0025-sched-remove-rt_overload.patch
+0046-0026-sched-remove-leftover-debugging.patch
+0047-0027-sched-clean-up-pull_rt_task.patch
+0048-0028-sched-clean-up-schedule_balance_rt.patch
+0049-0029-sched-add-sched-domain-roots.patch
+0050-0030-sched-update-root-domain-spans-upon-departure.patch
+0051-0031-Subject-SCHED-Only-balance-our-RT-tasks-within-ou.patch
+0052-0032-sched-fix-sched_rt.c-join-leave_domain.patch
+# 0033-sched-remove-unused-JIFFIES_TO_NS-macro.patch
+0053-0034-sched-style-cleanup-2.patch
+0054-0035-sched-add-credits-for-RT-balancing-improvements.patch
+# 0036-sched-reactivate-fork-balancing.patch
+0055-0037-sched-whitespace-cleanups-in-topology.h.patch
+0056-0038-sched-no-need-for-affine-wakeup-balancing-in.patch
+0057-0039-sched-get-rid-of-new_cpu-in-try_to_wake_up.patch
+# 0040-sched-remove-do_div-from-__sched_slice.patch
+0058-0041-sched-RT-balance-replace-hooks-with-pre-post-sched.patch
+0059-0042-sched-RT-balance-add-new-methods-to-sched_class.patch
+0060-0043-sched-RT-balance-only-adjust-overload-state-when-c.patch
+0061-0044-sched-remove-some-old-cpuset-logic.patch
+
+# Last patch of the RT balancing code (not yet in sched-devel)
+0062-sched-use-a-2d-bitmap-search-prio-cpu.patch
+0063-remove-unused-var-warning.patch
+
+# KVM - RT fixes
+0064-sched-enable-irqs-in-preempt-in-notifier-call.patch
+
+#
+# ARM clock events & co
+#
+0065-ep93xx-timer-accuracy.patch
+0066-ep93xx-clockevents.patch
+0067-ep93xx-clockevents-fix.patch
+
+# CHECKME
+0068-arm-leds-timer.patch
+
+#
+# Check what's in mainline / mm or might be
+# upstream material.
+#
+0069-spinlock-trylock-cleanup-sungem.patch
+0070-x86_64-tsc-sync-irqflags-fix.patch
+0071-neptune-no-at-keyboard.patch
+0072-rtmutex-debug.h-cleanup.patch
+0073-netpoll-8139too-fix.patch
+0074-kprobes-preempt-fix.patch
+0075-replace-bugon-by-warn-on.patch
+
+# Suspend / resume fixups
+0076-i386-mark-atomic-irq-ops-raw.patch
+0077-msi-suspend-resume-workaround.patch
+0078-floppy-resume-fix.patch
+
+#
+# assorted fixlets from -mm:
+#
+# Check if they are really in -mm or should be submitted
+#
+0079-hrtimers-overrun-api.patch
+0080-mm-fix-latency.patch
+
+0081-ioapic-fix-too-fast-clocks.patch
+0082-fix-acpi-build-weirdness.patch
+0083-write-try-lock-irqsave.patch
+
+0084-move-native-irq.patch
+0085-dont-unmask-io_apic.patch
+
+#
+# misc build beautification patches:
+#
+0086-gcc-warnings-shut-up.patch
+
+#
+# Various fixlets
+#
+
+#
+# Debugging patches
+#
+0087-apic-dumpstack.patch
+0088-netfilter-more-debugging.patch
+
+#
+# Latency tracer 
+#
+0089-nmi-profiling-base.patch
+#redo-regparm-option.patch
+0090-latency-tracing.patch
+0091-latency-tracing-remove-trace-array.patch
+#latency-tracer-disable-across-trace-cmdline.patch
+
+#latency-tracing-i386-paravirt-fastcall.patch
+0092-latency-tracing-i386.patch
+0093-latency-tracing-x86_64.patch
+
+0094-latency-tracing-ppc.patch
+
+0095-latency-tracer-printk-fix.patch
+
+0096-latency-tracing-arm.patch
+
+0097-latency-tracing-exclude-printk.patch
+0098-latency-tracing-prctl-api-hack.patch
+
+0099-latency-tracing-raw-spinlock-hack.patch
+0100-latency-tracer-one-off-fix.patch
+0101-smaller-trace.patch
+0102-trace-name-plus.patch
+0103-trace-with-caller-addr.patch
+0104-trace-sti-mwait.patch
+0105-latency-tracer-optimize-a-bit.patch
+0106-idle-stop-critical-timing.patch
+
+0107-arm-latency-tracer-support.patch
+0108-latency-tracer-variable-threshold.patch
+
+# Needs to be rewritten to trigger on the procfs variable !
+0109-reset-latency-histogram.patch
+
+# tracing
+0110-undo-latency-tracing-raw-spinlock-hack.patch
+0111-random-driver-latency-fix.patch
+0112-latency-measurement-drivers.patch
+0113-latency-measurement-drivers-fix.patch
+
+0114-latency-tracing-use-now.patch
+0115-preempt_max_latency-in-all-modes.patch
+0116-latency-hist-add-resetting-for-all-timing-options.patch
+
+0117-latency-trace-sysctl-config-fix.patch
+0118-latency-trace-convert-back-to-ms.patch
+
+#
+# lockdep queue:
+#
+0119-latency-trace-fix.patch
+0120-trace-cpuidle.patch
+0121-lockdep-show-held-locks.patch
+0122-lockdep-lock_set_subclass.patch
+0123-lockdep-prettify.patch
+0124-lockdep-more-entries.patch
+
+#
+# Revert loopback bh assumption patch
+#
+0125-loopback-revert.patch
+
+#
+# hrtimer
+#
+0126-hrtimer-trace.patch
+
+#
+# PPC gtod and highres support
+# ** upstream as of 2.6.24-rc2 **
+#ppc-gtod-support.patch
+#ppc-gtod-support-fix.patch
+#ppc-a-2.patch
+#ppc-fix-clocksource-timebase-shift.patch
+#ppc-remove-broken-vsyscall.patch
+#ppc-read-persistent-clock.patch
+0127-ppc-gtod-notrace-fix.patch
+#ppc-clockevents.patch
+#ppc-clockevents-fix.patch
+#ppc-highres-dyntick.patch
+
+#
+# -rt queue:
+#
+#inet_hash_bits.patch
+#inet-hash-bits-ipv6-fix.patch
+
+#
+# RCU preempt patches from Paul:
+#
+# The old patches
+#rcu-1.patch
+#rcu-2.patch
+#rcu-3.patch
+#rcu-4.patch
+
+#### New Experimental Preempt RCU implemntation ####
+0128-rcu-new-1.patch
+0129-rcu-new-2.patch
+0130-rcu-new-3.patch
+0131-rcu-new-4.patch
+0132-rcu-new-5.patch
+#rcu-new-6.patch # keep commented out
+0133-rcu-new-7.patch
+#rcu-new-8.patch # keep commented out
+0134-rcu-new-9.patch
+# Paul's and Steve's patches
+0135-rcu-new-10.patch
+0136-rcu-fix-rcu-preempt.patch
+0137-rcu-dynticks-update.patch
+### New implementation ends here ###
+
+# new rcu implementation shouldn't need these.
+#rcu-preempt-fix-nmi-watchdog.patch
+#rcu-preempt-fix-rcu-torture.patch
+
+0138-rcu-hrt-fixups.patch
+#dynticks-rcu-rt-fixlet.patch
+#rcu-tasklet-softirq.patch
+#rcu-classic-fixup.patch
+#rcu-warn-underflow.patch
+
+#
+# ARM preperatory patches
+#
+0139-arm-cmpxchg.patch
+0140-arm-fix-atomic-cmpxchg.patch
+0141-arm-cmpxchg-support-armv6.patch
+0142-arm-futex-atomic-cmpxchg.patch
+0143-arm-preempt-config.patch
+
+#
+# IRQ threading
+#
+0144-preempt-softirqs-core.patch
+0145-preempt-irqs-core.patch
+0146-preempt-irqs-softirq-in-hardirq.patch
+0147-preempt-irqs-direct-debug-keyboard.patch
+0148-preempt-irqs-timer.patch
+0149-preempt-irqs-hrtimer.patch
+
+0150-preempt-irqs-i386.patch
+0151-preempt-irqs-i386-ioapic-mask-quirk.patch
+
+0152-preempt-irqs-mips.patch
+
+0153-preempt-irqs-x86-64.patch
+0154-preempt-irqs-x86-64-ioapic-mask-quirk.patch
+
+0155-preempt-irqs-arm.patch
+0156-preempt-irqs-arm-fix-oprofile.patch
+
+0157-preempt-irqs-ppc.patch
+0158-preempt-irqs-ppc-ack-irq-fixups.patch
+0159-preempt-irqs-ppc-fix-b5.patch
+0160-preempt-irqs-ppc-fix-b6.patch
+0161-preempt-irqs-ppc-celleb-beatic-eoi.patch
+0162-preempt-irqs-ppc-fix-more-fasteoi.patch
+0163-preempt-irqs-ppc-preempt-schedule-irq-entry-fix.patch
+
+0164-preempt-irqs-Kconfig.patch
+
+#
+# Real real time stuff :)
+#
+0165-rt-apis.patch
+
+0166-rt-slab-new.patch
+0167-rt-page_alloc.patch
+
+#
+# rt-mutexes
+#
+0168-rt-mutex-preempt-debugging.patch
+0169-rt-mutex-irq-flags-checking.patch
+0170-rt-mutex-trivial-tcp-preempt-fix.patch
+0171-rt-mutex-trivial-route-cast-fix.patch
+0172-rt-mutex-delayed-resched.patch
+0173-rt-mutex-core.patch
+0174-rt-mutex-trylock-export.patch
+0175-rt-mutex-spinlock-might-sleep.patch
+
+0176-rt-mutex-i386.patch
+
+0177-rt-mutex-mips.patch
+
+0178-rt-mutex-ppc.patch
+0179-rt-mutex-ppc-fix-a5.patch
+
+0180-rt-mutex-x86-64.patch
+
+0181-rt-mutex-arm.patch
+0182-rt-mutex-arm-fix.patch
+
+0183-rt-mutex-drop-generic-TIF_NEED_RESCHED_DELAYED.patch
+0184-rt-mutex-compat-semaphores.patch
+
+#
+# Per-CPU locking assumption cleanups:
+#
+0185-percpu-locked-mm.patch
+
+0186-percpu-locked-netfilter.patch
+0187-percpu-locked-netfilter2.patch
+
+0188-percpu-locked-powerpc-fixups.patch
+0189-percpu-locked-powerpc-fixups-a6.patch
+
+#
+# Various preempt fixups
+#
+0190-net-core-preempt-fix.patch
+
+0191-bh-uptodate-lock.patch
+0192-bh-state-lock.patch
+
+0193-jbd_assertions_smp_only.patch
+
+#
+# Tasklet redesign
+#
+0194-tasklet-redesign.patch
+0195-tasklet-busy-loop-hack.patch
+0196-tasklet-fix-preemption-race.patch
+0197-tasklet-more-fixes.patch
+
+#
+# Diable irq poll on -rt
+#
+0198-disable-irqpoll.patch
+
+#
+# Inaccurate -rt stats (should be replaced by CFS)
+#
+0199-kstat-add-rt-stats.patch
+
+# Misc
+0200-preempt-realtime-warn-and-bug-on.patch
+
+#
+# Posix-cpu-timers in a thread
+#
+0201-cputimer-thread-rt_A0.patch
+0202-cputimer-thread-rt-fix.patch
+0203-posix-cpu-timers-fix.patch
+
+#
+# Various broken drivers
+#
+0204-vortex-fix.patch
+0205-serial-locking-rt-cleanup.patch
+0206-fix-emac-locking-2.6.16.patch
+
+#
+# Serial optimizing
+#
+0207-serial-slow-machines.patch
+
+#
+# Realtime patches
+#
+# ARM:
+0208-preempt-realtime-arm.patch
+0209-preempt-realtime-arm-rawlock-in-mmu_context-h.patch
+0210-arm-trace-preempt-idle.patch
+0211-preempt-realtime-arm-bagde4.patch
+0212-preempt-realtime-arm-footbridge.patch
+0213-preempt-realtime-arm-integrator.patch
+0214-preempt-realtime-arm-ixp4xx.patch
+0215-preempt-realtime-arm-pxa.patch
+0216-preempt-realtime-arm-shark.patch
+
+# MIPS: needs splitting
+0217-preempt-realtime-mips.patch
+#mips-gtod_clocksource.patch
+
+# X86_64: needs splitting
+0218-preempt-realtime-x86_64.patch
+
+# IA64: needs splitting
+0219-preempt-realtime-ia64.patch
+
+# PPC: needs cleanup
+0220-preempt-realtime-ppc-need-resched-delayed.patch
+0221-preempt-realtime-ppc-more-resched-fixups.patch
+0222-preempt-realtime-powerpc.patch
+0223-preempt-realtime-powerpc-update.patch
+0224-preempt-realtime-powerpc-a7.patch
+0225-preempt-realtime-powerpc-b2.patch
+0226-preempt-realtime-powerpc-b3.patch
+0227-preempt-realtime-powerpc-b4.patch
+0228-preempt-realtime-powerpc-add-raw-relax-macros.patch
+0229-preempt-realtime-powerpc-tlb-batching.patch
+0230-preempt-realtime-powerpc-celleb-raw-spinlocks.patch
+0231-preempt-realtime-powerpc-missing-raw-spinlocks.patch
+
+# SuperH: needs splitting
+0232-preempt-realtime-sh.patch
+
+# i386
+0233-preempt-realtime-i386.patch
+0234-remove-check-pgt-cache-calls.patch
+0235-preempt-irqs-i386-idle-poll-loop-fix.patch
+
+#
+# Core patch
+#
+# Note this is a convenience split up it is not supposed to compile
+# step by step. Needs some care, but it is way easier to handle than
+# the previous touch all in one patch
+#
+0236-preempt-realtime-sched.patch
+0237-preempt-realtime-mmdrop-delayed.patch
+0238-preempt-realtime-sched-i386.patch
+0239-preempt-realtime-prevent-idle-boosting.patch
+# preempt-realtime-cfs-accounting-fix.patch
+0240-schedule-tail-balance-disable-irqs.patch
+
+0241-preempt-realtime-sched-cpupri.patch
+0242-preempt-realtime-core.patch
+
+0243-preempt-realtime-fs-block.patch
+0244-preempt-realtime-acpi.patch
+0245-preempt-realtime-ipc.patch
+0246-preempt-realtime-sound.patch
+0247-preempt-realtime-mm.patch
+0248-preempt-realtime-init-show-enabled-debugs.patch
+0249-preempt-realtime-compile-fixes.patch
+0250-preempt-realtime-console.patch
+0251-preempt-realtime-debug-sysctl.patch
+0252-preempt-realtime-ide.patch
+0253-preempt-realtime-input.patch
+0254-preempt-realtime-irqs.patch
+0255-preempt-realtime-net-drivers.patch
+#preempt-realtime-netconsole.patch
+0256-preempt-realtime-printk.patch
+0257-preempt-realtime-profiling.patch
+0258-preempt-realtime-rawlocks.patch
+0259-preempt-realtime-rcu.patch
+0260-preempt-realtime-timer.patch
+0261-kstat-fix-spurious-system-load-spikes-in-proc-loadavgrt.patch
+0262-preempt-realtime-usb.patch
+0263-preempt-realtime-warn-and-bug-on-fix.patch
+
+#
+# Various -rt fixups
+#
+
+0264-preempt-realtime-supress-cpulock-warning.patch
+0265-preempt-realtime-supress-nohz-softirq-warning.patch
+
+0266-preempt-realtime-net.patch
+0267-preempt-realtime-net-softirq-fixups.patch
+
+0268-preempt-realtime-loopback.patch
+
+#preempt-realtime-8139too-rt-irq-flags-fix.patch
+0269-preempt-realtime-mellanox-driver-fix.patch
+
+#
+# Utility patches (not for upstream inclusion):
+#
+0270-preempt-realtime-supress-rtc-printk.patch
+0271-hrtimer-no-printk.patch
+0272-nmi-profiling.patch
+0273-panic-dont-stop-box.patch
+0274-nmi-watchdog-disable.patch
+
+#
+# soft watchdog queue:
+#
+#softlockup-fix.patch
+0275-softlockup-add-irq-regs-h.patch
+#softlockup-better-printout.patch
+#softlockup-cleanups.patch
+#softlockup-use-cpu-clock.patch
+
+#
+# Not yet reviewed
+#
+0276-gtod-optimize.patch
+
+# RCU
+0277-rcu-various-fixups.patch
+
+#
+# Futex updates
+#
+0278-futex-performance-hack.patch
+0279-futex-performance-hack-sysctl-fix.patch
+
+#
+# Pete's file locking scalability changes:
+#
+0280-s_files-schedule_on_each_cpu_wq.patch
+## Missing patch -- SDR
+##  See http://programming.kicks-ass.net/kernel-patches/schedule_on_cpu.patch
+# schedule_on_cpu.patch
+0281-s_files-pipe-fix.patch
+#
+# Pete's file locking scalability changes:
+#
+0282-lockdep_lock_set_subclass_fix.patch
+0283-qrcu.patch
+0284-lock_list.patch
+0285-percpu_list.patch
+0286-s_files.patch
+
+#
+# START of Pete's ccur-pagecache queue
+#
+
+#
+# lockless pagecache
+#
+#2.6.21-rc6-lockless1-prep-find_lock_page.patch
+#2.6.21-rc6-lockless2-radix-tree-use-indirect-bit.patch
+0287-2.6.21-rc6-lockless3-radix-tree-gang-slot-lookups.patch
+#2.6.21-rc6-lockless4-__add_to_swap_cache-stuff.patch
+0288-2.6.21-rc6-lockless5-lockless-probe.patch
+0289-2.6.21-rc6-lockless6-speculative-get-page.patch
+0290-2.6.21-rc6-lockless7-lockless-pagecache-lookups.patch
+0291-2.6.21-rc6-lockless8-spinlock-tree_lock.patch
+#
+# concurrent (write side) page cache
+#
+0292-radix-tree-concurrent.patch
+0293-mapping_nrpages.patch
+0294-lock_page_ref.patch
+0295-mm-concurrent-pagecache.patch
+0296-radix-tree-optimistic.patch
+0297-radix-tree-optimistic-hist.patch
+0298-radix-concurrent-lockdep.patch
+#radix-tree-path-compression.patch
+#
+# -rt bits
+#
+0299-mm-concurrent-pagecache-rt.patch
+
+#
+# END of Pete's ccur-pagecache queue
+#
+
+#
+# kmap atomix fixes
+#
+0300-kmap-atomic-prepare.patch
+0301-pagefault-disable-cleanup.patch
+0302-kmap-atomic-i386-fix.patch
+
+#
+# Not yet reviewed 
+#
+0303-select-error-leak-fix.patch
+0304-fix-emergency-reboot.patch
+0305-timer-freq-tweaks.patch
+
+#
+# Highmem modifications
+#
+0306-highmem-revert-mainline.patch
+0307-highmem_rewrite.patch
+0308-highmem-redo-mainline.patch
+0309-rt-kmap-scale-fix.patch
+
+#
+# Debug patches:
+#
+0310-pause-on-oops-head-tail.patch
+0311-i386-nmi-watchdog-show-regs.patch
+0312-x86-64-traps-move-held-locks-output.patch
+
+#
+# x86-64 vsyscall modifications
+#
+0313-x86-64-tscless-vgettimeofday.patch
+#vsyscall-fixadder-pa.patch
+
+#
+# Timekeeping fixups
+#
+0314-rt-time-starvation-fix.patch
+0315-rt-time-starvation-fix-update.patch
+
+#
+# RT-Java testing stuff
+#
+0316-Add-dev-rmem-device-driver-for-real-time-JVM-testing.patch
+0317-Allocate-RTSJ-memory-for-TCK-conformance-test.patch
+
+#
+# Softirq modifications
+#
+0318-new-softirq-code.patch
+0319-softirq-per-cpu-assumptions-fixes.patch
+0320-fix-migrating-softirq.patch
+0321-only-run-softirqs-from-irq-thread-when-irq-affinity-is-set.patch
+0322-fix-softirq-checks-for-non-rt-preempt-hardirq.patch
+
+0323-smp-processor-id-fixups.patch
+
+#
+# Weird crap unearthed by -rt which needs to be investigated
+#
+0324-irda-fix.patch
+0325-nf_conntrack-weird-crash-fix.patch
+0326-nf_conntrack-fix-smp-processor-id.patch
+
+#
+# Needs proper fix
+#
+0327-print-might-sleep-hack.patch
+
+0328-lockdep-rt-mutex.patch
+0329-lockstat-rt-hooks.patch
+0330-lockstat_bounce_rt.patch
+
+#
+# KVM:
+#
+#kvm-rt.patch
+
+#
+# Add RT to uname and apply the version
+#
+0331-RT_utsname.patch
+
+#
+# not yet backmerged tail patches:
+#
+0332-preempt-rt-no-slub.patch
+0333-paravirt-function-pointer-fix.patch
+0334-quicklist-release-before-free-page.patch
+0335-quicklist-release-before-free-page-fix.patch
+0336-disable-lpptest-on-nonlinux.patch
+0337-sched-rt-stats.patch
+0338-mitigate-resched-flood.patch
+0339-genirq-soft-resend.patch
+0340-rcu-preempt-hotplug-hackaround.patch
+0341-relay-fix.patch
+0342-schedule_on_each_cpu-enhance.patch
+0343-schedule_on_each_cpu-enhance-rt.patch
+0344-lockdep-rt-recursion-limit-fix.patch
+0345-cond_resched_softirq-WARN-fix.patch
+0346-irq-mask-fix.patch
+
+# stuff Ingo put into version.patch
+0347-export-schedule-on-each-cpu.patch
+
+# Tony Breeds POWERPC patches
+0348-powerpc-rearrange-thread-flags-to-work-with-andi-instruction.patch
+0349-powerpc-count_active_rt_tasks-is-undefined-for-non-preempt-rt.patch
+0350-powerpc-match-__rw_yield-function-declaration-to-prototype.patch
+#powerpc-flags-as-passed-to-spin-x-irqsave-should-be-unsigned-long.patch
+0351-powerpc-flush_tlb_pending-is-no-more.patch
+
+0352-fix-alternate_node_alloc.patch
+0353-fix-compilation-for-non-RT-in-timer.patch
+
+0354-hack-convert-i_alloc_sem-for-direct_io-craziness.patch
+0355-dont-let-rt-rw_semaphores-do-non_owner-locks.patch
+0356-rt-s_files-kill-a-union.patch
+
+0357-loadavg_fixes_weird_loads.patch
+
+# HPET patches
+0358-watchdog_use_timer_and_hpet_on_x86_64.patch
+
+
+0359-call_rcu_bh-rename-of-call_rcu.patch
+
+0360-introduce-pick-function-macro.patch
+0361-replace-PICK_OP-with-PICK_FUNCTION.patch
+0362-fix-PICK_FUNCTION-spin_trylock_irq.patch
+0363-seqlocks-use-PICK_FUNCTION.patch
+0364-fork-desched_thread-comment-rework.patch
+0365-stop-critical-timing-in-idle.patch
+
+0366-fix-circular-locking-deadlock.patch
+
+# rt-wakeup-fix.patch
+0367-disable-ist-x86_64.patch
+0368-rcu-trace-fix-free.patch
+0369-rcu-preempt-fix-bad-dyntick-accounting.patch
+0370-rcu-preempt-boost-sdr.patch
+0371-rcu-preempt-boost-default.patch
+0372-rcu-preempt-boost-fix.patch
+
+0373-rcu-torture-preempt-update.patch
+
+0374-rcupreempt-boost-early-init.patch
+
+0375-plist-debug.patch
+0376-seq-irqsave.patch
+0377-numa-slab-freeing.patch
+
+# Peter's patches
+#
+# workqueue PI
+#
+0378-rt_mutex_setprio.patch
+0379-rt-list-mods.patch
+0380-rt-plist-mods.patch
+0381-rt-workqeue-prio.patch
+0382-rt-workqueue-barrier.patch
+0383-rt-wq-barrier-fix.patch
+0384-rt-delayed-prio.patch
+
+0385-sched_prio.patch
+0386-critical-timing-kconfig.patch
+
+0387-lock-init-plist-fix.patch
+0388-ntfs-local-irq-save-nort.patch
+0389-dont-disable-preemption-without-IST.patch
+#rt-powerpc-workarounds.patch
+
+0390-irq-flags-unsigned-long.patch
+0391-filemap-dont-bug-non-atomic.patch
+0392-fix-bug-on-in-filemap.patch
+0393-rt-sched-groups.patch
+0394-send-nmi-all-preempt-disable.patch
+0395-printk-dont-bug-on-sched.patch
+0396-user-no-irq-disable.patch
+0397-drain-all-local-pages-via-sched.patch
+0398-local_irq_save_nort-in-swap.patch
+0399-latency-tracer-arch-low-address.patch
+0400-proportions-raw-locks.patch
+
+0401-arm-compile-fix.patch
+0402-no-warning-for-irqs-disabled-in-local-bh-enable.patch
+0403-page-alloc-use-real-time-pcp-locking-for-page-draining.patch
+#power-fixes-for-kernbench.patch
+
+0404-handle-pending-in-simple-irq.patch
+
+# AT91 patches
+0405-use-edge-triggered-irq-handler-instead-of-simple-irq.patch
+
+0406-latency-tracer-dont-panic-on-failed-bootmem-alloc.patch
+0407-dev-queue-xmit-preempt-fix.patch
+0408-dynamically-update-root-domain-span-online-maps.patch
+0409-ppc-hacks-to-allow-rt-to-run-kernbench.patch
+0410-ppc64-non-smp-compile-fix-per-cpu.patch
+0411-rcu-preempt-trace-markers-1.patch
+0412-rcu-preempt-trace-markers-2.patch
+0413-time-accumulate-offset-fix.patch
+0414-kernel-bug-after-entering-something-from-login.patch
+0415-ppc-make-tlb-batch-64-only.patch
+0416-ppc-chpr-set-rtc-lock.patch
+
+0417-disable-run-softirq-from-hardirq-completely.patch
+
+0418-hack-fix-rt-migration.patch
+0419-mips-remove-conlicting-rtc-lock-declaration.patch
+0420-mips-remove-finish-arch-switch.patch
+0421-mips-change-raw-spinlock-type.patch
+0422-ppc32-latency-compile-hack-fixes.patch
+0423-mips-remove-duplicate-kconfig.patch
+0424-ppc32_notrace_init_functions.patch 

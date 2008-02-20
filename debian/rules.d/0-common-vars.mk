@@ -20,6 +20,20 @@ AUTOBUILD	:= $(is_ppa_build)
 endif
 
 #
+# This is a way to support some external variables. A good example is
+# a local setup for ccache and distcc See LOCAL_ENV_CC and
+# LOCAL_ENV_DISTCC_HOSTS in the definition of kmake.
+# For example:
+#	LOCAL_ENV_CC="ccache distcc"
+#	LOCAL_ENV_DISTCC_HOSTS="localhost 10.0.2.5 10.0.2.221"
+#
+local_env_file	:= $(CURDIR)/../.hardy-env
+have_local_env	:= $(shell if [ -f $(local_env_file) ] ; then echo yes; fi;)
+ifneq ($(have_local_env),)
+include $(local_env_file)
+endif
+
+#
 # Set this variable to 'true' in the arch makefile in order to
 # avoid building udebs for the debian installer. see lpia.mk as
 # an example of an architecture specific override.
@@ -91,9 +105,12 @@ endif
 
 conc_level		= -j$(CONCURRENCY_LEVEL)
 
-# taget_flavour is filled in for each step
-kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour) \
-	SUBLEVEL=$(SUBLEVEL)
+# target_flavour is filled in for each step
+kmake = make ARCH=$(build_arch) EXTRAVERSION=$(debnum)-$(target_flavour)
+kmake += SUBLEVEL=$(SUBLEVEL)
+ifneq ($(LOCAL_ENV_CC),)
+kmake += CC=$(LOCAL_ENV_CC) DISTCC_HOSTS=$(LOCAL_ENV_DISTCC_HOSTS)
+endif
 
 #all_custom_flavours = xen rt ume lpiacompat lpia
 all_custom_flavours = lpia rt lpiacompat xen

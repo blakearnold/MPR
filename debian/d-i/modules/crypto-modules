@@ -5,3 +5,5 @@ serpent
 sha256_generic
 cbc ?
 ebc ?
+crc32c ?
+libcrc32c ?

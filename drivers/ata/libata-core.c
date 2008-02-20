@@ -4144,6 +4144,9 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
 	/* NCQ is slow */
 	{ "WDC WD740ADFD-00",	NULL,		ATA_HORKAGE_NONCQ },
 	{ "WDC WD740ADFD-00NLR1", NULL,		ATA_HORKAGE_NONCQ, },
+	/* See also: http://lkml.org/lkml/2007/10/17/380 */
+	{ "WDC WD1500ADFD-0",	NULL,		ATA_HORKAGE_NONCQ },
+	{ "WDC WD5000AAKS-0",	NULL,		ATA_HORKAGE_NONCQ },
 	/* http://thread.gmane.org/gmane.linux.ide/14907 */
 	{ "FUJITSU MHT2060BH",	NULL,		ATA_HORKAGE_NONCQ },
 	/* NCQ is broken */

@@ -21,6 +21,7 @@ static struct usb_device_id id_table [] = {
 	{ USB_DEVICE(0x413c, 0x8115) }, /* Dell Wireless HSDPA 5500 */
 	{ USB_DEVICE(0x0930, 0x1303) }, /* Toshiba (Novatel Wireless) HSDPA for M400 */
 	{ USB_DEVICE(0x106c, 0x3702) }, /* Sprint Pantech PX-500 DGE */
+	{ USB_DEVICE(0x1410, 0x4100) }, /* Novatel Wireless U727 */
 	{ },
 };
 MODULE_DEVICE_TABLE(usb, id_table);

@@ -45,6 +45,9 @@ extern unsigned long end_pfn;
 void clear_page(void *);
 void copy_page(void *, void *);
 
+extern int page_is_ram(unsigned long pagenr);
+extern int devmem_is_allowed(unsigned long pagenr);
+
 #define clear_user_page(page, vaddr, pg)	clear_page(page)
 #define copy_user_page(to, from, vaddr, pg)	copy_page(to, from)
 

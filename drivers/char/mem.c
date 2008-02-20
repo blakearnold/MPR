@@ -108,6 +108,30 @@ static inline int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
 }
 #endif
 
+#ifdef CONFIG_NONPROMISC_DEVMEM
+static inline int range_is_allowed(unsigned long from, unsigned long to)
+{
+	unsigned long cursor;
+
+	cursor = from >> PAGE_SHIFT;
+	while ((cursor << PAGE_SHIFT) < to) {
+		if (!devmem_is_allowed(cursor)) {
+			printk(KERN_INFO "Program %s tried to read /dev/mem "
+				"between %lx->%lx.\n",
+				current->comm, from, to);
+			return 0;
+		}
+		cursor++;
+	}
+	return 1;
+}
+#else
+static inline int range_is_allowed(unsigned long from, unsigned long to)
+{
+	return 1;
+}
+#endif
+
 /*
  * This funcion reads the *physical* memory. The f_pos points directly to the 
  * memory location. 
@@ -157,6 +181,8 @@ static ssize_t read_mem(struct file * file, char __user * buf,
 		 */
 		ptr = xlate_dev_mem_ptr(p);
 
+		if (!range_is_allowed(p, p+count))
+			return -EPERM;
 		if (copy_to_user(buf, ptr, sz))
 			return -EFAULT;
 		buf += sz;
@@ -214,6 +240,8 @@ static ssize_t write_mem(struct file * file, const char __user * buf,
 		 */
 		ptr = xlate_dev_mem_ptr(p);
 
+		if (!range_is_allowed(p, p+sz))
+			return -EPERM;
 		copied = copy_from_user(ptr, buf, sz);
 		if (copied) {
 			written += sz - copied;
@@ -295,6 +323,7 @@ static int mmap_mem(struct file * file, struct vm_area_struct * vma)
 	return 0;
 }
 
+#ifdef CONFIG_DEVKMEM
 static int mmap_kmem(struct file * file, struct vm_area_struct * vma)
 {
 	unsigned long pfn;
@@ -315,6 +344,7 @@ static int mmap_kmem(struct file * file, struct vm_area_struct * vma)
 	vma->vm_pgoff = pfn;
 	return mmap_mem(file, vma);
 }
+#endif
 
 #ifdef CONFIG_CRASH_DUMP
 /*
@@ -353,6 +383,7 @@ static ssize_t read_oldmem(struct file *file, char __user *buf,
 extern long vread(char *buf, char *addr, unsigned long count);
 extern long vwrite(char *buf, char *addr, unsigned long count);
 
+#ifdef CONFIG_DEVKMEM
 /*
  * This function reads the *virtual* memory as seen by the kernel.
  */
@@ -557,6 +588,7 @@ static ssize_t write_kmem(struct file * file, const char __user * buf,
  	*ppos = p;
  	return virtr + wrote;
 }
+#endif
 
 #ifdef CONFIG_DEVPORT
 static ssize_t read_port(struct file * file, char __user * buf,
@@ -734,6 +766,7 @@ static const struct file_operations mem_fops = {
 	.get_unmapped_area = get_unmapped_area_mem,
 };
 
+#ifdef CONFIG_DEVKMEM
 static const struct file_operations kmem_fops = {
 	.llseek		= memory_lseek,
 	.read		= read_kmem,
@@ -742,6 +775,7 @@ static const struct file_operations kmem_fops = {
 	.open		= open_kmem,
 	.get_unmapped_area = get_unmapped_area_mem,
 };
+#endif
 
 static const struct file_operations null_fops = {
 	.llseek		= null_lseek,
@@ -820,11 +854,13 @@ static int memory_open(struct inode * inode, struct file * filp)
 			filp->f_mapping->backing_dev_info =
 				&directly_mappable_cdev_bdi;
 			break;
+#ifdef CONFIG_DEVKMEM
 		case 2:
 			filp->f_op = &kmem_fops;
 			filp->f_mapping->backing_dev_info =
 				&directly_mappable_cdev_bdi;
 			break;
+#endif
 		case 3:
 			filp->f_op = &null_fops;
 			break;
@@ -873,7 +909,9 @@ static const struct {
 	const struct file_operations	*fops;
 } devlist[] = { /* list of minor devices */
 	{1, "mem",     S_IRUSR | S_IWUSR | S_IRGRP, &mem_fops},
+#ifdef CONFIG_DEVKMEM
 	{2, "kmem",    S_IRUSR | S_IWUSR | S_IRGRP, &kmem_fops},
+#endif
 	{3, "null",    S_IRUGO | S_IWUGO,           &null_fops},
 #ifdef CONFIG_DEVPORT
 	{4, "port",    S_IRUSR | S_IWUSR | S_IRGRP, &port_fops},

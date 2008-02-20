@@ -223,19 +223,45 @@ int page_is_ram(unsigned long pagenr)
 	}
 
 	for (i = 0; i < e820.nr_map; i++) {
-
-		if (e820.map[i].type != E820_RAM)	/* not usable memory */
-			continue;
 		/*
-		 *	!!!FIXME!!! Some BIOSen report areas as RAM that
-		 *	are not. Notably the 640->1Mb area. We need a sanity
-		 *	check here.
+		 * Not usable memory:
 		 */
-		addr = (e820.map[i].addr+PAGE_SIZE-1) >> PAGE_SHIFT;
-		end = (e820.map[i].addr+e820.map[i].size) >> PAGE_SHIFT;
-		if  ((pagenr >= addr) && (pagenr < end))
+		if (e820.map[i].type != E820_RAM)
+			continue;
+		addr = (e820.map[i].addr + PAGE_SIZE-1) >> PAGE_SHIFT;
+		end = (e820.map[i].addr + e820.map[i].size) >> PAGE_SHIFT;
+
+		/*
+		 * Sanity check: Some BIOSen report areas as RAM that
+		 * are not. Notably the 640->1Mb area, which is the
+		 * PCI BIOS area.
+		 */
+		if (addr >= (BIOS_BEGIN >> PAGE_SHIFT) &&
+		    end < (BIOS_END >> PAGE_SHIFT))
+			continue;
+
+		if ((pagenr >= addr) && (pagenr < end))
 			return 1;
 	}
+	return 0;
+}
+
+/*
+ * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+ * is valid. The argument is a physical page number.
+ *
+ *
+ * On x86, access has to be given to the first megabyte of ram because that area
+ * contains bios code and data regions used by X and dosemu and similar apps.
+ * Access has to be given to non-kernel-ram areas as well, these contain the PCI
+ * mmio resources as well as potential bios/acpi data regions.
+ */
+int devmem_is_allowed(unsigned long pagenr)
+{
+	if (pagenr <= 256)
+		return 1;
+	if (!page_is_ram(pagenr))
+		return 1;
 	return 0;
 }
 

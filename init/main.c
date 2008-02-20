@@ -91,7 +91,9 @@ extern void radix_tree_init(void);
 extern void free_initmem(void);
 #ifdef	CONFIG_ACPI
 extern void acpi_early_init(void);
+#ifdef CONFIG_BLK_DEV_INITRD
 extern void early_populate_rootfs(void);
+#endif
 #else
 static inline void acpi_early_init(void) { }
 static inline void early_populate_rootfs(void) { }
@@ -644,7 +646,9 @@ asmlinkage void __init start_kernel(void)
 
 	check_bugs();
 
+#ifdef CONFIG_BLK_DEV_INITRD
 	early_populate_rootfs(); /* For DSDT override from initramfs */
+#endif
 	acpi_early_init(); /* before LAPIC and SMP init */
 
 	/* Do the rest non-__init'ed, we're now alive */

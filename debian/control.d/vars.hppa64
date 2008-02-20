@@ -4,3 +4,6 @@ desc="64-bit HP PA-RISC SMP"
 bootloader="palo"
 provides="redhat-cluster-modules"
 arch="hppa"
+
+# Keep in sync with debian/control.stub.in Build-Depends.
+header_depends="gcc-4.1-hppa64, binutils-hppa64,"
