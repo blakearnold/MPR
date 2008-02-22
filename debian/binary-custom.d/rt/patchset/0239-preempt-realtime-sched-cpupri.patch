@@ -1,0 +1,17 @@
+---
+ kernel/sched_cpupri.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.24.2-rt2/kernel/sched_cpupri.h
+===================================================================
+--- linux-2.6.24.2-rt2.orig/kernel/sched_cpupri.h	2008-02-21 13:11:06.000000000 -0500
++++ linux-2.6.24.2-rt2/kernel/sched_cpupri.h	2008-02-21 13:12:04.000000000 -0500
+@@ -12,7 +12,7 @@
+ /* values 2-101 are RT priorities 0-99 */
+ 
+ struct cpupri_vec {
+-	spinlock_t lock;
++	raw_spinlock_t lock;
+ 	int        count;
+ 	cpumask_t  mask;
+ };
