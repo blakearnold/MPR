@@ -106,6 +106,7 @@ CONFIG_DEFAULT_IOSCHED="cfq"
 # CONFIG_E1000 is not set
 # CONFIG_ECONET is not set
 # CONFIG_EDAC is not set
+# CONFIG_EDD is not set
 # CONFIG_EEPRO100 is not set
 # CONFIG_EPIC100 is not set
 # CONFIG_EUROTECH_WDT is not set

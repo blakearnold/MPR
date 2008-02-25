@@ -947,8 +947,8 @@ unsigned int ata_dev_try_classify(struct ata_device *dev, int present,
 	if (r_err)
 		*r_err = err;
 
-	/* see if device passed diags: if master then continue and warn later */
-	if (err == 0 && dev->devno == 0)
+	/* see if device passed diags: continue and warn later */
+	if (err == 0)
 		/* diagnostic fail : do nothing _YET_ */
 		dev->horkage |= ATA_HORKAGE_DIAGNOSTIC;
 	else if (err == 1)
@@ -2295,19 +2295,8 @@ int ata_dev_configure(struct ata_device *dev)
 			dev->flags |= ATA_DFLAG_DIPM;
 	}
 
-	if (dev->horkage & ATA_HORKAGE_DIAGNOSTIC) {
-		/* Let the user know. We don't want to disallow opens for
-		   rescue purposes, or in case the vendor is just a blithering
-		   idiot */
-		if (print_info) {
-			ata_dev_printk(dev, KERN_WARNING,
-"Drive reports diagnostics failure. This may indicate a drive\n");
-			ata_dev_printk(dev, KERN_WARNING,
-"fault or invalid emulation. Contact drive vendor for information.\n");
-		}
-	}
-
-	/* limit bridge transfers to udma5, 200 sectors */
+	/* Limit PATA drive on SATA cable bridge transfers to udma5,
+	   200 sectors */
 	if (ata_dev_knobble(dev)) {
 		if (ata_msg_drv(ap) && print_info)
 			ata_dev_printk(dev, KERN_INFO,
@@ -2335,6 +2324,21 @@ int ata_dev_configure(struct ata_device *dev)
 
 	if (ap->ops->dev_config)
 		ap->ops->dev_config(dev);
+
+	if (dev->horkage & ATA_HORKAGE_DIAGNOSTIC) {
+		/* Let the user know. We don't want to disallow opens for
+		   rescue purposes, or in case the vendor is just a blithering
+		   idiot. Do this after the dev_config call as some controllers
+		   with buggy firmware may want to avoid reporting false device
+		   bugs */
+
+		if (print_info) {
+			ata_dev_printk(dev, KERN_WARNING,
+"Drive reports diagnostics failure. This may indicate a drive\n");
+			ata_dev_printk(dev, KERN_WARNING,
+"fault or invalid emulation. Contact drive vendor for information.\n");
+		}
+	}
 
 	if (ata_msg_probe(ap))
 		ata_dev_printk(dev, KERN_DEBUG, "%s: EXIT, drv_stat = 0x%x\n",
@@ -3039,7 +3043,7 @@ static int ata_dev_set_mode(struct ata_device *dev)
 
 	/* Early MWDMA devices do DMA but don't allow DMA mode setting.
 	   Don't fail an MWDMA0 set IFF the device indicates it is in MWDMA0 */
-	if (dev->xfer_shift == ATA_SHIFT_MWDMA && 
+	if (dev->xfer_shift == ATA_SHIFT_MWDMA &&
 	    dev->dma_mode == XFER_MW_DMA_0 &&
 	    (dev->id[63] >> 8) & 1)
 		err_mask &= ~AC_ERR_DEV;
@@ -4145,8 +4149,8 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
 	{ "WDC WD740ADFD-00",	NULL,		ATA_HORKAGE_NONCQ },
 	{ "WDC WD740ADFD-00NLR1", NULL,		ATA_HORKAGE_NONCQ, },
 	/* See also: http://lkml.org/lkml/2007/10/17/380 */
-	{ "WDC WD1500ADFD-0",	NULL,		ATA_HORKAGE_NONCQ },
-	{ "WDC WD5000AAKS-0",	NULL,		ATA_HORKAGE_NONCQ },
+	{ "WDC WD1500ADFD-0*",	NULL,		ATA_HORKAGE_NONCQ },
+	{ "WDC WD5000AAKS-0*",	NULL,		ATA_HORKAGE_NONCQ },
 	/* http://thread.gmane.org/gmane.linux.ide/14907 */
 	{ "FUJITSU MHT2060BH",	NULL,		ATA_HORKAGE_NONCQ },
 	/* NCQ is broken */

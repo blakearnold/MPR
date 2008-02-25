@@ -541,6 +541,7 @@ skip:
 
 #endif
 
+#ifdef CONFIG_ACPI_CUSTOM_DSDT_INITRD
 /* Tries to read the initramfs if it's already there, for ACPI Table Overiding */
 void __init early_populate_rootfs(void)
 {
@@ -560,6 +561,7 @@ void __init early_populate_rootfs(void)
 #endif
 	return;
 }
+#endif /* CONFIG_ACPI_CUSTOM_DSDT_INITRD */
 
 static int __init populate_rootfs(void)
 {

@@ -1,0 +1,101 @@
+---
+ arch/x86/kernel/irq_32.c  |    2 ++
+ arch/x86/kernel/nmi_32.c  |    5 ++---
+ arch/x86/kernel/nmi_64.c  |    4 ++--
+ drivers/char/sysrq.c      |    2 +-
+ include/asm-x86/apic_64.h |    2 ++
+ include/linux/sched.h     |    1 +
+ 6 files changed, 10 insertions(+), 6 deletions(-)
+
+Index: linux-2.6.24.2-rt2/arch/x86/kernel/irq_32.c
+===================================================================
+--- linux-2.6.24.2-rt2.orig/arch/x86/kernel/irq_32.c	2008-02-21 13:12:01.000000000 -0500
++++ linux-2.6.24.2-rt2/arch/x86/kernel/irq_32.c	2008-02-21 13:12:12.000000000 -0500
+@@ -79,7 +79,9 @@ fastcall unsigned int do_IRQ(struct pt_r
+ 	u32 *isp;
+ #endif
+ 
++#ifdef CONFIG_X86_LOCAL_APIC
+ 	irq_show_regs_callback(smp_processor_id(), regs);
++#endif
+ 
+ 	if (unlikely((unsigned)irq >= NR_IRQS)) {
+ 		printk(KERN_EMERG "%s: cannot handle IRQ %d\n",
+Index: linux-2.6.24.2-rt2/arch/x86/kernel/nmi_32.c
+===================================================================
+--- linux-2.6.24.2-rt2.orig/arch/x86/kernel/nmi_32.c	2008-02-21 13:12:01.000000000 -0500
++++ linux-2.6.24.2-rt2/arch/x86/kernel/nmi_32.c	2008-02-21 13:12:12.000000000 -0500
+@@ -348,9 +348,9 @@ void nmi_show_all_regs(void)
+ 	}
+ }
+ 
+-static DEFINE_SPINLOCK(nmi_print_lock);
++static DEFINE_RAW_SPINLOCK(nmi_print_lock);
+ 
+-void irq_show_regs_callback(int cpu, struct pt_regs *regs)
++notrace void irq_show_regs_callback(int cpu, struct pt_regs *regs)
+ {
+ 	if (!nmi_show_regs[cpu])
+ 		return;
+@@ -435,7 +435,6 @@ nmi_watchdog_tick(struct pt_regs *regs, 
+ 			for_each_online_cpu(i)
+ 				alert_counter[i] = 0;
+ 
+-
+ 		}
+ 
+ 	} else {
+Index: linux-2.6.24.2-rt2/arch/x86/kernel/nmi_64.c
+===================================================================
+--- linux-2.6.24.2-rt2.orig/arch/x86/kernel/nmi_64.c	2008-02-21 13:11:57.000000000 -0500
++++ linux-2.6.24.2-rt2/arch/x86/kernel/nmi_64.c	2008-02-21 13:12:12.000000000 -0500
+@@ -338,9 +338,9 @@ void nmi_show_all_regs(void)
+ 	}
+ }
+ 
+-static DEFINE_SPINLOCK(nmi_print_lock);
++static DEFINE_RAW_SPINLOCK(nmi_print_lock);
+ 
+-void irq_show_regs_callback(int cpu, struct pt_regs *regs)
++notrace void irq_show_regs_callback(int cpu, struct pt_regs *regs)
+ {
+ 	if (!nmi_show_regs[cpu])
+ 		return;
+Index: linux-2.6.24.2-rt2/drivers/char/sysrq.c
+===================================================================
+--- linux-2.6.24.2-rt2.orig/drivers/char/sysrq.c	2008-02-21 13:12:07.000000000 -0500
++++ linux-2.6.24.2-rt2/drivers/char/sysrq.c	2008-02-21 13:12:12.000000000 -0500
+@@ -209,7 +209,7 @@ static struct sysrq_key_op sysrq_showreg
+ 	.enable_mask	= SYSRQ_ENABLE_DUMP,
+ };
+ 
+-#if defined(__i386__)
++#if defined(__i386__) || defined(__x86_64__)
+ 
+ static void sysrq_handle_showallregs(int key, struct tty_struct *tty)
+ {
+Index: linux-2.6.24.2-rt2/include/asm-x86/apic_64.h
+===================================================================
+--- linux-2.6.24.2-rt2.orig/include/asm-x86/apic_64.h	2008-02-21 13:11:27.000000000 -0500
++++ linux-2.6.24.2-rt2/include/asm-x86/apic_64.h	2008-02-21 13:12:12.000000000 -0500
+@@ -96,6 +96,8 @@ extern void smp_send_nmi_allbutself(void
+ #define K8_APIC_EXT_INT_MSG_EXT 0x7
+ #define K8_APIC_EXT_LVT_ENTRY_THRESHOLD    0
+ 
++extern void smp_send_nmi_allbutself(void);
++
+ #define ARCH_APICTIMER_STOPS_ON_C3	1
+ 
+ extern unsigned boot_cpu_id;
+Index: linux-2.6.24.2-rt2/include/linux/sched.h
+===================================================================
+--- linux-2.6.24.2-rt2.orig/include/linux/sched.h	2008-02-21 13:12:03.000000000 -0500
++++ linux-2.6.24.2-rt2/include/linux/sched.h	2008-02-21 13:12:12.000000000 -0500
+@@ -292,6 +292,7 @@ static inline void show_state(void)
+ }
+ 
+ extern void show_regs(struct pt_regs *);
++extern void irq_show_regs_callback(int cpu, struct pt_regs *regs);
+ 
+ /*
+  * TASK is a pointer to the task whose backtrace we want to see (or NULL for current
