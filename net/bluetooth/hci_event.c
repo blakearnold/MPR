@@ -434,7 +434,7 @@ static void hci_cc_read_buffer_size(struct hci_dev *hdev, struct sk_buff *skb)
 	}
 
 	hdev->acl_cnt = hdev->acl_pkts;
-	hdev->sco_cnt = hdev->sco_pkts;
+	atomic_set(&hdev->sco_cnt, hdev->sco_pkts);
 
 	BT_DBG("%s acl mtu %d:%d sco mtu %d:%d", hdev->name,
 					hdev->acl_mtu, hdev->acl_pkts,
@@ -1157,14 +1157,11 @@ static inline void hci_num_comp_pkts_evt(struct hci_dev *hdev, struct sk_buff *s
 
 		conn = hci_conn_hash_lookup_handle(hdev, handle);
 		if (conn) {
-			conn->sent -= count;
+			atomic_sub(count, &conn->sent);
 
 			if (conn->type == ACL_LINK) {
 				if ((hdev->acl_cnt += count) > hdev->acl_pkts)
 					hdev->acl_cnt = hdev->acl_pkts;
-			} else {
-				if ((hdev->sco_cnt += count) > hdev->sco_pkts)
-					hdev->sco_cnt = hdev->sco_pkts;
 			}
 		}
 	}

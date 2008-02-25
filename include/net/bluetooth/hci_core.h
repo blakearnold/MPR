@@ -25,6 +25,8 @@
 #ifndef __HCI_CORE_H
 #define __HCI_CORE_H
 
+#include <linux/hrtimer.h>
+
 #include <net/bluetooth/hci.h>
 
 /* HCI upper protocols */
@@ -93,7 +95,7 @@ struct hci_dev {
 
 	atomic_t	cmd_cnt;
 	unsigned int	acl_cnt;
-	unsigned int	sco_cnt;
+	atomic_t	sco_cnt;
 
 	unsigned int	acl_mtu;
 	unsigned int	sco_mtu;
@@ -150,7 +152,6 @@ struct hci_conn {
 	struct list_head list;
 
 	atomic_t	 refcnt;
-	spinlock_t	 lock;
 
 	bdaddr_t	 dst;
 	__u16		 handle;
@@ -167,10 +168,11 @@ struct hci_conn {
 	__u8             power_save;
 	unsigned long	 pend;
 
-	unsigned int	 sent;
+	atomic_t	 sent;
 
 	struct sk_buff_head data_q;
 
+	struct hrtimer tx_timer;
 	struct timer_list disc_timer;
 	struct timer_list idle_timer;
 

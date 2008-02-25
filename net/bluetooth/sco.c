@@ -53,7 +53,13 @@
 #define BT_DBG(D...)
 #endif
 
-#define VERSION "0.5"
+#define VERSION "0.6"
+
+#define MAX_SCO_TXBUFS 200
+#define MAX_SCO_RXBUFS 200
+
+#define DEFAULT_SCO_TXBUFS 5
+#define DEFAULT_SCO_RXBUFS 5
 
 static const struct proto_ops sco_sock_ops;
 
@@ -68,6 +74,33 @@ static int  sco_conn_del(struct hci_conn *conn, int err);
 
 static void sco_sock_close(struct sock *sk);
 static void sco_sock_kill(struct sock *sk);
+
+/* 
+ * Write buffer destructor automatically called from kfree_skb. 
+ */
+void sco_sock_wfree(struct sk_buff *skb)
+{
+	struct sock *sk = skb->sk;
+
+	atomic_dec(&sk->sk_wmem_alloc);
+	sk->sk_write_space(sk);
+	sock_put(sk);
+}
+
+static void sco_sock_write_space(struct sock *sk)
+{
+	read_lock(&sk->sk_callback_lock);
+
+	if (atomic_read(&sk->sk_wmem_alloc) < sk->sk_sndbuf) {
+		if (sk->sk_sleep && waitqueue_active(sk->sk_sleep))
+			wake_up_interruptible(sk->sk_sleep);
+
+		if (sock_writeable(sk))
+			sk_wake_async(sk, 2, POLL_OUT);
+	}
+
+	read_unlock(&sk->sk_callback_lock);
+}
 
 /* ---- SCO timers ---- */
 static void sco_sock_timeout(unsigned long arg)
@@ -237,31 +270,53 @@ static inline int sco_send_frame(struct sock *sk, struct msghdr *msg, int len)
 {
 	struct sco_conn *conn = sco_pi(sk)->conn;
 	struct sk_buff *skb;
-	int err, count;
-
-	/* Check outgoing MTU */
-	if (len > conn->mtu)
-		return -EINVAL;
+	int err;
 
 	BT_DBG("sk %p len %d", sk, len);
 
-	count = min_t(unsigned int, conn->mtu, len);
-	if (!(skb = bt_skb_send_alloc(sk, count, msg->msg_flags & MSG_DONTWAIT, &err)))
+	if (!(skb = bt_skb_send_alloc(sk, len, msg->msg_flags & MSG_DONTWAIT, &err)))
 		return err;
 
-	if (memcpy_fromiovec(skb_put(skb, count), msg->msg_iov, count)) {
+	/* fix sk_wmem_alloc value : by default it is increased by  skb->truesize, but
+	   we want it only increased by 1 */
+	atomic_sub(skb->truesize - 1, &sk->sk_wmem_alloc);
+	/* fix destructor */
+	skb->destructor = sco_sock_wfree;
+
+	if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
 		err = -EFAULT;
 		goto fail;
 	}
 
-	if ((err = hci_send_sco(conn->hcon, skb)) < 0)
-		return err;
+	err = hci_send_sco(conn->hcon, skb);
 
-	return count;
+	if (err < 0)
+		goto fail;
+
+	return len;
 
 fail:
 	kfree_skb(skb);
 	return err;
+}
+
+static int sco_sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+{
+	BT_DBG("sock %p, sk_rcvbuf %d, qlen %d", sk, sk->sk_rcvbuf, skb_queue_len(&sk->sk_receive_queue));
+
+	if (skb_queue_len(&sk->sk_receive_queue) + 1 > (unsigned)sk->sk_rcvbuf)
+		return -ENOMEM;
+
+	skb->dev = NULL;
+	skb->sk = sk;
+	skb->destructor = NULL;
+
+	skb_queue_tail(&sk->sk_receive_queue, skb);
+
+	if (!sock_flag(sk, SOCK_DEAD))
+		sk->sk_data_ready(sk, 1);
+
+	return 0;
 }
 
 static inline void sco_recv_frame(struct sco_conn *conn, struct sk_buff *skb)
@@ -276,7 +331,7 @@ static inline void sco_recv_frame(struct sco_conn *conn, struct sk_buff *skb)
 	if (sk->sk_state != BT_CONNECTED)
 		goto drop;
 
-	if (!sock_queue_rcv_skb(sk, skb))
+	if (!sco_sock_queue_rcv_skb(sk, skb))
 		return;
 
 drop:
@@ -331,7 +386,6 @@ static void sco_sock_destruct(struct sock *sk)
 	BT_DBG("sk %p", sk);
 
 	skb_queue_purge(&sk->sk_receive_queue);
-	skb_queue_purge(&sk->sk_write_queue);
 }
 
 static void sco_sock_cleanup_listen(struct sock *parent)
@@ -429,6 +483,10 @@ static struct sock *sco_sock_alloc(struct net *net, struct socket *sock, int pro
 	INIT_LIST_HEAD(&bt_sk(sk)->accept_q);
 
 	sk->sk_destruct = sco_sock_destruct;
+	sk->sk_write_space = sco_sock_write_space;
+
+	sk->sk_sndbuf = DEFAULT_SCO_TXBUFS;
+	sk->sk_rcvbuf = DEFAULT_SCO_RXBUFS;
 	sk->sk_sndtimeo = SCO_CONN_TIMEOUT;
 
 	sock_reset_flag(sk, SOCK_ZAPPED);
@@ -659,6 +717,7 @@ static int sco_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
 static int sco_sock_setsockopt(struct socket *sock, int level, int optname, char __user *optval, int optlen)
 {
 	struct sock *sk = sock->sk;
+	u32 opt;
 	int err = 0;
 
 	BT_DBG("sk %p", sk);
@@ -666,6 +725,32 @@ static int sco_sock_setsockopt(struct socket *sock, int level, int optname, char
 	lock_sock(sk);
 
 	switch (optname) {
+	case SO_SNDBUF:
+		if (get_user(opt, (u32 __user *) optval)) {
+			err = -EFAULT;
+			break;
+		}
+		if (opt > MAX_SCO_TXBUFS) {
+			err = -EINVAL;
+			break;
+		}
+
+		sk->sk_sndbuf = opt;
+		/* Wake up sending tasks if we upped the value */
+		sk->sk_write_space(sk);
+		break;
+	case SO_RCVBUF:
+		if (get_user(opt, (u32 __user *) optval)) {
+			err = -EFAULT;
+			break;
+		}
+		if (opt > MAX_SCO_RXBUFS) {
+			err = -EINVAL;
+			break;
+		}
+
+		sk->sk_rcvbuf = opt;
+		break;
 	default:
 		err = -ENOPROTOOPT;
 		break;
@@ -681,6 +766,7 @@ static int sco_sock_getsockopt(struct socket *sock, int level, int optname, char
 	struct sco_options opts;
 	struct sco_conninfo cinfo;
 	int len, err = 0;
+	int val;
 
 	BT_DBG("sk %p", sk);
 
@@ -690,6 +776,24 @@ static int sco_sock_getsockopt(struct socket *sock, int level, int optname, char
 	lock_sock(sk);
 
 	switch (optname) {
+	case SO_RCVBUF:
+		val = sk->sk_rcvbuf;
+
+		len = min_t(unsigned int, len, sizeof(val));
+		if (copy_to_user(optval, (char *) &val, len))
+			err = -EFAULT;
+
+		break;
+
+	case SO_SNDBUF:
+		val = sk->sk_sndbuf;
+
+		len = min_t(unsigned int, len, sizeof(val));
+		if (copy_to_user(optval, (char *) &val, len))
+			err = -EFAULT;
+
+		break;
+
 	case SCO_OPTIONS:
 		if (sk->sk_state != BT_CONNECTED) {
 			err = -ENOTCONN;
@@ -701,7 +805,7 @@ static int sco_sock_getsockopt(struct socket *sock, int level, int optname, char
 		BT_DBG("mtu %d", opts.mtu);
 
 		len = min_t(unsigned int, len, sizeof(opts));
-		if (copy_to_user(optval, (char *)&opts, len))
+		if (copy_to_user(optval, (char *) &opts, len))
 			err = -EFAULT;
 
 		break;
@@ -716,7 +820,7 @@ static int sco_sock_getsockopt(struct socket *sock, int level, int optname, char
 		memcpy(cinfo.dev_class, sco_pi(sk)->conn->hcon->dev_class, 3);
 
 		len = min_t(unsigned int, len, sizeof(cinfo));
-		if (copy_to_user(optval, (char *)&cinfo, len))
+		if (copy_to_user(optval, (char *) &cinfo, len))
 			err = -EFAULT;
 
 		break;
