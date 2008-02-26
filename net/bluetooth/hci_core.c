@@ -624,7 +624,8 @@ int hci_dev_reset(__u16 dev)
 		hdev->flush(hdev);
 
 	atomic_set(&hdev->cmd_cnt, 1);
-	hdev->acl_cnt = 0; hdev->sco_cnt = 0;
+	atomic_set(&hdev->sco_cnt, 0);
+	hdev->acl_cnt = 0;
 
 	if (!test_bit(HCI_RAW, &hdev->flags))
 		ret = __hci_request(hdev, hci_reset_req, 0,
@@ -1230,12 +1231,20 @@ int hci_send_sco(struct hci_conn *conn, struct sk_buff *skb)
 {
 	struct hci_dev *hdev = conn->hdev;
 	struct hci_sco_hdr hdr;
+	ktime_t now;
 
 	BT_DBG("%s len %d", hdev->name, skb->len);
 
 	if (skb->len > hdev->sco_mtu) {
 		kfree_skb(skb);
 		return -EINVAL;
+	}
+
+	now = conn->tx_timer.base->get_time();
+
+	/* force a clean start for 100 ms or later underrun */
+	if (conn->tx_timer.expires.tv64 + NSEC_PER_SEC / 10 <= now.tv64) {
+		conn->tx_timer.expires = now;
 	}
 
 	hdr.handle = cpu_to_le16(conn->handle);
@@ -1255,12 +1264,12 @@ EXPORT_SYMBOL(hci_send_sco);
 
 /* ---- HCI TX task (outgoing data) ---- */
 
-/* HCI Connection scheduler */
-static inline struct hci_conn *hci_low_sent(struct hci_dev *hdev, __u8 type, int *quote)
+/* HCI ACL Connection scheduler */
+static inline struct hci_conn *hci_low_sent_acl(struct hci_dev *hdev, int *quote)
 {
 	struct hci_conn_hash *h = &hdev->conn_hash;
 	struct hci_conn *conn = NULL;
-	int num = 0, min = ~0;
+	unsigned int num = 0, min = ~0;
 	struct list_head *p;
 
 	/* We don't have to lock device here. Connections are always
@@ -1269,20 +1278,22 @@ static inline struct hci_conn *hci_low_sent(struct hci_dev *hdev, __u8 type, int
 		struct hci_conn *c;
 		c = list_entry(p, struct hci_conn, list);
 
-		if (c->type != type || c->state != BT_CONNECTED
+		BT_DBG("c->type %d c->state %d len(c->data_q) %d min %d c->sent %d", 
+			c->type, c->state, skb_queue_len(&c->data_q), min, atomic_read(&c->sent));
+
+		if (c->type != ACL_LINK || c->state != BT_CONNECTED
 				|| skb_queue_empty(&c->data_q))
 			continue;
 		num++;
 
-		if (c->sent < min) {
-			min  = c->sent;
+		if (atomic_read(&c->sent) < min) {
+			min  = atomic_read(&c->sent);
 			conn = c;
 		}
 	}
 
 	if (conn) {
-		int cnt = (type == ACL_LINK ? hdev->acl_cnt : hdev->sco_cnt);
-		int q = cnt / num;
+		int q = hdev->acl_cnt / num;
 		*quote = q ? q : 1;
 	} else
 		*quote = 0;
@@ -1302,7 +1313,7 @@ static inline void hci_acl_tx_to(struct hci_dev *hdev)
 	/* Kill stalled connections */
 	list_for_each(p, &h->list) {
 		c = list_entry(p, struct hci_conn, list);
-		if (c->type == ACL_LINK && c->sent) {
+		if (c->type == ACL_LINK && atomic_read(&c->sent)) {
 			BT_ERR("%s killing stalled ACL connection %s",
 				hdev->name, batostr(&c->dst));
 			hci_acl_disconn(c, 0x13);
@@ -1325,7 +1336,7 @@ static inline void hci_sched_acl(struct hci_dev *hdev)
 			hci_acl_tx_to(hdev);
 	}
 
-	while (hdev->acl_cnt && (conn = hci_low_sent(hdev, ACL_LINK, &quote))) {
+	while (hdev->acl_cnt && (conn = hci_low_sent_acl(hdev, &quote))) {
 		while (quote-- && (skb = skb_dequeue(&conn->data_q))) {
 			BT_DBG("skb %p len %d", skb, skb->len);
 
@@ -1335,48 +1346,61 @@ static inline void hci_sched_acl(struct hci_dev *hdev)
 			hdev->acl_last_tx = jiffies;
 
 			hdev->acl_cnt--;
-			conn->sent++;
+			atomic_inc(&conn->sent);
 		}
 	}
 }
 
-/* Schedule SCO */
+/* HCI SCO Connection scheduler */
+
 static inline void hci_sched_sco(struct hci_dev *hdev)
 {
-	struct hci_conn *conn;
+	struct hci_conn_hash *h = &hdev->conn_hash;
 	struct sk_buff *skb;
-	int quote;
-
+	struct list_head *p;
+	struct hci_conn *c;
+	ktime_t now, pkt_time;
+	
 	BT_DBG("%s", hdev->name);
+  
+	/* We don't have to lock device here. Connections are always 
+	   added and removed with TX task disabled. */
+	list_for_each(p, &h->list) {
+		c = list_entry(p, struct hci_conn, list);
+  
+		/* SCO scheduling algorithm makes sure there is never more than
+		   1 outstanding packet for each connection */
 
-	while (hdev->sco_cnt && (conn = hci_low_sent(hdev, SCO_LINK, &quote))) {
-		while (quote-- && (skb = skb_dequeue(&conn->data_q))) {
-			BT_DBG("skb %p len %d", skb, skb->len);
-			hci_send_frame(skb);
+		if (c->type == ACL_LINK)
+			continue;
 
-			conn->sent++;
-			if (conn->sent == ~0)
-				conn->sent = 0;
-		}
-	}
-}
+		if (atomic_read(&c->sent) >= 1)
+			continue;
 
-static inline void hci_sched_esco(struct hci_dev *hdev)
-{
-	struct hci_conn *conn;
-	struct sk_buff *skb;
-	int quote;
+		if (c->state != BT_CONNECTED)
+			continue;
 
-	BT_DBG("%s", hdev->name);
+		if (atomic_read(&hdev->sco_cnt) <= 0)
+			continue;
 
-	while (hdev->sco_cnt && (conn = hci_low_sent(hdev, ESCO_LINK, &quote))) {
-		while (quote-- && (skb = skb_dequeue(&conn->data_q))) {
-			BT_DBG("skb %p len %d", skb, skb->len);
-			hci_send_frame(skb);
+		if ((skb = skb_dequeue(&c->data_q)) == NULL)
+			continue;
 
-			conn->sent++;
-			if (conn->sent == ~0)
-				conn->sent = 0;
+		hci_send_frame(skb);
+ 
+		atomic_inc(&c->sent);			
+		atomic_dec(&hdev->sco_cnt);
+					
+		pkt_time = ktime_set(0, NSEC_PER_SEC / 16000 * (skb->len - HCI_SCO_HDR_SIZE));
+		now = c->tx_timer.base->get_time();
+
+		c->tx_timer.expires.tv64 += pkt_time.tv64;
+		if (c->tx_timer.expires.tv64 > now.tv64) {
+			hrtimer_restart(&c->tx_timer);
+		} else {
+			/* Timer is to expire in the past - force timer expiration.
+			   this can happen if timer base precision is less than pkt_time */
+			c->tx_timer.function(&c->tx_timer);
 		}
 	}
 }
@@ -1388,15 +1412,13 @@ static void hci_tx_task(unsigned long arg)
 
 	read_lock(&hci_task_lock);
 
-	BT_DBG("%s acl %d sco %d", hdev->name, hdev->acl_cnt, hdev->sco_cnt);
+ 	BT_DBG("%s acl %d sco %d", hdev->name, hdev->acl_cnt, atomic_read(&hdev->sco_cnt));
 
 	/* Schedule queues and send stuff to HCI driver */
 
-	hci_sched_acl(hdev);
-
 	hci_sched_sco(hdev);
 
-	hci_sched_esco(hdev);
+	hci_sched_acl(hdev);
 
 	/* Send next queued raw (unknown type) packet */
 	while ((skb = skb_dequeue(&hdev->raw_q)))
