@@ -56,7 +56,6 @@
 #include <acpi/amlcode.h>
 #include <acpi/acnamesp.h>
 #include <acpi/acinterp.h>
-#include <acpi/acpi_bus.h>
 
 #define _COMPONENT          ACPI_PARSER
 ACPI_MODULE_NAME("psparse")
@@ -453,7 +452,6 @@ acpi_status acpi_ps_parse_aml(struct acpi_walk_state *walk_state)
 	struct acpi_thread_state *thread;
 	struct acpi_thread_state *prev_walk_list = acpi_gbl_current_walk_list;
 	struct acpi_walk_state *previous_walk_state;
-	struct acpi_namespace_node *method_node;
 
 	ACPI_FUNCTION_TRACE(ps_parse_aml);
 
@@ -497,16 +495,6 @@ acpi_status acpi_ps_parse_aml(struct acpi_walk_state *walk_state)
 
 	status = AE_OK;
 	while (walk_state) {
-		method_node = walk_state->method_call_node;
-		
-		if (method_node && ((acpi_ns_get_attached_object(method_node))->method.method_flags & AML_METHOD_NOTIFY)) {
-			/* This is suboptimal */
-			struct acpi_device device;
-			strcpy (device.pnp.device_class, "METHOD");
-			strcpy (device.pnp.bus_id, method_node->name.ascii);
-			acpi_bus_generate_event (&device, 0, 0);
-		}
-			
 		if (ACPI_SUCCESS(status)) {
 			/*
 			 * The parse_loop executes AML until the method terminates
