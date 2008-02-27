@@ -5069,6 +5069,7 @@ static int sctp_getsockopt_peer_auth_chunks(struct sock *sk, int len,
 	struct sctp_authchunks val;
 	struct sctp_association *asoc;
 	struct sctp_chunks_param *ch;
+	u32    num_chunks;
 	char __user *to;
 
 	if (len <= sizeof(struct sctp_authchunks))
@@ -5085,10 +5086,11 @@ static int sctp_getsockopt_peer_auth_chunks(struct sock *sk, int len,
 	ch = asoc->peer.peer_chunks;
 
 	/* See if the user provided enough room for all the data */
-	if (len < ntohs(ch->param_hdr.length))
+	num_chunks = ntohs(ch->param_hdr.length) - sizeof(sctp_paramhdr_t);
+	if (len < num_chunks)
 		return -EINVAL;
 
-	len = ntohs(ch->param_hdr.length);
+	len = num_chunks;
 	if (put_user(len, optlen))
 		return -EFAULT;
 	if (copy_to_user(to, ch->chunks, len))
@@ -5104,6 +5106,7 @@ static int sctp_getsockopt_local_auth_chunks(struct sock *sk, int len,
 	struct sctp_authchunks val;
 	struct sctp_association *asoc;
 	struct sctp_chunks_param *ch;
+	u32    num_chunks;
 	char __user *to;
 
 	if (len <= sizeof(struct sctp_authchunks))
@@ -5122,10 +5125,11 @@ static int sctp_getsockopt_local_auth_chunks(struct sock *sk, int len,
 	else
 		ch = sctp_sk(sk)->ep->auth_chunk_list;
 
-	if (len < ntohs(ch->param_hdr.length))
+	num_chunks = ntohs(ch->param_hdr.length) - sizeof(sctp_paramhdr_t);
+	if (len < num_chunks)
 		return -EINVAL;
 
-	len = ntohs(ch->param_hdr.length);
+	len = num_chunks;
 	if (put_user(len, optlen))
 		return -EFAULT;
 	if (copy_to_user(to, ch->chunks, len))
