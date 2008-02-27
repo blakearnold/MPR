@@ -81,6 +81,6 @@ getall amd64 generic server
 getall i386 386 generic server virtual
 getall sparc sparc64{,-smp}
 getall ia64 itanium mckinley
-getall lpia lpia
+getall hppa hppa32 hppa64
 
 rmdir $tmpdir
