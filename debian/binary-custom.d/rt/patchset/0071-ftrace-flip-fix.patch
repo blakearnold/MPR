@@ -1,0 +1,40 @@
+---
+ kernel/trace/trace.c |    5 ++---
+ kernel/trace/trace.h |    2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+Index: linux-2.6.24.3-rt3/kernel/trace/trace.c
+===================================================================
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace.c	2008-02-26 23:29:59.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace.c	2008-02-26 23:30:00.000000000 -0500
+@@ -176,10 +176,9 @@ flip_trace(struct trace_array_cpu *tr1, 
+ 
+ 	INIT_LIST_HEAD(&flip_pages);
+ 
+-	tr1->trace_current = NULL;
+-	memcpy(&tr1->trace_current_idx, &tr2->trace_current_idx,
++	memcpy(&tr1->trace_current, &tr2->trace_current,
+ 		sizeof(struct trace_array_cpu) -
+-		offsetof(struct trace_array_cpu, trace_current_idx));
++		offsetof(struct trace_array_cpu, trace_current));
+ 
+ 	check_pages(tr1);
+ 	check_pages(tr2);
+Index: linux-2.6.24.3-rt3/kernel/trace/trace.h
+===================================================================
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace.h	2008-02-26 23:29:59.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace.h	2008-02-26 23:30:00.000000000 -0500
+@@ -53,12 +53,12 @@ struct trace_entry {
+  * the trace, etc.)
+  */
+ struct trace_array_cpu {
+-	void			*trace_current;
+ 	struct list_head	trace_pages;
+ 	atomic_t		disabled;
+ 	cycle_t			time_offset;
+ 
+ 	/* these fields get copied into max-trace: */
++	void			*trace_current;
+ 	unsigned		trace_current_idx;
+ 	unsigned long		trace_idx;
+ 	unsigned long		saved_latency;

@@ -37,10 +37,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/sched_rt.c |   20 ++++++++++++++++----
  1 file changed, 16 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.24.2-rt2/kernel/sched_rt.c
+Index: linux-2.6.24.3-rt3/kernel/sched_rt.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/sched_rt.c	2008-02-21 13:11:00.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/sched_rt.c	2008-02-21 13:11:00.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/sched_rt.c	2008-02-26 23:29:47.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/sched_rt.c	2008-02-26 23:29:47.000000000 -0500
 @@ -156,11 +156,23 @@ static int select_task_rq_rt(struct task
  	struct rq *rq = task_rq(p);
  

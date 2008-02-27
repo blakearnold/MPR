@@ -100,10 +100,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/trace/trace_sched_wakeup.c |  310 ++++++++++++++++++++++++++++++++++++++
  4 files changed, 343 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
+Index: linux-2.6.24.3-rt3/include/linux/ftrace.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/ftrace.h	2008-02-21 13:11:08.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/ftrace.h	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/ftrace.h	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/ftrace.h	2008-02-26 23:29:56.000000000 -0500
 @@ -5,10 +5,6 @@
  
  #include <linux/linkage.h>
@@ -139,10 +139,10 @@ Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
 +#endif
 +
  #endif /* _LINUX_FTRACE_H */
-Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
+Index: linux-2.6.24.3-rt3/kernel/trace/Kconfig
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Kconfig	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Kconfig	2008-02-26 23:29:56.000000000 -0500
 @@ -4,6 +4,9 @@
  config HAVE_FTRACE
  	bool
@@ -170,10 +170,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
  config CONTEXT_SWITCH_TRACER
  	bool "Trace process context switches"
  	depends on DEBUG_KERNEL
-Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
+Index: linux-2.6.24.3-rt3/kernel/trace/Makefile
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Makefile	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Makefile	2008-02-26 23:29:56.000000000 -0500
 @@ -3,5 +3,6 @@ obj-$(CONFIG_FTRACE) += libftrace.o
  obj-$(CONFIG_TRACING) += trace.o
  obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
@@ -181,10 +181,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
 +obj-$(CONFIG_SCHED_TRACER) += trace_sched_wakeup.o
  
  libftrace-y := ftrace.o
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_sched_wakeup.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_sched_wakeup.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_sched_wakeup.c	2008-02-21 13:11:09.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_sched_wakeup.c	2008-02-26 23:29:56.000000000 -0500
 @@ -0,0 +1,310 @@
 +/*
 + * trace task wakeup timings

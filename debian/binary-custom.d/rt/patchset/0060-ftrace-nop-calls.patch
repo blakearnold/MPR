@@ -12,10 +12,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  include/asm-x86/alternative_64.h |    1 
  4 files changed, 28 insertions(+), 18 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/ftrace.c	2008-02-21 13:11:13.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/ftrace.c	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c	2008-02-26 23:29:57.000000000 -0500
 @@ -16,11 +16,12 @@
  #include <linux/init.h>
  #include <linux/list.h>
@@ -127,10 +127,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
  	/* allocate a few pages */
  	ftrace_pages_start = (void *)get_zeroed_page(GFP_KERNEL);
  	if (!ftrace_pages_start)
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/alternative.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/alternative.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/alternative.c	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/alternative.c	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/alternative.c	2008-02-26 23:29:39.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/alternative.c	2008-02-26 23:29:57.000000000 -0500
 @@ -137,7 +137,7 @@ static const unsigned char *const p6_nop
  #ifdef CONFIG_X86_64
  
@@ -149,10 +149,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/alternative.c
  {
  	const unsigned char *const *noptable = intel_nops;
  	int i;
-Index: linux-2.6.24.2-rt2/include/asm-x86/alternative_32.h
+Index: linux-2.6.24.3-rt3/include/asm-x86/alternative_32.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/asm-x86/alternative_32.h	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/asm-x86/alternative_32.h	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/asm-x86/alternative_32.h	2008-02-26 23:29:39.000000000 -0500
++++ linux-2.6.24.3-rt3/include/asm-x86/alternative_32.h	2008-02-26 23:29:57.000000000 -0500
 @@ -149,6 +149,7 @@ apply_paravirt(struct paravirt_patch_sit
  #define __parainstructions_end	NULL
  #endif
@@ -161,10 +161,10 @@ Index: linux-2.6.24.2-rt2/include/asm-x86/alternative_32.h
  extern void text_poke(void *addr, unsigned char *opcode, int len);
  
  #endif /* _I386_ALTERNATIVE_H */
-Index: linux-2.6.24.2-rt2/include/asm-x86/alternative_64.h
+Index: linux-2.6.24.3-rt3/include/asm-x86/alternative_64.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/asm-x86/alternative_64.h	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/asm-x86/alternative_64.h	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/asm-x86/alternative_64.h	2008-02-26 23:29:39.000000000 -0500
++++ linux-2.6.24.3-rt3/include/asm-x86/alternative_64.h	2008-02-26 23:29:57.000000000 -0500
 @@ -154,6 +154,7 @@ apply_paravirt(struct paravirt_patch *st
  #define __parainstructions_end NULL
  #endif

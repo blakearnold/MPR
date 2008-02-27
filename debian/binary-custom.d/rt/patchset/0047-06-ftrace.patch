@@ -18,10 +18,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  include/linux/linkage.h |    2 ++
  1 file changed, 2 insertions(+)
 
-Index: linux-2.6.24.2-rt2/include/linux/linkage.h
+Index: linux-2.6.24.3-rt3/include/linux/linkage.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/linkage.h	2008-02-21 13:10:53.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/linkage.h	2008-02-21 13:11:07.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/linkage.h	2008-02-26 23:29:41.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/linkage.h	2008-02-26 23:29:54.000000000 -0500
 @@ -3,6 +3,8 @@
  
  #include <asm/linkage.h>

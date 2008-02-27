@@ -10,10 +10,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  kernel/trace/trace_irqsoff.c |   27 +++++++++++++++------------
  2 files changed, 20 insertions(+), 13 deletions(-)
 
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:15.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:16.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:58.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:59.000000000 -0500
 @@ -23,6 +23,8 @@ static int				tracer_enabled __read_most
  
  static DEFINE_PER_CPU(int, tracing_cpu);
@@ -87,10 +87,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c
  }
  
  static void __irqsoff_tracer_init(struct trace_array *tr)
-Index: linux-2.6.24.2-rt2/kernel/trace/trace.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/trace.c	2008-02-21 13:11:16.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/trace.c	2008-02-21 13:11:16.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace.c	2008-02-26 23:29:59.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace.c	2008-02-26 23:29:59.000000000 -0500
 @@ -153,6 +153,7 @@ update_max_tr(struct trace_array *tr, st
  		memcpy(max_tr.data[i], data, sizeof(*data));
  		data->trace = save_trace;

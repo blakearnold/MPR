@@ -107,10 +107,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/trace/trace_irqsoff.c  |  402 ++++++++++++++++++++++++++++++++++++++++++
  13 files changed, 531 insertions(+), 29 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/process_64.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/process_64.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/process_64.c	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/process_64.c	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/process_64.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/process_64.c	2008-02-26 23:29:56.000000000 -0500
 @@ -233,7 +233,10 @@ void cpu_idle (void)
  			 */
  			local_irq_disable();
@@ -122,10 +122,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/process_64.c
  			/* In many cases the interrupt that ended idle
  			   has already called exit_idle. But some idle
  			   loops can be woken up without interrupt. */
-Index: linux-2.6.24.2-rt2/arch/x86/lib/thunk_32.S
+Index: linux-2.6.24.3-rt3/arch/x86/lib/thunk_32.S
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.2-rt2/arch/x86/lib/thunk_32.S	2008-02-21 13:11:09.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/lib/thunk_32.S	2008-02-26 23:29:56.000000000 -0500
 @@ -0,0 +1,47 @@
 +/*
 + * Trampoline to trace irqs off. (otherwise CALLER_ADDR1 might crash)
@@ -174,10 +174,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/lib/thunk_32.S
 +	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
 +	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
 +#endif
-Index: linux-2.6.24.2-rt2/arch/x86/lib/thunk_64.S
+Index: linux-2.6.24.3-rt3/arch/x86/lib/thunk_64.S
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/lib/thunk_64.S	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/lib/thunk_64.S	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/lib/thunk_64.S	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/lib/thunk_64.S	2008-02-26 23:29:56.000000000 -0500
 @@ -2,6 +2,7 @@
   * Save registers before calling assembly functions. This avoids
   * disturbance of register allocation in some inline assembly constructs.
@@ -211,10 +211,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/lib/thunk_64.S
  #endif
  
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
+Index: linux-2.6.24.3-rt3/include/linux/ftrace.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/ftrace.h	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/ftrace.h	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/ftrace.h	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/ftrace.h	2008-02-26 23:29:56.000000000 -0500
 @@ -50,4 +50,12 @@ extern void mcount(void);
  # define CALLER_ADDR5 0UL
  #endif
@@ -228,10 +228,10 @@ Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
 +#endif
 +
  #endif /* _LINUX_FTRACE_H */
-Index: linux-2.6.24.2-rt2/include/linux/irqflags.h
+Index: linux-2.6.24.3-rt3/include/linux/irqflags.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/irqflags.h	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/irqflags.h	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/irqflags.h	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/irqflags.h	2008-02-26 23:29:56.000000000 -0500
 @@ -12,10 +12,10 @@
  #define _LINUX_TRACE_IRQFLAGS_H
  
@@ -260,10 +260,10 @@ Index: linux-2.6.24.2-rt2/include/linux/irqflags.h
  #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
  
  #include <asm/irqflags.h>
-Index: linux-2.6.24.2-rt2/kernel/fork.c
+Index: linux-2.6.24.3-rt3/kernel/fork.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/fork.c	2008-02-21 13:10:59.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/fork.c	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/fork.c	2008-02-26 23:29:45.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/fork.c	2008-02-26 23:29:56.000000000 -0500
 @@ -1010,7 +1010,7 @@ static struct task_struct *copy_process(
  
  	rt_mutex_init_task(p);
@@ -273,10 +273,10 @@ Index: linux-2.6.24.2-rt2/kernel/fork.c
  	DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
  	DEBUG_LOCKS_WARN_ON(!p->softirqs_enabled);
  #endif
-Index: linux-2.6.24.2-rt2/kernel/lockdep.c
+Index: linux-2.6.24.3-rt3/kernel/lockdep.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/lockdep.c	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/lockdep.c	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/lockdep.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/lockdep.c	2008-02-26 23:29:56.000000000 -0500
 @@ -39,6 +39,7 @@
  #include <linux/irqflags.h>
  #include <linux/utsname.h>
@@ -356,10 +356,10 @@ Index: linux-2.6.24.2-rt2/kernel/lockdep.c
  EXPORT_SYMBOL(trace_hardirqs_off);
  
  /*
-Index: linux-2.6.24.2-rt2/kernel/printk.c
+Index: linux-2.6.24.3-rt3/kernel/printk.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/printk.c	2008-02-21 13:11:06.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/printk.c	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/printk.c	2008-02-26 23:29:53.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/printk.c	2008-02-26 23:29:56.000000000 -0500
 @@ -974,7 +974,9 @@ void release_console_sem(void)
  		_log_end = log_end;
  		con_start = log_end;		/* Flush */
@@ -370,10 +370,10 @@ Index: linux-2.6.24.2-rt2/kernel/printk.c
  		local_irq_restore(flags);
  	}
  	console_locked = 0;
-Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
+Index: linux-2.6.24.3-rt3/kernel/trace/Kconfig
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Kconfig	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Kconfig	2008-02-26 23:29:56.000000000 -0500
 @@ -26,6 +26,24 @@ config FTRACE
  	  (the bootup default), then the overhead of the instructions is very
  	  small and not measurable even in micro-benchmarks.
@@ -399,10 +399,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
  config SCHED_TRACER
  	bool "Scheduling Latency Tracer"
  	depends on DEBUG_KERNEL
-Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
+Index: linux-2.6.24.3-rt3/kernel/trace/Makefile
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Makefile	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Makefile	2008-02-26 23:29:56.000000000 -0500
 @@ -3,6 +3,7 @@ obj-$(CONFIG_FTRACE) += libftrace.o
  obj-$(CONFIG_TRACING) += trace.o
  obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
@@ -411,10 +411,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
  obj-$(CONFIG_SCHED_TRACER) += trace_sched_wakeup.o
  
  libftrace-y := ftrace.o
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:09.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:56.000000000 -0500
 @@ -0,0 +1,402 @@
 +/*
 + * trace irqs off criticall timings
@@ -818,10 +818,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c
 +	return 0;
 +}
 +device_initcall(init_irqsoff_tracer);
-Index: linux-2.6.24.2-rt2/arch/x86/lib/Makefile_32
+Index: linux-2.6.24.3-rt3/arch/x86/lib/Makefile_32
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/lib/Makefile_32	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/lib/Makefile_32	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/lib/Makefile_32	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/lib/Makefile_32	2008-02-26 23:29:56.000000000 -0500
 @@ -4,7 +4,7 @@
  
  
@@ -831,10 +831,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/lib/Makefile_32
  
  lib-$(CONFIG_X86_USE_3DNOW) += mmx_32.o
  
-Index: linux-2.6.24.2-rt2/include/asm-x86/irqflags_32.h
+Index: linux-2.6.24.3-rt3/include/asm-x86/irqflags_32.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/asm-x86/irqflags_32.h	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/asm-x86/irqflags_32.h	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/asm-x86/irqflags_32.h	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/include/asm-x86/irqflags_32.h	2008-02-26 23:29:56.000000000 -0500
 @@ -157,25 +157,8 @@ static inline void trace_hardirqs_fixup(
   * C function, so save all the C-clobbered registers:
   */

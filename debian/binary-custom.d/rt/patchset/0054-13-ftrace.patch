@@ -42,10 +42,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/trace/trace_sched_switch.c |  125 ++++++++++++++++++++++++++++++++++++++
  3 files changed, 137 insertions(+)
 
-Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
+Index: linux-2.6.24.3-rt3/kernel/trace/Kconfig
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Kconfig	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Kconfig	2008-02-26 23:29:55.000000000 -0500
 @@ -13,6 +13,7 @@ config FTRACE
  	depends on DEBUG_KERNEL && HAVE_FTRACE
  	select FRAME_POINTER
@@ -68,10 +68,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
 +	  This tracer gets called from the context switch and records
 +	  all switching of tasks.
 +
-Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
+Index: linux-2.6.24.3-rt3/kernel/trace/Makefile
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Makefile	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Makefile	2008-02-26 23:29:55.000000000 -0500
 @@ -1,6 +1,7 @@
  obj-$(CONFIG_FTRACE) += libftrace.o
  
@@ -80,10 +80,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
  obj-$(CONFIG_FTRACE) += trace_functions.o
  
  libftrace-y := ftrace.o
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_sched_switch.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_sched_switch.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_sched_switch.c	2008-02-21 13:11:09.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_sched_switch.c	2008-02-26 23:29:55.000000000 -0500
 @@ -0,0 +1,125 @@
 +/*
 + * trace context switch

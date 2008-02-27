@@ -39,10 +39,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/trace/trace_irqsoff.c |  184 +++++++++++++++++++++++++++++++------------
  8 files changed, 197 insertions(+), 53 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/process_32.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/process_32.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/process_32.c	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/process_32.c	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/process_32.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/process_32.c	2008-02-26 23:29:56.000000000 -0500
 @@ -195,7 +195,10 @@ void cpu_idle(void)
  				play_dead();
  
@@ -54,10 +54,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/process_32.c
  		}
  		tick_nohz_restart_sched_tick();
  		preempt_enable_no_resched();
-Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
+Index: linux-2.6.24.3-rt3/include/linux/ftrace.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/ftrace.h	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/ftrace.h	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/ftrace.h	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/ftrace.h	2008-02-26 23:29:56.000000000 -0500
 @@ -58,4 +58,12 @@ extern void mcount(void);
  # define time_hardirqs_off(a0, a1)		do { } while (0)
  #endif
@@ -71,10 +71,10 @@ Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
 +#endif
 +
  #endif /* _LINUX_FTRACE_H */
-Index: linux-2.6.24.2-rt2/include/linux/irqflags.h
+Index: linux-2.6.24.3-rt3/include/linux/irqflags.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/irqflags.h	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/irqflags.h	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/irqflags.h	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/irqflags.h	2008-02-26 23:29:56.000000000 -0500
 @@ -41,7 +41,8 @@
  # define INIT_TRACE_IRQFLAGS
  #endif
@@ -85,10 +85,10 @@ Index: linux-2.6.24.2-rt2/include/linux/irqflags.h
   extern void stop_critical_timings(void);
   extern void start_critical_timings(void);
  #else
-Index: linux-2.6.24.2-rt2/include/linux/preempt.h
+Index: linux-2.6.24.3-rt3/include/linux/preempt.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/preempt.h	2008-02-21 13:11:07.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/preempt.h	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/preempt.h	2008-02-26 23:29:53.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/preempt.h	2008-02-26 23:29:56.000000000 -0500
 @@ -10,7 +10,7 @@
  #include <linux/linkage.h>
  #include <linux/list.h>
@@ -98,10 +98,10 @@ Index: linux-2.6.24.2-rt2/include/linux/preempt.h
    extern void fastcall add_preempt_count(int val);
    extern void fastcall sub_preempt_count(int val);
  #else
-Index: linux-2.6.24.2-rt2/kernel/sched.c
+Index: linux-2.6.24.3-rt3/kernel/sched.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/sched.c	2008-02-21 13:11:07.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/sched.c	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/sched.c	2008-02-26 23:29:54.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/sched.c	2008-02-26 23:29:56.000000000 -0500
 @@ -65,6 +65,7 @@
  #include <linux/reciprocal_div.h>
  #include <linux/unistd.h>
@@ -167,10 +167,10 @@ Index: linux-2.6.24.2-rt2/kernel/sched.c
  	preempt_count() -= val;
  }
  EXPORT_SYMBOL(sub_preempt_count);
-Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
+Index: linux-2.6.24.3-rt3/kernel/trace/Kconfig
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Kconfig	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Kconfig	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Kconfig	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Kconfig	2008-02-26 23:29:56.000000000 -0500
 @@ -44,6 +44,31 @@ config IRQSOFF_TRACER
  
  	      echo 0 > /debugfs/tracing/tracing_max_latency
@@ -203,10 +203,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
  config SCHED_TRACER
  	bool "Scheduling Latency Tracer"
  	depends on DEBUG_KERNEL
-Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
+Index: linux-2.6.24.3-rt3/kernel/trace/Makefile
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Makefile	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Makefile	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Makefile	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Makefile	2008-02-26 23:29:56.000000000 -0500
 @@ -4,6 +4,7 @@ obj-$(CONFIG_TRACING) += trace.o
  obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
  obj-$(CONFIG_FTRACE) += trace_functions.o
@@ -215,10 +215,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Makefile
  obj-$(CONFIG_SCHED_TRACER) += trace_sched_wakeup.o
  
  libftrace-y := ftrace.o
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:12.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:56.000000000 -0500
 @@ -21,6 +21,36 @@
  static struct trace_array		*irqsoff_trace __read_mostly;
  static int				tracer_enabled __read_mostly;

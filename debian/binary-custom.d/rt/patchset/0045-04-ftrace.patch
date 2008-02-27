@@ -20,10 +20,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  include/linux/preempt.h |   32 ++++++++++++++++++++++++++++++++
  1 file changed, 32 insertions(+)
 
-Index: linux-2.6.24.2-rt2/include/linux/preempt.h
+Index: linux-2.6.24.3-rt3/include/linux/preempt.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/preempt.h	2008-02-21 13:10:53.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/preempt.h	2008-02-21 13:11:07.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/preempt.h	2008-02-26 23:29:41.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/preempt.h	2008-02-26 23:29:53.000000000 -0500
 @@ -52,6 +52,34 @@ do { \
  	preempt_check_resched(); \
  } while (0)

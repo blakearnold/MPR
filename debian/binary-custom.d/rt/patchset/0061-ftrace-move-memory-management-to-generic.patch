@@ -12,10 +12,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  kernel/trace/ftrace.c    |  154 +++++++++++++++++++++++++++++++++++++++
  3 files changed, 192 insertions(+), 163 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/ftrace.c	2008-02-21 13:11:14.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/ftrace.c	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c	2008-02-26 23:29:57.000000000 -0500
 @@ -23,25 +23,6 @@
  /* Long is fine, even if it is only 4 bytes ;-) */
  static long *ftrace_nop;
@@ -242,10 +242,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
  	return 0;
  }
 +
-Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
+Index: linux-2.6.24.3-rt3/include/linux/ftrace.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/ftrace.h	2008-02-21 13:11:14.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/ftrace.h	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/ftrace.h	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/ftrace.h	2008-02-26 23:29:57.000000000 -0500
 @@ -42,19 +42,23 @@ extern void mcount(void);
  # define FTRACE_HASHBITS	10
  # define FTRACE_HASHSIZE	(1<<FTRACE_HASHBITS)
@@ -277,10 +277,10 @@ Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
  #endif
  
  #ifdef CONFIG_FRAME_POINTER
-Index: linux-2.6.24.2-rt2/kernel/trace/ftrace.c
+Index: linux-2.6.24.3-rt3/kernel/trace/ftrace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/ftrace.c	2008-02-21 13:11:14.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/ftrace.c	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/ftrace.c	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/ftrace.c	2008-02-26 23:29:57.000000000 -0500
 @@ -156,6 +156,21 @@ static DEFINE_PER_CPU(int, ftrace_shutdo
  static DEFINE_SPINLOCK(ftrace_shutdown_lock);
  static DEFINE_MUTEX(ftraced_lock);

@@ -5,10 +5,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  kernel/spinlock.c |    2 +-
  2 files changed, 13 insertions(+), 12 deletions(-)
 
-Index: linux-2.6.24.2-rt2/kernel/lockdep.c
+Index: linux-2.6.24.3-rt3/kernel/lockdep.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/lockdep.c	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/lockdep.c	2008-02-21 13:11:16.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/lockdep.c	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/lockdep.c	2008-02-26 23:29:59.000000000 -0500
 @@ -271,14 +271,14 @@ static struct list_head chainhash_table[
  	((key1) >> (64-MAX_LOCKDEP_KEYS_BITS)) ^ \
  	(key2))
@@ -94,10 +94,10 @@ Index: linux-2.6.24.2-rt2/kernel/lockdep.c
  {
  	unsigned long flags;
  
-Index: linux-2.6.24.2-rt2/kernel/spinlock.c
+Index: linux-2.6.24.3-rt3/kernel/spinlock.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/spinlock.c	2008-02-21 13:10:51.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/spinlock.c	2008-02-21 13:11:16.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/spinlock.c	2008-02-26 23:29:39.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/spinlock.c	2008-02-26 23:29:59.000000000 -0500
 @@ -437,7 +437,7 @@ int __lockfunc _spin_trylock_bh(spinlock
  }
  EXPORT_SYMBOL(_spin_trylock_bh);

@@ -18,10 +18,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  lib/smp_processor_id.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.24.2-rt2/lib/smp_processor_id.c
+Index: linux-2.6.24.3-rt3/lib/smp_processor_id.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/lib/smp_processor_id.c	2008-02-21 13:11:08.000000000 -0500
-+++ linux-2.6.24.2-rt2/lib/smp_processor_id.c	2008-02-21 13:11:15.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/lib/smp_processor_id.c	2008-02-26 23:29:54.000000000 -0500
++++ linux-2.6.24.3-rt3/lib/smp_processor_id.c	2008-02-26 23:29:58.000000000 -0500
 @@ -37,7 +37,7 @@ notrace unsigned int debug_smp_processor
  	/*
  	 * Avoid recursion:

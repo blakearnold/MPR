@@ -22,10 +22,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  kernel/trace/trace_irqsoff.c |   13 +++++++++++--
  1 file changed, 11 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:12.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_irqsoff.c	2008-02-21 13:11:15.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_irqsoff.c	2008-02-26 23:29:58.000000000 -0500
 @@ -74,12 +74,21 @@ irqsoff_tracer_call(unsigned long ip, un
  	long disabled;
  	int cpu;

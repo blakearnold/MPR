@@ -14,10 +14,10 @@ Date:   Sat Feb 9 10:28:09 2008 -0500
  kernel/trace/trace_sched_switch.c |    4 ++--
  2 files changed, 4 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.24.2-rt2/kernel/trace/trace.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/trace.c	2008-02-21 13:11:15.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/trace.c	2008-02-21 13:11:16.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace.c	2008-02-26 23:29:58.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace.c	2008-02-26 23:29:59.000000000 -0500
 @@ -269,7 +269,7 @@ function_trace_call(unsigned long ip, un
  	if (unlikely(!tracer_enabled))
  		return;
@@ -36,10 +36,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/trace.c
  }
  
  static struct ftrace_ops trace_ops __read_mostly =
-Index: linux-2.6.24.2-rt2/kernel/trace/trace_sched_switch.c
+Index: linux-2.6.24.3-rt3/kernel/trace/trace_sched_switch.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/trace_sched_switch.c	2008-02-21 13:11:09.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/trace_sched_switch.c	2008-02-21 13:11:16.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/trace_sched_switch.c	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/trace_sched_switch.c	2008-02-26 23:29:59.000000000 -0500
 @@ -30,7 +30,7 @@ ctx_switch_func(struct task_struct *prev
  	if (!tracer_enabled)
  		return;

@@ -24,22 +24,22 @@ CC: Christoph Lameter <clameter@sgi.com>
  kernel/sched_rt.c     |   85 ++++++------------------
  5 files changed, 243 insertions(+), 61 deletions(-)
 
-Index: mywork/kernel/Makefile
+Index: ubuntu-hardy/kernel/Makefile
 ===================================================================
---- mywork.orig/kernel/Makefile	2008-02-22 12:00:24.000000000 +0100
-+++ mywork/kernel/Makefile	2008-02-22 12:03:03.000000000 +0100
-@@ -58,6 +58,7 @@
+--- ubuntu-hardy.orig/kernel/Makefile	2008-02-27 09:17:40.000000000 +0100
++++ ubuntu-hardy/kernel/Makefile	2008-02-27 11:45:38.000000000 +0100
+@@ -57,6 +57,7 @@
+ obj-$(CONFIG_TASK_DELAY_ACCT) += delayacct.o
  obj-$(CONFIG_TASKSTATS) += taskstats.o tsacct.o
  obj-$(CONFIG_MARKERS) += marker.o
- obj-$(CONFIG_LATENCYTOP) += latencytop.o
 +obj-$(CONFIG_SMP) += sched_cpupri.o
+ obj-$(CONFIG_LATENCYTOP) += latencytop.o
  
  ifneq ($(CONFIG_SCHED_NO_NO_OMIT_FRAME_POINTER),y)
- # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
-Index: mywork/kernel/sched.c
+Index: ubuntu-hardy/kernel/sched.c
 ===================================================================
---- mywork.orig/kernel/sched.c	2008-02-22 12:02:14.000000000 +0100
-+++ mywork/kernel/sched.c	2008-02-22 12:02:19.000000000 +0100
+--- ubuntu-hardy.orig/kernel/sched.c	2008-02-27 11:44:59.000000000 +0100
++++ ubuntu-hardy/kernel/sched.c	2008-02-27 11:45:03.000000000 +0100
 @@ -69,6 +69,8 @@
  #include <asm/tlb.h>
  #include <asm/irq_regs.h>
@@ -69,10 +69,10 @@ Index: mywork/kernel/sched.c
  }
  
  static void init_defrootdomain(void)
-Index: mywork/kernel/sched_cpupri.c
+Index: ubuntu-hardy/kernel/sched_cpupri.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ mywork/kernel/sched_cpupri.c	2008-02-22 12:02:19.000000000 +0100
++++ ubuntu-hardy/kernel/sched_cpupri.c	2008-02-27 11:45:03.000000000 +0100
 @@ -0,0 +1,174 @@
 +/*
 + *  kernel/sched_cpupri.c
@@ -248,10 +248,10 @@ Index: mywork/kernel/sched_cpupri.c
 +}
 +
 +
-Index: mywork/kernel/sched_cpupri.h
+Index: ubuntu-hardy/kernel/sched_cpupri.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ mywork/kernel/sched_cpupri.h	2008-02-22 12:02:19.000000000 +0100
++++ ubuntu-hardy/kernel/sched_cpupri.h	2008-02-27 11:45:03.000000000 +0100
 @@ -0,0 +1,36 @@
 +#ifndef _LINUX_CPUPRI_H
 +#define _LINUX_CPUPRI_H
@@ -289,10 +289,10 @@ Index: mywork/kernel/sched_cpupri.h
 +#endif
 +
 +#endif /* _LINUX_CPUPRI_H */
-Index: mywork/kernel/sched_rt.c
+Index: ubuntu-hardy/kernel/sched_rt.c
 ===================================================================
---- mywork.orig/kernel/sched_rt.c	2008-02-22 12:02:14.000000000 +0100
-+++ mywork/kernel/sched_rt.c	2008-02-22 12:02:19.000000000 +0100
+--- ubuntu-hardy.orig/kernel/sched_rt.c	2008-02-27 11:44:59.000000000 +0100
++++ ubuntu-hardy/kernel/sched_rt.c	2008-02-27 11:45:03.000000000 +0100
 @@ -73,8 +73,10 @@
  	WARN_ON(!rt_task(p));
  	rq->rt.rt_nr_running++;

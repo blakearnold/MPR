@@ -57,10 +57,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  kernel/trace/ftrace.c       |  356 ++++++++++++++++++++++++++++++++++++++++----
  6 files changed, 598 insertions(+), 32 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c	2008-02-21 13:11:13.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c	2008-02-26 23:29:57.000000000 -0500
 @@ -0,0 +1,237 @@
 +/*
 + * Code for replacing ftrace calls with jumps.
@@ -299,10 +299,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
 +
 +	return 0;
 +}
-Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
+Index: linux-2.6.24.3-rt3/include/linux/ftrace.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/ftrace.h	2008-02-21 13:11:12.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/ftrace.h	2008-02-21 13:11:13.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/ftrace.h	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/ftrace.h	2008-02-26 23:29:57.000000000 -0500
 @@ -32,6 +32,24 @@ extern void mcount(void);
  # define clear_ftrace_function(ops) do { } while (0)
  #endif /* CONFIG_FTRACE */
@@ -328,10 +328,10 @@ Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
  
  #ifdef CONFIG_FRAME_POINTER
  /* TODO: need to fix this for ARM */
-Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
+Index: linux-2.6.24.3-rt3/kernel/trace/Kconfig
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/Kconfig	2008-02-21 13:11:12.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/Kconfig	2008-02-21 13:11:13.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/Kconfig	2008-02-26 23:29:56.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/Kconfig	2008-02-26 23:29:57.000000000 -0500
 @@ -88,3 +88,20 @@ config CONTEXT_SWITCH_TRACER
  	  This tracer gets called from the context switch and records
  	  all switching of tasks.
@@ -353,10 +353,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/Kconfig
 +	 wakes up once a second and checks to see if any ftrace calls
 +	 were made. If so, it runs stop_machine (stops all CPUS)
 +	 and modifies the code to jump over the call to ftrace.
-Index: linux-2.6.24.2-rt2/kernel/trace/ftrace.c
+Index: linux-2.6.24.3-rt3/kernel/trace/ftrace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/ftrace.c	2008-02-21 13:11:08.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/ftrace.c	2008-02-21 13:11:13.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/ftrace.c	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/ftrace.c	2008-02-26 23:29:57.000000000 -0500
 @@ -13,10 +13,19 @@
   *  Copyright (C) 2004 William Lee Irwin III
   */
@@ -773,10 +773,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/ftrace.c
 +
 +	return ret;
  }
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/Makefile_32
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/Makefile_32
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/Makefile_32	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/Makefile_32	2008-02-21 13:11:13.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/Makefile_32	2008-02-26 23:29:39.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/Makefile_32	2008-02-26 23:29:57.000000000 -0500
 @@ -33,6 +33,7 @@ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_3
  obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
  obj-$(CONFIG_X86_SUMMIT_NUMA)	+= summit_32.o
@@ -785,10 +785,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/Makefile_32
  obj-$(CONFIG_MODULES)		+= module_32.o
  obj-y				+= sysenter_32.o vsyscall_32.o
  obj-$(CONFIG_ACPI_SRAT) 	+= srat_32.o
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/Makefile_64
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/Makefile_64
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/Makefile_64	2008-02-21 13:10:52.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/Makefile_64	2008-02-21 13:11:13.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/Makefile_64	2008-02-26 23:29:39.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/Makefile_64	2008-02-26 23:29:57.000000000 -0500
 @@ -31,6 +31,7 @@ obj-$(CONFIG_GART_IOMMU)	+= pci-gart_64.
  obj-$(CONFIG_CALGARY_IOMMU)	+= pci-calgary_64.o tce_64.o
  obj-$(CONFIG_SWIOTLB)		+= pci-swiotlb_64.o

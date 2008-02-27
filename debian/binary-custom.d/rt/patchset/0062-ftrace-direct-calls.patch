@@ -32,10 +32,10 @@ Signed-off-by: Steven Rostedt <srostedt@redhat.com>
  kernel/trace/ftrace.c      |  183 +++++++++++++++++++++++++--------------------
  5 files changed, 276 insertions(+), 84 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/entry_32.S
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/entry_32.S
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/entry_32.S	2008-02-21 13:11:08.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/entry_32.S	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/entry_32.S	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/entry_32.S	2008-02-26 23:29:58.000000000 -0500
 @@ -76,10 +76,50 @@ NT_MASK		= 0x00004000
  VM_MASK		= 0x00020000
  
@@ -107,10 +107,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/entry_32.S
  
  #ifdef CONFIG_PREEMPT
  #define preempt_stop(clobbers)	DISABLE_INTERRUPTS(clobbers); TRACE_IRQS_OFF
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/entry_64.S
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/entry_64.S
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/entry_64.S	2008-02-21 13:11:08.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/entry_64.S	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/entry_64.S	2008-02-26 23:29:55.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/entry_64.S	2008-02-26 23:29:58.000000000 -0500
 @@ -54,6 +54,70 @@
  	.code64
  
@@ -192,10 +192,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/entry_64.S
  
  #ifndef CONFIG_PREEMPT
  #define retint_kernel retint_restore_args
-Index: linux-2.6.24.2-rt2/kernel/trace/ftrace.c
+Index: linux-2.6.24.3-rt3/kernel/trace/ftrace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/kernel/trace/ftrace.c	2008-02-21 13:11:14.000000000 -0500
-+++ linux-2.6.24.2-rt2/kernel/trace/ftrace.c	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/kernel/trace/ftrace.c	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/kernel/trace/ftrace.c	2008-02-26 23:29:58.000000000 -0500
 @@ -26,14 +26,8 @@
  
  #include "trace.h"
@@ -573,10 +573,10 @@ Index: linux-2.6.24.2-rt2/kernel/trace/ftrace.c
  	mutex_unlock(&ftrace_sysctl_lock);
  
  	return ret;
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/ftrace.c	2008-02-21 13:11:14.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/ftrace.c	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/ftrace.c	2008-02-26 23:29:58.000000000 -0500
 @@ -65,6 +65,21 @@ notrace unsigned char *ftrace_call_repla
  	return calc.code;
  }
@@ -650,10 +650,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/ftrace.c
  	ftrace_nop = (unsigned long *)noptable[CALL_BACK];
  
  	return 0;
-Index: linux-2.6.24.2-rt2/include/linux/ftrace.h
+Index: linux-2.6.24.3-rt3/include/linux/ftrace.h
 ===================================================================
---- linux-2.6.24.2-rt2.orig/include/linux/ftrace.h	2008-02-21 13:11:14.000000000 -0500
-+++ linux-2.6.24.2-rt2/include/linux/ftrace.h	2008-02-21 13:11:14.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/include/linux/ftrace.h	2008-02-26 23:29:57.000000000 -0500
++++ linux-2.6.24.3-rt3/include/linux/ftrace.h	2008-02-26 23:29:58.000000000 -0500
 @@ -56,9 +56,14 @@ struct dyn_ftrace {
  extern int ftrace_ip_converted(unsigned long ip);
  extern unsigned char *ftrace_nop_replace(void);

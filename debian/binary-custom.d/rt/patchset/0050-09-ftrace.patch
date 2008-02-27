@@ -21,10 +21,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  arch/x86/kernel/traps_64.c |   10 +++++-----
  4 files changed, 17 insertions(+), 14 deletions(-)
 
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/nmi_32.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/nmi_32.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/nmi_32.c	2008-02-21 13:10:53.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/nmi_32.c	2008-02-21 13:11:08.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/nmi_32.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/nmi_32.c	2008-02-26 23:29:54.000000000 -0500
 @@ -318,7 +318,8 @@ EXPORT_SYMBOL(touch_nmi_watchdog);
  
  extern void die_nmi(struct pt_regs *, const char *msg);
@@ -35,10 +35,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/nmi_32.c
  {
  
  	/*
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/nmi_64.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/nmi_64.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/nmi_64.c	2008-02-21 13:10:53.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/nmi_64.c	2008-02-21 13:11:08.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/nmi_64.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/nmi_64.c	2008-02-26 23:29:54.000000000 -0500
 @@ -314,7 +314,8 @@ void touch_nmi_watchdog(void)
   	touch_softlockup_watchdog();
  }
@@ -59,10 +59,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/nmi_64.c
  {
  	nmi_enter();
  	add_pda(__nmi_count,1);
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/traps_32.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/traps_32.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/traps_32.c	2008-02-21 13:10:53.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/traps_32.c	2008-02-21 13:11:08.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/traps_32.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/traps_32.c	2008-02-26 23:29:54.000000000 -0500
 @@ -630,7 +630,7 @@ gp_in_kernel:
  	}
  }
@@ -117,10 +117,10 @@ Index: linux-2.6.24.2-rt2/arch/x86/kernel/traps_32.c
  {
  	int cpu;
  
-Index: linux-2.6.24.2-rt2/arch/x86/kernel/traps_64.c
+Index: linux-2.6.24.3-rt3/arch/x86/kernel/traps_64.c
 ===================================================================
---- linux-2.6.24.2-rt2.orig/arch/x86/kernel/traps_64.c	2008-02-21 13:10:53.000000000 -0500
-+++ linux-2.6.24.2-rt2/arch/x86/kernel/traps_64.c	2008-02-21 13:11:08.000000000 -0500
+--- linux-2.6.24.3-rt3.orig/arch/x86/kernel/traps_64.c	2008-02-26 23:29:40.000000000 -0500
++++ linux-2.6.24.3-rt3/arch/x86/kernel/traps_64.c	2008-02-26 23:29:54.000000000 -0500
 @@ -547,7 +547,7 @@ void die(const char * str, struct pt_reg
  	do_exit(SIGSEGV); 
  }
