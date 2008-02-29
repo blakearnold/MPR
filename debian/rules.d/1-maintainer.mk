@@ -34,7 +34,7 @@ help:
 
 updateconfigs:
 	dh_testdir
-	@for arch in i386 amd64 ia64 hppa powerpc sparc lpia; do	\
+	@for arch in i386 amd64 ia64 hppa powerpc sparc; do	\
 		$(SHELL) debian/scripts/misc/oldconfig $$arch;		\
 	done
 	rm -rf build
