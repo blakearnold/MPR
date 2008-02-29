@@ -32,16 +32,18 @@ help:
 	@echo "                  : Use -jX for kernel compile"
 	@echo "  PRINTSHAS       : Include SHAs for commits in changelog"
 
+ARCH_CONFIGS=i386 amd64 ia64 hppa powerpc sparc
+
 updateconfigs:
 	dh_testdir
-	@for arch in i386 amd64 ia64 hppa powerpc sparc; do	\
+	@for arch in $(ARCH_CONFIGS); do	\
 		$(SHELL) debian/scripts/misc/oldconfig $$arch;		\
 	done
 	rm -rf build
 
 editconfigs:
 	dh_testdir
-	@for arch in i386 amd64 ia64 hppa powerpc sparc lpia; do	\
+	@for arch in $(ARCH_CONFIGS); do	\
 		$(SHELL) debian/scripts/misc/doconfig $$arch;		\
 	done
 	rm -rf build
