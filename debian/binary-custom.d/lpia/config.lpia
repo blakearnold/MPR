@@ -1689,12 +1689,6 @@ CONFIG_RT73USB=m
 # CONFIG_RT2X00_DEBUG is not set
 
 #
-# Marvell 8686/8688 SDIO device support
-#
-CONFIG_MMC_SD8686=m
-CONFIG_MMC_SD8688=m
-
-#
 # USB Network Adapters
 #
 CONFIG_USB_CATC=m
