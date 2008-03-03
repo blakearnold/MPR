@@ -333,8 +333,8 @@ AFLAGS_KERNEL	=
 # Prefer linux-ubuntu-modules and linux-backports-modules
 ifneq ($(KBUILD_SRC),)
 ifneq ($(shell if test -e $(KBUILD_OUTPUT)/ubuntu-build; then echo yes; fi),yes)
-UBUNTUINCLUDE	:= -I/lib/modules/$(KERNELRELEASE)/ubuntu-headers-lbm \
-		   -I/lib/modules/$(KERNELRELEASE)/ubuntu-headers-lum
+UBUNTUINCLUDE := -I/usr/src/linux-headers-lum-$(KERNELRELEASE) \
+                 -I/usr/src/linux-headers-lbm-$(KERNELRELEASE)
 endif
 endif
 
