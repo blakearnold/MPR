@@ -330,10 +330,17 @@ LDFLAGS_MODULE  =
 CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 
+# Prefer linux-ubuntu-modules and linux-backports-modules
+ifneq ($(KBUILD_SRC),)
+ifneq ($(shell if test -e $(KBUILD_OUTPUT)/ubuntu-build; then echo yes; fi),yes)
+UBUNTUINCLUDE	:= -I/lib/modules/$(KERNELRELEASE)/ubuntu-headers-lbm \
+		   -I/lib/modules/$(KERNELRELEASE)/ubuntu-headers-lum
+endif
+endif
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
-LINUXINCLUDE    := -Iinclude \
+LINUXINCLUDE    := $(UBUNTUINCLUDE) -Iinclude \
                    $(if $(KBUILD_SRC),-Iinclude2 -I$(srctree)/include) \
 		   -include include/linux/autoconf.h
 

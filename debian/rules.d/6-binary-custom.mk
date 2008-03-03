@@ -16,6 +16,7 @@ $(stampdir)/stamp-custom-prepare-%: debian/binary-custom.d/%/config.$(arch) \
 	rm -rf $(origsrc)
 	install -d $(origsrc)
 	install -d $(srcdir)
+	touch $(srcdir)/ubuntu-build
 	find . \( -path ./debian -o -path ./.git -o -name .gitignore \) \
 		-prune -o -print | cpio -dumpl $(origsrc)
 	for patch in `ls debian/binary-custom.d/$*/patchset/*.patch | sort`; do \
