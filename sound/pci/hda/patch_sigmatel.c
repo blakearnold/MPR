@@ -76,6 +76,7 @@ enum {
 	STAC_INTEL_MAC_V1,
 	STAC_INTEL_MAC_V2,
 	STAC_INTEL_MAC_V3,
+	STAC_INTEL_MAC_V3_S,
 	STAC_INTEL_MAC_V4,
 	STAC_INTEL_MAC_V5,
 	/* for backward compatibility */
@@ -858,6 +859,12 @@ static unsigned int intel_mac_v3_pin_configs[10] = {
 	0x400000fc, 0x400000fb,
 };
 
+static unsigned int intel_mac_v3_s_pin_configs[10] = {
+	0x012b4050, 0x90a00110, 0x90100140, 0x400000f0,
+	0x400000f0, 0x010b3020, 0x014be060, 0x01cbe030,
+	0x400000f0, 0x400000f0,
+};
+
 static unsigned int intel_mac_v4_pin_configs[10] = {
 	0x0321e21f, 0x03a1e02e, 0x9017e110, 0x9017e11f,
 	0x400000fe, 0x0381e020, 0x1345e230, 0x13c5e240,
@@ -878,6 +885,7 @@ static unsigned int *stac922x_brd_tbl[STAC_922X_MODELS] = {
 	[STAC_INTEL_MAC_V1] = intel_mac_v1_pin_configs,
 	[STAC_INTEL_MAC_V2] = intel_mac_v2_pin_configs,
 	[STAC_INTEL_MAC_V3] = intel_mac_v3_pin_configs,
+	[STAC_INTEL_MAC_V3_S] = intel_mac_v3_s_pin_configs,
 	[STAC_INTEL_MAC_V4] = intel_mac_v4_pin_configs,
 	[STAC_INTEL_MAC_V5] = intel_mac_v5_pin_configs,
 	/* for backward compatibility */
@@ -2587,7 +2595,10 @@ static int patch_stac922x(struct hda_codec *codec)
 		case 0x106b1700:
 		case 0x106b0200:
 		case 0x106b1e00:
-			spec->board_config = STAC_INTEL_MAC_V3;
+			if (codec->revision_id == 0x103401)/*LP: #87253*/
+				spec->board_config = STAC_INTEL_MAC_V3_S;
+			else
+				spec->board_config = STAC_INTEL_MAC_V3;
 			break;
 		case 0x106b1a00:
 		case 0x00000100:
