@@ -38,6 +38,13 @@
 #define INVALID_PAGE (~(hpa_t)0)
 #define UNMAPPED_GVA (~(gpa_t)0)
 
+/* shadow tables are PAE even on non-PAE hosts */
+#define KVM_HPAGE_SHIFT 21
+#define KVM_HPAGE_SIZE (1UL << KVM_HPAGE_SHIFT)
+#define KVM_HPAGE_MASK (~(KVM_HPAGE_SIZE - 1))
+
+#define KVM_PAGES_PER_HPAGE (KVM_HPAGE_SIZE / PAGE_SIZE)
+
 #define DE_VECTOR 0
 #define UD_VECTOR 6
 #define NM_VECTOR 7
@@ -140,6 +147,7 @@ union kvm_mmu_page_role {
 		unsigned pad_for_nice_hex_output : 6;
 		unsigned metaphysical : 1;
 		unsigned access : 3;
+		unsigned invalid : 1;
 	};
 };
 
@@ -228,6 +236,7 @@ struct kvm_vcpu_arch {
 	struct {
 		gfn_t gfn;          /* presumed gfn during guest pte update */
 		struct page *page;  /* page corresponding to that gfn */
+		int largepage;
 	} update_pte;
 
 	struct i387_fxsave_struct host_fx_image;
@@ -261,6 +270,11 @@ struct kvm_vcpu_arch {
 	/* emulate context */
 
 	struct x86_emulate_ctxt emulate_ctxt;
+
+	gpa_t time;
+	struct kvm_vcpu_time_info hv_clock;
+	unsigned int time_offset;
+	struct page *time_page;
 };
 
 struct kvm_mem_alias {
@@ -287,6 +301,8 @@ struct kvm_arch{
 	int round_robin_prev_vcpu;
 	unsigned int tss_addr;
 	struct page *apic_access_page;
+
+	gpa_t wall_clock;
 };
 
 struct kvm_vm_stat {
@@ -298,6 +314,7 @@ struct kvm_vm_stat {
 	u32 mmu_recycled;
 	u32 mmu_cache_miss;
 	u32 remote_tlb_flush;
+	u32 lpages;
 };
 
 struct kvm_vcpu_stat {
@@ -320,6 +337,7 @@ struct kvm_vcpu_stat {
 	u32 fpu_reload;
 	u32 insn_emulation;
 	u32 insn_emulation_fail;
+	u32 hypercalls;
 };
 
 struct descriptor_table {
@@ -410,6 +428,8 @@ void kvm_mmu_zap_all(struct kvm *kvm);
 unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
 void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
 
+int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3);
+
 enum emulation_result {
 	EMULATE_DONE,       /* no further processing */
 	EMULATE_DO_MMIO,      /* kvm_run filled with mmio request */
@@ -429,6 +449,7 @@ void realmode_lmsw(struct kvm_vcpu *vcpu, unsigned long msw,
 unsigned long realmode_get_cr(struct kvm_vcpu *vcpu, int cr);
 void realmode_set_cr(struct kvm_vcpu *vcpu, int cr, unsigned long value,
 		     unsigned long *rflags);
+void kvm_enable_efer_bits(u64);
 int kvm_get_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 *data);
 int kvm_set_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 data);
 
@@ -448,12 +469,12 @@ int emulator_get_dr(struct x86_emulate_ctxt *ctxt, int dr,
 int emulator_set_dr(struct x86_emulate_ctxt *ctxt, int dr,
 		    unsigned long value);
 
-void set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0);
-void set_cr3(struct kvm_vcpu *vcpu, unsigned long cr0);
-void set_cr4(struct kvm_vcpu *vcpu, unsigned long cr0);
-void set_cr8(struct kvm_vcpu *vcpu, unsigned long cr0);
-unsigned long get_cr8(struct kvm_vcpu *vcpu);
-void lmsw(struct kvm_vcpu *vcpu, unsigned long msw);
+void kvm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0);
+void kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr0);
+void kvm_set_cr4(struct kvm_vcpu *vcpu, unsigned long cr0);
+void kvm_set_cr8(struct kvm_vcpu *vcpu, unsigned long cr0);
+unsigned long kvm_get_cr8(struct kvm_vcpu *vcpu);
+void kvm_lmsw(struct kvm_vcpu *vcpu, unsigned long msw);
 void kvm_get_cs_db_l_bits(struct kvm_vcpu *vcpu, int *db, int *l);
 
 int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata);
@@ -490,6 +511,8 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu);
 int kvm_fix_hypercall(struct kvm_vcpu *vcpu);
 
 int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t gva, u32 error_code);
+
+void kvm_enable_tdp(void);
 
 int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3);
 int complete_pio(struct kvm_vcpu *vcpu);
@@ -600,6 +623,7 @@ static inline void kvm_inject_gp(struct kvm_vcpu *vcpu, u32 error_code)
 #define ASM_VMX_VMWRITE_RSP_RDX   ".byte 0x0f, 0x79, 0xd4"
 #define ASM_VMX_VMXOFF            ".byte 0x0f, 0x01, 0xc4"
 #define ASM_VMX_VMXON_RAX         ".byte 0xf3, 0x0f, 0xc7, 0x30"
+#define ASM_VMX_INVVPID		  ".byte 0x66, 0x0f, 0x38, 0x81, 0x08"
 
 #define MSR_IA32_TIME_STAMP_COUNTER		0x010
 
