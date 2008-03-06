@@ -1,0 +1,20 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index b04d232..7c74ac6 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2758,6 +2758,14 @@ static void hub_events(void)
+ 				connect_change = 1;
+ 			}
+ 
++			/* Fixed High speed HUB S3 resume issue */
++			if ((portstatus & USB_PORT_STAT_CONNECTION) &&
++				(portstatus & USB_PORT_STAT_ENABLE) &&
++				(portstatus & USB_PORT_STAT_HIGH_SPEED) &&
++				(portstatus & USB_PORT_STAT_POWER)){
++				connect_change = 1;
++			}
++
+ 			if (portchange & USB_PORT_STAT_C_ENABLE) {
+ 				if (!connect_change)
+ 					dev_dbg (hub_dev,

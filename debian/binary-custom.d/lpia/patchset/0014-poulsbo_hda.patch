@@ -179,7 +179,7 @@ index 3fa0f97..0b0c0bc 100644
 +					sd_bit_fixup = 0x2;
 +					break;
 +				default:
-+					snd_printk(KERN_ERR "Unknow stepping\n");
++					snd_printk(KERN_INFO "D0 or newer stepping\n");
 +					break;
 +			}
 +		}
