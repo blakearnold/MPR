@@ -1381,12 +1381,13 @@ static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb, \
 
 	case ARCMSR_MESSAGE_READ_RQBUFFER: {
 		unsigned long *ver_addr;
-		dma_addr_t buf_handle;
 		uint8_t *pQbuffer, *ptmpQbuffer;
 		int32_t allxfer_len = 0;
+		void *tmp;
 
-		ver_addr = pci_alloc_consistent(acb->pdev, 1032, &buf_handle);
-		if (!ver_addr) {
+		tmp = kmalloc(1032, GFP_KERNEL|GFP_DMA);
+		ver_addr = (unsigned long *)tmp;
+		if (!tmp) {
 			retvalue = ARCMSR_MESSAGE_FAIL;
 			goto message_out;
 		}
@@ -1422,18 +1423,19 @@ static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb, \
 		memcpy(pcmdmessagefld->messagedatabuffer, (uint8_t *)ver_addr, allxfer_len);
 		pcmdmessagefld->cmdmessage.Length = allxfer_len;
 		pcmdmessagefld->cmdmessage.ReturnCode = ARCMSR_MESSAGE_RETURNCODE_OK;
-		pci_free_consistent(acb->pdev, 1032, ver_addr, buf_handle);
+		kfree(tmp);
 		}
 		break;
 
 	case ARCMSR_MESSAGE_WRITE_WQBUFFER: {
 		unsigned long *ver_addr;
-		dma_addr_t buf_handle;
 		int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
 		uint8_t *pQbuffer, *ptmpuserbuffer;
+		void *tmp;
 
-		ver_addr = pci_alloc_consistent(acb->pdev, 1032, &buf_handle);
-		if (!ver_addr) {
+		tmp = kmalloc(1032, GFP_KERNEL|GFP_DMA);
+		ver_addr = (unsigned long *)tmp;
+		if (!tmp) {
 			retvalue = ARCMSR_MESSAGE_FAIL;
 			goto message_out;
 		}
@@ -1483,7 +1485,7 @@ static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb, \
 				retvalue = ARCMSR_MESSAGE_FAIL;
 			}
 			}
-			pci_free_consistent(acb->pdev, 1032, ver_addr, buf_handle);
+			kfree(tmp);
 		}
 		break;
 
