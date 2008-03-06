@@ -21,7 +21,7 @@ $(stampdir)/stamp-custom-prepare-%: debian/binary-custom.d/%/config.$(arch) \
 		-prune -o -print | cpio -dumpl $(origsrc)
 	for patch in `ls debian/binary-custom.d/$*/patchset/*.patch | sort`; do \
 		echo $$patch; \
-		(cd $(origsrc); patch -p1) < $$patch ;\
+		patch -p1 -d $(origsrc) < $$patch ;\
 	done
 	cat $< > $(srcdir)/.config
 	$(kmake) -C $(origsrc) O=$(srcdir) silentoldconfig prepare scripts
