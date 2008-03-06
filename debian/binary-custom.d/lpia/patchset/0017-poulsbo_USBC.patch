@@ -44,7 +44,7 @@ index 904e57b..8e533bf 100644
  #
  # USB gadget drivers
 diff --git a/drivers/usb/gadget/ether.c b/drivers/usb/gadget/ether.c
-index 9e732bf..cf8fcd2 100644
+index 9e732bf..a62fa18 100644
 --- a/drivers/usb/gadget/ether.c
 +++ b/drivers/usb/gadget/ether.c
 @@ -19,7 +19,7 @@
@@ -72,7 +72,7 @@ index 9e732bf..cf8fcd2 100644
  
  #define DRIVER_DESC		"Ethernet Gadget"
 -#define DRIVER_VERSION		"May Day 2005"
-+#define DRIVER_VERSION		"alpha3"
++#define	DRIVER_VERSION		"2.0.0.32L.0008"
  
  static const char shortname [] = "ether";
  static const char driver_desc [] = DRIVER_DESC;
@@ -128,23 +128,19 @@ index 9e732bf..cf8fcd2 100644
  				req->complete = rndis_response_complete;
  				rndis_free_response(dev->rndis_config, buf);
  			}
-@@ -1579,6 +1604,11 @@ done_set_intf:
- 		req->length = value;
- 		req->zero = value < wLength
- 				&& (value % gadget->ep0->maxpacket) == 0;
-+
-+		/* WORKAROUND: for iusbc */
-+		if (gadget_is_iusbc(dev->gadget))
-+			gadget->ep0->driver_data = dev;
-+
- 		value = usb_ep_queue (gadget->ep0, req, GFP_ATOMIC);
- 		if (value < 0) {
- 			DEBUG (dev, "ep_queue --> %d\n", value);
+@@ -2639,6 +2669,7 @@ static struct usb_gadget_driver eth_driver = {
+ 
+ MODULE_DESCRIPTION (DRIVER_DESC);
+ MODULE_AUTHOR ("David Brownell, Benedikt Spanger");
++MODULE_VERSION(DRIVER_VERSION);
+ MODULE_LICENSE ("GPL");
+ 
+ 
 diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index 1d174dc..303ad35 100644
+index 1d174dc..676f371 100644
 --- a/drivers/usb/gadget/file_storage.c
 +++ b/drivers/usb/gadget/file_storage.c
-@@ -244,12 +244,16 @@
+@@ -244,18 +244,23 @@
  
  #include "gadget_chips.h"
  
@@ -158,11 +154,18 @@ index 1d174dc..303ad35 100644
  #define DRIVER_DESC		"File-backed Storage Gadget"
  #define DRIVER_NAME		"g_file_storage"
 -#define DRIVER_VERSION		"7 August 2007"
-+#define DRIVER_VERSION		"alpha3"
++#define	DRIVER_VERSION		"2.0.0.32L.0008"
  
  static const char longname[] = DRIVER_DESC;
  static const char shortname[] = DRIVER_NAME;
-@@ -545,6 +549,7 @@ struct lun {
+ 
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_AUTHOR("Alan Stern");
++MODULE_VERSION(DRIVER_VERSION);
+ MODULE_LICENSE("Dual BSD/GPL");
+ 
+ /* Thanks to NetChip Technologies for donating this product ID.
+@@ -545,6 +550,7 @@ struct lun {
  	unsigned int	prevent_medium_removal : 1;
  	unsigned int	registered : 1;
  	unsigned int	info_valid : 1;
@@ -170,7 +173,7 @@ index 1d174dc..303ad35 100644
  
  	u32		sense_data;
  	u32		sense_data_info;
-@@ -684,6 +689,7 @@ struct fsg_dev {
+@@ -684,6 +690,7 @@ struct fsg_dev {
  	unsigned int		nluns;
  	struct lun		*luns;
  	struct lun		*curlun;
@@ -178,7 +181,7 @@ index 1d174dc..303ad35 100644
  };
  
  typedef void (*fsg_routine_t)(struct fsg_dev *);
-@@ -1335,11 +1341,27 @@ static int standard_setup_req(struct fsg_dev *fsg,
+@@ -1335,11 +1342,27 @@ static int standard_setup_req(struct fsg_dev *fsg,
  	int			value = -EOPNOTSUPP;
  	u16			w_index = le16_to_cpu(ctrl->wIndex);
  	u16			w_value = le16_to_cpu(ctrl->wValue);
@@ -206,7 +209,7 @@ index 1d174dc..303ad35 100644
  	case USB_REQ_GET_DESCRIPTOR:
  		if (ctrl->bRequestType != (USB_DIR_IN | USB_TYPE_STANDARD |
  				USB_RECIP_DEVICE))
-@@ -2853,6 +2875,9 @@ static int do_scsi_command(struct fsg_dev *fsg)
+@@ -2853,6 +2876,9 @@ static int do_scsi_command(struct fsg_dev *fsg)
  		break;
  
  	case SC_TEST_UNIT_READY:
@@ -216,7 +219,7 @@ index 1d174dc..303ad35 100644
  		fsg->data_size_from_cmnd = 0;
  		reply = check_command(fsg, 6, DATA_DIR_NONE,
  				0, 1,
-@@ -3357,6 +3382,13 @@ static void handle_exception(struct fsg_dev *fsg)
+@@ -3357,6 +3383,13 @@ static void handle_exception(struct fsg_dev *fsg)
  
  	case FSG_STATE_CONFIG_CHANGE:
  		rc = do_set_config(fsg, new_config);
@@ -230,7 +233,7 @@ index 1d174dc..303ad35 100644
  		if (fsg->ep0_req_tag != exception_req_tag)
  			break;
  		if (rc != 0)			// STALL on errors
-@@ -3368,6 +3400,13 @@ static void handle_exception(struct fsg_dev *fsg)
+@@ -3368,6 +3401,13 @@ static void handle_exception(struct fsg_dev *fsg)
  	case FSG_STATE_DISCONNECT:
  		fsync_all(fsg);
  		do_set_config(fsg, 0);		// Unconfigured state
@@ -244,7 +247,7 @@ index 1d174dc..303ad35 100644
  		break;
  
  	case FSG_STATE_EXIT:
-@@ -3585,6 +3624,12 @@ static ssize_t show_file(struct device *dev, struct device_attribute *attr,
+@@ -3585,6 +3625,12 @@ static ssize_t show_file(struct device *dev, struct device_attribute *attr,
  	return rc;
  }
  
@@ -257,7 +260,7 @@ index 1d174dc..303ad35 100644
  
  static ssize_t store_ro(struct device *dev, struct device_attribute *attr,
  		const char *buf, size_t count)
-@@ -3649,6 +3694,7 @@ static ssize_t store_file(struct device *dev, struct device_attribute *attr,
+@@ -3649,6 +3695,7 @@ static ssize_t store_file(struct device *dev, struct device_attribute *attr,
  /* The write permissions and store_xxx pointers are set in fsg_bind() */
  static DEVICE_ATTR(ro, 0444, show_ro, NULL);
  static DEVICE_ATTR(file, 0444, show_file, NULL);
@@ -265,7 +268,7 @@ index 1d174dc..303ad35 100644
  
  
  /*-------------------------------------------------------------------------*/
-@@ -3684,6 +3730,7 @@ static void /* __init_or_exit */ fsg_unbind(struct usb_gadget *gadget)
+@@ -3684,6 +3731,7 @@ static void /* __init_or_exit */ fsg_unbind(struct usb_gadget *gadget)
  		if (curlun->registered) {
  			device_remove_file(&curlun->dev, &dev_attr_ro);
  			device_remove_file(&curlun->dev, &dev_attr_file);
@@ -273,7 +276,7 @@ index 1d174dc..303ad35 100644
  			device_unregister(&curlun->dev);
  			curlun->registered = 0;
  		}
-@@ -3842,6 +3889,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
+@@ -3842,6 +3890,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
  
  	for (i = 0; i < fsg->nluns; ++i) {
  		curlun = &fsg->luns[i];
@@ -281,7 +284,7 @@ index 1d174dc..303ad35 100644
  		curlun->ro = mod_data.ro[i];
  		curlun->dev.release = lun_release;
  		curlun->dev.parent = &gadget->dev;
-@@ -3857,7 +3905,9 @@ static int __init fsg_bind(struct usb_gadget *gadget)
+@@ -3857,7 +3906,9 @@ static int __init fsg_bind(struct usb_gadget *gadget)
  		if ((rc = device_create_file(&curlun->dev,
  					&dev_attr_ro)) != 0 ||
  				(rc = device_create_file(&curlun->dev,
@@ -318,10 +321,10 @@ index f7f159c..41b5c9a 100644
  }
 diff --git a/drivers/usb/gadget/iusbc.c b/drivers/usb/gadget/iusbc.c
 new file mode 100644
-index 0000000..b6850b0
+index 0000000..e2c3c0e
 --- /dev/null
 +++ b/drivers/usb/gadget/iusbc.c
-@@ -0,0 +1,3278 @@
+@@ -0,0 +1,3077 @@
 +/*
 + * Intel Poulsbo USB Client Controller Driver
 + * Copyright (C) 2006-07, Intel Corporation.
@@ -376,7 +379,7 @@ index 0000000..b6850b0
 +#include "iusbc.h"
 +
 +#define	DRIVER_DESC	"Intel Poulsbo USB Client Controller Driver"
-+#define	DRIVER_VERSION	"alpha4"
++#define	DRIVER_VERSION	"2.0.0.32L.0008"
 +
 +#define	DMA_ADDR_INVALID	(~(dma_addr_t)0)
 +
@@ -393,14 +396,16 @@ index 0000000..b6850b0
 +
 +/* module parameter */
 +
-+/* force_fullspeed -- device will be forced to default full speed operation
-+ * default value: 0
++/* force_fullspeed -- device will be forced to full speed operation
++ * default value: 0 for high speed
 + */
 +static int force_fullspeed = 0;
 +
 +/* modprobe iusbc force_fullspeed=n" etc */
 +module_param (force_fullspeed, bool, S_IRUGO);
 +
++#define RNDIS_INIT
++//#define DMA_DISABLED
 +
 +#define	DIR_STRING(bAddress) (((bAddress) & USB_DIR_IN) ? "in" : "out")
 +
@@ -430,7 +435,6 @@ index 0000000..b6850b0
 +{
 +	struct iusbc		*dev;
 +	struct iusbc_ep		*ep;
-+	//u32			val_32;
 +	u16			val_16, max;
 +	u8			val_8;
 +	unsigned long		flags;
@@ -439,7 +443,7 @@ index 0000000..b6850b0
 +
 +	ep = container_of(_ep, struct iusbc_ep, ep);
 +
-+	VDEBUG(ep->dev, "---> iusbc_ep_enable() \n");
++	DEBUG(ep->dev, "---> iusbc_ep_enable() \n");
 +
 +	if (!_ep || !desc || ep->desc
 +			|| _ep->name == "ep0-in"
@@ -531,10 +535,8 @@ index 0000000..b6850b0
 +		| INTR_FIFO_ERROR
 +		| INTR_DMA_ERROR
 +		| INTR_TRANS_COMPLETE
-+		/* FIXME: disable */
-+		//| INTR_PING_NAK_SENT
-+		/* FIXME: remove? */
-+		//| INTR_DMA_IOC
++		/* | INTR_PING_NAK_SENT */
++		| INTR_DMA_IOC
 +		| ep->dma_mode << 6
 +		| ep->ep_type << 4 
 +		/* | EP_ENABLE */
@@ -545,27 +547,6 @@ index 0000000..b6850b0
 +
 +	val_16 = readw(&dev->regs->ep[i].ep_cfg);
 +	VDEBUG(dev, "%s.ep_cfg = 0x%04x\n", _ep->name, val_16);
-+
-+#if 0
-+	/* enable irqs */
-+	val_32 = 0;
-+	val_32 |= RESET_INTR_ENABLE
-+		| CONNECT_INTR_ENABLE
-+		| SUSPEND_INTR_ENABLE
-+		//| EP3_OUT_INTR_ENABLE
-+		//| EP3_IN_INTR_ENABLE
-+		//| EP2_OUT_INTR_ENABLE
-+		| EP2_IN_INTR_ENABLE
-+		| EP1_OUT_INTR_ENABLE
-+		| EP1_IN_INTR_ENABLE
-+		| EP0_OUT_INTR_ENABLE
-+		| EP0_IN_INTR_ENABLE;
-+
-+	writel(val_32, &dev->regs->int_ctrl);
-+	val_32 = readl(&dev->regs->int_ctrl);
-+	VDEBUG(dev, "enable irqs, int_ctrl = 0x%08x\n",
-+			val_32);
-+#endif
 +
 +	val_8 = desc->bEndpointAddress;
 +	DEBUG(dev, "enabled %s (ep%d%s-%s), max %04x, dma_mode: %02x\n",
@@ -579,7 +560,7 @@ index 0000000..b6850b0
 +	retval = 0;
 +done:
 +	spin_unlock_irqrestore(&dev->lock, flags);
-+	VDEBUG(ep->dev, "<--- iusbc_ep_enable() \n");
++	DEBUG(ep->dev, "<--- iusbc_ep_enable() \n");
 +	return retval;
 +}
 +
@@ -595,9 +576,6 @@ index 0000000..b6850b0
 +	ep->stopped = 1;
 +	ep->ep.maxpacket = ~0;
 +	ep->ep.ops = &iusbc_ep_ops;
-+
-+	/* disable irqs */
-+	//writel(0, &regs->int_ctrl);
 +
 +	/* reset ep registers to default value
 +	 * clear all interrupt and status
@@ -687,8 +665,7 @@ index 0000000..b6850b0
 +
 +	td->dmacount = 0;	/* not VALID */
 +	td->dmaaddr = __constant_cpu_to_le32(DMA_ADDR_INVALID);
-+	/* FIXME: remove it? */
-+	td->dmadesc = td->dmaaddr;
++
 +	req->td = td;
 +
 +	VDEBUG(ep->dev, "alloc request for %s\n", _ep->name);
@@ -728,23 +705,140 @@ index 0000000..b6850b0
 +}
 +
 +/*-------------------------------------------------------------------------*/
++
++/* allocate an I/O buffer
++ *
++ * dma-coherent memory allocation
++ *
++ * NOTE: the dma_*_coherent() API calls suck.  Most implementations are
++ * (a) page-oriented, so small buffers lose big; and (b) asymmetric with
++ * respect to calls with irqs disabled:  alloc is safe, free is not.
++ * We currently work around (b), but not (a).
++ */
++static void *
++iusbc_alloc_buffer(
++	struct usb_ep		*_ep,
++	unsigned		bytes,
++	dma_addr_t		*dma,
++	gfp_t			gfp_flags
++)
++{
++	void			*retval;
++	struct iusbc_ep		*ep;
++
++	ep = container_of(_ep, struct iusbc_ep, ep);
++
++	VDEBUG(ep->dev, "---> iusbc_alloc_buffer() \n");
++
++	if (!_ep)
++		return NULL;
++
++	*dma = DMA_ADDR_INVALID;
++
++	retval = dma_alloc_coherent(&ep->dev->pdev->dev,
++				bytes, dma, gfp_flags);
++
++	DEBUG(ep->dev, "alloc buffer for %s\n", _ep->name);
++
++	VDEBUG(ep->dev, "<--- iusbc_alloc_buffer() \n");
++
++	return retval;
++}
++
++
++static DEFINE_SPINLOCK(buflock);
++static LIST_HEAD(buffers);
++
++struct free_record {
++	struct list_head	list;
++	struct device		*dev;
++	unsigned		bytes;
++	dma_addr_t		dma;
++};
++
++
++static void do_free(unsigned long ignored)
++{
++#ifdef VERBOSE
++	printk(KERN_DEBUG "---> do_free() \n");
++#endif
++
++	spin_lock_irq(&buflock);
++	while (!list_empty(&buffers)) {
++		struct free_record	*buf;
++
++		buf = list_entry(buffers.next, struct free_record, list);
++		list_del(&buf->list);
++		spin_unlock_irq(&buflock);
++
++		dma_free_coherent(buf->dev, buf->bytes, buf, buf->dma);
++
++		spin_lock_irq(&buflock);
++	}
++	spin_unlock_irq(&buflock);
++
++#ifdef VERBOSE
++	printk(KERN_DEBUG "<--- do_free() \n");
++#endif
++}
++
++static DECLARE_TASKLET(deferred_free, do_free, 0);
++
++/* free an I/O buffer */
++static void
++iusbc_free_buffer(
++	struct usb_ep	*_ep,
++	void		*address,
++	dma_addr_t	dma,
++	unsigned	bytes
++) {
++
++	/* free memory into the right allocator */
++	if (dma != DMA_ADDR_INVALID) {
++		struct iusbc_ep	*ep;
++		struct free_record	*buf = address;
++		unsigned long		flags;
++
++		ep = container_of(_ep, struct iusbc_ep, ep);
++
++		VDEBUG(ep->dev, "---> iusbc_free_buffer() \n");
++
++		if (!_ep)
++			return;
++
++		buf->dev = &ep->dev->pdev->dev;
++		buf->bytes = bytes;
++		buf->dma = dma;
++
++		spin_lock_irqsave(&buflock, flags);
++		list_add_tail(&buf->list, &buffers);
++		tasklet_schedule(&deferred_free);
++		spin_unlock_irqrestore(&buflock, flags);
++
++		DEBUG(ep->dev, "free buffer for %s\n", _ep->name);
++		VDEBUG(ep->dev, "<--- iusbc_free_buffer() \n");
++
++	} else
++		kfree(address);
++}
++
++/*-------------------------------------------------------------------------*/
++
 +/* fill out dma descriptor to match a given request */
 +static void
-+fill_dma_desc(struct iusbc_ep *ep, struct iusbc_request *req, int valid)
++fill_dma(struct iusbc_ep *ep, struct iusbc_request *req)
 +{
 +	struct iusbc_dma	*td = req->td;
 +	u16			dmacount;
 +
-+	VDEBUG(ep->dev, "---> fill_dma_desc() \n");
++	VDEBUG(ep->dev, "---> fill_dma() \n");
 +
 +	dmacount = req->req.length;
-+	req->valid = valid;
 +
-+	/* td->dmadesc previously set by caller */
 +	td->dmaaddr = cpu_to_le32(req->req.dma);
 +	td->dmacount = cpu_to_le16(dmacount);
 +
-+	VDEBUG(ep->dev, "<--- fill_dma_desc() \n");
++	VDEBUG(ep->dev, "<--- fill_dma() \n");
 +}
 +
 +
@@ -758,27 +852,8 @@ index 0000000..b6850b0
 +
 +	i = ep->num;
 +
-+	/* force packet boundaries between dma requests, but prevent the
-+	 * controller from automagically writing a last "short" packet
-+	 * (zero length) unless the driver explicitly said to do that.
-+	 */
-+	if (ep->is_in) {
-+		if (likely((req->req.length % ep->ep.maxpacket) != 0
-+				|| req->req.zero)) {
-+			ep->in_fifo_validate = 1;
-+		} else
-+			ep->in_fifo_validate = 0;
-+	}
-+
 +	/* init req->td, pointing to the current dummy */
-+	/* FIXME: remove it? */
-+	req->td->dmadesc = cpu_to_le32(ep->td_dma);
-+
-+	/* FIXME: unwrap it? */
-+	fill_dma_desc(ep, req, 1);
-+
-+	/* FIXME: remove it? */
-+	//start_queue(ep, tmp, req->td_dma);
++	fill_dma(ep, req);
 +
 +	/* ep_base_low_32 */
 +	writel(cpu_to_le32(req->req.dma),
@@ -793,20 +868,10 @@ index 0000000..b6850b0
 +	VDEBUG(ep->dev, "%s.ep_base_hi_32=0x%08x\n",
 +			ep->ep.name, val_32);
 +
-+	/* FIXME: DMA buffer size */
 +	writew(le16_to_cpu(req->td->dmacount), &ep->dev->regs->ep[i].ep_len);
-+	//writew(req->req.length, &ep->dev->regs->ep[i].ep_len);
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_len);
 +	VDEBUG(ep->dev, "%s.ep_len=0x%04x\n",
 +			ep->ep.name, val_16);
-+
-+	/* FIXME: ep_pib reset by hardware? */
-+#if 0
-+	writew(0, &ep->dev->regs->ep[i].ep_pib);
-+	val_16 = readw(&ep->dev->regs->ep[i].ep_pib);
-+	VDEBUG(ep->dev, "%s.ep_pib=0x%04x\n",
-+			ep->ep.name, val_16);
-+#endif
 +
 +	/* endpoint maximum transaction size, up to 1024 Bytes */
 +	writew((ep->ep.maxpacket & 0x3ff),
@@ -814,10 +879,6 @@ index 0000000..b6850b0
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_max);
 +	VDEBUG(ep->dev, "%s.ep_max=0x%04x\n",
 +			ep->ep.name, val_16);
-+
-+	/* FIXME: remove it? */
-+	req->td->dmadesc = 0;
-+	req->valid = 1;
 +
 +	/* validate endpoint, enable DMA */
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_cfg);
@@ -836,7 +897,7 @@ index 0000000..b6850b0
 +
 +/* queues I/O requests in endpoint queue  */
 +static inline void
-+queue_dma(struct iusbc_ep *ep, struct iusbc_request *req, int valid)
++queue_dma(struct iusbc_ep *ep, struct iusbc_request *req)
 +{
 +	struct iusbc_dma	*end;
 +	dma_addr_t		tmp_dma_addr;
@@ -852,8 +913,7 @@ index 0000000..b6850b0
 +	ep->td_dma = req->td_dma;
 +	req->td_dma = tmp_dma_addr;
 +
-+	end->dmadesc = cpu_to_le32(ep->td_dma);
-+	fill_dma_desc(ep, req, valid);
++	fill_dma(ep, req);
 +
 +	VDEBUG(ep->dev, "<--- queue_dma() \n");
 +}
@@ -875,6 +935,7 @@ index 0000000..b6850b0
 +		status = req->req.status;
 +
 +	dev = ep->dev;
++
 +	if (req->mapped) {
 +		pci_unmap_single(dev->pdev, req->req.dma, req->req.length,
 +			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
@@ -882,8 +943,6 @@ index 0000000..b6850b0
 +		req->mapped = 0;
 +	}
 +
-+	/* FIXME: status always <= 0 ? */
-+	//if (status && status != -ESHUTDOWN)
 +	if (status != -ESHUTDOWN)
 +		DEBUG(dev, "complete %s, req %p, stat %d, len %u/%u\n",
 +			ep->ep.name, &req->req, status,
@@ -891,6 +950,31 @@ index 0000000..b6850b0
 +
 +	/* don't modify queue heads during completion callback */
 +	ep->stopped = 1;
++
++	/* XXX WORKAROUND: first ep0-out OUT packet HW BUG */
++#ifdef RNDIS_INIT
++	if (ep->num == 1) {
++		char *buf;
++		const u8 remote_ndis_initialize_msg[24] = {
++			0x02, 0x00, 0x00, 0x00,
++			0x18, 0x00, 0x00, 0x00,
++			0x02, 0x00, 0x00, 0x00,
++			0x01, 0x00, 0x00, 0x00,
++			0x00, 0x00, 0x00, 0x00,
++			0x00, 0x04, 0x00, 0x00
++		};
++
++		buf = req->req.buf;
++
++		/* req->buf haven't been DMAed for hardware bug? */
++		if ((buf[0] == 0x9) && (buf[1] == 0x02)) {
++			memcpy(buf, remote_ndis_initialize_msg, 24);
++			DEBUG(ep->dev, "WORKAROUND HW BUG: ep0-out OUT\n");
++		}
++	}
++#endif
++	/* XXX */
++
 +	spin_unlock(&dev->lock);
 +	req->req.complete(&ep->ep, &req->req);
 +	spin_lock(&dev->lock);
@@ -940,7 +1024,6 @@ index 0000000..b6850b0
 +
 +	/* set up dma mapping in case the caller didn't */
 +	if (_req->dma == DMA_ADDR_INVALID) {
-+	//if ((_req->dma == DMA_ADDR_INVALID) && _req->length) {
 +		/* WORKAROUND: WARN_ON(size == 0) */
 +		if (_req->length == 0) {
 +			VDEBUG(dev, "req->length: 0->1\n");
@@ -961,8 +1044,8 @@ index 0000000..b6850b0
 +	}
 +
 +	DEBUG(dev, "%s queue req %p, len %u, buf %p, dma 0x%08x\n",
-+			_ep->name,
-+			_req, _req->length, _req->buf, _req->dma);
++			_ep->name, _req, _req->length,
++			_req->buf, _req->dma);
 +
 +	spin_lock_irqsave(&dev->lock, flags);
 +
@@ -988,6 +1071,8 @@ index 0000000..b6850b0
 +		VDEBUG(ep->dev, "after dma, %s.ep_sts = 0x%04x\n",
 +				_ep->name, val_16);
 +	} else {
++		/* FIXME: remove it? */
++#if 0
 +		int	valid = 1;
 +		/* FIXME: ZLP and in_fifo_validate, why? */
 +		if (ep->is_in) {
@@ -997,7 +1082,8 @@ index 0000000..b6850b0
 +			if (expect != ep->in_fifo_validate)
 +				valid = 0;
 +		}
-+		queue_dma(ep, req, valid);
++#endif
++		queue_dma(ep, req);
 +		VDEBUG(ep->dev, "%s queue_dma()\n", _ep->name);
 +	}
 +
@@ -1009,8 +1095,6 @@ index 0000000..b6850b0
 +
 +	spin_unlock_irqrestore(&dev->lock, flags);
 +
-+	/* pci writes may still be posted */
-+
 +	VDEBUG(ep->dev, "<--- iusbc_queue() \n");
 +
 +	return 0;
@@ -1018,8 +1102,7 @@ index 0000000..b6850b0
 +
 +
 +static inline void
-+dma_done(struct iusbc_ep *ep, struct iusbc_request *req,
-+		u16 dmacount, int status)
++dma_done(struct iusbc_ep *ep, struct iusbc_request *req, int status)
 +{
 +	unsigned	i;
 +	VDEBUG(ep->dev, "---> dma_done() \n");
@@ -1053,20 +1136,6 @@ index 0000000..b6850b0
 +}
 +
 +
-+/* TODO: will remove this function soon */
-+static void abort_dma(struct iusbc_ep *ep)
-+{
-+	VDEBUG(ep->dev, "---> abort_dma() \n");
-+
-+	/* abort the current transfer */
-+	if (likely(!list_empty(&ep->queue))) {
-+		;
-+	} else
-+		;
-+	VDEBUG(ep->dev, "<--- abort_dma() \n");
-+}
-+
-+
 +/* dequeue ALL requests */
 +static void nuke(struct iusbc_ep *ep)
 +{
@@ -1076,7 +1145,6 @@ index 0000000..b6850b0
 +
 +	/* called with spinlock held */
 +	ep->stopped = 1;
-+	abort_dma(ep);
 +	while (!list_empty(&ep->queue)) {
 +		req = list_entry(ep->queue.next,
 +				struct iusbc_request,
@@ -1119,7 +1187,6 @@ index 0000000..b6850b0
 +
 +	/* quiesce dma while we patch the queue */
 +	ep->stopped = 1;
-+	//scan_dma_completions(ep);
 +
 +	/* make sure it's still queued on this endpoint */
 +	list_for_each_entry(req, &ep->queue, queue) {
@@ -1136,13 +1203,9 @@ index 0000000..b6850b0
 +	if (ep->queue.next == &req->queue) {
 +		DEBUG(ep->dev, "unlink (%s) dma\n", _ep->name);
 +		_req->status = -ECONNRESET;
-+		abort_dma(ep);
 +		if (likely(ep->queue.next == &req->queue)) {
-+			// NOTE: misreports single-transfer mode
 +			req->td->dmacount = 0;	/* invalidate */
-+			dma_done(ep, req,
-+				req->td->dmacount, /* FIXME */
-+				-ECONNRESET);
++			dma_done(ep, req, -ECONNRESET);
 +		}
 +		req = NULL;
 +	}
@@ -1152,16 +1215,9 @@ index 0000000..b6850b0
 +
 +	ep->stopped = stopped;
 +
-+	/* TODO: need to remove soon */
-+	if (list_empty(&ep->queue))
-+		//stop_dma(ep->dma);
-+		;
-+	else if (!ep->stopped) {
++	if (!list_empty(&ep->queue) && (!ep->stopped)) {
 +		/* resume current request, or start new one */
-+		if (req)
-+			//writel(dmactl, &ep->dma->dmactl);
-+			;
-+		else
++		if (!req)
 +			start_dma(ep, list_entry(ep->queue.next,
 +				struct iusbc_request, queue));
 +	}
@@ -1192,15 +1248,11 @@ index 0000000..b6850b0
 +
 +	/* validate and enable endpoint */
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_cfg);
-+	/* FIXME: EP_VALID or EP_ENABLE ? */
 +	val_16 |= EP_VALID | EP_ENABLE;
-+	//val_16 |= EP_ENABLE;
 +	writew(val_16, &ep->dev->regs->ep[i].ep_cfg);
 +
 +	/* re-enable endpoint */
 +	if (i < 2) {	/* ep0-in and ep0-out */
-+		//ep->dev->ep0state = EP0_IDLE;
-+		//DEBUG(ep->dev, "ep0state = EP0_IDLE\n");
 +		ep0_start(ep->dev);
 +	} else {
 +		spin_unlock_irq(&ep->dev->lock);
@@ -1243,9 +1295,7 @@ index 0000000..b6850b0
 +
 +	/* invalidate and disable endpoint */
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_cfg);
-+	/* FIXME: EP_VALID or EP_ENABLE ? */
 +	val_16 &= (~EP_VALID & ~EP_ENABLE);
-+	//val_16 &= ~EP_ENABLE;
 +	writew(val_16, &ep->dev->regs->ep[i].ep_cfg);
 +
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_cfg);
@@ -1284,20 +1334,18 @@ index 0000000..b6850b0
 +
 +	spin_lock_irqsave(&ep->dev->lock, flags);
 +
++	/* transfer requests are still queued */
 +	if (!list_empty(&ep->queue))
 +		retval = -EAGAIN;
 +
-+	/* TODO: need to clean */
-+	/* attempts to halt IN endpoints will fail if any transfer
-+	 * requests are still queued, or if the FIFO still holds
-+	 * bytes that the host hasn't collected
-+	 */
++	/* FIXME: need to clean */
 +	else if (ep->is_in && value && iusbc_fifo_status(_ep) != 0) {
++		/* FIFO holds bytes, the host hasn't collected */
++		DEBUG(ep->dev, "XXX %s FIFO holds bytes\n", _ep->name);
++
 +		/* reset position in buffer register */
 +		writew(0, &ep->dev->regs->ep[ep->num].ep_pib);
 +		val_16 = readw(&ep->dev->regs->ep[ep->num].ep_pib);
-+		DEBUG(ep->dev, "%s.ep_pib = 0x%04x\n",
-+				_ep->name, val_16);
 +
 +		retval = -EAGAIN;
 +	} else {
@@ -1307,7 +1355,7 @@ index 0000000..b6850b0
 +		if (value) {
 +			if (ep->num < 2) { /* ep0-in/out */
 +				ep->dev->ep0state = EP0_STALL;
-+				DEBUG(ep->dev, "ep0state = EP0_STALL\n");
++				VDEBUG(ep->dev, "ep0state: EP0_STALL\n");
 +			} else {
 +				set_halt(ep);
 +				ep_ack(&ep->dev->ep[0]);
@@ -1382,10 +1430,9 @@ index 0000000..b6850b0
 +
 +	i = ep->num;
 +
-+	/* NAK the endpoint */
++	/* FIXME: remove it ? */
 +	ep_nak(ep);
 +
-+	/* FIXME: remove, hardware has reset ep_pib? */
 +	/* reset position in buffer register */
 +	writew(0, &ep->dev->regs->ep[i].ep_pib);
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_pib);
@@ -1407,6 +1454,12 @@ index 0000000..b6850b0
 +
 +	/* frees a request object */
 +	.free_request	= iusbc_free_request,
++
++	/* allocate an I/O buffer */
++	/*.alloc_buffer	= iusbc_alloc_buffer,*/
++
++	/* free an I/O buffer */
++	/*.free_buffer	= iusbc_free_buffer,*/
 +
 +	/* queues (submits) an I/O requests to an endpoint */
 +	.queue		= iusbc_queue,
@@ -1435,6 +1488,7 @@ index 0000000..b6850b0
 +
 +	if (!_gadget)
 +		return -ENODEV;
++
 +	dev = container_of(_gadget, struct iusbc, gadget);
 +
 +	VDEBUG(dev, "---> iusbc_get_frame() \n");
@@ -1454,71 +1508,18 @@ index 0000000..b6850b0
 +static int iusbc_wakeup(struct usb_gadget *_gadget)
 +{
 +	struct iusbc		*dev;
-+	//u32			tmp;
-+	//unsigned long		flags;
 +
 +	if (!_gadget)
 +		return 0;
++
 +	dev = container_of(_gadget, struct iusbc, gadget);
 +
 +	VDEBUG(dev, "---> iusbc_wakeup() \n");
 +
-+	// TODO:
-+	// See spec 4.3
-+	// Offset 114h, Device Control, SignalResume?
-+
-+	/* pci writes may still be posted */
++	/* TODO: spec 4.3 */
 +
 +	VDEBUG(dev, "<--- iusbc_wakeup() \n");
 +
-+	return 0;
-+}
-+
-+
-+/* TODO: */
-+/* notify controller that VBUS is powered */
-+static int iusbc_vbus_session(struct usb_gadget *_gadget, int is_active)
-+{
-+	struct iusbc		*dev;
-+	//u32			tmp;
-+	//unsigned long		flags;
-+	//int			retval;
-+
-+	if (!_gadget)
-+		return 0;
-+	dev = container_of(_gadget, struct iusbc, gadget);
-+
-+	VDEBUG(dev, "---> iusbc_vbus_session() \n");
-+
-+	// TODO:
-+
-+	VDEBUG(dev, "<--- iusbc_vbus_session() \n");
-+
-+	//return retval;
-+	return 0;
-+}
-+
-+
-+/* TODO: */
-+/* constrain controller's VBUS power usage */
-+static int iusbc_vbus_draw(struct usb_gadget *_gadget, unsigned mA)
-+{
-+	struct iusbc		*dev;
-+	//u32			tmp;
-+	//unsigned long		flags;
-+	//int			retval;
-+
-+	if (!_gadget)
-+		return 0;
-+	dev = container_of(_gadget, struct iusbc, gadget);
-+
-+	VDEBUG(dev, "---> iusbc_vbus_draw() \n");
-+
-+	// TODO:
-+
-+	VDEBUG(dev, "<--- iusbc_vbus_draw() \n");
-+
-+	//return retval;
 +	return 0;
 +}
 +
@@ -1553,25 +1554,6 @@ index 0000000..b6850b0
 +}
 +
 +
-+/* TODO: need ioctl? */
-+static int iusbc_ioctl(struct usb_gadget *_gadget, unsigned code,
-+		unsigned long param)
-+{
-+	struct iusbc		*dev;
-+	int			retval = 0;
-+
-+	if (!_gadget)
-+		return 0;
-+
-+	dev = container_of(_gadget, struct iusbc, gadget);
-+
-+	VDEBUG(dev, "---> iusbc_ioctl() \n");
-+
-+	VDEBUG(dev, "<--- iusbc_ioctl() \n");
-+
-+	return retval;
-+}
-+
 +static const struct usb_gadget_ops iusbc_ops = {
 +
 +	/* returns the current frame number */
@@ -1581,19 +1563,8 @@ index 0000000..b6850b0
 +	/* tries to wake up the host connected to this gadget */
 +	.wakeup		= iusbc_wakeup,
 +
-+	/* no set_selfpowered */
-+
-+	/* notify controller that VBUS is powered */
-+	.vbus_session	= iusbc_vbus_session,
-+
-+	/* constrain controller's VBUS power usage */
-+	.vbus_draw	= iusbc_vbus_draw,
-+
 +	/* software-controlled connect/disconnect to USB host */
 +	.pullup		= iusbc_pullup,
-+
-+	/* TODO */
-+	.ioctl		= iusbc_ioctl,
 +};
 +
 +/*-------------------------------------------------------------------------*/
@@ -1870,111 +1841,13 @@ index 0000000..b6850b0
 +
 +static void iusbc_reset(struct iusbc *dev)
 +{
-+	u32		val_32 = 0;
-+	//unsigned long	counter = 0xffffffff;
-+
-+	VDEBUG(dev, "---> iusbc_reset() \n");
++	DEBUG(dev, "---> iusbc_reset() \n");
 +
 +	/* disable irqs */
 +	writel(0, &dev->regs->int_ctrl);
 +
-+#if 0
-+	/* write 0 to DeviceEnable, reset all registers */ 
-+	writel(0, &dev->regs->dev_ctrl);	
-+
-+	val_32 = readl(&dev->regs->dev_ctrl);
-+	/* val_32 should be 0 now */
-+	if (val_32 & DEVICE_ENABLE)
-+		ERROR(dev, "hardware reset error\n");
-+
-+
-+	/* write 1 to DeviceEnable */
-+	writel(DEVICE_ENABLE, &dev->regs->dev_ctrl);	
-+
-+	/* wait until read 1 from DeviceEnable, within 5 ms */
-+	mdelay(5);
-+
-+	val_32 = readl(&dev->regs->dev_ctrl);
-+	/* val_32 should be DEVICE_ENABLE now */
-+	if (!(val_32 & DEVICE_ENABLE))
-+		ERROR(dev, "hardware reset error\n");
-+#endif
-+
-+	/* hardware transfer to running state now */
-+	val_32 |= DEVICE_ENABLE
-+		| CONNECTION_ENABLE
-+		| SIGNAL_RESUME
-+		| CHARGE_ENABLE;
-+#ifdef DMA_DISABLED
-+	val_32 |= DMA1_DISABLED
-+		| DMA2_DISABLED
-+		| DMA3_DISABLED;
-+#endif
-+	/* module parameter: force_fullspeed */
-+	if (force_fullspeed) {
-+		val_32 |= FORCE_FULLSPEED;
-+	}
-+
-+	writel(val_32, &dev->regs->dev_ctrl);	
-+	VDEBUG(dev, "dev_ctrl = 0x%08x\n", val_32);
-+
-+	/* XXX */
-+	//mdelay(5);
-+#if 0
-+	/* wait until read 1 from DeviceEnable, within 5 ms */
-+	while (1) {
-+		counter--;
-+		val_32 = readl(&dev->regs->dev_ctrl);
-+		if (val_32 & DEVICE_ENABLE) {
-+			/* val_32 should be DEVICE_ENABLE now */
-+			VDEBUG(dev, "DEVICE_ENABLE = 1\n");
-+			break;
-+		} else if (!counter) {
-+			DEBUG(dev, "HW BUG: hardware reset error\n");
-+			break;
-+		}
-+	}
-+#endif
-+
-+	val_32 = readl(&dev->regs->dev_ctrl);
-+	if (val_32 & FORCE_FULLSPEED) {
-+		dev->force_fullspeed = 1;
-+	} else {
-+		dev->force_fullspeed = 0;
-+	}
-+
-+	/* check device status */
-+	val_32 = readl(&dev->regs->dev_sts);
-+	DEBUG(dev, "iusbc_reset: dev_sts = 0x%08x\n", val_32);
-+
-+	if (val_32 & RATE) {
-+		if (dev->force_fullspeed) {
-+			dev->gadget.speed = USB_SPEED_FULL;
-+			VDEBUG(dev, "speed: USB_SPEED_FULL\n");
-+		} else {
-+			dev->gadget.speed = USB_SPEED_HIGH;
-+			VDEBUG(dev, "speed: USB_SPEED_HIGH\n");
-+		}
-+	} else {
-+		dev->gadget.speed = USB_SPEED_FULL;
-+		VDEBUG(dev, "speed: USB_SPEED_FULL\n");
-+	}
-+
-+	if (val_32 & CONNECTED)
-+		dev->connected = 1;
-+	else
-+		dev->connected = 0;
-+
-+	if (val_32 & SUSPEND)
-+		dev->suspended = 1;
-+	else
-+		dev->suspended = 0;
-+
 +	/* set device power stauts */
 +	dev->powered = 1;
-+
-+ 	/* set device reset flag */
-+	dev->is_reset = 0;
 +
 +	/* set device remote wakeup flag */
 +	dev->enable_wakeup = 0;
@@ -1982,11 +1855,7 @@ index 0000000..b6850b0
 +	/* 16 bits status data for GET_STATUS */
 +	dev->status_d = 0;
 +
-+	/* check interrupt status */
-+	val_32 = readl(&dev->regs->int_sts);
-+	VDEBUG(dev, "int_sts = 0x%08x\n", val_32);
-+
-+	VDEBUG(dev, "<--- iusbc_reset() \n");
++	DEBUG(dev, "<--- iusbc_reset() \n");
 +}
 +
 +
@@ -1994,7 +1863,7 @@ index 0000000..b6850b0
 +{
 +	unsigned	i;
 +
-+	VDEBUG(dev, "---> iusbc_reinit() \n");
++	DEBUG(dev, "---> iusbc_reinit() \n");
 +
 +	INIT_LIST_HEAD(&dev->gadget.ep_list);
 +
@@ -2005,19 +1874,14 @@ index 0000000..b6850b0
 +	dev->ep[0].ep.driver_data = get_gadget_data(&dev->gadget);
 +	dev->ep[1].ep.driver_data = get_gadget_data(&dev->gadget);
 +
-+	/* ep0-out */
-+	//dev->gadget.ep0 = &dev->ep[1].ep;
-+
 +	dev->ep0state = EP0_DISCONNECT;
-+	DEBUG(dev, "ep0state = EP0_DISCONNECT\n");
-+	dev->irqs = 0;
++	VDEBUG(dev, "ep0state: EP0_DISCONNECT\n");
 +
 +	/* basic endpoint init */
 +	/* 2 ep0, 3 data ep */
 +	for (i = 0; i < 5; i++) {
 +		struct iusbc_ep	*ep = &dev->ep[i];
 +		ep->dev = dev;
-+		ep->irqs = 0;
 +
 +		INIT_LIST_HEAD(&ep->queue);
 +
@@ -2042,7 +1906,7 @@ index 0000000..b6850b0
 +	list_del_init(&dev->ep[0].ep.ep_list);
 +	list_del_init(&dev->ep[1].ep.ep_list);
 +
-+	VDEBUG(dev, "<--- iusbc_reinit() \n");
++	DEBUG(dev, "<--- iusbc_reinit() \n");
 +}
 +
 +
@@ -2051,34 +1915,8 @@ index 0000000..b6850b0
 +	u16		val_16;
 +	u32		val_32;
 +	unsigned	i;
-+	//unsigned long	counter = 0xffffffff;
 +
 +	DEBUG(dev, "---> ep0_start() \n");
-+
-+	/* reset all registers */ 
-+	writel(0, &dev->regs->dev_ctrl);
-+
-+	/* PCI enable: write 1 to DeviceEnable */
-+	writel(DEVICE_ENABLE, &dev->regs->dev_ctrl);	
-+
-+	/* XXX */
-+	mdelay(5);
-+
-+#if 0
-+	/* wait until read 1 from DeviceEnable, within 5 ms */
-+	while (1) {
-+		counter--;
-+		val_32 = readl(&dev->regs->dev_ctrl);
-+		if (val_32 & DEVICE_ENABLE) {
-+			/* val_32 should be DEVICE_ENABLE now */
-+			VDEBUG(dev, "DEVICE_ENABLE = 1\n");
-+			break;
-+		} else if (!counter) {
-+			DEBUG(dev, "hardware reset error\n");
-+			break;
-+		}
-+	}
-+#endif
 +
 +	iusbc_reset(dev);
 +	iusbc_reinit(dev);
@@ -2092,15 +1930,7 @@ index 0000000..b6850b0
 +		/* ep0 ep_type */
 +		ep->ep_type = USB_ENDPOINT_XFER_CONTROL;
 +
-+		/* FIXME: enable linear mode only */
-+#if 0
-+		/* DMA modes for ep0 */
-+		if (ep->dev->control_mode_dma) {
-+			ep->dma_mode = CONTROL_MODE;
-+		} else {
-+			ep->dma_mode = LINEAR_MODE;
-+		}
-+#endif
++		/* linear mode only, control mode is useless */
 +		ep->dma_mode = LINEAR_MODE;
 +
 +		/* reset ep0-in/out registers to default value */
@@ -2113,20 +1943,17 @@ index 0000000..b6850b0
 +			| INTR_FIFO_ERROR
 +			| INTR_DMA_ERROR
 +			| INTR_TRANS_COMPLETE
-+			/* FIXME: disable */
-+			//| INTR_PING_NAK_SENT
-+			/* FIXME: remove? */
-+			//| INTR_DMA_IOC
++			/* | INTR_PING_NAK_SENT */
++			| INTR_DMA_IOC
 +			| ep->dma_mode << 6
 +			| ep->ep_type << 4 
 +			/* | EP_ENABLE */
 +			| EP_VALID;
 +
-+		/* will set EP_ENABLE later in start_dma */
 +		writew(val_16, &dev->regs->ep[i].ep_cfg);
 +
 +		val_16 = readw(&dev->regs->ep[i].ep_cfg);
-+		VDEBUG(dev, "%s.ep_cfg = 0x%04x\n", ep->ep.name, val_16);
++		DEBUG(dev, "%s.ep_cfg = 0x%04x\n", ep->ep.name, val_16);
 +
 +		DEBUG(dev, "enabled %s (ep0-%s), max %d, dma_mode: %02x\n",
 +			ep->ep.name,
@@ -2134,17 +1961,14 @@ index 0000000..b6850b0
 +			ep->ep.maxpacket, ep->dma_mode);
 +	}
 +
-+	/* XXX */
-+	//udelay(300);
-+
 +	/* enable irqs */
 +	val_32 = readl(&dev->regs->int_ctrl);
 +	val_32 |= RESET_INTR_ENABLE
 +		| CONNECT_INTR_ENABLE
 +		| SUSPEND_INTR_ENABLE
-+		//| EP3_OUT_INTR_ENABLE
-+		//| EP3_IN_INTR_ENABLE
-+		//| EP2_OUT_INTR_ENABLE
++		/* | EP3_OUT_INTR_ENABLE */
++		/* | EP3_IN_INTR_ENABLE */
++		/* | EP2_OUT_INTR_ENABLE */
 +		| EP2_IN_INTR_ENABLE
 +		| EP1_OUT_INTR_ENABLE
 +		| EP1_IN_INTR_ENABLE
@@ -2153,13 +1977,89 @@ index 0000000..b6850b0
 +
 +	writel(val_32, &dev->regs->int_ctrl);
 +	val_32 = readl(&dev->regs->int_ctrl);
-+	VDEBUG(dev, "enable irqs, int_ctrl = 0x%08x\n",
++	DEBUG(dev, "ep0_start: enable irqs, int_ctrl = 0x%08x\n",
 +			val_32);
 +
 +	dev->ep0state = EP0_IDLE;
-+	DEBUG(dev, "ep0state = EP0_IDLE\n");
++	VDEBUG(dev, "ep0state: EP0_IDLE\n");
 +
 +	DEBUG(dev, "<--- ep0_start() \n");
++}
++
++
++static void iusbc_do_tasklet(unsigned long arg);
++
++static void device_start(struct iusbc *dev)
++{
++	u32	val_32;
++
++	DEBUG(dev, "---> device_start() \n");
++
++	/* reset all registers */ 
++	writel(0, &dev->regs->dev_ctrl);
++
++	/* PCI enable: write 1 to DeviceEnable */
++	writel(DEVICE_ENABLE, &dev->regs->dev_ctrl);	
++	/* FIXME: 5 ms is not enough? */
++	mdelay(5);
++	val_32 = readl(&dev->regs->dev_ctrl);
++	if (!(val_32 & DEVICE_ENABLE))
++		ERROR(dev, "hardware reset error\n");
++
++	/* hardware transfer to running state now */
++	val_32 |= DEVICE_ENABLE
++		/* | CONNECTION_ENABLE */
++		| SIGNAL_RESUME
++		| CHARGE_ENABLE;
++
++	/* module parameter: force_fullspeed */
++	if (force_fullspeed) {
++		val_32 |= FORCE_FULLSPEED;
++		dev->force_fullspeed = 1;
++	} else {
++		/* disable DMAs in high speed mode */
++#ifdef DMA_DISABLED
++		val_32 |= DMA1_DISABLED
++			| DMA2_DISABLED
++			| DMA3_DISABLED;
++#endif
++		dev->force_fullspeed = 0;
++	}
++
++	writel(val_32, &dev->regs->dev_ctrl);
++	val_32 = readl(&dev->regs->dev_ctrl);
++	DEBUG(dev, "dev_ctrl = 0x%08x\n", val_32);
++
++	/* check device status */
++	val_32 = readl(&dev->regs->dev_sts);
++	DEBUG(dev, "device_start: dev_sts = 0x%08x\n", val_32);
++
++	if (val_32 & CONNECTED) {
++		dev->connected = 1;
++		VDEBUG(dev, "device_start: USB attached\n");
++	} else {
++		dev->connected = 0;
++		VDEBUG(dev, "device_start: USB detached\n");
++	}
++
++	if (val_32 & SUSPEND)
++		dev->suspended = 1;
++	else 
++		dev->suspended = 0;
++
++ 	/* set device reset flag */
++	dev->is_reset = 0;
++
++	iusbc_pullup(&dev->gadget, 1);
++
++	/* init irq tasklet */
++	tasklet_init(&dev->iusbc_tasklet,
++			iusbc_do_tasklet, (unsigned long) dev);
++
++	/* enable ep0 and host detection */
++	ep0_start(dev);
++
++	DEBUG(dev, "---> device_start() \n");
 +}
 +
 +
@@ -2175,29 +2075,24 @@ index 0000000..b6850b0
 +	int			retval;
 +	unsigned		i;
 +
-+	DEBUG(dev, "---> usb_gadget_register_driver() \n");
-+
-+	if (!driver
-+			/*  FIXME: hardware high speed bug */
-+			//|| driver->speed != USB_SPEED_HIGH
-+			//|| driver->speed != USB_SPEED_FULL
-+			|| !driver->bind
-+			|| !driver->disconnect
-+			|| !driver->setup)
++	if (!driver || !driver->bind || !driver->disconnect || !driver->setup)
 +		return -EINVAL;
 +
 +	if (!dev)
 +		return -ENODEV;
 +
++	DEBUG(dev, "---> usb_gadget_register_driver() \n");
++
 +	if (dev->driver)
 +		return -EBUSY;
++
++	dev->irqs = 0;
 +
 +	/* 2 ep0, 3 data eps */
 +	for (i = 0; i < 5; i++)
 +		dev->ep[i].irqs = 0;
 +
 +	/* hook up the driver ... */
-+	//dev->connected = 1;
 +	driver->driver.bus = NULL;
 +	dev->driver = driver;
 +	dev->gadget.dev.driver = &driver->driver;
@@ -2218,11 +2113,10 @@ index 0000000..b6850b0
 +	retval = device_create_file(&dev->pdev->dev, &dev_attr_queues);
 +	if (retval)
 +		goto err_func;
++	
++	device_start(dev);
 +
-+	/* enable ep0 and host detection */
-+	ep0_start(dev);
-+
-+	DEBUG(dev, "register driver: %s\n", driver->driver.name);
++	INFO(dev, "register driver: %s\n", driver->driver.name);
 +	DEBUG(dev, "<--- usb_gadget_register_driver() \n");
 +
 +	return 0;
@@ -2247,7 +2141,7 @@ index 0000000..b6850b0
 +{
 +	unsigned	i;
 +
-+	VDEBUG(dev, "---> stop_activity() \n");
++	DEBUG(dev, "---> stop_activity() \n");
 +
 +	/* don't disconnect if it's not connected */
 +	if (dev->gadget.speed == USB_SPEED_UNKNOWN)
@@ -2271,7 +2165,7 @@ index 0000000..b6850b0
 +
 +	iusbc_reinit(dev);
 +
-+	VDEBUG(dev, "<--- stop_activity() \n");
++	DEBUG(dev, "<--- stop_activity() \n");
 +}
 +
 +
@@ -2287,6 +2181,9 @@ index 0000000..b6850b0
 +	if (!driver || driver != dev->driver || !driver->unbind)
 +		return -EINVAL;
 +
++	/* kill irq tasklet */
++	tasklet_kill(&dev->iusbc_tasklet);
++
 +	spin_lock_irqsave(&dev->lock, flags);
 +	stop_activity(dev, driver);
 +	spin_unlock_irqrestore(&dev->lock, flags);
@@ -2300,7 +2197,7 @@ index 0000000..b6850b0
 +	device_remove_file(&dev->pdev->dev, &dev_attr_function);
 +	device_remove_file(&dev->pdev->dev, &dev_attr_queues);
 +
-+	DEBUG(dev, "unregistered driver '%s'\n", driver->driver.name);
++	INFO(dev, "unregistered driver '%s'\n", driver->driver.name);
 +
 +	DEBUG(dev, "<--- usb_gadget_unregister_driver() \n");
 +
@@ -2369,11 +2266,6 @@ index 0000000..b6850b0
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_len);
 +	VDEBUG(ep->dev, "%s.ep_len = 0x%04x\n", ep->ep.name, val_16);
 +
-+	/* FIXME: ep_pib reset by hardware? */
-+	writew(0, &ep->dev->regs->ep[i].ep_pib);
-+	val_16 = readw(&ep->dev->regs->ep[i].ep_pib);
-+	VDEBUG(ep->dev, "%s.ep_pib = 0x%04x\n", ep->ep.name, val_16);
-+
 +	/* validate endpoint, enable DMA */
 +	val_16 = readw(&ep->dev->regs->ep[i].ep_cfg);
 +	val_16 |= (EP_VALID | EP_ENABLE);
@@ -2392,9 +2284,7 @@ index 0000000..b6850b0
 +	struct usb_ctrlrequest		ctrl;
 +	struct iusbc_ep			*epn;
 +	unsigned			i, tmp = 0;
-+	//unsigned long			counter = 0xffffffff;
 +	u8				addr_new, setup_pkt[8];
-+	//u32				dev_sts;
 +
 +	VDEBUG(dev, "---> ep0_setup() \n");
 +
@@ -2417,10 +2307,10 @@ index 0000000..b6850b0
 +	/* data stage direction */
 +	if (ctrl.bRequestType & USB_DIR_IN) {
 +		dev->ep0state = EP0_IN;
-+		VDEBUG(dev, "ep0state = EP0_IN\n");
++		VDEBUG(dev, "ep0state: EP0_IN\n");
 +	} else {
 +		dev->ep0state = EP0_OUT;
-+		VDEBUG(dev, "ep0state = EP0_OUT\n");
++		VDEBUG(dev, "ep0state: EP0_OUT\n");
 +	}
 +
 +	/* WORKAROUND: for RNDIS */
@@ -2502,7 +2392,7 @@ index 0000000..b6850b0
 +			ep_ack(&dev->ep[0]);
 +
 +			dev->ep0state = EP0_STATUS;
-+			DEBUG(dev, "ep0state = EP0_STATUS\n");
++			VDEBUG(dev, "ep0state: EP0_STATUS\n");
 +
 +			DEBUG(dev, "%s clear halt\n", epn->ep.name);
 +			goto end;
@@ -2552,24 +2442,6 @@ index 0000000..b6850b0
 +
 +			/* hardware didn't ACK SET_ADDRESS */
 +			ep_ack(&dev->ep[0]);
-+
-+#if 0
-+			while (1) {
-+				counter--;
-+				dev_sts = readl(&dev->regs->dev_sts);
-+				/* ADDRESS != 0 */
-+				if (dev_sts >> 8) {
-+					DEBUG(dev, "after SET_ADDRESS, "
-+						"dev_sts = 0x%08x "
-+						"ADDRESS = 0x%02x\n",
-+						dev_sts, addr_new);
-+					break;
-+				} else if (!counter) {
-+					DEBUG(dev, "HW BUG: SET_ADDRESS failed\n");
-+					break;
-+				}
-+			}
-+#endif
 +		}
 +		goto end;
 +
@@ -2622,20 +2494,17 @@ index 0000000..b6850b0
 +			/* CDC: SEND_ENCAPSULATED_COMMAND */
 +			DEBUG(dev, "CDC: SEND_ENCAPSULATED_COMMAND\n");
 +			dev->gadget.ep0 = &dev->ep[1].ep;
-+			//dev->gadget.ep0->driver_data = get_gadget_data(&dev->gadget);
 +			spin_unlock(&dev->lock);
 +			tmp = dev->driver->setup(&dev->gadget, &ctrl);
 +			spin_lock(&dev->lock);
 +
-+			/* hardware didn't ACK */
-+			ep_ack(&dev->ep[0]);
-+
 +			/* switch back to ep0-in */
 +			dev->gadget.ep0 = &dev->ep[0].ep;
-+			//dev->gadget.ep0->driver_data = get_gadget_data(&dev->gadget);
++
++			/* hardware didn't ACK */
++			ep_ack(&dev->ep[0]);
 +		} else { 
 +			dev->gadget.ep0 = &dev->ep[0].ep;
-+			//dev->gadget.ep0->driver_data = get_gadget_data(&dev->gadget);
 +			spin_unlock(&dev->lock);
 +			tmp = dev->driver->setup(&dev->gadget, &ctrl);
 +			spin_lock(&dev->lock);
@@ -2659,56 +2528,42 @@ index 0000000..b6850b0
 +				ctrl.bRequestType, ctrl.bRequest, tmp);
 +		dev->ep[1].stopped = 1;
 +		dev->ep0state = EP0_STALL;
-+		VDEBUG(dev, "ep0state = EP0_STALL\n");
++		VDEBUG(dev, "ep0state: EP0_STALL\n");
 +	}
 +end:
 +	VDEBUG(dev, "<--- ep0_setup() \n");
 +}
 +
 +
-+static unsigned handle_device_irqs(struct iusbc *dev,
-+		u32 int_sts, u32 int_ctrl)
++static void handle_device_irqs(struct iusbc *dev)
 +{
-+	u32			dev_sts, stat;
-+	unsigned		reval = 0;
-+	//unsigned long		counter = 0xffffffff;
++	u32			stat;
++	volatile u32		dev_sts;
++	unsigned		is_connected = 0;
 +
-+	VDEBUG(dev, "---> handle_device_irqs() \n");
++	DEBUG(dev, "---> handle_device_irqs() \n");
 +
-+	stat = int_sts;
++	stat = dev->int_sts;
 +
-+	/* FIXME: get device status, set USB speed */
-+	if (((stat & RESET_INTR) && (int_ctrl & RESET_INTR_ENABLE))
-+		|| ((stat & CONNECT_INTR) && (int_ctrl & CONNECT_INTR_ENABLE))
-+		|| ((stat & SUSPEND_INTR) && (int_ctrl & SUSPEND_INTR_ENABLE))) {
-+
-+#if 0
-+		while (1) {
-+			counter--;
-+			dev_sts = readl(&dev->regs->dev_sts);
-+			if (dev_sts) {
-+				VDEBUG(dev, "dev_sts = 0x%08x\n", dev_sts);
-+				break;
-+			} else if (!counter) {
-+				DEBUG(dev, "HW BUG: device status error\n");
-+				break;
-+			}
-+		}
-+#endif
-+
++	/* get device status, set USB speed */
++	if ((stat & RESET_INTR) || (stat & CONNECT_INTR)
++			|| (stat & SUSPEND_INTR)) {
++		/* check device status */
 +		dev_sts = readl(&dev->regs->dev_sts);
 +		DEBUG(dev, "handle_device_irqs: dev_sts = 0x%08x\n",
 +				dev_sts);
 +
++#if 0
 +		/* WORKAROUND: sometimes re-read again, dev_sts != 0 */
 +		if (!dev_sts) {
 +			dev_sts = readl(&dev->regs->dev_sts);
 +			DEBUG(dev, "re-read: dev_sts = 0x%08x\n", dev_sts);
 +		}
++#endif
 +
 +		if (dev_sts & CONNECTED) {
-+			dev->connected = 1;
-+			DEBUG(dev, "USB attached\n");
++			is_connected = 1;
++			DEBUG(dev, "device connected\n");
 +
 +			/* check suspend/resume status now */ 
 +			if (dev_sts & SUSPEND)
@@ -2726,83 +2581,75 @@ index 0000000..b6850b0
 +			if (dev_sts & RATE) {
 +				if (dev->force_fullspeed) {
 +					dev->gadget.speed = USB_SPEED_FULL;
-+					VDEBUG(dev, "speed: USB_SPEED_FULL\n");
++					DEBUG(dev, "speed: USB_SPEED_FULL\n");
 +				} else { 
 +					dev->gadget.speed = USB_SPEED_HIGH;
-+					VDEBUG(dev, "speed: USB_SPEED_HIGH\n");
++					DEBUG(dev, "speed: USB_SPEED_HIGH\n");
 +				}
 +			} else {
 +				dev->gadget.speed = USB_SPEED_FULL;
-+				VDEBUG(dev, "speed: USB_SPEED_FULL\n");
++				DEBUG(dev, "speed: USB_SPEED_FULL\n");
 +			}
-+		} else {	/* XXX disconnected */
-+			dev->connected = 0;
-+			DEBUG(dev, "USB detached\n");
++		} else {	/* disconnected */
++			is_connected = 0;
++			DEBUG(dev, "device disconnected\n");
 +		}
 +	}
 +
 +	/* USB reset interrupt indication */
-+	if ((stat & RESET_INTR)
-+			&& (int_ctrl & RESET_INTR_ENABLE)
-+			&& (!dev->is_reset)) {
++	if ((stat & RESET_INTR) && (!dev->is_reset)) {
 +		DEBUG(dev, "USB Reset interrupt: stat = 0x%08x\n", stat);
 +		/* ACK RESET_INTR */
 +		stat &= ~RESET_INTR;
 +		dev->irqs++;
 +		VDEBUG(dev, "dev->irqs: %lu\n", dev->irqs);
 +
++		/* set device reset flag */
++		dev->is_reset = 1;
++
 +		stop_activity(dev, dev->driver);
 +		ep0_start(dev);
 +		VDEBUG(dev, "reset: ep0_start()\n");
 +
-+		/* set device reset flag */
-+		dev->is_reset = 1;
-+
-+		/* USB reset: highest priority, ignore others */
-+		reval = 1;
-+
 +		goto end;
 +	}
 +
++
 +	/* connect interrupt indication */
-+	if ((stat & CONNECT_INTR)
-+			&& (int_ctrl & CONNECT_INTR_ENABLE)) {
++	if (stat & CONNECT_INTR) {
++		DEBUG(dev, "CONNECT interrupt: stat = 0x%08x\n", stat);
 +		/* ACK CONNECT_INTR */
 +		stat &= ~CONNECT_INTR;
 +		dev->irqs++;
 +		VDEBUG(dev, "dev->irqs: %lu\n", dev->irqs);
 +
-+		if (dev->connected) {
-+			DEBUG(dev, "connect %s\n", dev->driver->driver.name);
-+		} else { /* disconnected */
-+#if 0
-+			/* halt endpoints */
-+			for (i = 2; i < 5; i++) {
-+				set_halt(&dev->ep[i]);
++		/* connected status has changed */
++		if (dev->connected != is_connected) {
++			DEBUG(dev, "connected status has changed\n");
++			dev->connected = is_connected;
++			if (is_connected) {
++				ep0_start(dev);
++				DEBUG(dev, "connect %s\n", dev->driver->driver.name);
++			} else { /* disconnected */
++				/* set device reset flag */
++				dev->is_reset = 0;
++				stop_activity(dev, dev->driver);
++				DEBUG(dev, "disconnect %s\n", dev->driver->driver.name);
++				dev->ep0state = EP0_DISCONNECT;
++				VDEBUG(dev, "ep0state: EP0_DISCONNECT\n");
 +			}
-+#endif
-+			stop_activity(dev, dev->driver);
-+			DEBUG(dev, "disconnect %s\n", dev->driver->driver.name);
-+			//dev->connected = 0;
-+
-+ 			/* set device reset flag */
-+			dev->is_reset = 0;
-+
-+			dev->ep0state = EP0_DISCONNECT;
-+			VDEBUG(dev, "ep0state = EP0_DISCONNECT\n");
 +		}
-+		VDEBUG(dev, "CONNECT interrupt: stat = 0x%08x\n", stat);
 +	}
 +	
 +	/* host suspend interrupt indication */
-+	if ((stat & SUSPEND_INTR)
-+			&& (int_ctrl & SUSPEND_INTR_ENABLE)) {
++	if (stat & SUSPEND_INTR) {
++		DEBUG(dev, "SUSPEND interrupt: stat = 0x%08x\n", stat);
 +		/* ACK SUSPEND_INTR */
 +		stat &= ~SUSPEND_INTR;
 +		dev->irqs++;
 +		VDEBUG(dev, "dev->irqs: %lu\n", dev->irqs);
 +
-+		/* FIXME: call gadget driver routine */
++		/* call gadget driver suspend/resume routines */
 +		if (dev->suspended) {
 +			if (dev->driver->suspend) {
 +				spin_unlock(&dev->lock);
@@ -2818,35 +2665,31 @@ index 0000000..b6850b0
 +			}
 +			DEBUG(dev, "resume %s\n", dev->driver->driver.name);
 +		}
-+		DEBUG(dev, "SUSPEND interrupt: stat = 0x%08x\n", stat);
 +	}
 +
 +	/* if haven't USB Reset yet, wait for the next USB reset interrupt */
 +	if (!dev->is_reset) {
 +		DEBUG(dev, "Skip other interrupts before RESET\n");
-+		reval = 1;
 +	}
 +
 +end:
 +	VDEBUG(dev, "handle device_irq finish: int_sts = 0x%08x, "
-+			"stat = 0x%08x\n", int_sts, stat);
++			"stat = 0x%08x\n", dev->int_sts, stat);
 +
 +	VDEBUG(dev, "<--- handle_device_irqs() \n");
-+
-+	return reval;
 +}
 +
 +
-+static void handle_ep0_irqs(struct iusbc *dev, u32 int_sts, u32 int_ctrl)
++static void handle_ep0_irqs(struct iusbc *dev)
 +{
-+	u16			ep_sts, val_16;
++	volatile u16		ep_sts, val_16;
 +	u32			stat;
 +	u8			setup_pkt_sts;
 +	struct iusbc_request	*req;
 +
 +	VDEBUG(dev, "---> handle_ep0_irqs() \n");
 +
-+	stat = int_sts;
++	stat = dev->int_sts;
 +	VDEBUG(dev, "stat = 0x%08x\n", stat);
 +
 +	/* ep0-out interrupt */
@@ -2859,17 +2702,8 @@ index 0000000..b6850b0
 +		VDEBUG(dev, "%s.ep_sts = 0x%04x\n",
 +				dev->ep[1].ep.name, ep_sts);
 +
-+		/* XXX watch for C0 bug, int_sts */
-+		if (ep_sts == 0)
-+			DEBUG(dev, "XXX ep0-out error: ep_sts == 0\n");
-+
 +		/* W1C ep0-out status register */
 +		writew(ep_sts, &dev->regs->ep[1].ep_sts);
-+#if 0
-+		val_16 = readw(&dev->regs->ep[1].ep_sts);
-+		VDEBUG(dev, "W1C: %s.ep_sts = 0x%04x\n",
-+				dev->ep[1].ep.name, val_16);
-+#endif
 +
 +		if ((ep_sts & BAD_PID_TYPE)
 +				|| (ep_sts & CRC_ERROR)
@@ -2904,9 +2738,8 @@ index 0000000..b6850b0
 +				 * then handle ep0-out SETUP packet 
 +				 */
 +				ep0_setup(dev);
-+			}
-+			/* ep0-out standard OUT packet */
-+			else {
++			} else {
++				/* ep0-out standard OUT packet */
 +				DEBUG(dev, "ep0-out OUT packet\n");
 +				if (!list_empty(&dev->ep[1].queue)) {
 +					req = list_entry(dev->ep[1].queue.next,
@@ -2914,8 +2747,7 @@ index 0000000..b6850b0
 +							queue);
 +					VDEBUG(dev, "dmacount = %d\n",
 +							req->td->dmacount);
-+					dma_done(&dev->ep[1],
-+						req, req->td->dmacount, 0);
++					dma_done(&dev->ep[1], req, 0);
 +					VDEBUG(dev, "%s dma_done()\n",
 +						dev->ep[1].ep.name);
 +				}
@@ -2927,17 +2759,6 @@ index 0000000..b6850b0
 +						dev->ep[1].ep.name);
 +				}
 +			}
-+
-+			/* enable DMA again */
-+			val_16 = readw(&dev->regs->ep[1].ep_cfg);
-+			val_16 |= EP_ENABLE;
-+			writew(val_16, &dev->regs->ep[1].ep_cfg);
-+
-+			val_16 = readw(&dev->regs->ep[1].ep_cfg);
-+			VDEBUG(dev, "enable %s DMA transfer...\n",
-+					dev->ep[1].ep.name);
-+			VDEBUG(dev, "%s EP_ENABLE again, ep_cfg=0x%04x\n",
-+					dev->ep[1].ep.name, val_16);
 +		} else {
 +			/* WORKAROUND: FIFO_ERROR TC=0  */ 
 +			if (ep_sts & FIFO_ERROR) {
@@ -2951,6 +2772,17 @@ index 0000000..b6850b0
 +#endif
 +			}
 +		}
++
++		/* enable DMA again */
++		val_16 = readw(&dev->regs->ep[1].ep_cfg);
++		val_16 |= EP_ENABLE;
++		writew(val_16, &dev->regs->ep[1].ep_cfg);
++
++		val_16 = readw(&dev->regs->ep[1].ep_cfg);
++		VDEBUG(dev, "enable %s DMA transfer...\n",
++				dev->ep[1].ep.name);
++		VDEBUG(dev, "%s EP_ENABLE again, ep_cfg=0x%04x\n",
++				dev->ep[1].ep.name, val_16);
 +	}
 +
 +	/* ep0-in interrupt */
@@ -2963,17 +2795,8 @@ index 0000000..b6850b0
 +		VDEBUG(dev, "%s.ep_sts = 0x%04x\n",
 +				dev->ep[0].ep.name, ep_sts);
 +
-+		/* XXX watch for C0 bug, int_sts */
-+		if (ep_sts == 0)
-+			DEBUG(dev, "XXX ep0-in error: ep_sts == 0\n");
-+
 +		/* W1C ep0-in status register */
 +		writew(ep_sts, &dev->regs->ep[0].ep_sts);
-+#if 0
-+		val_16 = readw(&dev->regs->ep[0].ep_sts);
-+		VDEBUG(dev, "W1C: %s.ep_sts = 0x%04x\n",
-+				dev->ep[0].ep.name, val_16);
-+#endif
 +
 +		if ((ep_sts & BAD_PID_TYPE)
 +				|| (ep_sts & CRC_ERROR)
@@ -2991,7 +2814,7 @@ index 0000000..b6850b0
 +						struct iusbc_request,
 +						queue);
 +				VDEBUG(dev, "dmacount = %d\n", req->td->dmacount);
-+				dma_done(&dev->ep[0], req, req->td->dmacount, 0);
++				dma_done(&dev->ep[0], req, 0);
 +				VDEBUG(dev, "%s dma_done()\n",
 +						dev->ep[0].ep.name);
 +			}
@@ -3022,16 +2845,16 @@ index 0000000..b6850b0
 +}
 +
 +
-+static void handle_ep_irqs(struct iusbc *dev, u32 int_sts, u32 int_ctrl)
++static void handle_ep_irqs(struct iusbc *dev)
 +{
-+	u16			ep_sts;
++	volatile u16		ep_sts;
 +	u32			stat;
 +	unsigned		i;
 +	struct iusbc_request	*req;
 +
 +	VDEBUG(dev, "---> handle_ep_irqs() \n");
 +
-+	stat = int_sts;
++	stat = dev->int_sts;
 +	VDEBUG(dev, "stat = 0x%08x\n", stat);
 +
 +	/* ep1in-bulk, ep1out-bulk and ep2in-int */
@@ -3043,19 +2866,8 @@ index 0000000..b6850b0
 +				VDEBUG(dev, "%s.ep_sts = 0x%04x\n",
 +					dev->ep[i].ep.name, ep_sts);
 +
-+			/* XXX watch for C0 bug, int_sts */
-+			if (ep_sts == 0)
-+				DEBUG(dev, "XXX %s error: ep_sts == 0\n",
-+						dev->ep[i].ep.name);
-+
 +			/* W1C ep status register */
 +			writew(ep_sts, &dev->regs->ep[i].ep_sts);
-+#if 0
-+			val_16 = readw(&dev->regs->ep[i].ep_sts);
-+			VDEBUG(dev, "W1C: %s.ep_sts = 0x%04x\n",
-+					dev->ep[i].ep.name, val_16);
-+
-+#endif
 +
 +			if ((ep_sts & BAD_PID_TYPE)
 +					|| (ep_sts & CRC_ERROR)
@@ -3076,8 +2888,7 @@ index 0000000..b6850b0
 +							queue);
 +					VDEBUG(dev, "dmacount = %d\n",
 +							req->td->dmacount);
-+					dma_done(&dev->ep[i], req,
-+						req->td->dmacount, 0);
++					dma_done(&dev->ep[i], req, 0);
 +					VDEBUG(dev, "%s dma_done()\n",
 +						dev->ep[i].ep.name);
 +				}
@@ -3110,13 +2921,67 @@ index 0000000..b6850b0
 +}
 +
 +
++static void iusbc_do_tasklet(unsigned long arg)
++{
++	u32		val_32;
++	struct iusbc	*dev;
++	dev = (struct iusbc *) arg;
++	DEBUG(dev, "---> iusbc_do_tasklet() \n");
++
++	spin_lock(&dev->lock);
++
++	/* disable irqs, will re-enable later */
++	writel(0, &dev->regs->int_ctrl);
++
++	/* device-wide reset, connect, suspend */
++	if (dev->int_sts & (RESET_INTR | CONNECT_INTR | SUSPEND_INTR)) {
++		DEBUG(dev, "iusbc_do_tasklet -> handle_device_irqs\n");
++		handle_device_irqs(dev);
++	}
++
++	/* ep0-in/out control requests and interrupt */
++	if (dev->int_sts & (EP0_IN_INTR | EP0_OUT_INTR)) {
++		DEBUG(dev, "iusbc_do_tasklet -> handle_ep0_irqs\n");
++		handle_ep0_irqs(dev);
++	}
++
++	/* data endpoints requests interrupt */
++	if (dev->int_sts & (EP1_IN_INTR | EP1_OUT_INTR | EP2_IN_INTR)) {
++		DEBUG(dev, "iusbc_do_tasklet -> handle_ep_irqs\n");
++		handle_ep_irqs(dev);
++	}
++
++	/* enable irqs again */
++	val_32 = 0;
++	val_32 |= RESET_INTR_ENABLE
++		| CONNECT_INTR_ENABLE
++		| SUSPEND_INTR_ENABLE
++		/* | EP3_OUT_INTR_ENABLE */
++		/* | EP3_IN_INTR_ENABLE */
++		/* | EP2_OUT_INTR_ENABLE */
++		| EP2_IN_INTR_ENABLE
++		| EP1_OUT_INTR_ENABLE
++		| EP1_IN_INTR_ENABLE
++		| EP0_OUT_INTR_ENABLE
++		| EP0_IN_INTR_ENABLE;
++
++	writel(val_32, &dev->regs->int_ctrl);
++	val_32 = readl(&dev->regs->int_ctrl);
++	DEBUG(dev, "enable irqs again in iusbc_do_tasklet(), "
++			"int_ctrl = 0x%08x\n", val_32);
++
++	spin_unlock(&dev->lock);
++
++	DEBUG(dev, "<--- iusbc_do_tasklet() \n");
++}
++
++
 +static irqreturn_t iusbc_irq(int irq, void *_dev)
 +{
 +	struct iusbc	*dev = _dev;
 +	u32		int_sts,
 +			int_ctrl,
 +			val_32;
-+	unsigned	reval;
 +
 +	VDEBUG(dev, "---> iusbc_irq() \n");
 +
@@ -3126,7 +2991,6 @@ index 0000000..b6850b0
 +
 +	/* interrupt status */
 +	int_sts = readl(&dev->regs->int_sts);
-+	VDEBUG(dev, "int_ctrl = 0x%08x\n", int_ctrl);
 +	VDEBUG(dev, "int_sts = 0x%08x\n", int_sts);
 +
 +	if (!int_sts || !int_ctrl) {
@@ -3135,9 +2999,7 @@ index 0000000..b6850b0
 +		return IRQ_NONE;
 +	}
 +
-+	spin_lock(&dev->lock);
-+
-+	/* disable irqs, re-enable in the end of irq handler */
++	/* disable irqs, will re-enable later */
 +	writel(0, &dev->regs->int_ctrl);
 +
 +	/* W1C interrupt status register */
@@ -3145,67 +3007,17 @@ index 0000000..b6850b0
 +	val_32 = readl(&dev->regs->int_sts);
 +	VDEBUG(dev, "W1C: regs->int_sts = 0x%08x\n", val_32);
 +
++	/* for iusbc_tasklet */
++	dev->int_sts = int_sts;
++
 +	/* check device status */
 +	val_32 = readl(&dev->regs->dev_sts);
 +	DEBUG(dev, "iusbc_irq: dev_sts = 0x%08x\n", val_32);
 +
-+	/* device-wide reset, connect, suspend */
-+	reval = handle_device_irqs(dev, int_sts, int_ctrl);
-+
-+	/* if handled USB reset interrupt, ignore others */
-+	if (reval) {
-+		DEBUG(dev, "handle or wait RESET, ignore others\n");
-+		goto end;
-+	}
-+
-+	/* ep0-in/out control requests and interrupt */
-+	if (int_sts & (EP0_IN_INTR | EP0_OUT_INTR)) {
-+		DEBUG(dev, "iusbc_irq -> handle_ep0_irqs\n");
-+		handle_ep0_irqs(dev, int_sts, int_ctrl);
-+	}
-+
-+	/* data endpoints requests interrupt */
-+	if (int_sts & (EP1_IN_INTR | EP1_OUT_INTR | EP2_IN_INTR)) {
-+		DEBUG(dev, "iusbc_irq -> handle_ep_irqs\n");
-+		handle_ep_irqs(dev, int_sts, int_ctrl);
-+	}
-+end:
-+	/* enable irqs again */
-+	val_32 = 0;
-+	val_32 |= RESET_INTR_ENABLE
-+		| CONNECT_INTR_ENABLE
-+		| SUSPEND_INTR_ENABLE
-+		//| EP3_OUT_INTR_ENABLE
-+		//| EP3_IN_INTR_ENABLE
-+		//| EP2_OUT_INTR_ENABLE
-+		| EP2_IN_INTR_ENABLE
-+		| EP1_OUT_INTR_ENABLE
-+		| EP1_IN_INTR_ENABLE
-+		| EP0_OUT_INTR_ENABLE
-+		| EP0_IN_INTR_ENABLE;
-+#if 0
-+	if (!dev->is_reset)
-+		val_32 |= RESET_INTR_ENABLE;
-+#endif
-+
-+	writel(val_32, &dev->regs->int_ctrl);
-+	val_32 = readl(&dev->regs->int_ctrl);
-+	VDEBUG(dev, "enable irqs again in iusbc_irq(), "
-+			"int_ctrl = 0x%08x\n", val_32);
-+
-+	spin_unlock(&dev->lock);
-+
-+#if 0
-+	if (int_sts)
-+		DEBUG(dev, "unhandled irq status: 0x%08x "
-+				"(int_sts: 0x%08x, int_ctrl: 0x%08x)\n",
-+				int_sts,
-+				readl(&dev->regs->int_sts),
-+				int_ctrl);
-+#endif
++	/* schedule irq tasklet */
++	tasklet_schedule(&dev->iusbc_tasklet);
 +
 +	VDEBUG(dev, "<--- iusbc_irq() \n");
-+
 +	return IRQ_HANDLED;
 +}
 +
@@ -3283,7 +3095,7 @@ index 0000000..b6850b0
 +static int iusbc_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 +{
 +	struct iusbc		*dev;
-+	unsigned long		resource, len; //counter = 0xffffffff;
++	unsigned long		resource, len;
 +	void			__iomem *base = NULL;
 +	int			retval;
 +	unsigned		i;
@@ -3308,11 +3120,10 @@ index 0000000..b6850b0
 +	spin_lock_init(&dev->lock);
 +	dev->pdev = pdev;
 +
-+	VDEBUG(dev, "---> iusbc_probe() \n");
++	DEBUG(dev, "---> iusbc_probe() \n");
 +
 +	dev->gadget.ops = &iusbc_ops;
 +	dev->gadget.is_dualspeed = 1; /* support high/full speed */
-+	//dev->gadget.is_dualspeed = 0; /* support only full speed */
 +
 +	/* the "gadget" abstracts/virtualizes the controller */
 +	strcpy(dev->gadget.dev.bus_id, "gadget");
@@ -3329,12 +3140,6 @@ index 0000000..b6850b0
 +
 +	/* WORKAROUND: USB port routing bug */
 +	pci_write_config_byte(pdev, 0x40, 0x82);
-+
-+	/* FIXME: ForcePortRouting, the USB port indicated by PID
-+	 * will always be routed to the USB Client controller,
-+	 * regardless of the state of the externel ID pin
-+	 */
-+	//pci_write_config_byte(pdev, 0x40, 0xc2);
 +
 +	dev->enabled = 1;
 +
@@ -3374,29 +3179,6 @@ index 0000000..b6850b0
 +
 +	/* reset all registers */ 
 +	writel(0, &dev->regs->dev_ctrl);
-+
-+	/* PCI enable: write 1 to DeviceEnable */
-+	writel(DEVICE_ENABLE, &dev->regs->dev_ctrl);	
-+
-+	/* XXX */
-+	mdelay(5);
-+
-+#if 0
-+	/* wait until read 1 from DeviceEnable, within 5 ms */
-+	while (1) {
-+		counter--;
-+		val_32 = readl(&dev->regs->dev_ctrl);
-+
-+		if (val_32 & DEVICE_ENABLE) {
-+			/* val_32 should be DEVICE_ENABLE now */
-+			VDEBUG(dev, "DEVICE_ENABLE = 1\n");
-+			break;
-+		} else if (!counter) {
-+			DEBUG(dev, "HW BUG: hardware reset error\n");
-+			break;
-+		}
-+	}
-+#endif
 +
 +	/* init usb client controller device */
 +	iusbc_reset(dev);
@@ -3449,9 +3231,6 @@ index 0000000..b6850b0
 +		td->dmacount = 0;	/* not VALID */
 +		td->dmaaddr = __constant_cpu_to_le32(DMA_ADDR_INVALID);
 +
-+		/* FIXME: remove it ? */
-+		td->dmadesc = td->dmaaddr;
-+
 +		dev->ep[i].dummy = td;
 +	}
 +
@@ -3482,7 +3261,7 @@ index 0000000..b6850b0
 +	if (retval)
 +		goto done;
 +
-+	VDEBUG(dev, "<--- iusbc_probe() \n");
++	DEBUG(dev, "<--- iusbc_probe() \n");
 +
 +	return 0;
 +
@@ -3490,43 +3269,58 @@ index 0000000..b6850b0
 +	if (dev)
 +		iusbc_remove(pdev);
 +
-+	VDEBUG(dev, "<--- iusbc_probe() \n");
++	DEBUG(dev, "<--- iusbc_probe() \n");
 +
 +	return retval;
 +}
 +
 +
++#ifdef CONFIG_PM
 +/* client suspend */
 +static int iusbc_suspend(struct pci_dev *pdev, pm_message_t state)
 +{
 +	struct iusbc	*dev;
-+	//int		retval;
++	unsigned long	flags;
 +
 +	dev = pci_get_drvdata(pdev);
 +
-+	VDEBUG(dev, "---> iusbc_suspend() \n");
++	DEBUG(dev, "---> iusbc_suspend() \n");
 +
-+	VDEBUG(dev, "<--- iusbc_suspend() \n");
++	tasklet_kill(&dev->iusbc_tasklet);
 +
-+	//return retval;
++	spin_lock_irqsave(&dev->lock, flags);
++	stop_activity(dev, dev->driver);
++	spin_unlock_irqrestore(&dev->lock, flags);
++
++	iusbc_pullup(&dev->gadget, 0);
++
++	pci_save_state(pdev);
++	pci_set_power_state(pdev, PCI_D3hot);
++
++	DEBUG(dev, "<--- iusbc_suspend() \n");
++
 +	return 0;
 +}
 +
-+
++/* client resume */
 +static int iusbc_resume(struct pci_dev *pdev)
 +{
 +	struct iusbc	*dev;
-+	//int		retval;
 +
 +	dev = pci_get_drvdata(pdev);
 +
-+	VDEBUG(dev, "---> iusbc_resume() \n");
++	DEBUG(dev, "---> iusbc_resume() \n");
 +
-+	VDEBUG(dev, "<--- iusbc_resume() \n");
++	pci_set_power_state(pdev, PCI_D0);
++	pci_restore_state(pdev);
 +
-+	//return retval;
++	device_start(dev);
++
++	DEBUG(dev, "<--- iusbc_resume() \n");
++
 +	return 0;
 +}
++#endif
 +
 +
 +static void iusbc_shutdown(struct pci_dev *pdev)
@@ -3536,7 +3330,7 @@ index 0000000..b6850b0
 +
 +	dev = pci_get_drvdata(pdev);
 +
-+	VDEBUG(dev, "---> iusbc_shutdown() \n");
++	DEBUG(dev, "---> iusbc_shutdown() \n");
 +
 +	/* disable irqs */
 +	writel(0, &dev->regs->int_ctrl);
@@ -3544,13 +3338,10 @@ index 0000000..b6850b0
 +	/* reset all registers */ 
 +	writel(0, &dev->regs->dev_ctrl);
 +
-+	/* XXX */
-+	//mdelay(5);
-+
 +	val_32 = readl(&dev->regs->dev_ctrl);
-+	VDEBUG(dev, "dev_ctrl = 0x%08x\n", val_32);
++	DEBUG(dev, "dev_ctrl = 0x%08x\n", val_32);
 +
-+	VDEBUG(dev, "<--- iusbc_shutdown() \n");
++	DEBUG(dev, "<--- iusbc_shutdown() \n");
 +}
 +
 +/*-------------------------------------------------------------------------*/
@@ -3575,15 +3366,18 @@ index 0000000..b6850b0
 +	.probe =	iusbc_probe,
 +	.remove =	iusbc_remove,
 +
-+	/* TODO: add power management support */
++#ifdef CONFIG_PM
 +	.suspend =	iusbc_suspend,	
 +	.resume =	iusbc_resume,
++#endif
 +
 +	.shutdown =	iusbc_shutdown,
 +};
 +
 +
 +MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_AUTHOR("Xiaochen Shen: xiaochen.shen@intel.com");
++MODULE_VERSION(DRIVER_VERSION);
 +MODULE_LICENSE("GPL");
 +
 +
@@ -3597,15 +3391,23 @@ index 0000000..b6850b0
 +static void __exit cleanup(void)
 +{
 +	pci_unregister_driver(&iusbc_pci_driver);
++	/* we must wait for deferred_free tasklet to finish */
++	spin_lock(&buflock);
++	while (!list_empty(&buffers)) {
++		spin_unlock(&buflock);
++		msleep(1);
++		spin_lock(&buflock);
++	}
++	spin_unlock(&buflock);
 +}
 +module_exit(cleanup);
 +
 diff --git a/drivers/usb/gadget/iusbc.h b/drivers/usb/gadget/iusbc.h
 new file mode 100644
-index 0000000..1a3fcb5
+index 0000000..38a9650
 --- /dev/null
 +++ b/drivers/usb/gadget/iusbc.h
-@@ -0,0 +1,296 @@
+@@ -0,0 +1,304 @@
 +/*
 + * Intel Poulsbo USB Client Controller Driver
 + * Copyright (C) 2006-07, Intel Corporation.
@@ -3625,6 +3427,7 @@ index 0000000..1a3fcb5
 + *
 + */
 +
++#include <linux/interrupt.h>
 +
 +/*
 + * MEMORY SPACE REGISTERS
@@ -3716,6 +3519,7 @@ index 0000000..1a3fcb5
 +#define		DMA3_DISABLED		(1 << 15)
 +#define		DMA2_DISABLED		(1 << 14)
 +#define		DMA1_DISABLED		(1 << 13)
++#define		DMA0_DISABLED		(1 << 12)
 +#define		CPU_SET_ADDRESS		(1 << 11)
 +#define		DISABLE_NYET		(1 << 9)
 +#define		TEST_MODE		(1 << 8)
@@ -3814,6 +3618,12 @@ index 0000000..1a3fcb5
 +
 +	/* 16 bits status data for GET_STATUS */
 +	__le16				status_d;
++
++	/* device irq tasklet */
++	struct tasklet_struct		iusbc_tasklet;
++
++	/* interrupt status register value */
++	volatile u32			int_sts;
 +};
 +
 +/*-------------------------------------------------------------------------*/
