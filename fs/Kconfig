@@ -2118,6 +2118,29 @@ config 9P_FS
 
 endif # NETWORK_FILESYSTEMS
 
+config DEFAULT_RELATIME
+	bool "Mount all filesystems with relatime by default"
+	default y
+	help
+	  If you say Y here, all your filesystems will be mounted
+	  with the "relatime" mount option. This eliminates many atime
+	  ('file last accessed' timestamp) updates (which otherwise
+	  is performed on every file access and generates a write
+	  IO to the inode) and thus speeds up IO. Atime is still updated,
+	  but only once per day.
+
+	  The mtime ('file last modified') and ctime ('file created')
+	  timestamp are unaffected by this change.
+
+	  Use the "norelatime" kernel boot option to turn off this
+	  feature.
+
+config DEFAULT_RELATIME_VAL
+	int
+	default "1" if DEFAULT_RELATIME
+	default "0"
+
+
 if BLOCK
 menu "Partition Types"
 

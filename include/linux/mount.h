@@ -105,5 +105,8 @@ extern dev_t name_to_dev_t(char *name);
 
 extern char *d_namespace_path(struct dentry *, struct vfsmount *, char *, int);
 
+extern int default_relatime;
+extern int relatime_interval;
+
 #endif
 #endif /* _LINUX_MOUNT_H */

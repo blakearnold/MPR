@@ -545,6 +545,10 @@ and is between 256 and 4096 characters. It is defined in the file
 			This is a 16-member array composed of values
 			ranging from 0-255.
 
+	default_relatime=
+			[FS] mount all filesystems with relative atime
+			updates by default.
+
 	vt.default_utf8=
 			[VT]
 			Format=<0|1>
@@ -1519,6 +1523,10 @@ and is between 256 and 4096 characters. It is defined in the file
 	reboot=		[BUGS=X86-32,BUGS=ARM,BUGS=IA-64] Rebooting mode
 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c			
+
+	relatime_interval=
+			[FS] relative atime update frequency, in seconds.
+			(default: 1 day: 86400 seconds)
 
 	reserve=	[KNL,BUGS] Force the kernel to ignore some iomem area
 
