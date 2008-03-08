@@ -30372,7 +30372,7 @@ diff -Naur --exclude='.git*' --exclude=debian ubuntu-hardy/arch/x86/kvm/Kconfig 
 @@ -4,6 +4,7 @@
  menuconfig VIRTUALIZATION
  	bool "Virtualization"
- 	depends on ARCH_SUPPORTS_KVM || X86
+ 	depends on HAVE_KVM || X86
 +	depends on !XEN
  	default y
  	---help---
