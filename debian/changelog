@@ -1,4 +1,8 @@
-linux (2.6.24-12.18) hardy; urgency=low
+linux (2.6.24-12.19) hardy; urgency=low
+
+  * Re-upload of -12.18 to fix build failures
+  * Fixup binary-custom configs
+  * Fixup xen patch to cope with kvm changes
 
   [Amit Kucheria]
 
