@@ -242,8 +242,6 @@ jbd
 jfs
 kahlua
 khazad
-kvm-amd
-kvm-intel
 lg
 libata
 libcrc32c

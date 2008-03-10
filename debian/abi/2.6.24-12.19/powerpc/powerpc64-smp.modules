@@ -564,7 +564,6 @@ ib_uverbs
 icom
 icplus
 ide-cd
-ide-core
 ide-cs
 ide-disk
 ide-floppy
