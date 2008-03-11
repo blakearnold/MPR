@@ -40073,23 +40073,6 @@ diff -Naur --exclude='.git*' --exclude=debian ubuntu-hardy/drivers/net/Makefile 
  obj-$(CONFIG_DUMMY) += dummy.o
  obj-$(CONFIG_IFB) += ifb.o
  obj-$(CONFIG_MACVLAN) += macvlan.o
-diff -Naur --exclude='.git*' --exclude=debian ubuntu-hardy/drivers/net/usb/asix.c ubuntu-hardy-xen/drivers/net/usb/asix.c
---- ubuntu-hardy/drivers/net/usb/asix.c	2008-01-29 15:38:04.000000000 -0500
-+++ ubuntu-hardy-xen/drivers/net/usb/asix.c	2008-01-29 16:32:23.000000000 -0500
-@@ -202,10 +202,10 @@
- 		buf,
- 		size,
- 		USB_CTRL_GET_TIMEOUT);
--	if (err == size)
--		memcpy(data, buf, size);
--	else if (err >= 0)
-+	if (err >= 0 && err < size)
- 		err = -EINVAL;
-+	if (!err)
-+		memcpy(data, buf, size);
- 	kfree(buf);
- 
- out:
 diff -Naur --exclude='.git*' --exclude=debian ubuntu-hardy/drivers/net/xen-netfront.c ubuntu-hardy-xen/drivers/net/xen-netfront.c
 --- ubuntu-hardy/drivers/net/xen-netfront.c	2008-01-29 15:38:05.000000000 -0500
 +++ ubuntu-hardy-xen/drivers/net/xen-netfront.c	2008-01-29 16:32:23.000000000 -0500
