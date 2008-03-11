@@ -688,6 +688,8 @@ static const struct {
 } hidp_blacklist[] = {
 	/* Apple wireless Mighty Mouse */
 	{ 0x05ac, 0x030c, HID_QUIRK_MIGHTYMOUSE | HID_QUIRK_INVERT_HWHEEL },
+	/* Apple Wireless Aluminum Keyboard */
+	{ 0x05ac, 0x022c, HID_QUIRK_POWERBOOK_HAS_FN },
 
 	{ }	/* Terminating entry */
 };
