@@ -2372,6 +2372,16 @@ EXPORT_SYMBOL net/wireless/cfg80211 0xc4e85ec5	ieee80211_radiotap_iterator_next
 EXPORT_SYMBOL net/wireless/cfg80211 0xe0fb07d7	wiphy_new
 EXPORT_SYMBOL net/wireless/cfg80211 0xff24c2ad	wiphy_register
 EXPORT_SYMBOL sound/ac97_bus 0xdd8db16f	ac97_bus_type
+EXPORT_SYMBOL sound/soundcore 0x571eb7cf	register_sound_special
+EXPORT_SYMBOL sound/soundcore 0x7afc9d8a	unregister_sound_mixer
+EXPORT_SYMBOL sound/soundcore 0x80f22e19	register_sound_special_device
+EXPORT_SYMBOL sound/soundcore 0x99c95fa5	unregister_sound_special
+EXPORT_SYMBOL sound/soundcore 0xada9e1bb	register_sound_midi
+EXPORT_SYMBOL sound/soundcore 0xc42f1b5c	register_sound_dsp
+EXPORT_SYMBOL sound/soundcore 0xcd083b10	unregister_sound_dsp
+EXPORT_SYMBOL sound/soundcore 0xd1f78637	register_sound_mixer
+EXPORT_SYMBOL sound/soundcore 0xd7acd9a6	sound_class
+EXPORT_SYMBOL sound/soundcore 0xfdab6de3	unregister_sound_midi
 EXPORT_SYMBOL vmlinux 0x00112f51	groups_alloc
 EXPORT_SYMBOL vmlinux 0x00210170	blk_queue_dma_alignment
 EXPORT_SYMBOL vmlinux 0x002a8639	vcc_insert_socket
