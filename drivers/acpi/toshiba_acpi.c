@@ -27,13 +27,28 @@
  *		engineering the Windows drivers
  *	Yasushi Nagato - changes for linux kernel 2.4 -> 2.5
  *	Rob Miller - TV out and hotkeys help
+ *      Daniel Silverstone - Punting of hotkeys via acpi using a thread    	
  *
+ *  PLEASE NOTE
+ *
+ *  This is an experimental version of toshiba_acpi which includes emulation
+ *  of the original toshiba driver's /proc/toshiba and /dev/toshiba,
+ *  allowing Toshiba userspace utilities to work.  The relevant code was
+ *  based on toshiba.c (copyright 1996-2001 Jonathan A. Buzzard) and
+ *  incorporated into this driver with help from Gintautas Miliauskas,
+ *  Charles Schwieters, and Christoph Burger-Scheidlin.
+ *
+ *  Caveats:
+ *      * hotkey status in /proc/toshiba is not implemented
+ *      * to make accesses to /dev/toshiba load this driver instead of
+ *          the original driver, you will have to modify your module
+ *          auto-loading configuration
  *
  *  TODO
  *
  */
 
-#define TOSHIBA_ACPI_VERSION	"0.18"
+#define TOSHIBA_ACPI_VERSION	"0.19a-dev"
 #define PROC_INTERFACE_VERSION	1
 
 #include <linux/kernel.h>
@@ -41,11 +56,31 @@
 #include <linux/init.h>
 #include <linux/types.h>
 #include <linux/proc_fs.h>
+#include <linux/delay.h>
+#include <linux/suspend.h>
+#include <linux/miscdevice.h>
+#include <linux/toshiba.h>
+#include <asm/io.h>
 #include <linux/backlight.h>
-
+#include <linux/freezer.h>
 #include <asm/uaccess.h>
 
 #include <acpi/acpi_drivers.h>
+
+/* Some compatibility for isa legacy interface */
+#ifndef isa_readb
+
+#define isa_readb(a) readb(__ISA_IO_base + (a))
+#define isa_readw(a) readw(__ISA_IO_base + (a))
+#define isa_readl(a) readl(__ISA_IO_base + (a))
+#define isa_writeb(b,a) writeb(b,__ISA_IO_base + (a))
+#define isa_writew(w,a) writew(w,__ISA_IO_base + (a))
+#define isa_writel(l,a) writel(l,__ISA_IO_base + (a))
+#define isa_memset_io(a,b,c)            memset_io(__ISA_IO_base + (a),(b),(c))
+#define isa_memcpy_fromio(a,b,c)        memcpy_fromio((a),__ISA_IO_base + (b),(c))
+#define isa_memcpy_toio(a,b,c)          memcpy_toio(__ISA_IO_base + (a),(b),(c))
+
+#endif
 
 MODULE_AUTHOR("John Belmonte");
 MODULE_DESCRIPTION("Toshiba Laptop ACPI Extras Driver");
@@ -216,6 +251,11 @@ static struct backlight_device *toshiba_backlight_device;
 static int force_fan;
 static int last_key_event;
 static int key_event_valid;
+static int hotkeys_over_acpi = 1;
+static int hotkeys_check_per_sec = 2;
+
+module_param(hotkeys_over_acpi, uint, 0400);
+module_param(hotkeys_check_per_sec, uint, 0400);
 
 typedef struct _ProcItem {
 	const char *name;
@@ -443,27 +483,34 @@ static char *read_keys(char *p)
 	u32 hci_result;
 	u32 value;
 
-	if (!key_event_valid) {
-		hci_read1(HCI_SYSTEM_EVENT, &value, &hci_result);
-		if (hci_result == HCI_SUCCESS) {
-			key_event_valid = 1;
-			last_key_event = value;
-		} else if (hci_result == HCI_EMPTY) {
-			/* better luck next time */
-		} else if (hci_result == HCI_NOT_SUPPORTED) {
-			/* This is a workaround for an unresolved issue on
-			 * some machines where system events sporadically
-			 * become disabled. */
-			hci_write1(HCI_SYSTEM_EVENT, 1, &hci_result);
-			printk(MY_NOTICE "Re-enabled hotkeys\n");
-		} else {
-			printk(MY_ERR "Error reading hotkey status\n");
-			goto end;
+	if (!hotkeys_over_acpi) {
+		if (!key_event_valid) {
+			hci_read1(HCI_SYSTEM_EVENT, &value, &hci_result);
+			if (hci_result == HCI_SUCCESS) {
+				key_event_valid = 1;
+				last_key_event = value;
+			} else if (hci_result == HCI_EMPTY) {
+				/* better luck next time */
+			} else if (hci_result == HCI_NOT_SUPPORTED) {
+				/* This is a workaround for an
+				 * unresolved issue on some machines
+				 * where system events sporadically
+				 * become disabled. */
+				hci_write1(HCI_SYSTEM_EVENT, 1, &hci_result);
+				printk(MY_NOTICE "Re-enabled hotkeys\n");
+			} else {
+				printk(MY_ERR "Error reading hotkey status\n");
+				goto end;
+			}
 		}
+	} else {
+		key_event_valid = 0;
+		last_key_event = 0;
 	}
 
 	p += sprintf(p, "hotkey_ready:            %d\n", key_event_valid);
 	p += sprintf(p, "hotkey:                  0x%04x\n", last_key_event);
+	p += sprintf(p, "hotkeys_via_acpi:        %d\n", hotkeys_over_acpi);
 
       end:
 	return p;
@@ -489,6 +536,179 @@ static char *read_version(char *p)
 		     PROC_INTERFACE_VERSION);
 	return p;
 }
+
+/* /dev/toshiba and /proc/toshiba handlers {{{
+ *
+ * ISSUE: lots of magic numbers and mysterious code
+ */
+
+#define TOSH_MINOR_DEV		181
+#define OLD_PROC_TOSHIBA	"toshiba"
+
+static int
+tosh_acpi_bridge(SMMRegisters* regs)
+{
+	acpi_status status;
+
+	/* assert(sizeof(SMMRegisters) == sizeof(u32)*HCI_WORDS); */
+	status = hci_raw((u32*)regs, (u32*)regs);
+	if (status == AE_OK && (regs->eax & 0xff00) == HCI_SUCCESS)
+		return 0;
+
+	return -EINVAL;
+}
+
+static int
+tosh_ioctl(struct inode* ip, struct file* fp, unsigned int cmd,
+	unsigned long arg)
+{
+	SMMRegisters regs;
+	unsigned short ax,bx;
+	int err;
+
+	if ((!arg) || (cmd != TOSH_SMM))
+		return -EINVAL;
+
+	if (copy_from_user(&regs, (SMMRegisters*)arg, sizeof(SMMRegisters)))
+		return -EFAULT;
+
+	ax = regs.eax & 0xff00;
+	bx = regs.ebx & 0xffff;
+
+	/* block HCI calls to read/write memory & PCI devices */
+	if (((ax==HCI_SET) || (ax==HCI_GET)) && (bx>0x0069))
+		return -EINVAL;
+
+	err = tosh_acpi_bridge(&regs);
+
+	if (copy_to_user((SMMRegisters*)arg, &regs, sizeof(SMMRegisters)))
+		return -EFAULT;
+
+	return err;
+}
+
+static int
+tosh_get_machine_id(void)
+{
+	int id;
+	unsigned short bx,cx;
+	unsigned long address;
+
+	id = (0x100*(int)isa_readb(0xffffe))+((int)isa_readb(0xffffa));
+
+	/* do we have a SCTTable machine identication number on our hands */
+	if (id==0xfc2f) {
+		bx = 0xe6f5; /* cheat */
+		/* now twiddle with our pointer a bit */
+		address = 0x000f0000+bx;
+		cx = isa_readw(address);
+		address = 0x000f0009+bx+cx;
+		cx = isa_readw(address);
+		address = 0x000f000a+cx;
+		cx = isa_readw(address);
+		/* now construct our machine identification number */
+		id = ((cx & 0xff)<<8)+((cx & 0xff00)>>8);
+	}
+
+	return id;
+}
+
+static int tosh_id;
+static int tosh_bios;
+static int tosh_date;
+static int tosh_sci;
+
+static struct file_operations tosh_fops = {
+	.owner = THIS_MODULE,
+	.ioctl = tosh_ioctl
+};
+
+static struct miscdevice tosh_device = {
+	TOSH_MINOR_DEV,
+	"toshiba",
+	&tosh_fops
+};
+
+static void
+setup_tosh_info(void __iomem *bios)
+{
+	int major, minor;
+	int day, month, year;
+
+	tosh_id = tosh_get_machine_id();
+
+	/* get the BIOS version */
+	major = isa_readb(0xfe009)-'0';
+	minor = ((isa_readb(0xfe00b)-'0')*10)+(isa_readb(0xfe00c)-'0');
+	tosh_bios = (major*0x100)+minor;
+
+	/* get the BIOS date */
+	day = ((isa_readb(0xffff5)-'0')*10)+(isa_readb(0xffff6)-'0');
+	month = ((isa_readb(0xffff8)-'0')*10)+(isa_readb(0xffff9)-'0');
+	year = ((isa_readb(0xffffb)-'0')*10)+(isa_readb(0xffffc)-'0');
+	tosh_date = (((year-90) & 0x1f)<<10) | ((month & 0xf)<<6)
+		| ((day & 0x1f)<<1);
+}
+
+/* /proc/toshiba read handler */
+static int
+tosh_get_info(char* buffer, char** start, off_t fpos, int length)
+{
+	char* temp = buffer;
+	/* TODO: tosh_fn_status() */
+	int key = 0;
+
+	/* Format:
+	 *    0) Linux driver version (this will change if format changes)
+	 *    1) Machine ID
+	 *    2) SCI version
+	 *    3) BIOS version (major, minor)
+	 *    4) BIOS date (in SCI date format)
+	 *    5) Fn Key status
+	 */
+
+	temp += sprintf(temp, "1.1 0x%04x %d.%d %d.%d 0x%04x 0x%02x\n",
+		tosh_id,
+		(tosh_sci & 0xff00)>>8,
+		tosh_sci & 0xff,
+		(tosh_bios & 0xff00)>>8,
+		tosh_bios & 0xff,
+		tosh_date,
+		key);
+
+	return temp-buffer;
+}
+
+static int __init
+old_driver_emulation_init(void)
+{
+	int status;
+	void __iomem *bios = ioremap(0xf0000, 0x10000);
+	if (!bios)
+		return -ENOMEM;
+
+	if ((status = misc_register(&tosh_device))) {
+		printk(MY_ERR "failed to register misc device %d (\"%s\")\n",
+			tosh_device.minor, tosh_device.name);
+		return status;
+	}
+
+	setup_tosh_info(bios);
+	create_proc_info_entry(OLD_PROC_TOSHIBA, 0, NULL, tosh_get_info);
+
+	iounmap(bios);
+
+	return 0;
+}
+
+static void __exit
+old_driver_emulation_exit(void)
+{
+	remove_proc_entry(OLD_PROC_TOSHIBA, NULL);
+	misc_deregister(&tosh_device);
+}
+
+/* }}} end of /dev/toshiba and /proc/toshiba handlers */
 
 /* proc and module init
  */
@@ -538,15 +758,150 @@ static struct backlight_ops toshiba_backlight_data = {
         .update_status  = set_lcd_status,
 };
 
+static struct semaphore thread_sem;
+static int thread_should_die;
+
+static struct acpi_device *threaded_device = 0;
+
+static void thread_deliver_button_event(u32 value)
+{
+	if (!threaded_device) return;
+	if( value == 0x0100 ) {
+		/* Ignore FN on its own */
+	} else if( value & 0x80 ) {
+		acpi_bus_generate_proc_event( threaded_device, 1, value & ~0x80 );
+	} else {
+		acpi_bus_generate_proc_event( threaded_device, 0, value );
+	}
+}
+
+static int toshiba_acpi_thread(void *data)
+{
+	int dropped = 0;
+	u32 hci_result, value;
+
+	daemonize("ktoshkeyd");
+	set_user_nice(current, 4);
+	thread_should_die = 0;
+
+	up(&thread_sem);
+
+	do {
+		/* In case we get stuck; we can rmmod the module here */
+		if (thread_should_die)
+			break;
+
+		hci_read1(HCI_SYSTEM_EVENT, &value, &hci_result);
+		if (hci_result == HCI_SUCCESS) {
+			dropped++;
+		} else if (hci_result == HCI_EMPTY) {
+                         /* better luck next time */
+		} else if (hci_result == HCI_NOT_SUPPORTED) {
+			/* This is a workaround for an unresolved issue on
+			 * some machines where system events sporadically
+			 * become disabled. */
+			hci_write1(HCI_SYSTEM_EVENT, 1, &hci_result);
+			printk(MY_NOTICE "Re-enabled hotkeys\n");
+		}
+	} while (hci_result != HCI_EMPTY);
+
+	printk(MY_INFO "Dropped %d keys from the queue on startup\n", dropped);
+
+	for (;;) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule_timeout(HZ / hotkeys_check_per_sec);
+
+		if (thread_should_die)
+			break;
+
+		if (try_to_freeze())
+			continue;
+
+		do {
+			hci_read1(HCI_SYSTEM_EVENT, &value, &hci_result);
+			if (hci_result == HCI_SUCCESS) {
+				thread_deliver_button_event(value);
+			} else if (hci_result == HCI_EMPTY) {
+				/* better luck next time */
+			} else if (hci_result == HCI_NOT_SUPPORTED) {
+				/* This is a workaround for an
+				 * unresolved issue on some machines
+				 * where system events sporadically
+				 * become disabled. */
+				hci_write1(HCI_SYSTEM_EVENT, 1, &hci_result);
+				printk(MY_NOTICE "Re-enabled hotkeys\n");
+			}
+		} while (hci_result == HCI_SUCCESS);
+	}
+	set_user_nice(current, -20);	/* Become nasty so we are cleaned up
+					 * before the module exits making us oops */
+	up(&thread_sem);
+	return 0;
+}
+
+static int acpi_toshkeys_add (struct acpi_device *device)
+{
+	threaded_device = device;
+	strcpy(acpi_device_name(device), "Toshiba laptop hotkeys");
+	strcpy(acpi_device_class(device), "hkey");
+	return 0;
+}
+
+static int acpi_toshkeys_remove (struct acpi_device *device, int type)
+{
+	if (threaded_device == device)
+		threaded_device = 0;
+	return 0;
+}
+
+static const struct acpi_device_id acpi_toshkeys_ids[] = {
+	{ "TOS6200", 0 },
+	{ "TOS6207", 0 },
+	{ "TOS6208", 0 },
+ 	{"", 0}
+};
+
+static struct acpi_driver acpi_threaded_toshkeys = {
+	.name = "Toshiba laptop hotkeys driver",
+	.class = "hkey",
+	.ids = acpi_toshkeys_ids,
+	.ops = {
+		.add = acpi_toshkeys_add,
+		.remove = acpi_toshkeys_remove,
+	},
+};
+
+static int __init init_threaded_acpi(void)
+{
+        acpi_status result = AE_OK;
+        result = acpi_bus_register_driver(&acpi_threaded_toshkeys);
+        if( result < 0 )
+                printk(MY_ERR "Registration of toshkeys acpi device failed\n");
+        return result;
+}
+
+static void kill_threaded_acpi(void)
+{
+        acpi_bus_unregister_driver(&acpi_threaded_toshkeys);
+}
+
 static void toshiba_acpi_exit(void)
 {
 	if (toshiba_backlight_device)
 		backlight_device_unregister(toshiba_backlight_device);
 
+	if (hotkeys_over_acpi) {
+		thread_should_die = 1;
+		down(&thread_sem);
+		kill_threaded_acpi();
+	}
+
 	remove_device();
 
 	if (toshiba_proc_dir)
 		remove_proc_entry(PROC_TOSHIBA, acpi_root_dir);
+
+	old_driver_emulation_exit();
 
 	return;
 }
@@ -555,6 +910,7 @@ static int __init toshiba_acpi_init(void)
 {
 	acpi_status status = AE_OK;
 	u32 hci_result;
+	int status2;
 
 	if (acpi_disabled)
 		return -ENODEV;
@@ -570,6 +926,9 @@ static int __init toshiba_acpi_init(void)
 	printk(MY_INFO "Toshiba Laptop ACPI Extras version %s\n",
 	       TOSHIBA_ACPI_VERSION);
 	printk(MY_INFO "    HCI method: %s\n", method_hci);
+
+	if ((status2 = old_driver_emulation_init()))
+		return status2;
 
 	force_fan = 0;
 	key_event_valid = 0;
@@ -598,7 +957,27 @@ static int __init toshiba_acpi_init(void)
 		toshiba_acpi_exit();
 		return ret;
 	}
-        toshiba_backlight_device->props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
+	toshiba_backlight_device->props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
+
+	if (hotkeys_over_acpi && ACPI_SUCCESS(status)) {
+		printk(MY_INFO "Toshiba hotkeys are sent as ACPI events\n");
+		if (hotkeys_check_per_sec < 1)
+			hotkeys_check_per_sec = 1;
+		if (hotkeys_check_per_sec > 10)
+			hotkeys_check_per_sec = 10;
+		printk(MY_INFO "ktoshkeyd will check %d time%s per second\n",
+			hotkeys_check_per_sec, hotkeys_check_per_sec==1?"":"s");
+		if (init_threaded_acpi() >= 0) {
+			init_MUTEX_LOCKED(&thread_sem);
+			kernel_thread(toshiba_acpi_thread, NULL, CLONE_KERNEL);
+			down(&thread_sem);
+		} else {
+			remove_device();
+			remove_proc_entry(PROC_TOSHIBA, acpi_root_dir);
+			status = AE_ERROR;
+			printk(MY_INFO "ktoshkeyd initialisation failed. Refusing to load module\n");
+		}
+	}
 
 	return (ACPI_SUCCESS(status)) ? 0 : -ENODEV;
 }
