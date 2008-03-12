@@ -1,3 +1,11 @@
+linux (2.6.24-12.22) UNRELEASED; urgency=low
+
+  [Ben Collins]
+
+  * custom/rt: Disable toshiba_acpi, since it isn't compatible
+
+ -- Ben Collins <bcollins@ubuntu.com>  Wed, 12 Mar 2008 14:38:59 -0400
+
 linux (2.6.24-12.21) hardy; urgency=low
 
   [Ben Collins]
