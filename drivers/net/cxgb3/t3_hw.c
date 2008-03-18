@@ -1730,7 +1730,6 @@ void t3_intr_enable(struct adapter *adapter)
 		 MC7_INTR_MASK},
 		{A_MC5_DB_INT_ENABLE, MC5_INTR_MASK},
 		{A_ULPRX_INT_ENABLE, ULPRX_INTR_MASK},
-		{A_TP_INT_ENABLE, 0x3bfffff},
 		{A_PM1_TX_INT_ENABLE, PMTX_INTR_MASK},
 		{A_PM1_RX_INT_ENABLE, PMRX_INTR_MASK},
 		{A_CIM_HOST_INT_ENABLE, CIM_INTR_MASK},
@@ -1740,6 +1739,8 @@ void t3_intr_enable(struct adapter *adapter)
 	adapter->slow_intr_mask = PL_INTR_MASK;
 
 	t3_write_regs(adapter, intr_en_avp, ARRAY_SIZE(intr_en_avp), 0);
+	t3_write_reg(adapter, A_TP_INT_ENABLE,
+		     adapter->params.rev >= T3_REV_C ? 0x2bfffff : 0x3bfffff);
 
 	if (adapter->params.rev > 0) {
 		t3_write_reg(adapter, A_CPL_INTR_ENABLE,
