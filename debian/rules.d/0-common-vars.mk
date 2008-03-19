@@ -112,8 +112,7 @@ ifneq ($(LOCAL_ENV_CC),)
 kmake += CC=$(LOCAL_ENV_CC) DISTCC_HOSTS=$(LOCAL_ENV_DISTCC_HOSTS)
 endif
 
-#all_custom_flavours = xen rt ume lpiacompat lpia
-all_custom_flavours = lpia rt lpiacompat xen
+all_custom_flavours = lpia rt lpiacompat xen openvz
 
 # Checks if a var is overriden by the custom rules. Called with var and
 # flavour as arguments.

@@ -1,0 +1,7 @@
+arch="i386 amd64"
+supported="Generic"
+target="OpenVZ kernel"
+desc="OpenVZ Virtualization enabled kernel"
+bootloader="lilo (>= 19.1) | grub"
+provides="kvm-api-4, redhat-cluster-modules"
+section_image="universe/base"
