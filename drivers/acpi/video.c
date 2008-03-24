@@ -1889,22 +1889,26 @@ static void acpi_video_device_notify(acpi_handle handle, u32 event, void *data)
 
 	switch (event) {
 	case ACPI_VIDEO_NOTIFY_CYCLE_BRIGHTNESS:	/* Cycle brightness */
-		acpi_video_switch_brightness(video_device, event);
+		if (!no_automatic_changes)
+			acpi_video_switch_brightness(video_device, event);
 		acpi_bus_generate_proc_event(device, event, 0);
 		keycode = KEY_BRIGHTNESS_CYCLE;
 		break;
 	case ACPI_VIDEO_NOTIFY_INC_BRIGHTNESS:	/* Increase brightness */
-		acpi_video_switch_brightness(video_device, event);
+		if (!no_automatic_changes)
+			acpi_video_switch_brightness(video_device, event);
 		acpi_bus_generate_proc_event(device, event, 0);
 		keycode = KEY_BRIGHTNESSUP;
 		break;
 	case ACPI_VIDEO_NOTIFY_DEC_BRIGHTNESS:	/* Decrease brightness */
-		acpi_video_switch_brightness(video_device, event);
+		if (!no_automatic_changes)
+			acpi_video_switch_brightness(video_device, event);
 		acpi_bus_generate_proc_event(device, event, 0);
 		keycode = KEY_BRIGHTNESSDOWN;
 		break;
 	case ACPI_VIDEO_NOTIFY_ZERO_BRIGHTNESS:	/* zero brightnesss */
-		acpi_video_switch_brightness(video_device, event);
+		if (!no_automatic_changes)
+			acpi_video_switch_brightness(video_device, event);
 		acpi_bus_generate_proc_event(device, event, 0);
 		keycode = KEY_BRIGHTNESS_ZERO;
 		break;
