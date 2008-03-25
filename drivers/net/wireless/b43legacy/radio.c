@@ -3,7 +3,7 @@
   Broadcom B43legacy wireless driver
 
   Copyright (c) 2005 Martin Langer <martin-langer@gmx.de>,
-		     Stefano Brivio <stefano.brivio@polimi.it>
+		     Stefano Brivio <st3@riseup.net>
 		     Michael Buesch <mbuesch@freenet.de>
 		     Danny van Dyk <kugelfang@gentoo.org>
 		     Andreas Jaggi <andreas.jaggi@waterwave.ch>
@@ -827,7 +827,7 @@ void b43legacy_calc_nrssi_threshold(struct b43legacy_wldev *dev)
 	case B43legacy_PHYTYPE_B: {
 		if (phy->radio_ver != 0x2050)
 			return;
-		if (!(dev->dev->bus->sprom.boardflags_lo &
+		if (!(dev->dev->bus->sprom.r1.boardflags_lo &
 		    B43legacy_BFL_RSSI))
 			return;
 
@@ -857,7 +857,7 @@ void b43legacy_calc_nrssi_threshold(struct b43legacy_wldev *dev)
 	}
 	case B43legacy_PHYTYPE_G:
 		if (!phy->gmode ||
-		    !(dev->dev->bus->sprom.boardflags_lo &
+		    !(dev->dev->bus->sprom.r1.boardflags_lo &
 		    B43legacy_BFL_RSSI)) {
 			tmp16 = b43legacy_nrssi_hw_read(dev, 0x20);
 			if (tmp16 >= 0x20)
@@ -1406,7 +1406,7 @@ static u16 b43legacy_get_812_value(struct b43legacy_wldev *dev, u8 lpd)
 	if (!phy->gmode)
 		return 0;
 	if (!has_loopback_gain(phy)) {
-		if (phy->rev < 7 || !(dev->dev->bus->sprom.boardflags_lo
+		if (phy->rev < 7 || !(dev->dev->bus->sprom.r1.boardflags_lo
 		    & B43legacy_BFL_EXTLNA)) {
 			switch (lpd) {
 			case LPD(0, 1, 1):
@@ -1459,7 +1459,7 @@ static u16 b43legacy_get_812_value(struct b43legacy_wldev *dev, u8 lpd)
 		}
 
 		loop_or = (loop << 8) | extern_lna_control;
-		if (phy->rev >= 7 && dev->dev->bus->sprom.boardflags_lo
+		if (phy->rev >= 7 && dev->dev->bus->sprom.r1.boardflags_lo
 		    & B43legacy_BFL_EXTLNA) {
 			if (extern_lna_control)
 				loop_or |= 0x8000;
@@ -1550,7 +1550,7 @@ u16 b43legacy_radio_init2050(struct b43legacy_wldev *dev)
 					    b43legacy_get_812_value(dev,
 					    LPD(0, 1, 1)));
 			if (phy->rev < 7 ||
-			    !(dev->dev->bus->sprom.boardflags_lo
+			    !(dev->dev->bus->sprom.r1.boardflags_lo
 			    & B43legacy_BFL_EXTLNA))
 				b43legacy_phy_write(dev, 0x0811, 0x01B3);
 			else
@@ -1786,7 +1786,7 @@ int b43legacy_radio_selectchannel(struct b43legacy_wldev *dev,
 			  channel2freq_bg(channel));
 
 	if (channel == 14) {
-		if (dev->dev->bus->sprom.country_code == 5)   /* JAPAN) */
+		if (dev->dev->bus->sprom.r1.country_code == 5)   /* JAPAN) */
 			b43legacy_shm_write32(dev, B43legacy_SHM_SHARED,
 					      B43legacy_UCODEFLAGS_OFFSET,
 					      b43legacy_shm_read32(dev,
@@ -2113,25 +2113,21 @@ void b43legacy_radio_turn_on(struct b43legacy_wldev *dev)
 		B43legacy_BUG_ON(1);
 	}
 	phy->radio_on = 1;
+	b43legacy_leds_update(dev, 0);
 }
 
-void b43legacy_radio_turn_off(struct b43legacy_wldev *dev, bool force)
+void b43legacy_radio_turn_off(struct b43legacy_wldev *dev)
 {
 	struct b43legacy_phy *phy = &dev->phy;
-
-	if (!phy->radio_on && !force)
-		return;
 
 	if (phy->type == B43legacy_PHYTYPE_G && dev->dev->id.revision >= 5) {
 		u16 rfover, rfoverval;
 
 		rfover = b43legacy_phy_read(dev, B43legacy_PHY_RFOVER);
 		rfoverval = b43legacy_phy_read(dev, B43legacy_PHY_RFOVERVAL);
-		if (!force) {
-			phy->radio_off_context.rfover = rfover;
-			phy->radio_off_context.rfoverval = rfoverval;
-			phy->radio_off_context.valid = 1;
-		}
+		phy->radio_off_context.rfover = rfover;
+		phy->radio_off_context.rfoverval = rfoverval;
+		phy->radio_off_context.valid = 1;
 		b43legacy_phy_write(dev, B43legacy_PHY_RFOVER, rfover | 0x008C);
 		b43legacy_phy_write(dev, B43legacy_PHY_RFOVERVAL,
 				    rfoverval & 0xFF73);
@@ -2139,6 +2135,7 @@ void b43legacy_radio_turn_off(struct b43legacy_wldev *dev, bool force)
 		b43legacy_phy_write(dev, 0x0015, 0xAA00);
 	phy->radio_on = 0;
 	b43legacydbg(dev->wl, "Radio initialized\n");
+	b43legacy_leds_update(dev, 0);
 }
 
 void b43legacy_radio_clear_tssi(struct b43legacy_wldev *dev)

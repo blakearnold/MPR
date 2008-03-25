@@ -19,7 +19,6 @@
 
 #include "debugfs.h"
 #include "leds.h"
-#include "rfkill.h"
 #include "phy.h"
 
 
@@ -593,9 +592,6 @@ struct b43legacy_wl {
 	u8 rng_initialized;
 	char rng_name[30 + 1];
 
-	/* The RF-kill button */
-	struct b43legacy_rfkill rfkill;
-
 	/* List of all wireless devices on this chip */
 	struct list_head devlist;
 	u8 nr_devs;
@@ -667,11 +663,8 @@ struct b43legacy_wldev {
 	/* Various statistics about the physical device. */
 	struct b43legacy_stats stats;
 
-	/* The device LEDs. */
-	struct b43legacy_led led_tx;
-	struct b43legacy_led led_rx;
-	struct b43legacy_led led_assoc;
-	struct b43legacy_led led_radio;
+#define B43legacy_NR_LEDS		4
+	struct b43legacy_led leds[B43legacy_NR_LEDS];
 
 	/* Reason code of the last interrupt. */
 	u32 irq_reason;

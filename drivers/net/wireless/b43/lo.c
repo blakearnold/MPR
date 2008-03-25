@@ -5,7 +5,7 @@
   G PHY LO (LocalOscillator) Measuring and Control routines
 
   Copyright (c) 2005 Martin Langer <martin-langer@gmx.de>,
-  Copyright (c) 2005, 2006 Stefano Brivio <stefano.brivio@polimi.it>
+  Copyright (c) 2005, 2006 Stefano Brivio <st3@riseup.net>
   Copyright (c) 2005-2007 Michael Buesch <mb@bu3sch.de>
   Copyright (c) 2005, 2006 Danny van Dyk <kugelfang@gentoo.org>
   Copyright (c) 2005, 2006 Andreas Jaggi <andreas.jaggi@waterwave.ch>
@@ -264,8 +264,8 @@ static u16 lo_measure_feedthrough(struct b43_wldev *dev,
 		rfover |= pga;
 		rfover |= lna;
 		rfover |= trsw_rx;
-		if ((dev->dev->bus->sprom.boardflags_lo & B43_BFL_EXTLNA)
-		    && phy->rev > 6)
+		if ((dev->dev->bus->sprom.r1.boardflags_lo & B43_BFL_EXTLNA) &&
+		    phy->rev > 6)
 			rfover |= B43_PHY_RFOVERVAL_EXTLNA;
 
 		b43_phy_write(dev, B43_PHY_PGACTL, 0xE300);
@@ -634,7 +634,7 @@ static void lo_measure_setup(struct b43_wldev *dev,
 			      & 0xFFFC);
 		if (phy->type == B43_PHYTYPE_G) {
 			if ((phy->rev >= 7) &&
-			    (sprom->boardflags_lo & B43_BFL_EXTLNA)) {
+			    (sprom->r1.boardflags_lo & B43_BFL_EXTLNA)) {
 				b43_phy_write(dev, B43_PHY_RFOVER, 0x933);
 			} else {
 				b43_phy_write(dev, B43_PHY_RFOVER, 0x133);

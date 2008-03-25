@@ -3,7 +3,7 @@
   Broadcom B43 wireless driver
 
   Copyright (c) 2005 Martin Langer <martin-langer@gmx.de>
-  Copyright (c) 2005 Stefano Brivio <stefano.brivio@polimi.it>
+  Copyright (c) 2005 Stefano Brivio <st3@riseup.net>
   Copyright (c) 2005, 2006 Michael Buesch <mb@bu3sch.de>
   Copyright (c) 2005 Danny van Dyk <kugelfang@gentoo.org>
   Copyright (c) 2005 Andreas Jaggi <andreas.jaggi@waterwave.ch>
@@ -75,6 +75,14 @@ module_param_named(bad_frames_preempt, modparam_bad_frames_preempt, int, 0444);
 MODULE_PARM_DESC(bad_frames_preempt,
 		 "enable(1) / disable(0) Bad Frames Preemption");
 
+static int modparam_short_retry = B43_DEFAULT_SHORT_RETRY_LIMIT;
+module_param_named(short_retry, modparam_short_retry, int, 0444);
+MODULE_PARM_DESC(short_retry, "Short-Retry-Limit (0 - 15)");
+
+static int modparam_long_retry = B43_DEFAULT_LONG_RETRY_LIMIT;
+module_param_named(long_retry, modparam_long_retry, int, 0444);
+MODULE_PARM_DESC(long_retry, "Long-Retry-Limit (0 - 15)");
+
 static char modparam_fwpostfix[16];
 module_param_string(fwpostfix, modparam_fwpostfix, 16, 0444);
 MODULE_PARM_DESC(fwpostfix, "Postfix for the .fw files to load.");
@@ -93,7 +101,6 @@ static const struct ssb_device_id b43_ssb_tbl[] = {
 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 7),
 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 9),
 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 10),
-	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 13),
 	SSB_DEVTABLE_END
 };
 
@@ -1937,7 +1944,7 @@ static int b43_gpio_init(struct b43_wldev *dev)
 		mask |= 0x0180;
 		set |= 0x0180;
 	}
-	if (dev->dev->bus->sprom.boardflags_lo & B43_BFL_PACTRL) {
+	if (dev->dev->bus->sprom.r1.boardflags_lo & B43_BFL_PACTRL) {
 		b43_write16(dev, B43_MMIO_GPIO_MASK,
 			    b43_read16(dev, B43_MMIO_GPIO_MASK)
 			    | 0x0200);
@@ -2267,9 +2274,6 @@ static int b43_chip_init(struct b43_wldev *dev)
 	b43_write16(dev, B43_MMIO_POWERUP_DELAY,
 		    dev->dev->bus->chipco.fast_pwrup_delay);
 
-	/* OFDM address caching. */
-	phy->ofdm_valid = 0;
-
 	err = 0;
 	b43dbg(dev->wl, "Chip initialized\n");
 out:
@@ -2302,7 +2306,7 @@ static void b43_periodic_every60sec(struct b43_wldev *dev)
 
 	if (!b43_has_hardware_pctl(phy))
 		b43_lo_g_ctl_mark_all_unused(dev);
-	if (dev->dev->bus->sprom.boardflags_lo & B43_BFL_RSSI) {
+	if (dev->dev->bus->sprom.r1.boardflags_lo & B43_BFL_RSSI) {
 		b43_mac_suspend(dev);
 		b43_calc_nrssi_slope(dev);
 		if ((phy->radio_ver == 0x2050) && (phy->radio_rev == 8)) {
@@ -2499,9 +2503,8 @@ static int b43_rng_init(struct b43_wl *wl)
 	return err;
 }
 
-static int b43_op_tx(struct ieee80211_hw *hw,
-		     struct sk_buff *skb,
-		     struct ieee80211_tx_control *ctl)
+static int b43_tx(struct ieee80211_hw *hw,
+		  struct sk_buff *skb, struct ieee80211_tx_control *ctl)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -2519,21 +2522,21 @@ static int b43_op_tx(struct ieee80211_hw *hw,
 		spin_unlock_irqrestore(&wl->irq_lock, flags);
 	} else
 		err = b43_dma_tx(dev, skb, ctl);
-out:
+      out:
 	if (unlikely(err))
 		return NETDEV_TX_BUSY;
 	return NETDEV_TX_OK;
 }
 
-static int b43_op_conf_tx(struct ieee80211_hw *hw,
-			  int queue,
-			  const struct ieee80211_tx_queue_params *params)
+static int b43_conf_tx(struct ieee80211_hw *hw,
+		       int queue,
+		       const struct ieee80211_tx_queue_params *params)
 {
 	return 0;
 }
 
-static int b43_op_get_tx_stats(struct ieee80211_hw *hw,
-			       struct ieee80211_tx_queue_stats *stats)
+static int b43_get_tx_stats(struct ieee80211_hw *hw,
+			    struct ieee80211_tx_queue_stats *stats)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -2551,12 +2554,12 @@ static int b43_op_get_tx_stats(struct ieee80211_hw *hw,
 		err = 0;
 	}
 	spin_unlock_irqrestore(&wl->irq_lock, flags);
-out:
+      out:
 	return err;
 }
 
-static int b43_op_get_stats(struct ieee80211_hw *hw,
-			    struct ieee80211_low_level_stats *stats)
+static int b43_get_stats(struct ieee80211_hw *hw,
+			 struct ieee80211_low_level_stats *stats)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	unsigned long flags;
@@ -2709,7 +2712,7 @@ static int b43_antenna_from_ieee80211(u8 antenna)
 	}
 }
 
-static int b43_op_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+static int b43_dev_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev;
@@ -2814,30 +2817,23 @@ static int b43_op_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
 	return err;
 }
 
-static int b43_op_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+static int b43_dev_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			   const u8 *local_addr, const u8 *addr,
 			   struct ieee80211_key_conf *key)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
-	struct b43_wldev *dev;
+	struct b43_wldev *dev = wl->current_dev;
 	unsigned long flags;
 	u8 algorithm;
 	u8 index;
-	int err;
+	int err = -EINVAL;
 	DECLARE_MAC_BUF(mac);
 
 	if (modparam_nohwcrypt)
 		return -ENOSPC; /* User disabled HW-crypto */
 
-	mutex_lock(&wl->mutex);
-	spin_lock_irqsave(&wl->irq_lock, flags);
-
-	dev = wl->current_dev;
-	err = -ENODEV;
-	if (!dev || b43_status(dev) < B43_STAT_INITIALIZED)
-		goto out_unlock;
-
-	err = -EINVAL;
+	if (!dev)
+		return -ENODEV;
 	switch (key->alg) {
 	case ALG_WEP:
 		if (key->keylen == 5)
@@ -2853,11 +2849,20 @@ static int b43_op_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 		break;
 	default:
 		B43_WARN_ON(1);
-		goto out_unlock;
+		goto out;
 	}
+
 	index = (u8) (key->keyidx);
 	if (index > 3)
+		goto out;
+
+	mutex_lock(&wl->mutex);
+	spin_lock_irqsave(&wl->irq_lock, flags);
+
+	if (b43_status(dev) < B43_STAT_INITIALIZED) {
+		err = -ENODEV;
 		goto out_unlock;
+	}
 
 	switch (cmd) {
 	case SET_KEY:
@@ -2903,6 +2908,7 @@ static int b43_op_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 out_unlock:
 	spin_unlock_irqrestore(&wl->irq_lock, flags);
 	mutex_unlock(&wl->mutex);
+out:
 	if (!err) {
 		b43dbg(wl, "%s hardware based encryption for keyidx: %d, "
 		       "mac: %s\n",
@@ -2912,9 +2918,9 @@ out_unlock:
 	return err;
 }
 
-static void b43_op_configure_filter(struct ieee80211_hw *hw,
-				    unsigned int changed, unsigned int *fflags,
-				    int mc_count, struct dev_addr_list *mc_list)
+static void b43_configure_filter(struct ieee80211_hw *hw,
+				 unsigned int changed, unsigned int *fflags,
+				 int mc_count, struct dev_addr_list *mc_list)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -2949,9 +2955,8 @@ static void b43_op_configure_filter(struct ieee80211_hw *hw,
 	spin_unlock_irqrestore(&wl->irq_lock, flags);
 }
 
-static int b43_op_config_interface(struct ieee80211_hw *hw,
-				   int if_id,
-				   struct ieee80211_if_conf *conf)
+static int b43_config_interface(struct ieee80211_hw *hw,
+				int if_id, struct ieee80211_if_conf *conf)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -3074,7 +3079,7 @@ static int b43_phy_versioning(struct b43_wldev *dev)
 			unsupported = 1;
 		break;
 	case B43_PHYTYPE_G:
-		if (phy_rev > 9)
+		if (phy_rev > 8)
 			unsupported = 1;
 		break;
 	default:
@@ -3221,13 +3226,13 @@ static void b43_bluetooth_coext_enable(struct b43_wldev *dev)
 	struct ssb_sprom *sprom = &dev->dev->bus->sprom;
 	u32 hf;
 
-	if (!(sprom->boardflags_lo & B43_BFL_BTCOEXIST))
+	if (!(sprom->r1.boardflags_lo & B43_BFL_BTCOEXIST))
 		return;
 	if (dev->phy.type != B43_PHYTYPE_B && !dev->phy.gmode)
 		return;
 
 	hf = b43_hf_read(dev);
-	if (sprom->boardflags_lo & B43_BFL_BTCMOD)
+	if (sprom->r1.boardflags_lo & B43_BFL_BTCMOD)
 		hf |= B43_HF_BTCOEXALT;
 	else
 		hf |= B43_HF_BTCOEX;
@@ -3264,22 +3269,6 @@ static void b43_imcfglo_timeouts_workaround(struct b43_wldev *dev)
 		ssb_write32(dev->dev, SSB_IMCFGLO, tmp);
 	}
 #endif /* CONFIG_SSB_DRIVER_PCICORE */
-}
-
-/* Write the short and long frame retry limit values. */
-static void b43_set_retry_limits(struct b43_wldev *dev,
-				 unsigned int short_retry,
-				 unsigned int long_retry)
-{
-	/* The retry limit is a 4-bit counter. Enforce this to avoid overflowing
-	 * the chip-internal counter. */
-	short_retry = min(short_retry, (unsigned int)0xF);
-	long_retry = min(long_retry, (unsigned int)0xF);
-
-	b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_SRLIMIT,
-			short_retry);
-	b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_LRLIMIT,
-			long_retry);
 }
 
 /* Shutdown a wireless core */
@@ -3358,7 +3347,7 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
 		hf |= B43_HF_SYMW;
 		if (phy->rev == 1)
 			hf |= B43_HF_GDCW;
-		if (sprom->boardflags_lo & B43_BFL_PACTRL)
+		if (sprom->r1.boardflags_lo & B43_BFL_PACTRL)
 			hf |= B43_HF_OFDMPABOOST;
 	} else if (phy->type == B43_PHYTYPE_B) {
 		hf |= B43_HF_SYMW;
@@ -3367,8 +3356,15 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
 	}
 	b43_hf_write(dev, hf);
 
-	b43_set_retry_limits(dev, B43_DEFAULT_SHORT_RETRY_LIMIT,
-			     B43_DEFAULT_LONG_RETRY_LIMIT);
+	/* Short/Long Retry Limit.
+	 * The retry-limit is a 4-bit counter. Enforce this to avoid overflowing
+	 * the chip-internal counter.
+	 */
+	tmp = limit_value(modparam_short_retry, 0, 0xF);
+	b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_SRLIMIT, tmp);
+	tmp = limit_value(modparam_long_retry, 0, 0xF);
+	b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_LRLIMIT, tmp);
+
 	b43_shm_write16(dev, B43_SHM_SHARED, B43_SHM_SH_SFFBLIM, 3);
 	b43_shm_write16(dev, B43_SHM_SHARED, B43_SHM_SH_LFFBLIM, 2);
 
@@ -3435,8 +3431,8 @@ out:
 	return err;
 }
 
-static int b43_op_add_interface(struct ieee80211_hw *hw,
-				struct ieee80211_if_init_conf *conf)
+static int b43_add_interface(struct ieee80211_hw *hw,
+			     struct ieee80211_if_init_conf *conf)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev;
@@ -3475,8 +3471,8 @@ static int b43_op_add_interface(struct ieee80211_hw *hw,
 	return err;
 }
 
-static void b43_op_remove_interface(struct ieee80211_hw *hw,
-				    struct ieee80211_if_init_conf *conf)
+static void b43_remove_interface(struct ieee80211_hw *hw,
+				 struct ieee80211_if_init_conf *conf)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -3500,7 +3496,7 @@ static void b43_op_remove_interface(struct ieee80211_hw *hw,
 	mutex_unlock(&wl->mutex);
 }
 
-static int b43_op_start(struct ieee80211_hw *hw)
+static int b43_start(struct ieee80211_hw *hw)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -3542,7 +3538,7 @@ static int b43_op_start(struct ieee80211_hw *hw)
 	return err;
 }
 
-static void b43_op_stop(struct ieee80211_hw *hw)
+static void b43_stop(struct ieee80211_hw *hw)
 {
 	struct b43_wl *wl = hw_to_b43_wl(hw);
 	struct b43_wldev *dev = wl->current_dev;
@@ -3556,40 +3552,19 @@ static void b43_op_stop(struct ieee80211_hw *hw)
 	mutex_unlock(&wl->mutex);
 }
 
-static int b43_op_set_retry_limit(struct ieee80211_hw *hw,
-				  u32 short_retry_limit, u32 long_retry_limit)
-{
-	struct b43_wl *wl = hw_to_b43_wl(hw);
-	struct b43_wldev *dev;
-	int err = 0;
-
-	mutex_lock(&wl->mutex);
-	dev = wl->current_dev;
-	if (unlikely(!dev || (b43_status(dev) < B43_STAT_INITIALIZED))) {
-		err = -ENODEV;
-		goto out_unlock;
-	}
-	b43_set_retry_limits(dev, short_retry_limit, long_retry_limit);
-out_unlock:
-	mutex_unlock(&wl->mutex);
-
-	return err;
-}
-
 static const struct ieee80211_ops b43_hw_ops = {
-	.tx			= b43_op_tx,
-	.conf_tx		= b43_op_conf_tx,
-	.add_interface		= b43_op_add_interface,
-	.remove_interface	= b43_op_remove_interface,
-	.config			= b43_op_config,
-	.config_interface	= b43_op_config_interface,
-	.configure_filter	= b43_op_configure_filter,
-	.set_key		= b43_op_set_key,
-	.get_stats		= b43_op_get_stats,
-	.get_tx_stats		= b43_op_get_tx_stats,
-	.start			= b43_op_start,
-	.stop			= b43_op_stop,
-	.set_retry_limit	= b43_op_set_retry_limit,
+	.tx = b43_tx,
+	.conf_tx = b43_conf_tx,
+	.add_interface = b43_add_interface,
+	.remove_interface = b43_remove_interface,
+	.config = b43_dev_config,
+	.config_interface = b43_config_interface,
+	.configure_filter = b43_configure_filter,
+	.set_key = b43_dev_set_key,
+	.get_stats = b43_get_stats,
+	.get_tx_stats = b43_get_tx_stats,
+	.start = b43_start,
+	.stop = b43_stop,
 };
 
 /* Hard-reset the chip. Do not call this directly.
@@ -3880,20 +3855,20 @@ static void b43_sprom_fixup(struct ssb_bus *bus)
 	/* boardflags workarounds */
 	if (bus->boardinfo.vendor == SSB_BOARDVENDOR_DELL &&
 	    bus->chip_id == 0x4301 && bus->boardinfo.rev == 0x74)
-		bus->sprom.boardflags_lo |= B43_BFL_BTCOEXIST;
+		bus->sprom.r1.boardflags_lo |= B43_BFL_BTCOEXIST;
 	if (bus->boardinfo.vendor == PCI_VENDOR_ID_APPLE &&
 	    bus->boardinfo.type == 0x4E && bus->boardinfo.rev > 0x40)
-		bus->sprom.boardflags_lo |= B43_BFL_PACTRL;
+		bus->sprom.r1.boardflags_lo |= B43_BFL_PACTRL;
 
 	/* Handle case when gain is not set in sprom */
-	if (bus->sprom.antenna_gain_a == 0xFF)
-		bus->sprom.antenna_gain_a = 2;
-	if (bus->sprom.antenna_gain_bg == 0xFF)
-		bus->sprom.antenna_gain_bg = 2;
+	if (bus->sprom.r1.antenna_gain_a == 0xFF)
+		bus->sprom.r1.antenna_gain_a = 2;
+	if (bus->sprom.r1.antenna_gain_bg == 0xFF)
+		bus->sprom.r1.antenna_gain_bg = 2;
 
 	/* Convert Antennagain values to Q5.2 */
-	bus->sprom.antenna_gain_a <<= 2;
-	bus->sprom.antenna_gain_bg <<= 2;
+	bus->sprom.r1.antenna_gain_a <<= 2;
+	bus->sprom.r1.antenna_gain_bg <<= 2;
 }
 
 static void b43_wireless_exit(struct ssb_device *dev, struct b43_wl *wl)
@@ -3926,10 +3901,10 @@ static int b43_wireless_init(struct ssb_device *dev)
 	hw->max_noise = -110;
 	hw->queues = 1;		/* FIXME: hardware has more queues */
 	SET_IEEE80211_DEV(hw, dev->dev);
-	if (is_valid_ether_addr(sprom->et1mac))
-		SET_IEEE80211_PERM_ADDR(hw, sprom->et1mac);
+	if (is_valid_ether_addr(sprom->r1.et1mac))
+		SET_IEEE80211_PERM_ADDR(hw, sprom->r1.et1mac);
 	else
-		SET_IEEE80211_PERM_ADDR(hw, sprom->il0mac);
+		SET_IEEE80211_PERM_ADDR(hw, sprom->r1.il0mac);
 
 	/* Get and initialize struct b43_wl */
 	wl = hw_to_b43_wl(hw);
