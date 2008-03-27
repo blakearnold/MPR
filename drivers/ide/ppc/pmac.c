@@ -1269,7 +1269,7 @@ pmac_ide_macio_suspend(struct macio_dev *mdev, pm_message_t mesg)
 	int		rc = 0;
 
 	if (mesg.event != mdev->ofdev.dev.power.power_state.event
-			&& mesg.event == PM_EVENT_SUSPEND) {
+			&& (mesg.event & PM_EVENT_SLEEP)) {
 		rc = pmac_ide_do_suspend(hwif);
 		if (rc == 0)
 			mdev->ofdev.dev.power.power_state = mesg;
@@ -1374,7 +1374,7 @@ pmac_ide_pci_suspend(struct pci_dev *pdev, pm_message_t mesg)
 	int		rc = 0;
 	
 	if (mesg.event != pdev->dev.power.power_state.event
-			&& mesg.event == PM_EVENT_SUSPEND) {
+			&& (mesg.event & PM_EVENT_SLEEP)) {
 		rc = pmac_ide_do_suspend(hwif);
 		if (rc == 0)
 			pdev->dev.power.power_state = mesg;
