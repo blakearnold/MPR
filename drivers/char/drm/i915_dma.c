@@ -762,6 +762,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	unsigned long base, size;
 	int ret = 0, mmio_bar = IS_I9XX(dev) ? 0 : 1;
 
+	if (!IS_I9XX(dev)) {
+		dev->driver->suspend = NULL;
+		dev->driver->resume = NULL;
+	}
+
 	/* i915 has 4 more counters */
 	dev->counters += 4;
 	dev->types[6] = _DRM_STAT_IRQ;
