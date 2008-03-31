@@ -8,8 +8,8 @@ index b966674..17d1d16 100644
  
  		mmc_power_up(host);
 +
-+		/* add a 100ms delay for SiB workaround */
-+		mmc_delay(100);
++		/* add a 25ms delay for SiB workaround */
++		mmc_delay(25);
 +
  		mmc_go_idle(host);
  
