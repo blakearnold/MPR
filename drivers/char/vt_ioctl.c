@@ -1179,8 +1179,7 @@ static void complete_change_console(struct vc_data *vc)
 	 */
 	old_vc_mode = oldvc->vc_mode;
 
-	if (old_vc_mode == KD_TEXT && (oldvc->vc_sw == &vga_con) &&
-	    oldvc->vc_sw->con_font_get) {
+	if (old_vc_mode == KD_TEXT && oldvc->vc_sw->con_font_get) {
 		if (!oldvc->vc_font.data)
 			oldvc->vc_font.data = kmalloc(max_font_size, 
 						      GFP_KERNEL);
@@ -1191,8 +1190,7 @@ static void complete_change_console(struct vc_data *vc)
 
 	switch_screen(vc);
 
-	if (vc->vc_mode == KD_TEXT && (vc->vc_sw == &vga_con) &&
-	    vc->vc_sw->con_font_set) {
+	if (vc->vc_mode == KD_TEXT && vc->vc_sw->con_font_set) {
 		if (vc->vc_font.data) {
 			lock_kernel();
 			vc->vc_sw->con_font_set(vc, &vc->vc_font, 0);
