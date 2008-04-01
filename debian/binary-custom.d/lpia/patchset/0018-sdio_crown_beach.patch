@@ -8,8 +8,8 @@ index b966674..17d1d16 100644
  
  		mmc_power_up(host);
 +
-+		/* add a 100ms delay for SiB workaround */
-+		mmc_delay(100);
++		/* add a 25ms delay for SiB workaround */
++		mmc_delay(25);
 +
  		mmc_go_idle(host);
  
@@ -118,11 +118,11 @@ index d0c3abe..a5f4bd3 100644
 +
 +#ifdef DBG_2622
 +#define umd_dbg(f, x...) \
-+	printk(KERN_ERR "[%s()]: " f "\n", __func__,##x)
++	printk(KERN_INFO "[%s()]: " f "\n", __func__,##x)
 +#define umd_enter() \
-+	printk(KERN_ERR "[%s()]: enter\n", __func__)
++	printk(KERN_INFO "[%s()]: enter\n", __func__)
 +#define umd_exit() \
-+	printk(KERN_ERR "[%s()]: exit\n", __func__)
++	printk(KERN_INFO "[%s()]: exit\n", __func__)
 +#else
 +#define umd_dbg(f, x...)  do{} while(0)
 +#define umd_enter()  do{} while(0)
