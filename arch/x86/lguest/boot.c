@@ -67,7 +67,6 @@
 #include <asm/mce.h>
 #include <asm/io.h>
 #include <asm/i387.h>
-#include <asm/reboot.h>		/* for struct machine_ops */
 
 /*G:010 Welcome to the Guest!
  *
@@ -813,7 +812,7 @@ static void lguest_safe_halt(void)
  * rather than virtual addresses, so we use __pa() here. */
 static void lguest_power_off(void)
 {
-	hcall(LHCALL_SHUTDOWN, __pa("Power down"), LGUEST_SHUTDOWN_POWEROFF, 0);
+	hcall(LHCALL_CRASH, __pa("Power down"), 0, 0);
 }
 
 /*
@@ -823,7 +822,7 @@ static void lguest_power_off(void)
  */
 static int lguest_panic(struct notifier_block *nb, unsigned long l, void *p)
 {
-	hcall(LHCALL_SHUTDOWN, __pa(p), LGUEST_SHUTDOWN_POWEROFF, 0);
+	hcall(LHCALL_CRASH, __pa(p), 0, 0);
 	/* The hcall won't return, but to keep gcc happy, we're "done". */
 	return NOTIFY_DONE;
 }
@@ -925,11 +924,6 @@ static unsigned lguest_patch(u8 type, u16 clobber, void *ibuf,
 	/* Copy in our instructions. */
 	memcpy(ibuf, lguest_insns[type].start, insn_len);
 	return insn_len;
-}
-
-static void lguest_restart(char *reason)
-{
-	hcall(LHCALL_SHUTDOWN, __pa(reason), LGUEST_SHUTDOWN_RESTART, 0);
 }
 
 /*G:030 Once we get to lguest_init(), we know we're a Guest.  The pv_ops
@@ -1065,7 +1059,6 @@ __init void lguest_init(void)
 	 * the Guest routine to power off. */
 	pm_power_off = lguest_power_off;
 
-	machine_ops.restart = lguest_restart;
 	/* Now we're set up, call start_kernel() in init/main.c and we proceed
 	 * to boot as normal.  It never returns. */
 	start_kernel();

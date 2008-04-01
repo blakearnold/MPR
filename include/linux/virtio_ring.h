@@ -15,13 +15,9 @@
 /* This marks a buffer as write-only (otherwise read-only). */
 #define VRING_DESC_F_WRITE	2
 
-/* The Host uses this in used->flags to advise the Guest: don't kick me when
- * you add a buffer.  It's unreliable, so it's simply an optimization.  Guest
- * will still kick if it's out of buffers. */
+/* This means don't notify other side when buffer added. */
 #define VRING_USED_F_NO_NOTIFY	1
-/* The Guest uses this in avail->flags to advise the Host: don't interrupt me
- * when you consume a buffer.  It's unreliable, so it's simply an
- * optimization.  */
+/* This means don't interrupt guest when buffer consumed. */
 #define VRING_AVAIL_F_NO_INTERRUPT	1
 
 /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
@@ -93,7 +89,7 @@ struct vring {
  * };
  */
 static inline void vring_init(struct vring *vr, unsigned int num, void *p,
-			      unsigned long pagesize)
+			      unsigned int pagesize)
 {
 	vr->num = num;
 	vr->desc = p;
@@ -102,7 +98,7 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
 			    & ~(pagesize - 1));
 }
 
-static inline unsigned vring_size(unsigned int num, unsigned long pagesize)
+static inline unsigned vring_size(unsigned int num, unsigned int pagesize)
 {
 	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
 		 + pagesize - 1) & ~(pagesize - 1))
@@ -118,7 +114,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
 				      struct virtio_device *vdev,
 				      void *pages,
 				      void (*notify)(struct virtqueue *vq),
-				      void (*callback)(struct virtqueue *vq));
+				      bool (*callback)(struct virtqueue *vq));
 void vring_del_virtqueue(struct virtqueue *vq);
 
 irqreturn_t vring_interrupt(int irq, void *_vq);
