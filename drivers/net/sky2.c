@@ -3324,7 +3324,7 @@ static void sky2_led(struct sky2_hw *hw, unsigned port, int on)
 
 	default:
 		gm_phy_write(hw, port, PHY_MARV_LED_CTRL, 0);
-		gm_phy_write(hw, port, PHY_MARV_LED_OVER, 
+		gm_phy_write(hw, port, PHY_MARV_LED_OVER,
 			     on ? PHY_M_LED_ALL : 0);
 	}
 }
@@ -4312,10 +4312,14 @@ static int sky2_suspend(struct pci_dev *pdev, pm_message_t state)
 	if (!hw)
 		return 0;
 
+	del_timer_sync(&hw->watchdog_timer);
+	cancel_work_sync(&hw->restart_work);
+
 	for (i = 0; i < hw->ports; i++) {
 		struct net_device *dev = hw->dev[i];
 		struct sky2_port *sky2 = netdev_priv(dev);
 
+		netif_device_detach(dev);
 		if (netif_running(dev))
 			sky2_down(dev);
 
@@ -4366,6 +4370,8 @@ static int sky2_resume(struct pci_dev *pdev)
 
 	for (i = 0; i < hw->ports; i++) {
 		struct net_device *dev = hw->dev[i];
+
+		netif_device_attach(dev);
 		if (netif_running(dev)) {
 			err = sky2_up(dev);
 			if (err) {
