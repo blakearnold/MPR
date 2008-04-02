@@ -2533,6 +2533,7 @@ EXPORT_SYMBOL vmlinux 0x727084b5	cfb_imageblit
 EXPORT_SYMBOL vmlinux 0x729ea6f2	sockfd_lookup
 EXPORT_SYMBOL vmlinux 0x72b243d4	free_dma
 EXPORT_SYMBOL vmlinux 0x72fd73ec	serio_reconnect
+EXPORT_SYMBOL vmlinux 0x735a0bd5	native_io_delay
 EXPORT_SYMBOL vmlinux 0x73617394	alloc_tty_driver
 EXPORT_SYMBOL vmlinux 0x738803e6	strnlen
 EXPORT_SYMBOL vmlinux 0x7389c9a8	acpi_bus_get_power

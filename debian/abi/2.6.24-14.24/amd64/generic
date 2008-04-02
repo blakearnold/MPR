@@ -3421,6 +3421,7 @@ EXPORT_SYMBOL vmlinux 0x72c30792	sk_stream_rfree
 EXPORT_SYMBOL vmlinux 0x7328d468	blk_put_queue
 EXPORT_SYMBOL vmlinux 0x7334273d	tcp_check_req
 EXPORT_SYMBOL vmlinux 0x734072a0	pci_enable_device_bars
+EXPORT_SYMBOL vmlinux 0x735a0bd5	native_io_delay
 EXPORT_SYMBOL vmlinux 0x7389c9a8	acpi_bus_get_power
 EXPORT_SYMBOL vmlinux 0x73937fd7	fb_firmware_edid
 EXPORT_SYMBOL vmlinux 0x739ee22d	gen_pool_add

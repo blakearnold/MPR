@@ -3491,6 +3491,7 @@ EXPORT_SYMBOL vmlinux 0x72b243d4	free_dma
 EXPORT_SYMBOL vmlinux 0x72e94ffe	register_framebuffer
 EXPORT_SYMBOL vmlinux 0x7315eea7	neigh_update
 EXPORT_SYMBOL vmlinux 0x7356b0e2	tty_check_change
+EXPORT_SYMBOL vmlinux 0x735a0bd5	native_io_delay
 EXPORT_SYMBOL vmlinux 0x738803e6	strnlen
 EXPORT_SYMBOL vmlinux 0x7389c9a8	acpi_bus_get_power
 EXPORT_SYMBOL vmlinux 0x73e20c1c	strlcpy

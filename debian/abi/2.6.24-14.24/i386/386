@@ -3485,6 +3485,7 @@ EXPORT_SYMBOL vmlinux 0x72c50b2b	simple_set_mnt
 EXPORT_SYMBOL vmlinux 0x72e119c1	blk_init_tags
 EXPORT_SYMBOL vmlinux 0x72ebbb5a	per_cpu__current_task
 EXPORT_SYMBOL vmlinux 0x72fc296f	textsearch_unregister
+EXPORT_SYMBOL vmlinux 0x735a0bd5	native_io_delay
 EXPORT_SYMBOL vmlinux 0x7364d963	sync_blockdev
 EXPORT_SYMBOL vmlinux 0x73870fe4	pci_bus_read_config_byte
 EXPORT_SYMBOL vmlinux 0x738803e6	strnlen
