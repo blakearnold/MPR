@@ -20,8 +20,12 @@ static struct usb_device_id id_table [] = {
 	{ USB_DEVICE(0x0c88, 0x17da) }, /* Kyocera Wireless KPC650/Passport */
 	{ USB_DEVICE(0x413c, 0x8115) }, /* Dell Wireless HSDPA 5500 */
 	{ USB_DEVICE(0x0930, 0x1303) }, /* Toshiba (Novatel Wireless) HSDPA for M400 */
+	{ USB_DEVICE(0x106c, 0x3701) }, /* Audiovox PC5740 */
 	{ USB_DEVICE(0x106c, 0x3702) }, /* Sprint Pantech PX-500 DGE */
 	{ USB_DEVICE(0x1410, 0x4100) }, /* Novatel Wireless U727 */
+	{ USB_DEVICE(0x12d1, 0x1003) }, /* Huawei E220 */
+	{ USB_DEVICE(0x05c6, 0x6000) }, /* Momo design */
+	{ USB_DEVICE(0xf3d0, 0x0112) }, /* AirPrime 5220 */
 	{ },
 };
 MODULE_DEVICE_TABLE(usb, id_table);
