@@ -75241,11 +75241,11 @@ diff -Naur --exclude='.git*' --exclude=debian ubuntu-hardy/include/asm-x86/mach-
 +}
 +
 +static inline void slow_down_io(void) {
-+	xen_io_delay();
++	native_io_delay();
 +#ifdef REALLY_SLOW_IO
-+	xen_io_delay();
-+	xen_io_delay();
-+	xen_io_delay();
++	native_io_delay();
++	native_io_delay();
++	native_io_delay();
 +#endif
 +}
 +

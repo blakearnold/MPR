@@ -46,6 +46,11 @@ install-headers:
 	  \( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
 	     -name '*.sh' -o -name '*.pl' -o -name '*.lds' \) \
 	  -print | cpio -pd --preserve-modification-time $(indep_hdrdir)
+	# Copy headers for LUM
+	cp -a drivers/media/dvb/dvb-core/*.h $(indep_hdrdir)/drivers/media/dvb/dvb-core
+	cp -a drivers/media/video/*.h $(indep_hdrdir)/drivers/media/video
+	cp -a drivers/media/dvb/dvb-core/*.h $(indep_hdrdir)/drivers/media/dvb/dvb-core
+	cp -a drivers/media/dvb/frontends/*.h $(indep_hdrdir)/drivers/media/dvb/frontends
 	cp -a scripts include $(indep_hdrdir)
 
 install-indep: install-source install-headers install-doc

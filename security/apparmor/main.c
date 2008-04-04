@@ -99,10 +99,10 @@ static int aa_link_denied(struct aa_profile *profile, const char *link,
 	/* Link always requires 'l' on the link for both parts of the pair.
 	 * If a subset test is required a permission subset test of the
 	 * perms for the link are done against the user:group:other of the
-	 * target's 'r', 'w', 'x', 'a', 'z', and 'm' permissions.
+	 * target's 'r', 'w', 'x', 'a', 'k', and 'm' permissions.
 	 *
 	 * If the link has 'x', an exact match of all the execute flags
-	 * ('i', 'u', 'U', 'p', 'P').
+	 * ('i', 'u', 'p').  safe exec is treated as a subset of unsafe exec
  	 */
 #define SUBSET_PERMS (AA_FILE_PERMS & ~AA_LINK_BITS)
 	denied_mask |= ~l_mode & link_mask;
@@ -111,11 +111,15 @@ static int aa_link_denied(struct aa_profile *profile, const char *link,
 		if (denied_mask & AA_EXEC_BITS)
 			denied_mask |= l_mode & AA_ALL_EXEC_MODS;
 		else if (l_mode & AA_EXEC_BITS) {
+			if (!(l_mode & AA_USER_EXEC_UNSAFE))
+				l_mode |= t_mode & AA_USER_EXEC_UNSAFE;
 			if (l_mode & AA_USER_EXEC &&
 			    (l_mode & AA_USER_EXEC_MODS) !=
 			    (t_mode & AA_USER_EXEC_MODS))
 				denied_mask |= AA_USER_EXEC |
 					(l_mode & AA_USER_EXEC_MODS);
+			if (!(l_mode & AA_OTHER_EXEC_UNSAFE))
+				l_mode |= t_mode & AA_OTHER_EXEC_UNSAFE;
 			if (l_mode & AA_OTHER_EXEC &&
 			    (l_mode & AA_OTHER_EXEC_MODS) !=
 			    (t_mode & AA_OTHER_EXEC_MODS))
@@ -225,6 +229,12 @@ static int aa_perm_dentry(struct aa_profile *profile, struct dentry *dentry,
 		else {
 			sa->denied_mask = sa->request_mask;
 			sa->error_code = PTR_ERR(sa->name);
+			if (sa->error_code == -ENOENT)
+				sa->info = "Failed name resolution - object not a valid entry";
+			else if (sa->error_code == -ENAMETOOLONG)
+				sa->info = "Failed name resolution - name too long";
+			else
+				sa->info = "Failed name resolution";
 		}
 		sa->name = NULL;
 	} else
@@ -382,11 +392,14 @@ static int aa_audit_base(struct aa_profile *profile, struct aa_audit *sa,
 	if (sa->operation)
 		audit_log_format(ab, " operation=\"%s\"", sa->operation);
 
-	if (sa->info)
+	if (sa->info) {
 		audit_log_format(ab, " info=\"%s\"", sa->info);
+		if (sa->error_code)
+			audit_log_format(ab, " error=%d", sa->error_code);
+	}
 
 	if (sa->request_mask)
-		aa_audit_file_mask(ab, "request_mask", sa->request_mask);
+		aa_audit_file_mask(ab, "requested_mask", sa->request_mask);
 
 	if (sa->denied_mask)
 		aa_audit_file_mask(ab, "denied_mask", sa->denied_mask);
@@ -929,23 +942,29 @@ int aa_register(struct linux_binprm *bprm)
 
 	AA_DEBUG("%s\n", __FUNCTION__);
 
-	filename = aa_get_name(filp->f_dentry, filp->f_vfsmnt, &buffer, 0);
-	if (IS_ERR(filename)) {
-		AA_ERROR("%s: Failed to get filename", __FUNCTION__);
-		return -ENOENT;
-	}
+	profile = aa_get_profile(current);
 
 	shift = aa_inode_mode(filp->f_dentry->d_inode);
-	exec_mode = AA_EXEC_UNSAFE << shift;
-
 	memset(&sa, 0, sizeof(sa));
 	sa.operation = "exec";
 	sa.gfp_mask = GFP_KERNEL;
-	sa.name = filename;
 	sa.request_mask = MAY_EXEC << shift;
 
+	filename = aa_get_name(filp->f_dentry, filp->f_vfsmnt, &buffer, 0);
+	if (IS_ERR(filename)) {
+		if (profile) {
+			sa.info = "Failed name resolution - exec failed";
+			sa.error_code = PTR_ERR(filename);
+			aa_audit_reject(profile, &sa);
+			return sa.error_code;
+		} else
+			return 0;
+	}
+	sa.name = filename;
+
+	exec_mode = AA_EXEC_UNSAFE << shift;
+
 repeat:
-	profile = aa_get_profile(current);
 	if (profile) {
 		complain = PROFILE_COMPLAIN(profile);
 
@@ -1022,8 +1041,10 @@ repeat:
 	if (IS_ERR(old_profile)) {
 		aa_put_profile(new_profile);
 		aa_put_profile(profile);
-		if (PTR_ERR(old_profile) == -ESTALE)
+		if (PTR_ERR(old_profile) == -ESTALE) {
+			profile = aa_get_profile(current);
 			goto repeat;
+		}
 		if (PTR_ERR(old_profile) == -EPERM) {
 			sa.denied_mask = sa.request_mask;
 			sa.info = "unable to set profile due to ptrace";

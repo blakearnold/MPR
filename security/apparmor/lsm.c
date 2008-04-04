@@ -108,6 +108,7 @@ static int param_get_aauint(char *buffer, struct kernel_param *kp)
 	return param_get_uint(buffer, kp);
 }
 
+/* allow run time disabling of apparmor */
 static int param_set_aa_enabled(const char *val, struct kernel_param *kp)
 {
 	char *endp;
@@ -249,6 +250,7 @@ static int apparmor_sysctl(struct ctl_table *table, int op)
 	}
 
 out:
+	aa_put_profile(profile);
 	return error;
 }
 
