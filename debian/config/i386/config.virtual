@@ -103,7 +103,6 @@ CONFIG_DEFAULT_IOSCHED="cfq"
 # CONFIG_DRM is not set
 # CONFIG_DVB_CORE is not set
 # CONFIG_E100 is not set
-# CONFIG_E1000 is not set
 # CONFIG_ECONET is not set
 # CONFIG_EDAC is not set
 # CONFIG_EDD is not set
