@@ -1179,10 +1179,8 @@ static void complete_change_console(struct vc_data *vc)
 	 */
 	old_vc_mode = oldvc->vc_mode;
 
-	if (old_vc_mode == KD_TEXT &&
 #if defined(CONFIG_VGA_CONSOLE)
-		(oldvc->vc_sw == &vga_con) &&
-#endif
+	if (old_vc_mode == KD_TEXT && oldvc->vc_sw == &vga_con &&
 	    oldvc->vc_sw->con_font_get) {
 		if (!oldvc->vc_font.data)
 			oldvc->vc_font.data = kmalloc(max_font_size, 
@@ -1191,13 +1189,11 @@ static void complete_change_console(struct vc_data *vc)
 		oldvc->vc_sw->con_font_get(oldvc, &oldvc->vc_font);
 		unlock_kernel();
 	}
-
+#endif
 	switch_screen(vc);
 
-	if (vc->vc_mode == KD_TEXT &&
 #if defined(CONFIG_VGA_CONSOLE)
-		(vc->vc_sw == &vga_con) &&
-#endif
+	if (vc->vc_mode == KD_TEXT && vc->vc_sw == &vga_con &&
 	    vc->vc_sw->con_font_set) {
 		if (vc->vc_font.data) {
 			lock_kernel();
@@ -1205,7 +1201,7 @@ static void complete_change_console(struct vc_data *vc)
 			unlock_kernel();
 		}
 	}
-
+#endif
 	/*
 	 * This can't appear below a successful kill_pid().  If it did,
 	 * then the *blank_screen operation could occur while X, having
