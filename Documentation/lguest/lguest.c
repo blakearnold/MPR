@@ -41,7 +41,6 @@
 #include "linux/virtio_net.h"
 #include "linux/virtio_blk.h"
 #include "linux/virtio_console.h"
-#include "linux/virtio_rng.h"
 #include "linux/virtio_ring.h"
 #include "asm-x86/bootparam.h"
 /*L:110 We can ignore the 38 include files we need for this program, but I do
@@ -193,6 +192,13 @@ static void *_convert(struct iovec *iov, size_t size, size_t align,
 #define le16_to_cpu(v16) (v16)
 #define le32_to_cpu(v32) (v32)
 #define le64_to_cpu(v64) (v64)
+
+/* The device virtqueue descriptors are followed by feature bitmasks. */
+static u8 *get_feature_bits(struct device *dev)
+{
+	return (u8 *)(dev->desc + 1)
+		+ dev->desc->num_vq * sizeof(struct lguest_vqconfig);
+}
 
 /*L:100 The Launcher code itself takes us out into userspace, that scary place
  * where pointers run wild and free!  Unfortunately, like most userspace
@@ -480,9 +486,12 @@ static void concat(char *dst, char *args[])
 	unsigned int i, len = 0;
 
 	for (i = 0; args[i]; i++) {
+		if (i) {
+			strcat(dst+len, " ");
+			len++;
+		}
 		strcpy(dst+len, args[i]);
-		strcat(dst+len, " ");
-		len += strlen(args[i]) + 1;
+		len += strlen(args[i]);
 	}
 	/* In case it's empty. */
 	dst[len] = '\0';
@@ -915,21 +924,58 @@ static void enable_fd(int fd, struct virtqueue *vq)
 	write(waker_fd, &vq->dev->fd, sizeof(vq->dev->fd));
 }
 
+/* Resetting a device is fairly easy. */
+static void reset_device(struct device *dev)
+{
+	struct virtqueue *vq;
+
+	verbose("Resetting device %s\n", dev->name);
+	/* Clear the status. */
+	dev->desc->status = 0;
+
+	/* Clear any features they've acked. */
+	memset(get_feature_bits(dev) + dev->desc->feature_len, 0,
+	       dev->desc->feature_len);
+
+	/* Zero out the virtqueues. */
+	for (vq = dev->vq; vq; vq = vq->next) {
+		memset(vq->vring.desc, 0,
+		       vring_size(vq->config.num, getpagesize()));
+		vq->last_avail_idx = 0;
+	}
+}
+
 /* This is the generic routine we call when the Guest uses LHCALL_NOTIFY. */
 static void handle_output(int fd, unsigned long addr)
 {
 	struct device *i;
 	struct virtqueue *vq;
 
-	/* Check each virtqueue. */
+	/* Check each device and virtqueue. */
 	for (i = devices.dev; i; i = i->next) {
+		/* Notifications to device descriptors reset the device. */
+		if (from_guest_phys(addr) == i->desc) {
+			reset_device(i);
+			return;
+		}
+
+		/* Notifications to virtqueues mean output has occurred. */
 		for (vq = i->vq; vq; vq = vq->next) {
-			if (vq->config.pfn == addr/getpagesize()) {
-				verbose("Output to %s\n", vq->dev->name);
-				if (vq->handle_output)
-					vq->handle_output(fd, vq);
+			if (vq->config.pfn != addr/getpagesize())
+				continue;
+
+			/* Guest should acknowledge (and set features!)  before
+			 * using the device. */
+			if (i->desc->status == 0) {
+				warnx("%s gave early output", i->name);
 				return;
 			}
+
+			if (strcmp(vq->dev->name, "console") != 0)
+				verbose("Output to %s\n", vq->dev->name);
+			if (vq->handle_output)
+				vq->handle_output(fd, vq);
+			return;
 		}
 	}
 
@@ -1075,19 +1121,17 @@ static void add_virtqueue(struct device *dev, unsigned int num_descs,
 		vq->vring.used->flags = VRING_USED_F_NO_NOTIFY;
 }
 
-/* The virtqueue descriptors are followed by feature bytes. */
+/* The first half of the feature bitmask is for us to advertise features.  The
+ * second half if for the Guest to accept features. */
 static void add_feature(struct device *dev, unsigned bit)
 {
-	u8 *features;
+	u8 *features = get_feature_bits(dev);
 
 	/* We can't extend the feature bits once we've added config bytes */
 	if (dev->desc->feature_len <= bit / CHAR_BIT) {
 		assert(dev->desc->config_len == 0);
 		dev->desc->feature_len = (bit / CHAR_BIT) + 1;
 	}
-
-	features = (u8 *)(dev->desc + 1)
-		+ dev->desc->num_vq * sizeof(struct lguest_vqconfig);
 
 	features[bit / CHAR_BIT] |= (1 << (bit % CHAR_BIT));
 }
@@ -1339,7 +1383,6 @@ struct vblk_info
 	 * Launcher triggers interrupt to Guest. */
 	int done_fd;
 };
-/*:*/
 
 /*L:210
  * The Disk
@@ -1543,54 +1586,6 @@ static void setup_block_file(const char *filename)
 	verbose("device %u: virtblock %llu sectors\n",
 		devices.device_num, le64_to_cpu(conf.capacity));
 }
-/* That's the end of device setup. */
-
-/* This is the routine which handles console input (ie. stdin). */
-static bool handle_rng_input(int fd, struct device *dev)
-{
-	int len;
-	unsigned int head, in_num, out_num;
-	struct iovec iov[dev->vq->vring.num];
-
-	printf("Got input on rng fd!\n");
-	/* First we need a buffer from the Guests's virtqueue. */
-	head = get_vq_desc(dev->vq, iov, &out_num, &in_num);
-
-	/* If they're not ready for input, stop listening to this file
-	 * descriptor.  We'll start again once they add an input buffer. */
-	if (head == dev->vq->vring.num) {
-		printf("But no buffer!\n");
-		return false;
-	}
-
-	if (out_num)
-		errx(1, "Output buffers in rng?");
-
-	/* This is why we convert to iovecs: the readv() call uses them, and so
-	 * it reads straight into the Guest's buffer. */
-	len = readv(dev->fd, iov, in_num);
-	/* Tell the Guest about the new input. */
-	add_used_and_trigger(fd, dev->vq, head, len);
-
-	/* Everything went OK! */
-	return true;
-}
-
-static void setup_rng(void)
-{
-	struct device *dev;
-	int fd;
-
-	fd = open_or_die("/dev/urandom", O_RDONLY);
-
-	/* The device responds to return from I/O thread. */
-	dev = new_device("rng", VIRTIO_ID_RNG, fd, handle_rng_input);
-
-	/* The device has one virtqueue, where the Guest places inbufs. */
-	add_virtqueue(dev, VIRTQUEUE_NUM, enable_fd);
-
-	verbose("device %u: rng\n", devices.device_num);
-}
 /* That's the end of device setup. :*/
 
 /* Reboot */
@@ -1661,7 +1656,6 @@ static struct option opts[] = {
 	{ "verbose", 0, NULL, 'v' },
 	{ "tunnet", 1, NULL, 't' },
 	{ "block", 1, NULL, 'b' },
-	{ "rng", 0, NULL, 'r' },
 	{ "initrd", 1, NULL, 'i' },
 	{ NULL },
 };
@@ -1735,9 +1729,6 @@ int main(int argc, char *argv[])
 			break;
 		case 'b':
 			setup_block_file(optarg);
-			break;
-		case 'r':
-			setup_rng();
 			break;
 		case 'i':
 			initrd_name = optarg;

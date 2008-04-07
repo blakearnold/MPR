@@ -54,7 +54,7 @@ struct lguest_device {
  *
  * The configuration information for a device consists of one or more
  * virtqueues, a feature bitmaks, and some configuration bytes.  The
- * configuration bytes don't really matter to us: the Launcher set them up, and
+ * configuration bytes don't really matter to us: the Launcher sets them up, and
  * the driver will look at them during setup.
  *
  * A convenient routine to return the device's virtqueue config array:
@@ -116,8 +116,6 @@ static void lg_get(struct virtio_device *vdev, unsigned int offset,
 
 	/* Check they didn't ask for more than the length of the config! */
 	BUG_ON(offset + len > desc->config_len);
-	printk("Getting config len %u from page offset %u\n",
-	       len, lg_config(desc) + offset - (u8 *)lguest_devices);
 	memcpy(buf, lg_config(desc) + offset, len);
 }
 
@@ -141,7 +139,18 @@ static u8 lg_get_status(struct virtio_device *vdev)
 
 static void lg_set_status(struct virtio_device *vdev, u8 status)
 {
+	BUG_ON(!status);
 	to_lgdev(vdev)->desc->status = status;
+}
+
+/* To reset the device, we (ab)use the NOTIFY hypercall, with the descriptor
+ * address of the device.  The Host will zero the status and all the
+ * features. */
+static void lg_reset(struct virtio_device *vdev)
+{
+	unsigned long offset = (void *)to_lgdev(vdev)->desc - lguest_devices;
+
+	hcall(LHCALL_NOTIFY, (max_pfn<<PAGE_SHIFT) + offset, 0, 0);
 }
 
 /*
@@ -281,6 +290,7 @@ static struct virtio_config_ops lguest_config_ops = {
 	.set = lg_set,
 	.get_status = lg_get_status,
 	.set_status = lg_set_status,
+	.reset = lg_reset,
 	.find_vq = lg_find_vq,
 	.del_vq = lg_del_vq,
 };

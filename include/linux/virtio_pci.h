@@ -45,6 +45,9 @@
  * a read-and-acknowledge. */
 #define VIRTIO_PCI_ISR			19
 
+/* The bit of the ISR which indicates a device configuration change. */
+#define VIRTIO_PCI_ISR_CONFIG		0x2
+
 /* The remaining space is defined by each driver as the per-driver
  * configuration space */
 #define VIRTIO_PCI_CONFIG		20
