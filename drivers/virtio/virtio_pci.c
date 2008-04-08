@@ -37,7 +37,7 @@ struct virtio_pci_device
 	struct pci_dev *pci_dev;
 
 	/* the IO mapping for the PCI config space */
-	void *ioaddr;
+	void __iomem *ioaddr;
 
 	/* a list of queues so we can dispatch IRQs */
 	spinlock_t lock;
@@ -62,19 +62,13 @@ struct virtio_pci_vq_info
 	struct list_head node;
 };
 
-/* We have to enumerate here all virtio PCI devices. */
+/* Qumranet donated their vendor ID for devices 0x1000 thru 0x10FF. */
 static struct pci_device_id virtio_pci_id_table[] = {
-	{ 0x1af4, 0x1000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 }, /* virtio net */
-	{ 0x1af4, 0x1001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 }, /* virtio blk */
+	{ 0x1af4, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
 	{ 0 },
 };
 
 MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
-
-static void virtio_pci_root_release(struct device *d)
-{
-    pr_debug("%s\n", __FUNCTION__);
-}
 
 /* A PCI device has it's own struct device and so does a virtio device so
  * we create a place for the virtio devices to show up in sysfs.  I think it
@@ -82,7 +76,6 @@ static void virtio_pci_root_release(struct device *d)
 static struct device virtio_pci_root = {
 	.parent		= NULL,
 	.bus_id		= "virtio-pci",
-	.release	= virtio_pci_root_release,
 };
 
 /* Unique numbering for devices under the kvm root */
@@ -118,7 +111,7 @@ static void vp_get(struct virtio_device *vdev, unsigned offset,
 		   void *buf, unsigned len)
 {
 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
-	void *ioaddr = vp_dev->ioaddr + VIRTIO_PCI_CONFIG + offset;
+	void __iomem *ioaddr = vp_dev->ioaddr + VIRTIO_PCI_CONFIG + offset;
 	u8 *ptr = buf;
 	int i;
 
@@ -132,7 +125,7 @@ static void vp_set(struct virtio_device *vdev, unsigned offset,
 		   const void *buf, unsigned len)
 {
 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
-	void *ioaddr = vp_dev->ioaddr + VIRTIO_PCI_CONFIG + offset;
+	void __iomem *ioaddr = vp_dev->ioaddr + VIRTIO_PCI_CONFIG + offset;
 	const u8 *ptr = buf;
 	int i;
 
@@ -150,7 +143,16 @@ static u8 vp_get_status(struct virtio_device *vdev)
 static void vp_set_status(struct virtio_device *vdev, u8 status)
 {
 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
+	/* We should never be setting status to 0. */
+	BUG_ON(status == 0);
 	return iowrite8(status, vp_dev->ioaddr + VIRTIO_PCI_STATUS);
+}
+
+static void vp_reset(struct virtio_device *vdev)
+{
+	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
+	/* 0 status means a reset. */
+	return iowrite8(0, vp_dev->ioaddr + VIRTIO_PCI_STATUS);
 }
 
 /* the notify function used when creating a virt queue */
@@ -175,6 +177,7 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
 	struct virtio_pci_device *vp_dev = opaque;
 	struct virtio_pci_vq_info *info;
 	irqreturn_t ret = IRQ_NONE;
+	unsigned long flags;
 	u8 isr;
 
 	/* reading the ISR has the effect of also clearing it so it's very
@@ -185,12 +188,22 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
 	if (!isr)
 		return IRQ_NONE;
 
-	spin_lock(&vp_dev->lock);
+	/* Configuration change?  Tell driver if it wants to know. */
+	if (isr & VIRTIO_PCI_ISR_CONFIG) {
+		struct virtio_driver *drv;
+		drv = container_of(vp_dev->vdev.dev.driver,
+				   struct virtio_driver, driver);
+
+		if (drv->config_changed)
+			drv->config_changed(&vp_dev->vdev);
+	}
+
+	spin_lock_irqsave(&vp_dev->lock, flags);
 	list_for_each_entry(info, &vp_dev->virtqueues, node) {
 		if (vring_interrupt(irq, info->vq) == IRQ_HANDLED)
 			ret = IRQ_HANDLED;
 	}
-	spin_unlock(&vp_dev->lock);
+	spin_unlock_irqrestore(&vp_dev->lock, flags);
 
 	return ret;
 }
@@ -202,6 +215,7 @@ static struct virtqueue *vp_find_vq(struct virtio_device *vdev, unsigned index,
 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
 	struct virtio_pci_vq_info *info;
 	struct virtqueue *vq;
+	unsigned long flags;
 	u16 num;
 	int err;
 
@@ -243,9 +257,9 @@ static struct virtqueue *vp_find_vq(struct virtio_device *vdev, unsigned index,
 	vq->priv = info;
 	info->vq = vq;
 
-	spin_lock(&vp_dev->lock);
+	spin_lock_irqsave(&vp_dev->lock, flags);
 	list_add(&info->node, &vp_dev->virtqueues);
-	spin_unlock(&vp_dev->lock);
+	spin_unlock_irqrestore(&vp_dev->lock, flags);
 
 	return vq;
 
@@ -262,10 +276,11 @@ static void vp_del_vq(struct virtqueue *vq)
 {
 	struct virtio_pci_device *vp_dev = to_vp_device(vq->vdev);
 	struct virtio_pci_vq_info *info = vq->priv;
+	unsigned long flags;
 
-	spin_lock(&vp_dev->lock);
+	spin_lock_irqsave(&vp_dev->lock, flags);
 	list_del(&info->node);
-	spin_unlock(&vp_dev->lock);
+	spin_unlock_irqrestore(&vp_dev->lock, flags);
 
 	vring_del_virtqueue(vq);
 
@@ -283,6 +298,7 @@ static struct virtio_config_ops virtio_pci_config_ops = {
 	.set		= vp_set,
 	.get_status	= vp_get_status,
 	.set_status	= vp_set_status,
+	.reset		= vp_reset,
 	.find_vq	= vp_find_vq,
 	.del_vq		= vp_del_vq,
 };
@@ -372,6 +388,7 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
 {
 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
 
+	unregister_virtio_device(&vp_dev->vdev);
 	free_irq(pci_dev->irq, vp_dev);
 	pci_set_drvdata(pci_dev, NULL);
 	pci_iounmap(pci_dev, vp_dev->ioaddr);
