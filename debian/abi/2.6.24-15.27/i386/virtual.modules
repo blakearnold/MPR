@@ -108,6 +108,7 @@ dm-zero
 ds1682
 ds2760_battery
 dummy
+e1000
 e1000e
 ebt_802_3
 ebtable_broute
