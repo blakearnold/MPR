@@ -629,6 +629,16 @@ static int apparmor_file_mmap(struct file *file, unsigned long reqprot,
 			      unsigned long prot, unsigned long flags,
 			      unsigned long addr, unsigned long addr_only)
 {
+	if ((addr < mmap_min_addr) && !capable(CAP_SYS_RAWIO)) {
+		struct aa_profile *profile = aa_get_profile(current);
+		if (profile)
+			/* future control check here */
+			return -EACCES;
+		else
+			return -EACCES;
+		aa_put_profile(profile);
+	}
+
 	return aa_mmap(file, "file_mmap", prot, flags);
 }
 
