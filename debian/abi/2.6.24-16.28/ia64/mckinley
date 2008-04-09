@@ -6361,6 +6361,7 @@ EXPORT_SYMBOL_GPL vmlinux 0xc0f232b4	inet6_hash_connect
 EXPORT_SYMBOL_GPL vmlinux 0xc0f2c722	elv_unregister
 EXPORT_SYMBOL_GPL vmlinux 0xc19396e5	driver_for_each_device
 EXPORT_SYMBOL_GPL vmlinux 0xc1d311b4	debugfs_create_dir
+EXPORT_SYMBOL_GPL vmlinux 0xc27d1d89	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0xc34efe27	snmp_fold_field
 EXPORT_SYMBOL_GPL vmlinux 0xc3e6295c	sysfs_remove_group
 EXPORT_SYMBOL_GPL vmlinux 0xc4e29f52	elv_register

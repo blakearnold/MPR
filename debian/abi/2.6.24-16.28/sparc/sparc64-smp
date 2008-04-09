@@ -5780,6 +5780,7 @@ EXPORT_SYMBOL_GPL vmlinux 0xaee54f0e	hwmon_device_register
 EXPORT_SYMBOL_GPL vmlinux 0xb0007bee	audit_log_d_path
 EXPORT_SYMBOL_GPL vmlinux 0xb0253b43	led_trigger_register_simple
 EXPORT_SYMBOL_GPL vmlinux 0xb0395a98	devres_add
+EXPORT_SYMBOL_GPL vmlinux 0xb0ab7148	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0xb0fb4d4a	driver_create_file
 EXPORT_SYMBOL_GPL vmlinux 0xb10d8dcf	usb_hcd_check_unlink_urb
 EXPORT_SYMBOL_GPL vmlinux 0xb13f167c	klist_node_attached

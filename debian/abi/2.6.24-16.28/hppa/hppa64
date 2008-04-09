@@ -4010,6 +4010,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x237282e6	xfrm_ealg_get_byname
 EXPORT_SYMBOL_GPL vmlinux 0x24309390	hrtimer_forward
 EXPORT_SYMBOL_GPL vmlinux 0x2447533c	ktime_get_real
 EXPORT_SYMBOL_GPL vmlinux 0x25893971	inotify_add_watch
+EXPORT_SYMBOL_GPL vmlinux 0x25ddb7dc	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0x262bdac3	page_cache_async_readahead
 EXPORT_SYMBOL_GPL vmlinux 0x26562e3a	snmp_mib_init
 EXPORT_SYMBOL_GPL vmlinux 0x266f0c85	nf_unregister_queue_handlers

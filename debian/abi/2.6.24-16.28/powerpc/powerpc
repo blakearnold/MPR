@@ -6952,6 +6952,7 @@ EXPORT_SYMBOL_GPL vmlinux 0xfaa6d88a	__inet_lookup_listener
 EXPORT_SYMBOL_GPL vmlinux 0xfb5cb0e8	hrtimer_init
 EXPORT_SYMBOL_GPL vmlinux 0xfbf9be5d	register_oom_notifier
 EXPORT_SYMBOL_GPL vmlinux 0xfc2ddfb8	ide_init_disk
+EXPORT_SYMBOL_GPL vmlinux 0xfd11c85b	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0xfd38234c	scatterwalk_copychunks
 EXPORT_SYMBOL_GPL vmlinux 0xfda17c77	pci_find_next_ht_capability
 EXPORT_SYMBOL_GPL vmlinux 0xfde0b92c	crypto_larval_error
