@@ -1,0 +1,31 @@
+From bbbb51672f190dfeed6b8866ed2dd2e675af932e Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 17 Mar 2008 15:46:43 +0300
+Subject: [PATCH 39/48] CPT: disable for "hidden" pid namespaces
+
+CPT is currently broken if session id or process group id not presented in
+global pid ns.
+---
+ kernel/cpt/cpt_dump.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cpt/cpt_dump.c b/kernel/cpt/cpt_dump.c
+index 4ff03f0..ea84dcb 100644
+--- a/kernel/cpt/cpt_dump.c
++++ b/kernel/cpt/cpt_dump.c
+@@ -875,6 +875,12 @@ int cpt_dump(struct cpt_context *ctx)
+ 		goto out_noenv;
+ 	if (!env->is_locked)
+ 		goto out_noenv;
++	err = -EINVAL;
++	if (env->ve_ns->pid_ns->flags & PID_NS_HIDDEN) {
++		printk(KERN_WARNING "CT: checkpointing not supported yet"
++				" for hidden pid namespaces.\n");
++		goto out_noenv;
++	}
+ 
+ 	oldenv = set_exec_env(env);
+ 	old_ns = current->nsproxy;
+-- 
+1.5.4.3
+

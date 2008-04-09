@@ -1,0 +1,42 @@
+From 0bfe93b674c2af97c3bd729ec127c473d22d0f4d Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 14 Mar 2008 14:40:00 +0300
+Subject: [PATCH 26/48] NETFILTER: fix uber memory leaks during nf_conntrack shutdown
+
+ve_nf_ct_protos array freeing was skipped during VE stop if it registered
+L4 protocols. Also remove generic proto freeing from sysctl freeing code --
+it's definitely not right place.
+---
+ net/netfilter/nf_conntrack_core.c          |    2 +-
+ net/netfilter/nf_conntrack_proto_generic.c |    2 --
+ 2 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 879dc9e..5271220 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1038,7 +1038,7 @@ skip_ct_cache:
+ 	ve_nf_ct_expect_hash = NULL;
+ 	atomic_set(&ve_nf_conntrack_count, 0);
+ 	ve_nf_conntrack_max = 0;
+-//	nf_conntrack_proto_fini();
++	nf_conntrack_proto_fini();
+ #ifdef CONFIG_VE_IPTABLES
+ 	ve_nf_conntrack_l4proto_generic = NULL;
+ 	kfree(ve->_nf_conntrack);
+diff --git a/net/netfilter/nf_conntrack_proto_generic.c b/net/netfilter/nf_conntrack_proto_generic.c
+index 3d00786..9980d3d 100644
+--- a/net/netfilter/nf_conntrack_proto_generic.c
++++ b/net/netfilter/nf_conntrack_proto_generic.c
+@@ -128,8 +128,6 @@ void nf_ct_proto_generic_sysctl_cleanup(void)
+ #endif
+ 		free_sysctl_clone(ve_nf_conntrack_l4proto_generic->ctl_table);
+ 		ve_nf_conntrack_l4proto_generic->ctl_table = NULL;
+-		kfree(ve_nf_conntrack_l4proto_generic);
+-		ve_nf_conntrack_l4proto_generic = NULL;
+ 	}
+ }
+ EXPORT_SYMBOL(nf_ct_proto_generic_sysctl_cleanup);
+-- 
+1.5.4.3
+

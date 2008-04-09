@@ -1,0 +1,26 @@
+From d211c0017393748f68f515fd09dcd4786660f5b0 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 14 Mar 2008 18:08:41 +0300
+Subject: [PATCH 31/48] NETFILTER: don't free nf_conntrack_l4proto_generic if VE_IPTABLES=n
+
+ve_nf_conntrack_l4proto_generic is stubbed to nf_conntrack_l4proto_generic
+which is statically allocated array and thus shouldn't be freed.
+---
+ net/netfilter/nf_conntrack_proto.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_proto.c b/net/netfilter/nf_conntrack_proto.c
+index 1384c03..bde6914 100644
+--- a/net/netfilter/nf_conntrack_proto.c
++++ b/net/netfilter/nf_conntrack_proto.c
+@@ -361,5 +361,7 @@ void nf_conntrack_proto_fini(void)
+ 		kfree(ve_nf_ct_protos[i]);
+ 		ve_nf_ct_protos[i] = NULL;
+ 	}
++#ifdef CONFIG_VE_IPTABLES
+ 	kfree(ve_nf_conntrack_l4proto_generic);
++#endif
+ }
+-- 
+1.5.4.3
+

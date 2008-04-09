@@ -1,0 +1,30 @@
+From b1a7063c226542f1f62972173056fa0971f9d9e8 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 3 Mar 2008 13:46:34 +0300
+Subject: [PATCH 06/48] CPT: select tun, venet, veth modules
+
+CONFIG_VZ_CHEKPOINT=y, CONFIG_TUN=m result in linking breakage
+because CPT can't find tun_chr_open() et al.
+
+So, if you build CPT as standalone, tun/tap will be also standalone.
+---
+ kernel/Kconfig.openvz |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/Kconfig.openvz b/kernel/Kconfig.openvz
+index 7371679..5cdcdd3 100644
+--- a/kernel/Kconfig.openvz
++++ b/kernel/Kconfig.openvz
+@@ -71,6 +71,9 @@ config VZ_CHECKPOINT
+  	tristate "Checkpointing & restoring Virtual Environments"
+  	depends on VE_CALLS && INET
+ 	select PM_SLEEP
++	select TUN
++	select VE_ETHDEV
++	select VE_NETDEV
+  	default m
+  	help
+  	  This option adds two modules, "cpt" and "rst", which allow
+-- 
+1.5.4.3
+

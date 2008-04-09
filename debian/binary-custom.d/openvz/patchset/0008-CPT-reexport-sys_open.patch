@@ -1,0 +1,26 @@
+From 29ec264a595bb385ce4818a31a01987b3b31fd9c Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Tue, 4 Mar 2008 12:24:54 +0300
+Subject: [PATCH 08/48] CPT: reexport sys_open()
+
+http://bugzilla.openvz.org/show_bug.cgi?id=835
+---
+ fs/open.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/open.c b/fs/open.c
+index 305f7e5..110be4d 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -1101,7 +1101,7 @@ asmlinkage long sys_open(const char __user *filename, int flags, int mode)
+ 	prevent_tail_call(ret);
+ 	return ret;
+ }
+-EXPORT_UNUSED_SYMBOL_GPL(sys_open); /* To be deleted for 2.6.25 */
++EXPORT_SYMBOL_GPL(sys_open);
+ 
+ asmlinkage long sys_openat(int dfd, const char __user *filename, int flags,
+ 			   int mode)
+-- 
+1.5.4.3
+

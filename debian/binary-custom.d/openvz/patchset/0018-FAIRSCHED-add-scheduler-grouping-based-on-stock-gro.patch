@@ -1,0 +1,249 @@
+From a02e3acb4a97ede13b34641754c27416338e1426 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 12 Mar 2008 18:07:48 +0300
+Subject: [PATCH 18/48] FAIRSCHED: add scheduler grouping based on stock grouping code
+
+---
+ include/linux/fairsched.h |   61 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/init_task.h |    2 +
+ include/linux/sched.h     |    3 ++
+ init/Kconfig              |    6 ++++
+ kernel/Makefile           |    1 +
+ kernel/exit.c             |    2 +
+ kernel/fork.c             |    1 +
+ kernel/sched.c            |    4 +++
+ kernel/vzfairsched.c      |   30 ++++++++++++++++++++++
+ 9 files changed, 110 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/fairsched.h
+ create mode 100644 kernel/vzfairsched.c
+
+diff --git a/include/linux/fairsched.h b/include/linux/fairsched.h
+new file mode 100644
+index 0000000..e5bb3a2
+--- /dev/null
++++ b/include/linux/fairsched.h
+@@ -0,0 +1,61 @@
++/*
++ * Fair Scheduler
++ *
++ * Copyright (C) 2000-2008  SWsoft
++ *  All rights reserved.
++ *
++ *  Licensing governed by "linux/COPYING.SWsoft" file.
++ *
++ */
++
++#ifndef __LINUX_FAIRSCHED_H__
++#define __LINUX_FAIRSCHED_H__
++
++#ifdef __KERNEL__
++
++/* refcnt change protected with tasklist write lock */
++struct fairsched_node {
++	struct task_group *tg;
++	int refcnt;
++	unsigned id;
++	struct list_head nodelist;
++};
++
++#ifdef CONFIG_VZ_FAIRSCHED
++
++#define FAIRSCHED_INIT_NODE_ID		INT_MAX
++
++extern struct fairsched_node fairsched_init_node;
++
++void fairsched_init_early(void);
++
++static inline int task_fairsched_node_id(struct task_struct *p)
++{
++	return p->fsched_node->id;
++}
++
++/* must called with tasklist write locked */
++static inline void get_task_fairsched_node(struct task_struct *p)
++{
++	p->fsched_node->refcnt++;
++}
++static inline void put_task_fairsched_node(struct task_struct *p)
++{
++	p->fsched_node->refcnt--;
++}
++
++#define	INIT_VZ_FAIRSCHED		.fsched_node = &fairsched_init_node,
++
++#else /* CONFIG_VZ_FAIRSCHED */
++
++static inline void fairsched_init_early(void) { }
++static inline int task_fairsched_node_id(struct task_struct *p) { return 0; }
++static inline void get_task_fairsched_node(struct task_struct *p) { }
++static inline void put_task_fairsched_node(struct task_struct *p) { }
++
++#define	INIT_VZ_FAIRSCHED
++
++#endif /* CONFIG_VZ_FAIRSCHED */
++#endif /* __KERNEL__ */
++
++#endif /* __LINUX_FAIRSCHED_H__ */
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 184de08..7f44087 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -10,6 +10,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/user_namespace.h>
+ #include <net/net_namespace.h>
++#include <linux/fairsched.h>
+ 
+ #define INIT_FDTABLE \
+ {							\
+@@ -180,6 +181,7 @@ extern struct group_info init_groups;
+ 	.dirties = INIT_PROP_LOCAL_SINGLE(dirties),			\
+ 	INIT_TRACE_IRQFLAGS						\
+ 	INIT_LOCKDEP							\
++	INIT_VZ_FAIRSCHED						\
+ }
+ 
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3eeecc6..849ad15 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1229,6 +1229,9 @@ struct task_struct {
+ 	unsigned long	magic;
+ 	struct inode	*ino;
+ #endif
++#ifdef CONFIG_VZ_FAIRSCHED
++	struct fairsched_node *fsched_node;
++#endif
+ };
+ 
+ /*
+diff --git a/init/Kconfig b/init/Kconfig
+index 3577b39..210c557 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -353,6 +353,12 @@ config FAIR_CGROUP_SCHED
+ 	  Refer to Documentation/cgroups.txt for more information
+ 	  on "cgroup" pseudo filesystem.
+ 
++config VZ_FAIRSCHED
++	bool "OpenVZ groups"
++	help
++	  This option add customizable task groups with OpenVZ compatible
++	  syscall and procfs interface.
++
+ endchoice
+ 
+ config CGROUP_CPUACCT
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 25ca787..e89a054 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_SYSCTL) += utsname_sysctl.o
+ obj-$(CONFIG_TASKSTATS) += taskstats.o tsacct.o
+ obj-$(CONFIG_MARKERS) += marker.o
+ obj-$(CONFIG_LATENCYTOP) += latencytop.o
++obj-$(CONFIG_VZ_FAIRSCHED) += vzfairsched.o
+ 
+ ifneq ($(CONFIG_SCHED_NO_NO_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/exit.c b/kernel/exit.c
+index f89b6da..9760f62 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -47,6 +47,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/task_io_accounting_ops.h>
+ #include <linux/ve.h>
++#include <linux/fairsched.h>
+ 
+ #include <bc/misc.h>
+ #include <bc/oom_kill.h>
+@@ -185,6 +186,7 @@ repeat:
+ 		 */
+ 		zap_leader = (leader->exit_signal == -1);
+ 	}
++	put_task_fairsched_node(p);
+ 
+ 	write_unlock_irq(&tasklist_lock);
+ 	release_thread(p);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 8817fbb..6e82c6f 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1363,6 +1363,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ #endif
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++	get_task_fairsched_node(p);
+ 	write_unlock_irq(&tasklist_lock);
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index d26ecab..aea8628 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -63,6 +63,7 @@
+ #include <linux/reciprocal_div.h>
+ #include <linux/unistd.h>
+ #include <linux/pagemap.h>
++#include <linux/fairsched.h>
+ 
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
+@@ -208,6 +209,8 @@ static inline struct task_group *task_group(struct task_struct *p)
+ #elif defined(CONFIG_FAIR_CGROUP_SCHED)
+ 	tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
+ 				struct task_group, css);
++#elif defined(CONFIG_VZ_FAIRSCHED)
++	tg = p->fsched_node->tg;
+ #else
+ 	tg = &init_task_group;
+ #endif
+@@ -7213,6 +7216,7 @@ void __init sched_init(void)
+ 	 * During early bootup we pretend to be a normal task:
+ 	 */
+ 	current->sched_class = &fair_sched_class;
++	fairsched_init_early();
+ }
+ 
+ #ifdef CONFIG_DEBUG_SPINLOCK_SLEEP
+diff --git a/kernel/vzfairsched.c b/kernel/vzfairsched.c
+new file mode 100644
+index 0000000..43c743a
+--- /dev/null
++++ b/kernel/vzfairsched.c
+@@ -0,0 +1,30 @@
++/*
++ * Fair Scheduler
++ *
++ * Copyright (C) 2000-2008  SWsoft
++ * All rights reserved.
++ *
++ * Licensing governed by "linux/COPYING.SWsoft" file.
++ *
++ */
++
++#include <linux/sched.h>
++#include <linux/fairsched.h>
++
++struct fairsched_node fairsched_init_node = {
++	.id		= FAIRSCHED_INIT_NODE_ID,
++	.tg		= &init_task_group,
++};
++
++static DEFINE_MUTEX(fairsched_mutex);
++
++/* list protected with fairsched_mutex */
++static LIST_HEAD(fairsched_node_head);
++static int fairsched_nr_nodes;
++
++void __init fairsched_init_early(void)
++{
++       list_add(&fairsched_init_node.nodelist, &fairsched_node_head);
++       fairsched_nr_nodes++;
++}
++
+-- 
+1.5.4.3
+

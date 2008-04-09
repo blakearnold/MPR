@@ -1,0 +1,115 @@
+From c6504c8d5283ade41cd3b3c6e1be9a9deafbdaab Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 25 Mar 2008 11:34:36 +0300
+Subject: [PATCH 47/48] [PATCH] VE: add ve mem class to sysfs
+
+Create in VE sysfs mem class and some its devices:
+null, zero, full, random, urandom.
+
+Required for Ubuntu 8.04 and maybe some other new distro udev package.
+
+Bug #99897
+http://bugzilla.openvz.org/show_bug.cgi?id=840
+---
+ include/linux/ve.h  |    1 +
+ kernel/ve/vecalls.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/ve.h b/include/linux/ve.h
+index 1a5b357..f9cc6aa 100644
+--- a/include/linux/ve.h
++++ b/include/linux/ve.h
+@@ -211,6 +211,7 @@ struct ve_struct {
+ 	struct kset		*class_obj_subsys;
+ 	struct kset		*devices_subsys;
+ 	struct class		*tty_class;
++	struct class		*mem_class;
+ 
+ #ifdef CONFIG_NET
+ 	struct class		*net_class;
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index 49ecfb8..616cf0b 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -71,6 +71,7 @@
+ #include <linux/nfcalls.h>
+ #include <linux/virtinfo.h>
+ #include <linux/utsrelease.h>
++#include <linux/major.h>
+ 
+ int nr_ve = 1;	/* One VE always exists. Compatibility with vestat */
+ EXPORT_SYMBOL(nr_ve);
+@@ -645,6 +646,44 @@ static inline void fini_ve_netclass(struct ve_struct *ve) { ; }
+ 
+ extern struct kset devices_subsys;
+ 
++static const struct {
++	unsigned	minor;
++	char		*name;
++} mem_class_devices [] = {
++	{3, "null"},
++	{5, "zero"},
++	{7, "full"},
++	{8, "random"},
++	{9, "urandom"},
++	{0, NULL},
++};
++
++static struct class *init_ve_mem_class(void)
++{
++	int i;
++	struct class *ve_mem_class;
++
++	ve_mem_class = class_create(THIS_MODULE, "mem");
++	if (IS_ERR(ve_mem_class))
++		return ve_mem_class;
++	for (i = 0; mem_class_devices[i].name; i++)
++		class_device_create(ve_mem_class, NULL,
++				MKDEV(MEM_MAJOR, mem_class_devices[i].minor),
++				NULL, mem_class_devices[i].name);
++	return ve_mem_class;
++}
++
++
++void fini_ve_mem_class(struct class *ve_mem_class)
++{
++	int i;
++
++	for (i = 0; mem_class_devices[i].name; i++)
++		class_device_destroy(ve_mem_class,
++				MKDEV(MEM_MAJOR, mem_class_devices[i].minor));
++	class_destroy(ve_mem_class);
++}
++
+ static int init_ve_sysfs(struct ve_struct *ve)
+ {
+ 	struct kset *subsys;
+@@ -721,8 +760,17 @@ static int init_ve_sysfs(struct ve_struct *ve)
+ 		goto out_tty_class_register;
+ 	}
+ 
++	ve->mem_class = init_ve_mem_class();
++	if (IS_ERR(ve->mem_class)) {
++		err = PTR_ERR(ve->mem_class);
++		ve->mem_class = NULL;
++		goto out_mem_class_register;
++	}
++
+ 	return err;
+ 
++out_mem_class_register:
++	fini_ve_tty_class(ve->tty_class);
+ out_tty_class_register:
+ 	fini_ve_netclass(ve);
+ out_nc:
+@@ -759,6 +807,7 @@ out:
+ 
+ static void fini_ve_sysfs(struct ve_struct *ve)
+ {
++	fini_ve_mem_class(ve->mem_class);
+ 	fini_ve_tty_class(ve->tty_class);
+ 	fini_ve_netclass(ve);
+ 	subsystem_unregister(ve->devices_subsys);
+-- 
+1.5.4.3
+

@@ -1,0 +1,27 @@
+From f05b28d968d2de966189a05549c2b01ddedbc6e0 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 14 Mar 2008 19:43:07 +0300
+Subject: [PATCH 32/48] NETFILTER: fix freeing of ve_nf_conntrack_l4proto_generic
+
+Do it only only on VE stop, not on rmmod, because it's statically allocated
+on case of VE0.
+---
+ net/netfilter/nf_conntrack_proto.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_proto.c b/net/netfilter/nf_conntrack_proto.c
+index bde6914..c994ecf 100644
+--- a/net/netfilter/nf_conntrack_proto.c
++++ b/net/netfilter/nf_conntrack_proto.c
+@@ -362,6 +362,7 @@ void nf_conntrack_proto_fini(void)
+ 		ve_nf_ct_protos[i] = NULL;
+ 	}
+ #ifdef CONFIG_VE_IPTABLES
+-	kfree(ve_nf_conntrack_l4proto_generic);
++	if (!ve_is_super(get_exec_env()))
++		kfree(ve_nf_conntrack_l4proto_generic);
+ #endif
+ }
+-- 
+1.5.4.3
+

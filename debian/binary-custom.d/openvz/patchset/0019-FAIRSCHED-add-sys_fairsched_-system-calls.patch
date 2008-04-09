@@ -1,0 +1,397 @@
+From f14a05b0c80e9f858666f5574c97720f4a1fae21 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 12 Mar 2008 18:11:42 +0300
+Subject: [PATCH 19/48] FAIRSCHED: add sys_fairsched_* system calls
+
+---
+ include/linux/fairsched.h |   23 ++++
+ kernel/sys_ni.c           |    8 ++
+ kernel/vzfairsched.c      |  300 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 331 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/fairsched.h b/include/linux/fairsched.h
+index e5bb3a2..cdba9a4 100644
+--- a/include/linux/fairsched.h
++++ b/include/linux/fairsched.h
+@@ -11,6 +11,10 @@
+ #ifndef __LINUX_FAIRSCHED_H__
+ #define __LINUX_FAIRSCHED_H__
+ 
++#define FAIRSCHED_SET_RATE      0
++#define FAIRSCHED_DROP_RATE     1
++#define FAIRSCHED_GET_RATE      2
++
+ #ifdef __KERNEL__
+ 
+ /* refcnt change protected with tasklist write lock */
+@@ -19,6 +23,13 @@ struct fairsched_node {
+ 	int refcnt;
+ 	unsigned id;
+ 	struct list_head nodelist;
++
++	unsigned weight;
++	unsigned char rate_limited;
++	unsigned rate;
++#ifdef CONFIG_VE
++	struct ve_struct *owner_env;
++#endif
+ };
+ 
+ #ifdef CONFIG_VZ_FAIRSCHED
+@@ -46,6 +57,18 @@ static inline void put_task_fairsched_node(struct task_struct *p)
+ 
+ #define	INIT_VZ_FAIRSCHED		.fsched_node = &fairsched_init_node,
+ 
++#define FSCHWEIGHT_MAX                  ((1 << 16) - 1)
++#define FSCHRATE_SHIFT                  10
++#define FSCH_TIMESLICE                  16
++
++asmlinkage int sys_fairsched_mknod(unsigned int parent, unsigned int weight,
++		unsigned int newid);
++asmlinkage int sys_fairsched_rmnod(unsigned int id);
++asmlinkage int sys_fairsched_mvpr(pid_t pid, unsigned int nodeid);
++asmlinkage int sys_fairsched_vcpus(unsigned int id, unsigned int vcpus);
++asmlinkage int sys_fairsched_chwt(unsigned int id, unsigned int weight);
++asmlinkage int sys_fairsched_rate(unsigned int id, int op, unsigned rate);
++
+ #else /* CONFIG_VZ_FAIRSCHED */
+ 
+ static inline void fairsched_init_early(void) { }
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index f801b56..74137d8 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -161,3 +161,11 @@ cond_syscall(sys_getluid);
+ cond_syscall(sys_setluid);
+ cond_syscall(sys_setublimit);
+ cond_syscall(sys_ubstat);
++
++/* fairsched compat */
++cond_syscall(sys_fairsched_mknod);
++cond_syscall(sys_fairsched_rmnod);
++cond_syscall(sys_fairsched_mvpr);
++cond_syscall(sys_fairsched_vcpus);
++cond_syscall(sys_fairsched_chwt);
++cond_syscall(sys_fairsched_rate);
+diff --git a/kernel/vzfairsched.c b/kernel/vzfairsched.c
+index 43c743a..c2eae4d 100644
+--- a/kernel/vzfairsched.c
++++ b/kernel/vzfairsched.c
+@@ -10,10 +10,16 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/fairsched.h>
++#include <linux/err.h>
++#include <linux/module.h>
+ 
+ struct fairsched_node fairsched_init_node = {
+ 	.id		= FAIRSCHED_INIT_NODE_ID,
+ 	.tg		= &init_task_group,
++#ifdef CONFIG_VE
++	.owner_env	= get_ve0(),
++#endif
++	.weight		= 1,
+ };
+ 
+ static DEFINE_MUTEX(fairsched_mutex);
+@@ -28,3 +34,297 @@ void __init fairsched_init_early(void)
+        fairsched_nr_nodes++;
+ }
+ 
++#define FSCHWEIGHT_BASE		512000
++
++/******************************************************************************
++ * cfs group shares = FSCHWEIGHT_BASE / fairsched weight
++ *
++ * vzctl cpuunits default 1000
++ * cfs shares default value is 1024 (see init_task_group_load in sched.c)
++ * cpuunits = 1000 --> weight = 500000 / cpuunits = 500 --> shares = 1024
++ *                              ^--- from vzctl
++ * weight in 1..65535  -->  shares in 7..512000
++ * shares should be >1 (see comment in sched_group_set_shares function)
++ *****************************************************************************/
++
++static struct fairsched_node *fairsched_find(unsigned int id)
++{
++	struct fairsched_node *p;
++	list_for_each_entry(p, &fairsched_node_head, nodelist) {
++		if (p->id == id)
++			return p;
++	}
++	return NULL;
++}
++
++/******************************************************************************
++ * System calls
++ *
++ * All do_xxx functions are called under fairsched mutex and after
++ * capability check.
++ *
++ * The binary interfaces follow some other Fair Scheduler implementations
++ * (although some system call arguments are not needed for our implementation).
++ *****************************************************************************/
++
++static int do_fairsched_mknod(unsigned int parent, unsigned int weight,
++		unsigned int newid)
++{
++	struct fairsched_node *node;
++	int retval;
++
++	retval = -EINVAL;
++	if (weight < 1 || weight > FSCHWEIGHT_MAX)
++		goto out;
++	if (newid < 0 || newid > INT_MAX)
++		goto out;
++
++	retval = -EBUSY;
++	if (fairsched_find(newid) != NULL)
++		goto out;
++
++	retval = -ENOMEM;
++	node = kzalloc(sizeof(*node), GFP_KERNEL);
++	if (node == NULL)
++		goto out;
++
++	node->tg = sched_create_group();
++	if (IS_ERR(node->tg))
++		goto out_free;
++
++	node->id = newid;
++	node->weight = weight;
++	sched_group_set_shares(node->tg, FSCHWEIGHT_BASE / weight);
++#ifdef CONFIG_VE
++	node->owner_env = get_exec_env();
++#endif
++	list_add(&node->nodelist, &fairsched_node_head);
++	fairsched_nr_nodes++;
++
++	retval = newid;
++out:
++	return retval;
++
++out_free:
++	kfree(node);
++	return retval;
++}
++
++asmlinkage int sys_fairsched_mknod(unsigned int parent, unsigned int weight,
++				    unsigned int newid)
++{
++	int retval;
++
++	if (!capable(CAP_SETVEID))
++		return -EPERM;
++
++	mutex_lock(&fairsched_mutex);
++	retval = do_fairsched_mknod(parent, weight, newid);
++	mutex_unlock(&fairsched_mutex);
++
++	return retval;
++}
++EXPORT_SYMBOL(sys_fairsched_mknod);
++
++static int do_fairsched_rmnod(unsigned int id)
++{
++	struct fairsched_node *node;
++	int retval;
++
++	retval = -EINVAL;
++	node = fairsched_find(id);
++	if (node == NULL)
++		goto out;
++        if (node == &fairsched_init_node)
++                goto out;
++
++	retval = -EBUSY;
++	if (node->refcnt)
++		goto out;
++
++	list_del(&node->nodelist);
++	fairsched_nr_nodes--;
++
++	sched_destroy_group(node->tg);
++	kfree(node);
++	retval = 0;
++out:
++	return retval;
++}
++
++asmlinkage int sys_fairsched_rmnod(unsigned int id)
++{
++	int retval;
++
++	if (!capable(CAP_SETVEID))
++		return -EPERM;
++
++	mutex_lock(&fairsched_mutex);
++	retval = do_fairsched_rmnod(id);
++	mutex_unlock(&fairsched_mutex);
++
++	return retval;
++}
++EXPORT_SYMBOL(sys_fairsched_rmnod);
++
++static int do_fairsched_chwt(unsigned int id, unsigned weight)
++{
++	struct fairsched_node *node;
++
++	if (id == 0)
++		return -EINVAL;
++	if (weight < 1 || weight > FSCHWEIGHT_MAX)
++		return -EINVAL;
++
++	node = fairsched_find(id);
++	if (node == NULL)
++		return -ENOENT;
++
++	node->weight = weight;
++	sched_group_set_shares(node->tg, FSCHWEIGHT_BASE / weight);
++
++	return 0;
++}
++
++asmlinkage int sys_fairsched_chwt(unsigned int id, unsigned weight)
++{
++	int retval;
++
++	if (!capable(CAP_SETVEID))
++		return -EPERM;
++
++	mutex_lock(&fairsched_mutex);
++	retval = do_fairsched_chwt(id, weight);
++	mutex_unlock(&fairsched_mutex);
++
++	return retval;
++}
++
++static int do_fairsched_vcpus(unsigned int id, unsigned int vcpus)
++{
++	struct fairsched_node *node;
++
++	if (id == 0)
++		return -EINVAL;
++
++	node = fairsched_find(id);
++	if (node == NULL)
++		return -ENOENT;
++
++	return 0;
++}
++
++asmlinkage int sys_fairsched_vcpus(unsigned int id, unsigned int vcpus)
++{
++	int retval;
++
++	if (!capable(CAP_SETVEID))
++		return -EPERM;
++
++	mutex_lock(&fairsched_mutex);
++	retval = do_fairsched_vcpus(id, vcpus);
++	mutex_unlock(&fairsched_mutex);
++
++	return retval;
++}
++EXPORT_SYMBOL(sys_fairsched_vcpus);
++
++static int do_fairsched_rate(unsigned int id, int op, unsigned rate)
++{
++	struct fairsched_node *node;
++	int retval;
++
++	if (id == 0)
++		return -EINVAL;
++	if (op == FAIRSCHED_SET_RATE && (rate < 1 || rate >= (1UL << 31)))
++		return -EINVAL;
++
++	node = fairsched_find(id);
++	if (node == NULL)
++		return -ENOENT;
++
++	retval = -EINVAL;
++	switch (op) {
++	case FAIRSCHED_SET_RATE:
++		node->rate = rate;
++		node->rate_limited = 1;
++		retval = rate;
++		break;
++	case FAIRSCHED_DROP_RATE:
++		node->rate = 0;
++		node->rate_limited = 0;
++		retval = 0;
++		break;
++	case FAIRSCHED_GET_RATE:
++		if (node->rate_limited)
++			retval = node->rate;
++		else
++			retval = -ENODATA;
++		break;
++	}
++	return retval;
++}
++
++asmlinkage int sys_fairsched_rate(unsigned int id, int op, unsigned rate)
++{
++	int retval;
++
++	if (!capable(CAP_SETVEID))
++		return -EPERM;
++
++	mutex_lock(&fairsched_mutex);
++	retval = do_fairsched_rate(id, op, rate);
++	mutex_unlock(&fairsched_mutex);
++
++	return retval;
++}
++
++static int do_fairsched_mvpr(pid_t pid, unsigned int nodeid)
++{
++	struct task_struct *p;
++	struct fairsched_node *node;
++	int retval;
++	unsigned flags;
++
++	retval = -ENOENT;
++	node = fairsched_find(nodeid);
++	if (node == NULL)
++		goto out;
++
++	write_lock_irqsave(&tasklist_lock, flags);
++	retval = -ESRCH;
++	p = find_task_by_pid(pid);
++	if (p == NULL)
++		goto out_unlock;
++
++	get_task_struct(p);
++	put_task_fairsched_node(p);
++	p->fsched_node = node;
++	get_task_fairsched_node(p);
++	write_unlock_irqrestore(&tasklist_lock, flags);
++
++	smp_wmb();
++	sched_move_task(p);
++	put_task_struct(p);
++	return 0;
++
++out_unlock:
++	write_unlock_irqrestore(&tasklist_lock, flags);
++out:
++	return retval;
++}
++
++asmlinkage int sys_fairsched_mvpr(pid_t pid, unsigned int nodeid)
++{
++	int retval;
++
++	if (!capable(CAP_SETVEID))
++		return -EPERM;
++
++	mutex_lock(&fairsched_mutex);
++	retval = do_fairsched_mvpr(pid, nodeid);
++	mutex_unlock(&fairsched_mutex);
++
++	return retval;
++}
++EXPORT_SYMBOL(sys_fairsched_mvpr);
+-- 
+1.5.4.3
+

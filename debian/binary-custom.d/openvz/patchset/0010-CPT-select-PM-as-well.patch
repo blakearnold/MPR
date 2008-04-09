@@ -1,0 +1,27 @@
+From 15938557b7ee1cebc893c676e0574a990fb79947 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Tue, 4 Mar 2008 15:33:53 +0300
+Subject: [PATCH 10/48] CPT: select PM as well
+
+Just PM_SLEEP is not enough, because selecting logic doesn't select second and
+all other levels of dependencies (which is probably a bug in build system
+depending on how to look at it).
+---
+ kernel/Kconfig.openvz |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/Kconfig.openvz b/kernel/Kconfig.openvz
+index 5cdcdd3..5d5d6f0 100644
+--- a/kernel/Kconfig.openvz
++++ b/kernel/Kconfig.openvz
+@@ -70,6 +70,7 @@ config VZ_WDOG
+ config VZ_CHECKPOINT
+  	tristate "Checkpointing & restoring Virtual Environments"
+  	depends on VE_CALLS && INET
++	select PM
+ 	select PM_SLEEP
+ 	select TUN
+ 	select VE_ETHDEV
+-- 
+1.5.4.3
+

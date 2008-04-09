@@ -1,0 +1,79 @@
+From c8f0641ada56a05ab168d521205d78f5e8d0b80b Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 17 Mar 2008 15:45:36 +0300
+Subject: [PATCH 38/48] Add kernel.pid_ns_hide_child sysctl
+
+It's PID_NS_HIDE_CHILD flg manipulator for current pidns.
+
+If set to 1, all process except first (like init) in all created pid
+namespaces after set will be invisible from current and upfollow pid
+namespaces. sysctl itself visible only in VE0.
+---
+ kernel/sysctl.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 88bdf55..f288b72 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2848,6 +2848,57 @@ static int deprecated_sysctl_warning(struct __sysctl_args *args)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PID_NS
++#include <linux/pid_namespace.h>
++
++static int proc_pid_ns_hide_child(struct ctl_table *table, int write,
++		struct file *filp, void __user *buffer,
++		size_t *lenp, loff_t *ppos)
++{
++	int tmp, res;
++
++	tmp = (current->nsproxy->pid_ns->flags & PID_NS_HIDE_CHILD) ? 1 : 0;
++
++	res = __do_proc_dointvec(&tmp, table, write, filp, buffer,
++			       lenp, ppos, NULL, NULL);
++	if (res || !write)
++		return res;
++
++	if (tmp)
++		current->nsproxy->pid_ns->flags |= PID_NS_HIDE_CHILD;
++	else
++		current->nsproxy->pid_ns->flags &= ~PID_NS_HIDE_CHILD;
++	return 0;
++}
++
++static struct ctl_table pid_ns_kern_table[] = {
++	{
++		.procname	= "pid_ns_hide_child",
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_pid_ns_hide_child,
++	},
++	{}
++};
++
++static struct ctl_table pid_ns_root_table[] = {
++	{
++		.ctl_name	= CTL_KERN,
++		.procname	= "kernel",
++		.mode		= 0555,
++		.child		= pid_ns_kern_table,
++	},
++	{}
++};
++
++static __init int pid_ns_sysctl_init(void)
++{
++	register_sysctl_table(pid_ns_root_table);
++	return 0;
++}
++postcore_initcall(pid_ns_sysctl_init);
++#endif /* CONFIG_PID_NS */
++
+ /*
+  * No sense putting this after each symbol definition, twice,
+  * exception granted :-)
+-- 
+1.5.4.3
+

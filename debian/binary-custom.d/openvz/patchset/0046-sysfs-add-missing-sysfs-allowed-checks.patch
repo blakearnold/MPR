@@ -1,0 +1,42 @@
+From 5ac8d25b5e31e08af04f464e44c8214efea2e271 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 24 Mar 2008 17:15:49 +0300
+Subject: [PATCH 46/48] sysfs: add missing "sysfs allowed?" checks
+
+http://bugzilla.openvz.org/show_bug.cgi?id=852
+---
+ fs/sysfs/bin.c |    3 +++
+ fs/sysfs/dir.c |    3 +++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
+index 3cc6838..9aec999 100644
+--- a/fs/sysfs/bin.c
++++ b/fs/sysfs/bin.c
+@@ -241,6 +241,9 @@ const struct file_operations bin_fops = {
+ 
+ int sysfs_create_bin_file(struct kobject * kobj, struct bin_attribute * attr)
+ {
++	if (!ve_sysfs_alowed())
++		return 0;
++
+ 	BUG_ON(!kobj || !kobj->sd || !attr);
+ 
+ 	return sysfs_add_file(kobj->sd, &attr->attr, SYSFS_KOBJ_BIN_ATTR);
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 5a17b68..c6cb983 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -655,6 +655,9 @@ int sysfs_create_dir(struct kobject * kobj)
+ 	struct sysfs_dirent *parent_sd, *sd;
+ 	int error = 0;
+ 
++	if (!ve_sysfs_alowed())
++		return 0;
++
+ 	BUG_ON(!kobj);
+ 
+ 	if (kobj->parent)
+-- 
+1.5.4.3
+

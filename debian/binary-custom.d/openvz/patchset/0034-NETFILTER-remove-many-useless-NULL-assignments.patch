@@ -1,0 +1,226 @@
+From 06927aa0b67994378a98faa8f2322a204488a4b1 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 17 Mar 2008 14:41:40 +0300
+Subject: [PATCH 34/48] NETFILTER: remove many useless NULL assignments
+
+VE is going to disappear in a second and memory will be freed, so
+all those clears are indeedd useless.
+---
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c |    4 +---
+ net/ipv4/netfilter/nf_conntrack_proto_icmp.c   |    3 ---
+ net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c |    2 --
+ net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c |    2 --
+ net/netfilter/nf_conntrack_core.c              |   15 ---------------
+ net/netfilter/nf_conntrack_proto.c             |    4 +---
+ net/netfilter/nf_conntrack_proto_generic.c     |    2 --
+ net/netfilter/nf_conntrack_proto_tcp.c         |    4 ----
+ net/netfilter/nf_conntrack_proto_udp.c         |    4 ----
+ net/netfilter/nf_conntrack_standalone.c        |    6 +-----
+ 10 files changed, 3 insertions(+), 43 deletions(-)
+
+diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+index 10e970b..8084255 100644
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+@@ -449,10 +449,8 @@ static int nf_ct_proto_ipv4_sysctl_init(void)
+ 
+ static void nf_ct_proto_ipv4_sysctl_cleanup(void)
+ {
+-	if (!ve_is_super(get_exec_env())) {
++	if (!ve_is_super(get_exec_env()))
+ 		free_sysctl_clone(ve_nf_conntrack_l3proto_ipv4->ctl_table);
+-		ve_nf_conntrack_l3proto_ipv4->ctl_table = NULL;
+-	}
+ }
+ #else
+ static inline int nf_ct_proto_ipv4_sysctl_init(void)
+diff --git a/net/ipv4/netfilter/nf_conntrack_proto_icmp.c b/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
+index 83a62bb..c6cd44c 100644
+--- a/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
++++ b/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
+@@ -388,12 +388,9 @@ void nf_ct_proto_icmp_sysctl_cleanup(void)
+ #ifdef CONFIG_NF_CONNTRACK_PROC_COMPAT
+ 		free_sysctl_clone(
+ 				ve_nf_conntrack_l4proto_icmp->ctl_compat_table);
+-		ve_nf_conntrack_l4proto_icmp->ctl_compat_table = NULL;
+ #endif
+ 		free_sysctl_clone(ve_nf_conntrack_l4proto_icmp->ctl_table);
+-		ve_nf_conntrack_l4proto_icmp->ctl_table = NULL;
+ 		kfree(ve_nf_conntrack_l4proto_icmp);
+-		ve_nf_conntrack_l4proto_icmp = NULL;
+ 	}
+ }
+ EXPORT_SYMBOL(nf_ct_proto_icmp_sysctl_cleanup);
+diff --git a/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c b/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
+index 3cf1e6c..181b24e 100644
+--- a/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
++++ b/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
+@@ -436,9 +436,7 @@ static void nf_ct_proto_ipv6_sysctl_cleanup(void)
+ {
+ 	if (!ve_is_super(get_exec_env())) {
+ 		free_sysctl_clone(ve_nf_conntrack_l3proto_ipv6->ctl_table);
+-		ve_nf_conntrack_l3proto_ipv6->ctl_table = NULL;
+ 		kfree(ve_nf_conntrack_l3proto_ipv6);
+-		ve_nf_conntrack_l3proto_ipv6 = NULL;
+ 	}
+ }
+ #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
+diff --git a/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c b/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
+index 9f23a5d..23904af 100644
+--- a/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
++++ b/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
+@@ -334,9 +334,7 @@ void nf_ct_proto_icmpv6_sysctl_cleanup(void)
+ {
+ 	if (!ve_is_super(get_exec_env())) {
+ 		free_sysctl_clone(ve_nf_conntrack_l4proto_icmpv6->ctl_table);
+-		ve_nf_conntrack_l4proto_icmpv6->ctl_table = NULL;
+ 		kfree(ve_nf_conntrack_l4proto_icmpv6);
+-		ve_nf_conntrack_l4proto_icmpv6 = NULL;
+ 	}
+ }
+ EXPORT_SYMBOL(nf_ct_proto_icmpv6_sysctl_cleanup);
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 030e14f..742b808 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -998,9 +998,6 @@ void nf_conntrack_cleanup(void)
+ {
+ 	struct ve_struct *ve = get_exec_env();
+ 
+-#ifdef CONFIG_VE_IPTABLES
+-	BUG_ON(!ve->_nf_conntrack);
+-#endif
+ 	if (ve_is_super(ve))
+ 		rcu_assign_pointer(ip_ct_attach, NULL);
+ 
+@@ -1032,15 +1029,9 @@ skip_ct_cache:
+ 	nf_ct_proto_generic_sysctl_cleanup();
+ 	nf_ct_free_hashtable(ve_nf_conntrack_hash, ve_nf_conntrack_vmalloc,
+ 			nf_conntrack_htable_size);
+-	ve_nf_conntrack_hash = NULL;
+-	INIT_HLIST_HEAD(&ve_unconfirmed);
+-	ve_nf_ct_expect_hash = NULL;
+-	atomic_set(&ve_nf_conntrack_count, 0);
+-	ve_nf_conntrack_max = 0;
+ 	nf_conntrack_proto_fini();
+ #ifdef CONFIG_VE_IPTABLES
+ 	kfree(ve->_nf_conntrack);
+-	ve->_nf_conntrack = NULL;
+ #endif
+ }
+ 
+@@ -1127,10 +1118,6 @@ int nf_conntrack_init(void)
+ 	int max_factor = 8;
+ 	int ret = 0, i;
+ 
+-#ifdef CONFIG_VE_IPTABLES
+-	if (ve->_nf_conntrack)
+-		return 0;
+-#endif
+ 	if (ve_is_super(ve)) {
+ 
+ 		/* Idea from tcp.c: use 1/16384 of memory.  On i386: 32MB
+@@ -1229,11 +1216,9 @@ err_free_conntrack_slab:
+ err_free_hash:
+ 	nf_ct_free_hashtable(ve_nf_conntrack_hash, nf_conntrack_vmalloc,
+ 			     nf_conntrack_htable_size);
+-	ve_nf_conntrack_hash = NULL;
+ err_out:
+ #ifdef CONFIG_VE_IPTABLES
+ 	kfree(ve->_nf_conntrack);
+-	ve->_nf_conntrack = NULL;
+ out:
+ #endif
+ 	return ret;
+diff --git a/net/netfilter/nf_conntrack_proto.c b/net/netfilter/nf_conntrack_proto.c
+index c994ecf..b604a3b 100644
+--- a/net/netfilter/nf_conntrack_proto.c
++++ b/net/netfilter/nf_conntrack_proto.c
+@@ -357,10 +357,8 @@ void nf_conntrack_proto_fini(void)
+ 	nf_ct_l4proto_unregister_sysctl(ve_nf_conntrack_l4proto_generic);
+ 
+ 	/* free l3proto protocol tables */
+-	for (i = 0; i < PF_MAX; i++) {
++	for (i = 0; i < PF_MAX; i++)
+ 		kfree(ve_nf_ct_protos[i]);
+-		ve_nf_ct_protos[i] = NULL;
+-	}
+ #ifdef CONFIG_VE_IPTABLES
+ 	if (!ve_is_super(get_exec_env()))
+ 		kfree(ve_nf_conntrack_l4proto_generic);
+diff --git a/net/netfilter/nf_conntrack_proto_generic.c b/net/netfilter/nf_conntrack_proto_generic.c
+index e1a9cdd..71f5b58 100644
+--- a/net/netfilter/nf_conntrack_proto_generic.c
++++ b/net/netfilter/nf_conntrack_proto_generic.c
+@@ -168,10 +168,8 @@ void nf_ct_proto_generic_sysctl_cleanup(void)
+ #ifdef CONFIG_NF_CONNTRACK_PROC_COMPAT
+ 		free_sysctl_clone(
+ 			ve_nf_conntrack_l4proto_generic->ctl_compat_table);
+-		ve_nf_conntrack_l4proto_generic->ctl_compat_table = NULL;
+ #endif
+ 		free_sysctl_clone(ve_nf_conntrack_l4proto_generic->ctl_table);
+-		ve_nf_conntrack_l4proto_generic->ctl_table = NULL;
+ 	}
+ }
+ EXPORT_SYMBOL(nf_ct_proto_generic_sysctl_cleanup);
+diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+index 9908983..49ebc86 100644
+--- a/net/netfilter/nf_conntrack_proto_tcp.c
++++ b/net/netfilter/nf_conntrack_proto_tcp.c
+@@ -1510,15 +1510,11 @@ void nf_ct_proto_tcp_sysctl_cleanup(void)
+ #ifdef CONFIG_NF_CONNTRACK_PROC_COMPAT
+ 		free_sysctl_clone(
+ 			ve_nf_conntrack_l4proto_tcp4->ctl_compat_table);
+-		ve_nf_conntrack_l4proto_tcp4->ctl_compat_table = NULL;
+ #endif
+ 		free_sysctl_clone(ve_nf_conntrack_l4proto_tcp4->ctl_table);
+-		ve_nf_conntrack_l4proto_tcp4->ctl_table = NULL;
+ 		kfree(ve_nf_conntrack_l4proto_tcp4);
+-		ve_nf_conntrack_l4proto_tcp4 = NULL;
+ 
+ 		kfree(ve_nf_conntrack_l4proto_tcp6);
+-		ve_nf_conntrack_l4proto_tcp6 = NULL;
+ 	}
+ }
+ EXPORT_SYMBOL(nf_ct_proto_tcp_sysctl_cleanup);
+diff --git a/net/netfilter/nf_conntrack_proto_udp.c b/net/netfilter/nf_conntrack_proto_udp.c
+index 64674ae..3fe4be6 100644
+--- a/net/netfilter/nf_conntrack_proto_udp.c
++++ b/net/netfilter/nf_conntrack_proto_udp.c
+@@ -311,15 +311,11 @@ void nf_ct_proto_udp_sysctl_cleanup(void)
+ #ifdef CONFIG_NF_CONNTRACK_PROC_COMPAT
+ 		free_sysctl_clone(
+ 			ve_nf_conntrack_l4proto_udp4->ctl_compat_table);
+-		ve_nf_conntrack_l4proto_udp4->ctl_compat_table = NULL;
+ #endif
+ 		free_sysctl_clone(ve_nf_conntrack_l4proto_udp4->ctl_table);
+-		ve_nf_conntrack_l4proto_udp4->ctl_table = NULL;
+ 		kfree(ve_nf_conntrack_l4proto_udp4);
+-		ve_nf_conntrack_l4proto_udp4 = NULL;
+ 
+ 		kfree(ve_nf_conntrack_l4proto_udp6);
+-		ve_nf_conntrack_l4proto_udp6 = NULL;
+ 	}
+ }
+ EXPORT_SYMBOL(nf_ct_proto_udp_sysctl_cleanup);
+diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+index 1f33841..55161c5 100644
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -488,12 +488,8 @@ out:
+ static void nf_conntrack_fini_ve_sysctl(struct ve_struct *ve)
+ {
+ 	unregister_sysctl_table(ve_nf_ct_sysctl_header);
+-	if (!ve_is_super(ve)) {
++	if (!ve_is_super(ve))
+ 		free_sysctl_clone(ve_nf_ct_net_table);
+-		ve_nf_ct_net_table = NULL;
+-		ve_nf_ct_sysctl_table = NULL;
+-		ve_nf_ct_netfilter_table = NULL;
+-	}
+ }
+ #else
+ static inline int nf_conntrack_init_ve_sysctl(struct ve_struct *ve)
+-- 
+1.5.4.3
+

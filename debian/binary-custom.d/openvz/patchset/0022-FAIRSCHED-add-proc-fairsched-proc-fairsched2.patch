@@ -1,0 +1,347 @@
+From 9eecc52aaa10d1c156a6aee48993ca9f3a3cd166 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 12 Mar 2008 18:15:29 +0300
+Subject: [PATCH 22/48] FAIRSCHED: add /proc/fairsched , /proc/fairsched2
+
+---
+ kernel/vzfairsched.c |  327 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 327 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/vzfairsched.c b/kernel/vzfairsched.c
+index c2eae4d..12f4874 100644
+--- a/kernel/vzfairsched.c
++++ b/kernel/vzfairsched.c
+@@ -328,3 +328,330 @@ asmlinkage int sys_fairsched_mvpr(pid_t pid, unsigned int nodeid)
+ 	return retval;
+ }
+ EXPORT_SYMBOL(sys_fairsched_mvpr);
++
++#ifdef CONFIG_PROC_FS
++
++/*********************************************************************/
++/*
++ * proc interface
++ */
++/*********************************************************************/
++
++struct fairsched_node_dump {
++#ifdef CONFIG_VE
++	envid_t veid;
++#endif
++	int id;
++	unsigned weight;
++	unsigned rate;
++	unsigned rate_limited : 1,
++		 delayed : 1;
++	fschtag_t start_tag;
++	fschvalue_t value;
++	cycles_t delay;
++	int nr_ready;
++	int nr_runnable;
++	int nr_pcpu;
++	int nr_tasks, nr_runtasks;
++};
++
++struct fairsched_dump {
++	int len, compat;
++	struct fairsched_node_dump nodes[0];
++};
++
++static struct fairsched_dump *fairsched_do_dump(int compat)
++{
++	int nr_nodes;
++	int len, i;
++	struct fairsched_dump *dump;
++	struct fairsched_node *node;
++	struct fairsched_node_dump *p;
++	unsigned long flags;
++
++start:
++	nr_nodes = (ve_is_super(get_exec_env()) ? fairsched_nr_nodes + 16 : 1);
++	len = sizeof(*dump) + nr_nodes * sizeof(dump->nodes[0]);
++	dump = ub_vmalloc(len);
++	if (dump == NULL)
++		goto out;
++
++	spin_lock_irqsave(&fairsched_lock, flags);
++	if (ve_is_super(get_exec_env()) && nr_nodes < fairsched_nr_nodes)
++		goto repeat;
++	p = dump->nodes;
++	list_for_each_entry_reverse(node, &fairsched_node_head, nodelist) {
++		if ((char *)p - (char *)dump >= len)
++			break;
++		p->nr_tasks = 0;
++		p->nr_runtasks = 0;
++#ifdef CONFIG_VE
++		if (!ve_accessible(node->owner_env, get_exec_env()))
++			continue;
++		p->veid = node->owner_env->veid;
++		if (compat) {
++			p->nr_tasks = atomic_read(&node->owner_env->pcounter);
++			for_each_online_cpu(i)
++				p->nr_runtasks +=
++					VE_CPU_STATS(node->owner_env, i)
++								->nr_running;
++			if (p->nr_runtasks < 0)
++				p->nr_runtasks = 0;
++		}
++#endif
++		p->id = node->id;
++		p->weight = node->weight;
++		p->rate = node->rate;
++		p->rate_limited = node->rate_limited;
++		p->delayed = node->delayed;
++		p->start_tag = node->start_tag;
++		p->value = node->value;
++		p->delay = node->delay;
++		p->nr_ready = node->nr_ready;
++		p->nr_runnable = node->nr_runnable;
++		p->nr_pcpu = node->nr_pcpu;
++		p++;
++	}
++	dump->len = p - dump->nodes;
++	dump->compat = compat;
++	spin_unlock_irqrestore(&fairsched_lock, flags);
++
++out:
++	return dump;
++
++repeat:
++	spin_unlock_irqrestore(&fairsched_lock, flags);
++	vfree(dump);
++	goto start;
++}
++
++#define FAIRSCHED_PROC_HEADLINES 2
++
++#define FAIRSHED_DEBUG          " debug"
++
++#if defined(CONFIG_VE)
++/*
++ * File format is dictated by compatibility reasons.
++ */
++static int fairsched_seq_show(struct seq_file *m, void *v)
++{
++	struct fairsched_dump *dump;
++	struct fairsched_node_dump *p;
++	unsigned vid, nid, pid, r;
++
++	dump = m->private;
++	p = (struct fairsched_node_dump *)((unsigned long)v & ~3UL);
++	if (p - dump->nodes < FAIRSCHED_PROC_HEADLINES) {
++		if (p == dump->nodes)
++			seq_printf(m, "Version: 2.6 debug\n");
++		else if (p == dump->nodes + 1)
++			seq_printf(m,
++				       "      veid "
++				       "        id "
++				       "    parent "
++				       "weight "
++				       " rate "
++  				       "tasks "
++				       "  run "
++				       "cpus"
++				       " "
++				       "flg "
++				       "ready "
++				       "           start_tag "
++				       "               value "
++				       "               delay"
++				       "\n");
++	} else {
++		p -= FAIRSCHED_PROC_HEADLINES;
++		vid = nid = pid = 0;
++		r = (unsigned long)v & 3;
++		if (p == dump->nodes) {
++			if (r == 2)
++				nid = p->id;
++		} else {
++			if (!r)
++				nid = p->id;
++			else if (r == 1)
++				vid = pid = p->id;
++			else
++				vid = p->id, nid = 1;
++		}
++		seq_printf(m,
++			       "%10u "
++			       "%10u %10u %6u %5u %5u %5u %4u"
++			       " "
++			       " %c%c %5u %20Lu %20Lu %20Lu"
++			       "\n",
++			       vid,
++			       nid,
++			       pid,
++			       p->weight,
++			       p->rate,
++			       p->nr_tasks,
++			       p->nr_runtasks,
++			       p->nr_pcpu,
++			       p->rate_limited ? 'L' : '.',
++			       p->delayed ? 'D' : '.',
++			       p->nr_ready,
++			       (unsigned long long)p->start_tag.t,
++			       (unsigned long long)p->value.v,
++			       (unsigned long long)p->delay
++			       );
++	}
++
++	return 0;
++}
++
++static void *fairsched_seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct fairsched_dump *dump;
++	unsigned long l;
++
++	dump = m->private;
++	if (*pos >= dump->len * 3 - 1 + FAIRSCHED_PROC_HEADLINES)
++		return NULL;
++	if (*pos < FAIRSCHED_PROC_HEADLINES)
++		return dump->nodes + *pos;
++	/* guess why... */
++	l = (unsigned long)(dump->nodes +
++		((unsigned long)*pos + FAIRSCHED_PROC_HEADLINES * 2 + 1) / 3);
++	l |= ((unsigned long)*pos + FAIRSCHED_PROC_HEADLINES * 2 + 1) % 3;
++	return (void *)l;
++}
++static void *fairsched_seq_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return fairsched_seq_start(m, pos);
++}
++#endif
++
++static int fairsched2_seq_show(struct seq_file *m, void *v)
++{
++	struct fairsched_dump *dump;
++	struct fairsched_node_dump *p;
++
++	dump = m->private;
++	p = v;
++	if (p - dump->nodes < FAIRSCHED_PROC_HEADLINES) {
++		if (p == dump->nodes)
++			seq_printf(m, "Version: 2.7" FAIRSHED_DEBUG "\n");
++		else if (p == dump->nodes + 1)
++			seq_printf(m,
++				       "        id "
++				       "weight "
++				       " rate "
++				       "  run "
++				       "cpus"
++#ifdef FAIRSHED_DEBUG
++				       " "
++				       "flg "
++				       "ready "
++				       "           start_tag "
++				       "               value "
++				       "               delay"
++#endif
++				       "\n");
++	} else {
++		p -= FAIRSCHED_PROC_HEADLINES;
++		seq_printf(m,
++			       "%10u %6u %5u %5u %4u"
++#ifdef FAIRSHED_DEBUG
++			       " "
++			       " %c%c %5u %20Lu %20Lu %20Lu"
++#endif
++			       "\n",
++			       p->id,
++			       p->weight,
++			       p->rate,
++			       p->nr_runnable,
++			       p->nr_pcpu
++#ifdef FAIRSHED_DEBUG
++			       ,
++			       p->rate_limited ? 'L' : '.',
++			       p->delayed ? 'D' : '.',
++			       p->nr_ready,
++			       (unsigned long long)p->start_tag.t,
++			       (unsigned long long)p->value.v,
++			       (unsigned long long)p->delay
++#endif
++			       );
++	}
++
++	return 0;
++}
++
++static void *fairsched2_seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct fairsched_dump *dump;
++
++	dump = m->private;
++	if (*pos >= dump->len + FAIRSCHED_PROC_HEADLINES)
++		return NULL;
++	return dump->nodes + *pos;
++}
++static void *fairsched2_seq_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return fairsched2_seq_start(m, pos);
++}
++static void fairsched2_seq_stop(struct seq_file *m, void *v)
++{
++}
++
++#ifdef CONFIG_VE
++static struct seq_operations fairsched_seq_op = {
++	.start		= fairsched_seq_start,
++	.next		= fairsched_seq_next,
++	.stop		= fairsched2_seq_stop,
++	.show		= fairsched_seq_show
++};
++#endif
++static struct seq_operations fairsched2_seq_op = {
++	.start		= fairsched2_seq_start,
++	.next		= fairsched2_seq_next,
++	.stop		= fairsched2_seq_stop,
++	.show		= fairsched2_seq_show
++};
++static int fairsched_seq_open(struct inode *inode, struct file *file)
++{
++	int ret;
++	struct seq_file *m;
++	int compat;
++
++#ifdef CONFIG_VE
++	compat = (file->f_dentry->d_name.len == sizeof("fairsched") - 1);
++	ret = seq_open(file, compat ? &fairsched_seq_op : &fairsched2_seq_op);
++#else
++	compat = 0;
++	ret = seq_open(file, &fairsched2_seq_op);
++#endif
++	if (ret)
++		return ret;
++	m = file->private_data;
++	m->private = fairsched_do_dump(compat);
++	if (m->private == NULL) {
++		seq_release(inode, file);
++		ret = -ENOMEM;
++	}
++	return ret;
++}
++static int fairsched_seq_release(struct inode *inode, struct file *file)
++{
++	struct seq_file *m;
++	struct fairsched_dump *dump;
++
++	m = file->private_data;
++	dump = m->private;
++	m->private = NULL;
++	vfree(dump);
++	seq_release(inode, file);
++	return 0;
++}
++static struct file_operations proc_fairsched_operations = {
++	.open		= fairsched_seq_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= fairsched_seq_release
++};
++
++#endif /* CONFIG_PROC_FS */
+-- 
+1.5.4.3
+

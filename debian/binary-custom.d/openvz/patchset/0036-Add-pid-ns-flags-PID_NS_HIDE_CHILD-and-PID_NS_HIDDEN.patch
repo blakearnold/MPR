@@ -1,0 +1,97 @@
+From f024f0d3b8cd8f6d4d66d2bacc352ad5cf0e62f9 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 17 Mar 2008 15:39:37 +0300
+Subject: [PATCH 36/48] Add pid ns flags PID_NS_HIDE_CHILD and PID_NS_HIDDEN
+
+If pid ns created in ns with PID_NS_HIDE_CHILD flag first process (like init)
+will be added to parent ns, then flag PID_NS_HIDDEN set on new child ns
+and all following process will be hidden. Hidden processes have their pids
+allocated in all parent ns, but they aren't added to hash.
+---
+ include/linux/pid_namespace.h |    9 +++++++++
+ kernel/fork.c                 |    2 ++
+ kernel/pid.c                  |   12 ++++++++++--
+ 3 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 1689e28..49bea5f 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -14,6 +14,14 @@ struct pidmap {
+ 
+ #define PIDMAP_ENTRIES         ((PID_MAX_LIMIT + 8*PAGE_SIZE - 1)/PAGE_SIZE/8)
+ 
++/* pid namespace flags */
++
++/* if set newly created pid ns got PID_NS_HIDE_CHILD flag */
++#define PID_NS_HIDE_CHILD	0x00000001
++
++/* if set newly created processes invisible from parent ns*/
++#define PID_NS_HIDDEN		0x00000002
++
+ struct pid_namespace {
+ 	struct kref kref;
+ 	struct pidmap pidmap[PIDMAP_ENTRIES];
+@@ -22,6 +30,7 @@ struct pid_namespace {
+ 	struct kmem_cache *pid_cachep;
+ 	int level;
+ 	struct pid_namespace *parent;
++	unsigned flags;
+ #ifdef CONFIG_PROC_FS
+ 	struct vfsmount *proc_mnt;
+ #endif
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 6e82c6f..15e0b0a 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1205,6 +1205,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 			retval = pid_ns_prepare_proc(task_active_pid_ns(p));
+ 			if (retval < 0)
+ 				goto bad_fork_free_pid;
++			if (task_active_pid_ns(current)->flags & PID_NS_HIDE_CHILD)
++				task_active_pid_ns(p)->flags |= PID_NS_HIDDEN;
+ 		}
+ 	}
+ 
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 7ab1c07..225d221 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -260,10 +260,14 @@ fastcall void free_pid(struct pid *pid)
+ 	/* We can be called with write_lock_irq(&tasklist_lock) held */
+ 	int i;
+ 	unsigned long flags;
++	struct upid *upid;
+ 
+ 	spin_lock_irqsave(&pidmap_lock, flags);
+-	for (i = 0; i <= pid->level; i++)
+-		hlist_del_rcu(&pid->numbers[i].pid_chain);
++	for (i = 0; i <= pid->level; i++) {
++		upid = &pid->numbers[i];
++		if (!hlist_unhashed(&upid->pid_chain))
++			hlist_del_rcu(&upid->pid_chain);
++	}
+ 	spin_unlock(&pidmap_lock);
+ 	ub_kmemsize_uncharge(pid->ub, pid->numbers[pid->level].ns->pid_cachep->objuse);
+ 	local_irq_restore(flags);
+@@ -322,6 +326,9 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t vpid)
+ 		upid = &pid->numbers[i];
+ 		hlist_add_head_rcu(&upid->pid_chain,
+ 				&pid_hash[pid_hashfn(upid->nr, upid->ns)]);
++		if (upid->ns->flags & PID_NS_HIDDEN)
++			while (i--)
++				INIT_HLIST_NODE(&pid->numbers[i].pid_chain);
+ 	}
+ 	spin_unlock_irq(&pidmap_lock);
+ 
+@@ -616,6 +623,7 @@ static struct pid_namespace *create_pid_namespace(int level)
+ 	ns->last_pid = 0;
+ 	ns->child_reaper = NULL;
+ 	ns->level = level;
++	ns->flags = 0;
+ 
+ 	set_bit(0, ns->pidmap[0].page);
+ 	atomic_set(&ns->pidmap[0].nr_free, BITS_PER_PAGE - 1);
+-- 
+1.5.4.3
+

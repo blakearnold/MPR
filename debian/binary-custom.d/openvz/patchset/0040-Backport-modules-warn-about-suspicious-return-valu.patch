@@ -1,0 +1,64 @@
+From 0812a8a04f802de46e47f2623cf3114116174283 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 17 Mar 2008 17:08:19 +0300
+Subject: [PATCH 40/48] Backport "modules: warn about suspicious return values from module's ->init() hook"
+
+commit e24e2e64c468c8060bb7173abecdf11d00ed5751
+Author: Alexey Dobriyan <adobriyan@gmail.com>
+Date:   Mon Mar 10 11:43:53 2008 -0700
+
+    modules: warn about suspicious return values from module's ->init() hook
+
+    Return value convention of module's init functions is 0/-E.  Sometimes,
+    e.g.  during forward-porting mistakes happen and buggy module created,
+    where result of comparison "workqueue != NULL" is propagated all the way up
+    to sys_init_module.  What happens is that some other module created
+    workqueue in question, our module created it again and module was
+    successfully loaded.
+
+    Or it could be some other bug.
+
+    Let's make such mistakes much more visible.  In retrospective, such
+    messages would noticeably shorten some of my head-scratching sessions.
+
+    Note, that dump_stack() is just a way to get attention from user.  Sample
+    message:
+
+    sys_init_module: 'foo'->init suspiciously returned 1, it should follow 0/-E convention
+    sys_init_module: loading module anyway...
+    Pid: 4223, comm: modprobe Not tainted 2.6.24-25f666300625d894ebe04bac2b4b3aadb907c861 #5
+
+    Call Trace:
+     [<ffffffff80254b05>] sys_init_module+0xe5/0x1d0
+     [<ffffffff8020b39b>] system_call_after_swapgs+0x7b/0x80
+
+    Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+    Cc: Rusty Russell <rusty@rustcorp.com.au>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ kernel/module.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index ebc0e03..d5bf278 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2135,6 +2135,14 @@ sys_init_module(void __user *umod,
+ 		mutex_unlock(&module_mutex);
+ 		return ret;
+ 	}
++	if (ret > 0) {
++		printk(KERN_WARNING "%s: '%s'->init suspiciously returned %d, "
++				    "it should follow 0/-E convention\n"
++		       KERN_WARNING "%s: loading module anyway...\n",
++		       __func__, mod->name, ret,
++		       __func__);
++		dump_stack();
++	}
+ 
+ 	/* Now it's a first class citizen! */
+ 	mutex_lock(&module_mutex);
+-- 
+1.5.4.3
+

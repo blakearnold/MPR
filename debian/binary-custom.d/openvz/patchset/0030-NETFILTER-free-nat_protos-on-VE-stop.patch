@@ -1,0 +1,26 @@
+From 92d6607dfe0806f9eee3733e0bbf253d5ba2e1db Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 14 Mar 2008 17:12:10 +0300
+Subject: [PATCH 30/48] NETFILTER: free nat_protos on VE stop
+
+---
+ net/ipv4/netfilter/nf_nat_core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/net/ipv4/netfilter/nf_nat_core.c b/net/ipv4/netfilter/nf_nat_core.c
+index 10b2f64..034ae79 100644
+--- a/net/ipv4/netfilter/nf_nat_core.c
++++ b/net/ipv4/netfilter/nf_nat_core.c
+@@ -714,6 +714,9 @@ void nf_nat_cleanup(void)
+ 	synchronize_rcu();
+ 	nf_ct_free_hashtable(ve_bysource, ve_nf_nat_vmalloced, nf_nat_htable_size);
+ 	nf_ct_l3proto_put(ve_nf_nat_l3proto);
++#ifdef CONFIG_VE_IPTABLES
++	kfree(ve_nf_nat_protos);
++#endif
+ 	if (ve_is_super(get_exec_env()))
+ 		nf_ct_extend_unregister(&nat_extend);
+ }
+-- 
+1.5.4.3
+

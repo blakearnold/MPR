@@ -1,0 +1,29 @@
+From 0dbdc45e3c9f940f8e360fae502a538d659f6a23 Mon Sep 17 00:00:00 2001
+From: Vasily Tarasov <vtaras@openvz.org>
+Date: Thu, 20 Mar 2008 11:48:38 +0300
+Subject: [PATCH 43/48] ioprio: correct emptyness of cfq_bc
+
+While porting User Beancounters to 2.6.24 kernel, bc_empty() call was
+forgotten, so in some cases I/O prioritization could not work properly.
+
+Signed-off-by: Vasily Tarasov <vtaras@openvz.org>
+---
+ kernel/bc/io_prio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/bc/io_prio.c b/kernel/bc/io_prio.c
+index 9407b38..20aa133 100644
+--- a/kernel/bc/io_prio.c
++++ b/kernel/bc/io_prio.c
+@@ -204,7 +204,7 @@ static inline void bc_set_active(struct cfq_data *cfqd)
+ void bc_schedule_active(struct cfq_data *cfqd)
+ {
+ 	if (bc_expired(cfqd) || !cfqd->active_cfq_bc ||
+-					!cfqd->active_cfq_bc->rqnum)
++				bc_empty(cfqd->active_cfq_bc))
+ 		bc_set_active(cfqd);
+ }
+ 
+-- 
+1.5.4.3
+

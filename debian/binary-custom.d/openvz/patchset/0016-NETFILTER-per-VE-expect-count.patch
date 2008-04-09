@@ -1,0 +1,87 @@
+From 455602f53647d6d947dd966c0f663424a23d1fa4 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 7 Mar 2008 20:10:17 +0300
+Subject: [PATCH 16/48] NETFILTER: per-VE expect count
+
+Expectation count were left global which defeats the point of per-VE
+expectation limits. :-)
+---
+ include/linux/ve.h                  |    1 +
+ net/netfilter/nf_conntrack_expect.c |   12 ++++++++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/ve.h b/include/linux/ve.h
+index e60159b..1a5b357 100644
+--- a/include/linux/ve.h
++++ b/include/linux/ve.h
+@@ -67,6 +67,7 @@ struct ve_nf_conntrack {
+ 	struct hlist_head		_unconfirmed;
+ 	struct hlist_head		*_nf_ct_expect_hash;
+ 	unsigned int			_nf_ct_expect_vmalloc;
++	unsigned int			_nf_ct_expect_count;
+ 	unsigned int			_nf_ct_expect_max;
+ 	struct hlist_head		*_nf_ct_helper_hash;
+ 	unsigned int			_nf_ct_helper_vmalloc;
+diff --git a/net/netfilter/nf_conntrack_expect.c b/net/netfilter/nf_conntrack_expect.c
+index 39dde85..7f85c87 100644
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -40,8 +40,10 @@ unsigned int nf_ct_expect_max __read_mostly;
+ static int nf_ct_expect_hash_rnd_initted __read_mostly;
+ static int nf_ct_expect_vmalloc;
+ #ifdef CONFIG_VE_IPTABLES
++#define ve_nf_ct_expect_count	(get_exec_env()->_nf_conntrack->_nf_ct_expect_count)
+ #define ve_nf_ct_expect_vmalloc	(get_exec_env()->_nf_conntrack->_nf_ct_expect_vmalloc)
+ #else
++#define ve_nf_ct_expect_count	nf_ct_expect_count
+ #define ve_nf_ct_expect_vmalloc	nf_ct_expect_vmalloc
+ #endif
+ 
+@@ -56,7 +58,7 @@ void nf_ct_unlink_expect(struct nf_conntrack_expect *exp)
+ 	NF_CT_ASSERT(!timer_pending(&exp->timeout));
+ 
+ 	hlist_del(&exp->hnode);
+-	nf_ct_expect_count--;
++	ve_nf_ct_expect_count--;
+ 
+ 	hlist_del(&exp->lnode);
+ 	master_help->expecting--;
+@@ -96,7 +98,7 @@ __nf_ct_expect_find(const struct nf_conntrack_tuple *tuple)
+ 	struct hlist_node *n;
+ 	unsigned int h;
+ 
+-	if (!nf_ct_expect_count)
++	if (!ve_nf_ct_expect_count)
+ 		return NULL;
+ 
+ 	h = nf_ct_expect_dst_hash(tuple);
+@@ -299,7 +301,7 @@ static void nf_ct_expect_insert(struct nf_conntrack_expect *exp)
+ 	master_help->expecting++;
+ 
+ 	hlist_add_head(&exp->hnode, &ve_nf_ct_expect_hash[h]);
+-	nf_ct_expect_count++;
++	ve_nf_ct_expect_count++;
+ 
+ 	setup_timer(&exp->timeout, nf_ct_expectation_timed_out,
+ 		    (unsigned long)exp);
+@@ -372,7 +374,7 @@ int nf_ct_expect_related(struct nf_conntrack_expect *expect)
+ 	    master_help->expecting >= master_help->helper->max_expected)
+ 		evict_oldest_expect(master);
+ 
+-	if (nf_ct_expect_count >= ve_nf_ct_expect_max) {
++	if (ve_nf_ct_expect_count >= ve_nf_ct_expect_max) {
+ 		if (net_ratelimit())
+ 			printk(KERN_WARNING
+ 			       "nf_conntrack: expectation table full\n");
+@@ -521,6 +523,8 @@ int nf_conntrack_expect_init(void)
+ 			nf_ct_expect_hsize = 1;
+ 	}
+ 	nf_ct_expect_max = nf_ct_expect_hsize * 4;
++
++	ve_nf_ct_expect_count = 0;
+ 	ve_nf_ct_expect_max = nf_ct_expect_max;
+ 	ve_nf_ct_expect_hash = nf_ct_alloc_hashtable(&nf_ct_expect_hsize,
+ 						  &ve_nf_ct_expect_vmalloc);
+-- 
+1.5.4.3
+

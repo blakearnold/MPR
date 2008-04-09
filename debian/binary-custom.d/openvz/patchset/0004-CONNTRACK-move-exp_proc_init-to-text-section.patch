@@ -1,0 +1,27 @@
+From 9c10803877cbf58bebe511eafa67fee2c615f6f6 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Thu, 28 Feb 2008 20:18:49 +0300
+Subject: [PATCH 04/48] CONNTRACK: move exp_proc_init() to text section
+
+nf_conntrack_expect_init() is calling exp_proc_init() which
+was can't be in .init.text for that reason.
+---
+ net/netfilter/nf_conntrack_expect.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_expect.c b/net/netfilter/nf_conntrack_expect.c
+index 5f8d9dd..ccf3d50 100644
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -490,7 +490,7 @@ static const struct file_operations exp_file_ops = {
+ };
+ #endif /* CONFIG_PROC_FS */
+ 
+-static int __init exp_proc_init(void)
++static int exp_proc_init(void)
+ {
+ #ifdef CONFIG_PROC_FS
+ 	struct proc_dir_entry *proc;
+-- 
+1.5.4.3
+

@@ -1,0 +1,207 @@
+From 4f2c64dd3f5f39789adb85ab01c544f523bce66c Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 12 Mar 2008 18:13:20 +0300
+Subject: [PATCH 20/48] FAIRSCHED: wire up sys_fairsched_* system calls
+
+---
+ arch/ia64/kernel/entry.S           |    8 +++++++-
+ arch/sparc64/kernel/systbls.S      |   24 ++++++++++++++++++++++--
+ arch/x86/kernel/syscall_table_32.S |   12 +++++++++++-
+ include/asm-ia64/unistd.h          |    6 ++++++
+ include/asm-powerpc/systbl.h       |   15 +++++++++++++--
+ include/asm-x86/unistd_32.h        |    6 ++++++
+ include/asm-x86/unistd_64.h        |   12 ++++++++++++
+ 7 files changed, 77 insertions(+), 6 deletions(-)
+
+diff --git a/arch/ia64/kernel/entry.S b/arch/ia64/kernel/entry.S
+index f5008ef..1a76acf 100644
+--- a/arch/ia64/kernel/entry.S
++++ b/arch/ia64/kernel/entry.S
+@@ -1684,9 +1684,15 @@ sys_call_table:
+ 	data8 sys_signalfd
+ 	data8 sys_timerfd
+ 	data8 sys_eventfd
+-.rept 1505-1310
++.rept 1499-1310
+ 	data8 sys_ni_syscall
+ .endr
++	data8 sys_fairsched_vcpus
++	data8 sys_fairsched_mknod		// 1500
++	data8 sys_fairsched_rmnod
++	data8 sys_fairsched_chwt
++	data8 sys_fairsched_mvpr
++	data8 sys_fairsched_rate
+ 	data8 sys_getluid			// 1505
+ 	data8 sys_setluid
+ 	data8 sys_setublimit
+diff --git a/arch/sparc64/kernel/systbls.S b/arch/sparc64/kernel/systbls.S
+index d404e20..4155962 100644
+--- a/arch/sparc64/kernel/systbls.S
++++ b/arch/sparc64/kernel/systbls.S
+@@ -82,9 +82,19 @@ sys_call_table32:
+ 	.word compat_sys_set_mempolicy, compat_sys_kexec_load, compat_sys_move_pages, sys_getcpu, compat_sys_epoll_pwait
+ /*310*/	.word compat_sys_utimensat, compat_sys_signalfd, compat_sys_timerfd, sys_eventfd, compat_sys_fallocate
+ 
+-	.rept 510-303
++	.rept 500-315
+ 	.word sys_nis_syscall
+ 	.endr
++	.word sys_fairsched_mknod	/* 500 */
++	.word sys_fairsched_rmnod
++	.word sys_fairsched_chwt
++	.word sys_fairsched_mvpr
++	.word sys_fairsched_rate
++	.word sys_nis_syscall		/* 505 */
++	.word sys_nis_syscall
++	.word sys_nis_syscall
++	.word sys_nis_syscall
++	.word sys_nis_syscall
+ 	.word sys_getluid		/* 510 */
+ 	.word sys_setluid
+ 	.word compat_sys_setublimit
+@@ -162,9 +172,19 @@ sys_call_table:
+ 	.word sys_set_mempolicy, sys_kexec_load, sys_move_pages, sys_getcpu, sys_epoll_pwait
+ /*310*/	.word sys_utimensat, sys_signalfd, sys_timerfd, sys_eventfd, sys_fallocate
+ 
+-	.rept 510-303
++	.rept 500-315
+ 	.word sys_nis_syscall
+ 	.endr
++	.word sys_fairsched_mknod	/* 500 */
++	.word sys_fairsched_rmnod
++	.word sys_fairsched_chwt
++	.word sys_fairsched_mvpr
++	.word sys_fairsched_rate
++	.word sys_nis_syscall		/* 505 */
++	.word sys_nis_syscall
++	.word sys_nis_syscall
++	.word sys_nis_syscall
++	.word sys_nis_syscall
+ 	.word sys_getluid		/* 510 */
+ 	.word sys_setluid
+ 	.word sys_setublimit
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index 13d6963..13c932d 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -324,9 +324,19 @@ ENTRY(sys_call_table)
+ 	.long sys_timerfd
+ 	.long sys_eventfd
+ 	.long sys_fallocate
+-	.rept 510-(.-sys_call_table)/4
++	.rept 500-(.-sys_call_table)/4
+ 		.long sys_ni_syscall
+ 	.endr
++	.long sys_fairsched_mknod	/* 500 */
++	.long sys_fairsched_rmnod
++	.long sys_fairsched_chwt
++	.long sys_fairsched_mvpr
++	.long sys_fairsched_rate
++	.long sys_fairsched_vcpus	/* 505 */
++	.long sys_ni_syscall
++	.long sys_ni_syscall
++	.long sys_ni_syscall
++	.long sys_ni_syscall
+ 	.long sys_getluid		/* 510 */
+ 	.long sys_setluid
+ 	.long sys_setublimit
+diff --git a/include/asm-ia64/unistd.h b/include/asm-ia64/unistd.h
+index 0097a22..4deeaf5 100644
+--- a/include/asm-ia64/unistd.h
++++ b/include/asm-ia64/unistd.h
+@@ -299,6 +299,12 @@
+ #define __NR_signalfd			1307
+ #define __NR_timerfd			1308
+ #define __NR_eventfd			1309
++#define __NR_fairsched_vcpus		1499
++#define __NR_fairsched_mknod		1500
++#define __NR_fairsched_rmnod		1501
++#define __NR_fairsched_chwt		1502
++#define __NR_fairsched_mvpr		1503
++#define __NR_fairsched_rate		1504
+ #define __NR_getluid			1505
+ #define __NR_setluid			1506
+ #define __NR_setublimit			1507
+diff --git a/include/asm-powerpc/systbl.h b/include/asm-powerpc/systbl.h
+index 18b575d..6d1a440 100644
+--- a/include/asm-powerpc/systbl.h
++++ b/include/asm-powerpc/systbl.h
+@@ -303,7 +303,7 @@ SYSCALL_SPU(readlinkat)
+ SYSCALL_SPU(fchmodat)
+ SYSCALL_SPU(faccessat)
+ COMPAT_SYS_SPU(get_robust_list)
+-COMPAT_SYS_SPU(set_robust_list)
++COMPAT_SYS_SPU(set_robust_list) /* 300 */
+ COMPAT_SYS_SPU(move_pages)
+ SYSCALL_SPU(getcpu)
+ COMPAT_SYS(epoll_pwait)
+@@ -313,7 +313,18 @@ COMPAT_SYS_SPU(timerfd)
+ SYSCALL_SPU(eventfd)
+ COMPAT_SYS_SPU(sync_file_range2)
+ COMPAT_SYS(fallocate)
+-SYS_SKIP(302, 409)
++SYS_SKIP(310, 400)
++SYSCALL(ni_syscall)
++SYS_SKIP_END()
++SYSCALL(fairsched_mknod) /* 400 */
++SYSCALL(fairsched_rmnod)
++SYSCALL(fairsched_chwt)
++SYSCALL(fairsched_mvpr)
++SYSCALL(fairsched_rate)
++SYSCALL(fairsched_vcpus)
++SYS_SKIP(406, 410)
++SYSCALL(ni_syscall)
++SYS_SKIP_END()
+ SYSCALL(getluid) /* 410 */
+ SYSCALL(setluid)
+ SYSCALL(setublimit)
+diff --git a/include/asm-x86/unistd_32.h b/include/asm-x86/unistd_32.h
+index 1288555..5346ad6 100644
+--- a/include/asm-x86/unistd_32.h
++++ b/include/asm-x86/unistd_32.h
+@@ -330,6 +330,12 @@
+ #define __NR_timerfd		322
+ #define __NR_eventfd		323
+ #define __NR_fallocate		324
++#define __NR_fairsched_mknod	500     /* FairScheduler syscalls */
++#define __NR_fairsched_rmnod	501
++#define __NR_fairsched_chwt	502
++#define __NR_fairsched_mvpr	503
++#define __NR_fairsched_rate	504
++#define __NR_fairsched_vcpus	505
+ #define __NR_getluid		510
+ #define __NR_setluid		511
+ #define __NR_setublimit		512
+diff --git a/include/asm-x86/unistd_64.h b/include/asm-x86/unistd_64.h
+index 747becb..933cd81 100644
+--- a/include/asm-x86/unistd_64.h
++++ b/include/asm-x86/unistd_64.h
+@@ -635,6 +635,8 @@ __SYSCALL(__NR_timerfd, sys_timerfd)
+ __SYSCALL(__NR_eventfd, sys_eventfd)
+ #define __NR_fallocate				285
+ __SYSCALL(__NR_fallocate, sys_fallocate)
++#define __NR_fairsched_vcpus			499
++__SYSCALL(__NR_fairsched_vcpus, sys_fairsched_vcpus)
+ #define __NR_getluid				500
+ __SYSCALL(__NR_getluid, sys_getluid)
+ #define __NR_setluid				501
+@@ -643,6 +645,16 @@ __SYSCALL(__NR_setluid, sys_setluid)
+ __SYSCALL(__NR_setublimit, sys_setublimit)
+ #define __NR_ubstat				503
+ __SYSCALL(__NR_ubstat, sys_ubstat)
++#define __NR_fairsched_mknod			504 /* FairScheduler syscalls */
++__SYSCALL(__NR_fairsched_mknod, sys_fairsched_mknod)
++#define __NR_fairsched_rmnod			505
++__SYSCALL(__NR_fairsched_rmnod, sys_fairsched_rmnod)
++#define __NR_fairsched_chwt			506
++__SYSCALL(__NR_fairsched_chwt, sys_fairsched_chwt)
++#define __NR_fairsched_mvpr			507
++__SYSCALL(__NR_fairsched_mvpr, sys_fairsched_mvpr)
++#define __NR_fairsched_rate			508
++__SYSCALL(__NR_fairsched_rate, sys_fairsched_rate)
+ #define __NR_lchmod				509
+ __SYSCALL(__NR_lchmod, sys_lchmod)
+ #define __NR_lutime				510
+-- 
+1.5.4.3
+

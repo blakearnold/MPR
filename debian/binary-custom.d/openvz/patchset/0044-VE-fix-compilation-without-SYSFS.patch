@@ -1,0 +1,44 @@
+From 0a43b2ec540c364cc10ac851ddd5da2ec38f3d4b Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 24 Mar 2008 14:09:45 +0300
+Subject: [PATCH 44/48] VE: fix compilation without SYSFS
+
+---
+ kernel/ve/vecalls.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index 4bb5d48..49ecfb8 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -588,7 +588,8 @@ static void fini_ve_shmem(struct ve_struct *ve)
+ 	ve->shmem_mnt = NULL;
+ }
+ 
+-static inline int init_ve_sysfs_root(struct ve_struct *ve)
++#ifdef CONFIG_SYSFS
++static int init_ve_sysfs_root(struct ve_struct *ve)
+ {
+ 	struct sysfs_dirent *sysfs_root;
+ 
+@@ -604,6 +605,7 @@ static inline int init_ve_sysfs_root(struct ve_struct *ve)
+ 	ve->_sysfs_root = sysfs_root;
+ 	return 0;
+ }
++#endif
+ 
+ #if defined(CONFIG_NET) && defined(CONFIG_SYSFS)
+ extern struct device_attribute ve_net_class_attributes[];
+@@ -749,7 +751,9 @@ out_fs_type:
+ #endif
+ 	ve->class_subsys = NULL;
+ 	ve->class_obj_subsys = NULL;
++#ifdef CONFIG_SYSFS
+ out:
++#endif
+ 	return err;
+ }
+ 
+-- 
+1.5.4.3
+

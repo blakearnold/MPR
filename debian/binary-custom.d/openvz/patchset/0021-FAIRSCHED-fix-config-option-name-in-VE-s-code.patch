@@ -1,0 +1,56 @@
+From 68e9756e1255488faedc3f31bf826c423ba37ead Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 12 Mar 2008 18:14:09 +0300
+Subject: [PATCH 21/48] FAIRSCHED: fix config option name in VE's code
+
+---
+ kernel/ve/vecalls.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index 3f4d3cd..ca4f1e5 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -64,7 +64,7 @@
+ #include <linux/venet.h>
+ #include <linux/vzctl.h>
+ #include <linux/vzcalluser.h>
+-#ifdef CONFIG_FAIRSCHED
++#ifdef CONFIG_VZ_FAIRSCHED
+ #include <linux/fairsched.h>
+ #endif
+ 
+@@ -835,7 +835,7 @@ static void fini_venet(struct ve_struct *ve)
+ 
+ static int init_ve_sched(struct ve_struct *ve)
+ {
+-#ifdef CONFIG_FAIRSCHED
++#ifdef CONFIG_VZ_FAIRSCHED
+ 	int err;
+ 
+ 	/*
+@@ -864,9 +864,9 @@ static int init_ve_sched(struct ve_struct *ve)
+ 
+ static void fini_ve_sched(struct ve_struct *ve)
+ {
+-#ifdef CONFIG_FAIRSCHED
+-	if (task_vsched_id(current) == ve->veid)
+-		if (sys_fairsched_mvpr(current->pid, fairsched_init_node.id))
++#ifdef CONFIG_VZ_FAIRSCHED
++	if (task_fairsched_node_id(current) == ve->veid)
++		if (sys_fairsched_mvpr(current->pid, FAIRSCHED_INIT_NODE_ID))
+ 			printk(KERN_WARNING "Can't leave fairsched node %d\n",
+ 					ve->veid);
+ 	if (sys_fairsched_rmnod(ve->veid))
+@@ -1662,7 +1662,7 @@ static int do_env_enter(struct ve_struct *ve, unsigned int flags)
+ 	if (!thread_group_leader(tsk) || !thread_group_empty(tsk))
+ 		goto out_up;
+ 
+-#ifdef CONFIG_FAIRSCHED
++#ifdef CONFIG_VZ_FAIRSCHED
+ 	err = sys_fairsched_mvpr(current->pid, ve->veid);
+ 	if (err)
+ 		goto out_up;
+-- 
+1.5.4.3
+

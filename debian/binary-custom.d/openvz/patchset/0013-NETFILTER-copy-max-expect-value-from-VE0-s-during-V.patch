@@ -1,0 +1,25 @@
+From b20f7531a00d4433d2791655e1899e015a0dfd04 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 7 Mar 2008 16:03:55 +0300
+Subject: [PATCH 13/48] NETFILTER: copy max expect value from VE0's during VE start
+
+Otherwise it's set to 0, which effectively means no FTP conntrack by default.
+---
+ net/netfilter/nf_conntrack_core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 879dc9e..46e0c5b 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1167,6 +1167,7 @@ int nf_conntrack_init(void)
+ 	}
+ 
+ 	ve_nf_conntrack_max = nf_conntrack_max;
++	ve_nf_ct_expect_max = nf_ct_expect_max;
+ 	atomic_set(&ve_nf_conntrack_count, 0);
+ 	INIT_HLIST_HEAD(&ve_unconfirmed);
+ #endif
+-- 
+1.5.4.3
+

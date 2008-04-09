@@ -1,0 +1,29 @@
+From 5f6872e2893945c53efed0413e1948f8f895f0c9 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 17 Mar 2008 15:41:27 +0300
+Subject: [PATCH 37/48] Add pid hide logic on VE creation
+
+Dup the logic from CLONE_NEWPID codepath. init and entered processes remain
+visible in all pidns's.
+---
+ kernel/ve/vecalls.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index ca4f1e5..4bb5d48 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -896,6 +896,10 @@ static inline int init_ve_namespaces(struct ve_struct *ve,
+ 	ve->ve_ns = get_nsproxy(tsk->nsproxy);
+ 	memcpy(ve->ve_ns->uts_ns->name.release, virt_utsname.release,
+ 			sizeof(virt_utsname.release));
++
++	if (cur->pid_ns->flags & PID_NS_HIDE_CHILD)
++		ve->ve_ns->pid_ns->flags |= PID_NS_HIDDEN;
++
+ 	*old = cur;
+ 	return 0;
+ }
+-- 
+1.5.4.3
+

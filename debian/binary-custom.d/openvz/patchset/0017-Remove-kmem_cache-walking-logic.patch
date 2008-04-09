@@ -1,0 +1,421 @@
+From b7cb384df2e4564afb89fc9213fa0c0af27c26b9 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Wed, 12 Mar 2008 13:46:09 +0300
+Subject: [PATCH 17/48] Remove kmem_cache walking logic
+
+It can't work in case of SLUB because full pages aren't in any slab lists.
+---
+ include/bc/dcache.h  |    2 -
+ include/linux/slab.h |    1 -
+ kernel/bc/dcache.c   |  163 --------------------------------------------------
+ mm/slab.c            |  112 ----------------------------------
+ mm/slub.c            |   55 -----------------
+ 5 files changed, 0 insertions(+), 333 deletions(-)
+
+diff --git a/include/bc/dcache.h b/include/bc/dcache.h
+index b5502b7..5ebefff 100644
+--- a/include/bc/dcache.h
++++ b/include/bc/dcache.h
+@@ -40,10 +40,8 @@ struct dentry_beancounter
+ #define INUSE_INIT		0
+ 
+ extern int ub_dentry_on;
+-extern void ub_dentry_checkup(void);
+ #else
+ #define ub_dget_testone(d)	(0)
+ #define ub_dput_testzero(d)	(0)
+-#define ub_dentry_checkup()	do { } while (0)
+ #endif
+ #endif
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 793613f..6d1d2f4 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -83,7 +83,6 @@ int kmem_ptr_validate(struct kmem_cache *cachep, const void *ptr);
+ extern void show_slab_info(void);
+ int kmem_cache_objuse(struct kmem_cache *cachep);
+ int kmem_obj_objuse(void *obj);
+-int kmem_cache_walk_objects(struct kmem_cache *cachep, int (*fun)(void *obj));
+ unsigned long ub_cache_growth(struct kmem_cache *cachep);
+ 
+ #ifdef CONFIG_BEANCOUNTERS
+diff --git a/kernel/bc/dcache.c b/kernel/bc/dcache.c
+index 826b1cf..a9114e8 100644
+--- a/kernel/bc/dcache.c
++++ b/kernel/bc/dcache.c
+@@ -322,7 +322,6 @@ int ub_dentry_on = 1;
+ int ub_dentry_alloc_barrier;
+ EXPORT_SYMBOL(ub_dentry_on);
+ 
+-static DEFINE_PER_CPU(int, checkcnt);
+ static unsigned long checklowat = 0;
+ static unsigned long checkhiwat = ULONG_MAX;
+ 
+@@ -333,168 +332,6 @@ static DECLARE_RWSEM(ub_dentry_alloc_sem);
+ /* 1024th of lowmem size */
+ static unsigned int sysctl_ub_watermark[2] = {0, 100};
+ 
+-
+-static int ub_dentry_acctinit(struct dentry *dentry)
+-{
+-	struct dentry_beancounter *d_bc;
+-
+-	d_bc = &dentry->dentry_bc;
+-	d_bc->d_ub = NULL;
+-	atomic_set(&d_bc->d_inuse, -1);
+-#if 0
+-	if (dname_external(dentry)) {
+-		struct page *page;
+-		page = virt_to_page(dentry->d_name.name);
+-		if (!PageSlab(page) || page_get_cache(page) == NULL) {
+-			printk("Problem with name, dentry %p, parent %p, "
+-					"name %p len %d\n",
+-					dentry, dentry->d_parent,
+-					dentry->d_name.name,
+-					dentry->d_name.len);
+-			printk("   de %p name %.10s\n",
+-					dentry, dentry->d_name.name);
+-			d_bc->d_ubsize = 0;
+-			return 0;
+-		}
+-	}
+-#endif
+-	d_bc->d_ubsize = d_charge_size(dentry);
+-	return 0;
+-}
+-
+-static int ub_dentry_acctcount(struct dentry *dentry)
+-{
+-	struct dentry_beancounter *d_bc;
+-	struct dentry *child;
+-	int count;
+-
+-	count = 0;
+-	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child)
+-		count++;
+-
+-	d_bc = &dentry->dentry_bc;
+-	count = atomic_read(&dentry->d_count) - count;
+-	if (count) {
+-		__ub_dentry_charge_nofail(dentry);
+-		if (count > 1)
+-			atomic_add(count - 1, &d_bc->d_inuse);
+-	}
+-
+-	return 0;
+-}
+-
+-static int ub_dentry_acctdrop(struct dentry *dentry)
+-{
+-	struct dentry_beancounter *d_bc;
+-
+-	d_bc = &dentry->dentry_bc;
+-	if (atomic_read(&d_bc->d_inuse) < 0)
+-		return 0;
+-	atomic_set(&d_bc->d_inuse, -1);
+-	uncharge_dcache(d_bc->d_ub, d_bc->d_ubsize);
+-	put_beancounter(d_bc->d_ub);
+-	return 0;
+-}
+-
+-static inline int ub_dentry_walk(int (*fun)(struct dentry *d))
+-{
+-	return kmem_cache_walk_objects(dentry_cache,
+-			(int (*)(void *))fun);
+-}
+-
+-static int ub_dentry_accton(void *data)
+-{
+-	struct user_beancounter *ub;
+-	int err;
+-
+-	ub = get_exec_ub();
+-	set_exec_ub(get_ub0());
+-	err = ub_dentry_walk(&ub_dentry_acctinit);
+-	if (!err)
+-		err = ub_dentry_walk(&ub_dentry_acctcount);
+-	set_exec_ub(ub);
+-	if (err == 0)
+-		ub_dentry_on = 1;
+-	return err;
+-}
+-
+-static int ub_dentry_acctoff(void *data)
+-{
+-	int ret;
+-	ret = ub_dentry_walk(&ub_dentry_acctdrop);
+-	if (ret == 0)
+-		ub_dentry_on = 0;
+-	return ret;
+-}
+-
+-/*
+- * Main function turning dcache accounting on and off.
+- * Called with preemption disabled (for caller's convenience).
+- */
+-static void ub_dentry_switch(int onoff, unsigned long pages, int (*fun)(void *))
+-{
+-	static char *s[] = { "off", "on" };
+-	unsigned long start_jiffies;
+-	int err, tm;
+-
+-	start_jiffies = jiffies;
+-	preempt_enable();
+-	ub_dentry_alloc_barrier = 1;
+-	/* ensure ub_dentry_alloc_barrier is visible on all CPUs */
+-	mb();
+-	synchronize_rcu();
+-	down_write(&ub_dentry_alloc_sem);
+-	if (ub_dentry_on == onoff)
+-		goto done;
+-
+-	printk("UBC: preparing to turn dcache accounting %s, "
+-			"size %lu pages, watermarks %lu %lu\n",
+-			s[onoff], pages, checklowat, checkhiwat);
+-	err = stop_machine_run(fun, NULL, NR_CPUS);
+-	if (err) {
+-		printk(KERN_ERR "UBC: ERROR: dcache accounting switch %d\n",
+-				err);
+-		preempt_disable();
+-		checklowat = 0;
+-		checkhiwat = ULONG_MAX;
+-		sysctl_ub_dentry_chk = INT_MAX;
+-		preempt_enable();
+-	} else {
+-		tm = jiffies_to_msecs(jiffies - start_jiffies);
+-		printk("UBC: turning dcache accounting %s succeeded, "
+-				"usage %lu, time %u.%03u\n",
+-				s[onoff],
+-				get_ub0()->ub_parms[UB_DCACHESIZE].held,
+-				tm / 1000, tm % 1000);
+-	}
+-
+-done:
+-	ub_dentry_alloc_barrier = 0;
+-	up_write(&ub_dentry_alloc_sem);
+-	preempt_disable();
+-}
+-
+-void ub_dentry_checkup(void)
+-{
+-	int *p;
+-	unsigned long pages;
+-
+-	preempt_disable();
+-	p = &__get_cpu_var(checkcnt);
+-	if (++*p > sysctl_ub_dentry_chk) {
+-		*p = 0;
+-		pages = ub_cache_growth(dentry_cache);
+-		if (ub_dentry_on) {
+-			if (pages < checklowat)
+-				ub_dentry_switch(0, pages, &ub_dentry_acctoff);
+-		} else {
+-			if (pages >= checkhiwat)
+-				ub_dentry_switch(1, pages, &ub_dentry_accton);
+-		}
+-	}
+-	preempt_enable();
+-}
+-
+ static void ub_dentry_set_limits(unsigned long pages, unsigned long cap)
+ {
+ 	down_write(&ub_dentry_alloc_sem);
+diff --git a/mm/slab.c b/mm/slab.c
+index 40c6b21..20dd0d8 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -755,105 +755,6 @@ int kmem_obj_objuse(void *obj)
+ 	return virt_to_cache(obj)->objuse;
+ }
+ 
+-static void kmem_cache_free_block(struct kmem_cache *cachep,
+-		struct kmem_list3 *l3, void **objpp,
+-		int nr_objects, int node);
+-
+-static int kmem_cache_walk_node(struct kmem_cache *cachep, int node,
+-		int (*fun)(void *))
+-{
+-	struct array_cache *ac;
+-	struct slab *slabp;
+-	char *objp;
+-	int cpu, i, sz, r, n;
+-	struct kmem_list3 *l3;
+-	unsigned long map[PAGE_SIZE / sizeof(struct dentry)
+-					/ BITS_PER_LONG + 1];
+-
+-	if (cachep->num >= sizeof(map) * 8)
+-		return -E2BIG;
+-
+-	l3 = cachep->nodelists[node];
+-	/* drain all CPU caches to have up-to-date free map */
+-
+-#ifdef CONFIG_NUMA
+-	/* walk through all nodes and drain alien caches */
+-	for_each_online_node (n) {
+-		if (!cachep->nodelists[n]->alien)
+-			continue;
+-		ac = cachep->nodelists[n]->alien[node];
+-		if (!ac)
+-			continue;
+-		kmem_cache_free_block(cachep, cachep->nodelists[node],
+-				ac->entry, ac->avail, node);
+-		ac->avail = 0;
+-	}
+-#endif
+-
+-	ac = l3->shared;
+-	kmem_cache_free_block(cachep, l3, ac->entry, ac->avail, node);
+-	ac->avail = 0;
+-	for_each_online_cpu(cpu) {
+-		ac = cachep->array[cpu];
+-		n = cpu_to_node(cpu);
+-		kmem_cache_free_block(cachep, cachep->nodelists[n],
+-				ac->entry, ac->avail, n);
+-		ac->avail = 0;
+-	}
+-
+-	list_for_each_entry(slabp, &l3->slabs_full, list) {
+-		touch_nmi_watchdog();
+-		for (i = 0, objp = slabp->s_mem;
+-		     i < cachep->num;
+-		     i++, objp += cachep->buffer_size) {
+-#if SLAB_DEBUG
+-			objp += cachep->obj_offset;
+-#endif
+-			r = (*fun)(objp);
+-			if (r)
+-				return r;
+-		}
+-	}
+-
+-	list_for_each_entry(slabp, &l3->slabs_partial, list) {
+-		touch_nmi_watchdog();
+-		memset(map, 0xff, sizeof(map));
+-		for (i = slabp->free, r = 0;
+-		     i != BUFCTL_END;
+-		     i = slab_bufctl(slabp)[i], r++) {
+-			if (r > cachep->num)
+-				return -1;
+-			__clear_bit(i, map);
+-		}
+-		sz = sizeof(map) * BITS_PER_LONG;
+-		for (i = find_first_bit(map, sz);
+-		     i < cachep->num;
+-		     i = find_next_bit(map, sz, i + 1)) {
+-			objp = slabp->s_mem + i * cachep->buffer_size;
+-#if SLAB_DEBUG
+-			objp += cachep->obj_offset;
+-#endif
+-			r = (*fun)(objp);
+-			if (r)
+-				return r;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+-int kmem_cache_walk_objects(struct kmem_cache *cachep, int (*fun)(void *))
+-{
+-	int node;
+-	int err;
+-
+-	for_each_online_node (node)
+-		if ((err = kmem_cache_walk_node(cachep, node, fun)) != 0)
+-			return err;
+-
+-	return 0;
+-}
+-
+ unsigned long ub_cache_growth(struct kmem_cache *cachep)
+ {
+ 	return (cachep->grown - cachep->reaped - cachep->shrunk)
+@@ -3644,19 +3545,6 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+ 	}
+ }
+ 
+-static void kmem_cache_free_block(struct kmem_cache *cachep, struct kmem_list3 *l3,
+-		void **objpp, int nr_objects, int node)
+-{
+-	unsigned long flags;
+-
+-	if (!nr_objects)
+-		return;
+-
+-	spin_lock_irqsave(&l3->list_lock, flags);
+-	free_block(cachep, objpp, nr_objects, node);
+-	spin_unlock_irqrestore(&l3->list_lock, flags);
+-}
+-
+ static void cache_flusharray(struct kmem_cache *cachep, struct array_cache *ac)
+ {
+ 	int batchcount;
+diff --git a/mm/slub.c b/mm/slub.c
+index b251d42..fa6179e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -348,61 +348,6 @@ unsigned long ub_cache_growth(struct kmem_cache *cachep)
+ 
+ static void __flush_cpu_slab(struct kmem_cache *s, int cpu);
+ 
+-static int kmem_cache_walk_page(struct page *pg, struct kmem_cache *s,
+-		int (*fun)(void *))
+-{
+-	int r;
+-	void *p, *start;
+-	DECLARE_BITMAP(map, s->objects);
+-
+-	start = page_address(pg);
+-
+-	bitmap_zero(map, s->objects);
+-	for_each_free_object(p, s, pg->freelist)
+-		set_bit(slab_index(p, s, start), map);
+-
+-	for_each_object(p, s, start)
+-		if (!test_bit(slab_index(p, s, start), map)) {
+-			r = fun(p);
+-			if (r)
+-				return r;
+-		}
+-
+-	return 0;
+-}
+-
+-int kmem_cache_walk_objects(struct kmem_cache *s, int (*fun)(void *))
+-{
+-	int i;
+-
+-	/* run under stopachine only, so no locks at all */
+-
+-	for_each_online_cpu(i)
+-		__flush_cpu_slab(s, i);
+-
+-	for_each_online_node(i) {
+-		int r;
+-		struct page *page;
+-		struct kmem_cache_node *n;
+-
+-		n = get_node(s, i);
+-
+-		list_for_each_entry(page, &n->partial, lru) {
+-			r = kmem_cache_walk_page(page, s, fun);
+-			if (r)
+-				return r;
+-		}
+-
+-		list_for_each_entry(page, &n->full, lru) {
+-			r = kmem_cache_walk_page(page, s, fun);
+-			if (r)
+-				return r;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ int kmem_cache_objuse(struct kmem_cache *cachep)
+ {
+ 	return cachep->objuse;
+-- 
+1.5.4.3
+

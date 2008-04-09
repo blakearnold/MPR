@@ -1,0 +1,148 @@
+From 5185276590e2099c55292fec2906e8d0f8a5bc16 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 17 Mar 2008 15:36:28 +0300
+Subject: [PATCH 35/48] Change sys_setsid() and set_special_pids() to work with struct pid.
+
+Backport mainstream patch from Oleg Nesterov <oleg@tv-sign.ru> .
+---
+ include/linux/sched.h |    6 ++----
+ init/main.c           |    2 +-
+ kernel/exit.c         |   21 +++++++++++----------
+ kernel/sys.c          |   11 ++++++-----
+ 4 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 849ad15..3fda73a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1649,8 +1649,6 @@ extern struct task_struct *find_task_by_vpid(pid_t nr);
+ extern struct task_struct *find_task_by_pid_ns(pid_t nr,
+ 		struct pid_namespace *ns);
+ 
+-extern void __set_special_pids(pid_t session, pid_t pgrp);
+-
+ /* per-UID process charging. */
+ extern struct user_struct * alloc_uid(struct user_namespace *, uid_t);
+ static inline struct user_struct *get_uid(struct user_struct *u)
+@@ -1662,8 +1660,8 @@ extern void free_uid(struct user_struct *);
+ extern void switch_uid(struct user_struct *);
+ extern void release_uids(struct user_namespace *ns);
+ extern int set_user(uid_t uid, int dumpclear);
+-extern void set_special_pids(pid_t session, pid_t pgrp);
+-extern void __set_special_pids(pid_t session, pid_t pgrp);
++extern void set_special_pids(struct pid *pid);
++extern void __set_special_pids(struct pid *pid);
+ 
+ #include <asm/current.h>
+ 
+diff --git a/init/main.c b/init/main.c
+index a568c05..430df4f 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -851,7 +851,7 @@ static int __init kernel_init(void * unused)
+ 	 */
+ 	init_pid_ns.child_reaper = current;
+ 
+-	__set_special_pids(1, 1);
++	__set_special_pids(&init_struct_pid);
+ 	cad_pid = task_pid(current);
+ 
+ 	smp_prepare_cpus(max_cpus);
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 9760f62..594be07 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -310,26 +310,27 @@ static void reparent_to_kthreadd(void)
+ 	switch_uid(INIT_USER);
+ }
+ 
+-void __set_special_pids(pid_t session, pid_t pgrp)
++void __set_special_pids(struct pid *pid)
+ {
+ 	struct task_struct *curr = current->group_leader;
++	pid_t nr = pid_nr(pid);
+ 
+-	if (task_session_nr(curr) != session) {
++	if (task_session(curr) != pid) {
+ 		detach_pid(curr, PIDTYPE_SID);
+-		set_task_session(curr, session);
+-		attach_pid(curr, PIDTYPE_SID, find_pid(session));
++		attach_pid(curr, PIDTYPE_SID, pid);
++		set_task_session(curr, nr);
+ 	}
+-	if (task_pgrp_nr(curr) != pgrp) {
++	if (task_pgrp(curr) != pid) {
+ 		detach_pid(curr, PIDTYPE_PGID);
+-		set_task_pgrp(curr, pgrp);
+-		attach_pid(curr, PIDTYPE_PGID, find_pid_ns(pgrp, &init_pid_ns));
++		attach_pid(curr, PIDTYPE_PGID, pid);
++		set_task_pgrp(curr, nr);
+ 	}
+ }
+ 
+-void set_special_pids(pid_t session, pid_t pgrp)
++void set_special_pids(struct pid *pid)
+ {
+ 	write_lock_irq(&tasklist_lock);
+-	__set_special_pids(session, pgrp);
++	__set_special_pids(pid);
+ 	write_unlock_irq(&tasklist_lock);
+ }
+ EXPORT_SYMBOL(set_special_pids);
+@@ -401,7 +402,7 @@ void daemonize(const char *name, ...)
+ 	 */
+ 	current->flags |= PF_NOFREEZE;
+ 
+-	set_special_pids(1, 1);
++	set_special_pids(&init_struct_pid);
+ 	proc_clear_tty(current);
+ 
+ 	/* Block and flush all signals */
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 1ef45b2..4a26b04 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1192,6 +1192,7 @@ asmlinkage long sys_setsid(void)
+ {
+ 	struct task_struct *group_leader = current->group_leader;
+ 	pid_t session;
++	struct pid *sid;
+ 	int err = -EPERM;
+ 
+ 	write_lock_irq(&tasklist_lock);
+@@ -1200,7 +1201,8 @@ asmlinkage long sys_setsid(void)
+ 	if (group_leader->signal->leader)
+ 		goto out;
+ 
+-	session = group_leader->pid;
++	sid = task_pid(group_leader);
++	session = pid_vnr(sid);
+ 	/* Fail if a process group id already exists that equals the
+ 	 * proposed session id.
+ 	 *
+@@ -1208,19 +1210,18 @@ asmlinkage long sys_setsid(void)
+ 	 * session id and so the check will always fail and make it so
+ 	 * init cannot successfully call setsid.
+ 	 */
+-	if (session > 1 && find_task_by_pid_type_ns(PIDTYPE_PGID,
+-				session, &init_pid_ns))
++	if (session > 1 && pid_task(sid, PIDTYPE_PGID))
+ 		goto out;
+ 
+ 	group_leader->signal->leader = 1;
+-	__set_special_pids(session, session);
++	__set_special_pids(sid);
+ 
+ 	spin_lock(&group_leader->sighand->siglock);
+ 	group_leader->signal->tty = NULL;
+ 	group_leader->signal->tty_old_pgrp = 0;
+ 	spin_unlock(&group_leader->sighand->siglock);
+ 
+-	err = task_pgrp_vnr(group_leader);
++	err = session;
+ out:
+ 	write_unlock_irq(&tasklist_lock);
+ 	return err;
+-- 
+1.5.4.3
+

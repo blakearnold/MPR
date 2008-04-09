@@ -1,0 +1,25 @@
+From 8544df2e3e8ebc6d028b8d2b12a2d296c3536fba Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 7 Mar 2008 12:23:39 +0300
+Subject: [PATCH 11/48] CONNTACK: add \n to error message
+
+---
+ net/netfilter/nf_conntrack_expect.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_expect.c b/net/netfilter/nf_conntrack_expect.c
+index ccf3d50..c90024c 100644
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -375,7 +375,7 @@ int nf_ct_expect_related(struct nf_conntrack_expect *expect)
+ 	if (nf_ct_expect_count >= ve_nf_ct_expect_max) {
+ 		if (net_ratelimit())
+ 			printk(KERN_WARNING
+-			       "nf_conntrack: expectation table full");
++			       "nf_conntrack: expectation table full\n");
+ 		ret = -EMFILE;
+ 		goto out;
+ 	}
+-- 
+1.5.4.3
+

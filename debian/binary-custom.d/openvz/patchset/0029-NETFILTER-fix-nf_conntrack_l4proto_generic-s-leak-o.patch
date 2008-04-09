@@ -1,0 +1,64 @@
+From 73501b739013a19bc444de75a5db6f49c2ec9809 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 14 Mar 2008 16:35:50 +0300
+Subject: [PATCH 29/48] NETFILTER: fix nf_conntrack_l4proto_generic's leak on VE stop
+
+---
+ net/netfilter/nf_conntrack_core.c  |    7 -------
+ net/netfilter/nf_conntrack_proto.c |    1 +
+ 2 files changed, 1 insertions(+), 7 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 5271220..030e14f 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1029,7 +1029,6 @@ skip_ct_cache:
+ 	nf_conntrack_helper_fini();
+ 	nf_conntrack_expect_fini();
+ 
+-	nf_conntrack_l4proto_unregister(ve_nf_conntrack_l4proto_generic);
+ 	nf_ct_proto_generic_sysctl_cleanup();
+ 	nf_ct_free_hashtable(ve_nf_conntrack_hash, ve_nf_conntrack_vmalloc,
+ 			nf_conntrack_htable_size);
+@@ -1040,7 +1039,6 @@ skip_ct_cache:
+ 	ve_nf_conntrack_max = 0;
+ 	nf_conntrack_proto_fini();
+ #ifdef CONFIG_VE_IPTABLES
+-	ve_nf_conntrack_l4proto_generic = NULL;
+ 	kfree(ve->_nf_conntrack);
+ 	ve->_nf_conntrack = NULL;
+ #endif
+@@ -1190,9 +1188,6 @@ int nf_conntrack_init(void)
+ 	ret = nf_ct_proto_generic_sysctl_init();
+ 	if (ret < 0)
+ 		goto err_free_conntrack_slab;
+-	ret = nf_conntrack_l4proto_register(ve_nf_conntrack_l4proto_generic);
+-	if (ret < 0)
+-		goto free_sys;
+ 	/* Don't NEED lock here, but good form anyway. */
+ 	write_lock_bh(&nf_conntrack_lock);
+ 	for (i = 0; i < AF_MAX; i++)
+@@ -1221,10 +1216,8 @@ int nf_conntrack_init(void)
+ 
+ 	return 0;
+ 
+-free_sys:
+ #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
+ 	nf_ct_proto_generic_sysctl_cleanup();
+-	ve_nf_conntrack_l4proto_generic = NULL;
+ #endif
+ out_fini_expect:
+ 	nf_conntrack_expect_fini();
+diff --git a/net/netfilter/nf_conntrack_proto.c b/net/netfilter/nf_conntrack_proto.c
+index d9a2b15..1384c03 100644
+--- a/net/netfilter/nf_conntrack_proto.c
++++ b/net/netfilter/nf_conntrack_proto.c
+@@ -361,4 +361,5 @@ void nf_conntrack_proto_fini(void)
+ 		kfree(ve_nf_ct_protos[i]);
+ 		ve_nf_ct_protos[i] = NULL;
+ 	}
++	kfree(ve_nf_conntrack_l4proto_generic);
+ }
+-- 
+1.5.4.3
+

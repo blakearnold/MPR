@@ -1,0 +1,57 @@
+From 191b730b9dd8ea3e55f8fe41baf22e9b549cc7ea Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Thu, 13 Mar 2008 20:05:08 +0300
+Subject: [PATCH 24/48] NETFILTER: fix compilation with VE_IPTABLES=n
+
+---
+ net/ipv4/netfilter/ipt_recent.c  |    2 ++
+ net/ipv4/netfilter/nf_nat_core.c |    6 ++++--
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv4/netfilter/ipt_recent.c b/net/ipv4/netfilter/ipt_recent.c
+index cd85bf4..a6e4080 100644
+--- a/net/ipv4/netfilter/ipt_recent.c
++++ b/net/ipv4/netfilter/ipt_recent.c
+@@ -517,7 +517,9 @@ static int init_ipt_recent(struct ve_struct *ve)
+ out:
+ 	return err;
+ out_mem:
++#ifdef CONFIG_VE_IPTABLES
+ 	kfree(ve->_ipt_recent);
++#endif
+ 	goto out;
+ }
+ 
+diff --git a/net/ipv4/netfilter/nf_nat_core.c b/net/ipv4/netfilter/nf_nat_core.c
+index c25715e..10b2f64 100644
+--- a/net/ipv4/netfilter/nf_nat_core.c
++++ b/net/ipv4/netfilter/nf_nat_core.c
+@@ -659,13 +659,13 @@ int nf_nat_init(void)
+ 		ret = -ENOMEM;
+ 		goto cleanup_extend;
+ 	}
+-
++#ifdef CONFIG_VE_IPTABLES
+ 	ve_nf_nat_protos = kcalloc(MAX_IP_NAT_PROTO, sizeof(void *), GFP_KERNEL);
+ 	if (!ve_nf_nat_protos) {
+ 		ret = -ENOMEM;
+ 		goto cleanup_hash;
+ 	}
+-
++#endif
+ 	/* Sew in builtin protocols. */
+ 	write_lock_bh(&nf_nat_lock);
+ 	for (i = 0; i < MAX_IP_NAT_PROTO; i++)
+@@ -687,7 +687,9 @@ int nf_nat_init(void)
+ 	ve_nf_nat_l3proto = nf_ct_l3proto_find_get((u_int16_t)AF_INET);
+ 	return 0;
+ 
++#ifdef CONFIG_VE_IPTABLES
+ cleanup_hash:
++#endif
+ 	nf_ct_free_hashtable(ve_bysource, ve_nf_nat_vmalloced, nf_nat_htable_size);
+  cleanup_extend:
+ 	nf_ct_extend_unregister(&nat_extend);
+-- 
+1.5.4.3
+
