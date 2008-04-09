@@ -6735,6 +6735,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x961a8cd3	unlock_policy_rwsem_read
 EXPORT_SYMBOL_GPL vmlinux 0x9635bf67	platform_device_add
 EXPORT_SYMBOL_GPL vmlinux 0x968480a1	ide_set_pio
 EXPORT_SYMBOL_GPL vmlinux 0x974590ad	srcu_read_unlock
+EXPORT_SYMBOL_GPL vmlinux 0x97b293e7	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0x97e0d994	lookup_create
 EXPORT_SYMBOL_GPL vmlinux 0x9823a168	get_driver
 EXPORT_SYMBOL_GPL vmlinux 0x983c7494	rh_detach_region

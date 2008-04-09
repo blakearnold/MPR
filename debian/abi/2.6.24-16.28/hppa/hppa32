@@ -4173,6 +4173,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x00566d8f	inotify_get_cookie
 EXPORT_SYMBOL_GPL vmlinux 0x006c1697	relay_buf_full
 EXPORT_SYMBOL_GPL vmlinux 0x00d4fb9e	inotify_find_update_watch
 EXPORT_SYMBOL_GPL vmlinux 0x0128622b	skb_cow_data
+EXPORT_SYMBOL_GPL vmlinux 0x0183e881	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0x01a4ea6d	unregister_die_notifier
 EXPORT_SYMBOL_GPL vmlinux 0x036348d9	xprt_wait_for_buffer_space
 EXPORT_SYMBOL_GPL vmlinux 0x03e16c06	driver_unregister

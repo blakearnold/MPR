@@ -6687,6 +6687,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x65f0db3c	vfs_setxattr
 EXPORT_SYMBOL_GPL vmlinux 0x661601de	sprint_symbol
 EXPORT_SYMBOL_GPL vmlinux 0x66604592	devres_destroy
 EXPORT_SYMBOL_GPL vmlinux 0x6689b8a2	remove_acceptable_latency
+EXPORT_SYMBOL_GPL vmlinux 0x6691e527	skb_partial_csum_set
 EXPORT_SYMBOL_GPL vmlinux 0x66b2a859	nr_free_buffer_pages
 EXPORT_SYMBOL_GPL vmlinux 0x66d240c8	devm_kzalloc
 EXPORT_SYMBOL_GPL vmlinux 0x66d87d38	symbol_put_addr
