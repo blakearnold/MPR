@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.24-13-lpiacompat
-# Mon Mar 31 19:00:52 2008
+# Linux kernel version: 2.6.24-16-lpiacompat
+# Wed Apr  9 03:44:05 2008
 #
 # CONFIG_64BIT is not set
 CONFIG_X86_32=y
@@ -2340,7 +2340,6 @@ CONFIG_HW_RANDOM_INTEL=m
 CONFIG_HW_RANDOM_AMD=m
 CONFIG_HW_RANDOM_GEODE=m
 CONFIG_HW_RANDOM_VIA=m
-# CONFIG_HW_RANDOM_VIRTIO is not set
 CONFIG_NVRAM=m
 CONFIG_RTC=y
 CONFIG_DTLK=m
@@ -3998,7 +3997,7 @@ CONFIG_IO_DELAY_0X80=y
 # CONFIG_IO_DELAY_0XED is not set
 # CONFIG_IO_DELAY_UDELAY is not set
 # CONFIG_IO_DELAY_NONE is not set
-CONFIG_DEFAULT_IO_DELAY_TYPE=1
+CONFIG_DEFAULT_IO_DELAY_TYPE=0
 
 #
 # Security options
@@ -4086,6 +4085,7 @@ CONFIG_LGUEST=m
 CONFIG_VIRTIO=y
 CONFIG_VIRTIO_RING=y
 # CONFIG_VIRTIO_PCI is not set
+CONFIG_VIRTIO_BALLOON=m
 
 #
 # Library routines
