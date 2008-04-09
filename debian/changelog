@@ -1,5 +1,9 @@
 linux (2.6.24-16.29) hardy; urgency=low
 
+  [Stephan Bader]
+
+  * UBUNTU: SAUCE: mmc: Increase power_up deleay to fix TI readers
+
   [Alessio Igor Bogani]
 
   * rt: Updated configuration files
@@ -7,6 +11,10 @@ linux (2.6.24-16.29) hardy; urgency=low
   [Chuck Short]
 
   * Xen updates for vitrio changes.
+
+  [Tim Gardner]
+
+  * openvz updates for vitrio changes.
 
  -- Tim Gardner <tim.gardner@canonical.com>  Tue, 08 Apr 2008 21:48:16 -0600
 
