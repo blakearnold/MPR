@@ -218,6 +218,10 @@ module_param(copybreak, uint, 0644);
 MODULE_PARM_DESC(copybreak,
 	"Maximum size of packet that is copied to a new buffer on receive");
 
+static int eeprom_bad_csum_allow __read_mostly = 0;
+module_param(eeprom_bad_csum_allow, int, 0);
+MODULE_PARM_DESC(eeprom_bad_csum_allow, "Allow bad EEPROM checksums");
+
 static pci_ers_result_t e1000_io_error_detected(struct pci_dev *pdev,
                      pci_channel_state_t state);
 static pci_ers_result_t e1000_io_slot_reset(struct pci_dev *pdev);
@@ -1010,7 +1014,8 @@ e1000_probe(struct pci_dev *pdev,
 
 	if (e1000_validate_eeprom_checksum(&adapter->hw) < 0) {
 		DPRINTK(PROBE, ERR, "The EEPROM Checksum Is Not Valid\n");
-		goto err_eeprom;
+		if (!eeprom_bad_csum_allow)
+			goto err_eeprom;
 	}
 
 	/* copy the MAC address out of the EEPROM */
