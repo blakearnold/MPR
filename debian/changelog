@@ -1,3 +1,10 @@
+linux (2.6.24-16.30) hardy; urgency=low
+
+  * Fix amd64/i386 ABI and module check FTBS by creating an ignore
+    and ignore.modules in the ABI directory.
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Wed, 09 Apr 2008 21:58:25 -0600
+
 linux (2.6.24-16.29) hardy; urgency=low
 
   [Stephan Bader]
