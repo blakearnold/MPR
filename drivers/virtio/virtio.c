@@ -2,8 +2,6 @@
 #include <linux/spinlock.h>
 #include <linux/virtio_config.h>
 
-MODULE_LICENSE("GPL");
-
 static ssize_t device_show(struct device *_d,
 			   struct device_attribute *attr, char *buf)
 {
@@ -104,10 +102,13 @@ static int virtio_dev_remove(struct device *_d)
 	struct virtio_driver *drv = container_of(dev->dev.driver,
 						 struct virtio_driver, driver);
 
-	dev->config->set_status(dev, dev->config->get_status(dev)
-				& ~(VIRTIO_CONFIG_S_DRIVER
-				    | VIRTIO_CONFIG_S_DRIVER_OK));
 	drv->remove(dev);
+
+	/* Driver should have reset device. */
+	BUG_ON(dev->config->get_status(dev));
+
+	/* Acknowledge the device's existence again. */
+	add_status(dev, VIRTIO_CONFIG_S_ACKNOWLEDGE);
 	return 0;
 }
 
@@ -126,18 +127,16 @@ void unregister_virtio_driver(struct virtio_driver *driver)
 }
 EXPORT_SYMBOL_GPL(unregister_virtio_driver);
 
-static void virtio_device_release(struct device *_d)
-{
-	pr_debug("%s\n" , __FUNCTION__);
-}
-
 int register_virtio_device(struct virtio_device *dev)
 {
 	int err;
 
 	dev->dev.bus = &virtio_bus;
-	dev->dev.release = virtio_device_release;
 	sprintf(dev->dev.bus_id, "%u", dev->index);
+
+	/* We always start by resetting the device, in case a previous
+	 * driver messed it up.  This also tests that code path a little. */
+	dev->config->reset(dev);
 
 	/* Acknowledge that we've seen the device. */
 	add_status(dev, VIRTIO_CONFIG_S_ACKNOWLEDGE);
@@ -163,4 +162,12 @@ static int virtio_init(void)
 		panic("virtio bus registration failed");
 	return 0;
 }
+
+static void __exit virtio_exit(void)
+{
+	bus_unregister(&virtio_bus);
+}
 core_initcall(virtio_init);
+module_exit(virtio_exit);
+
+MODULE_LICENSE("GPL");

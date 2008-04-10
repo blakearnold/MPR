@@ -1,3 +1,113 @@
+linux (2.6.24-16.29) hardy; urgency=low
+
+  [Stephan Bader]
+
+  * UBUNTU: SAUCE: mmc: Increase power_up deleay to fix TI readers
+
+  [Alessio Igor Bogani]
+
+  * rt: Updated configuration files
+
+  [Chuck Short]
+
+  * Xen updates for vitrio changes.
+
+  [Tim Gardner]
+
+  * openvz updates for vitrio changes.
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Tue, 08 Apr 2008 21:48:16 -0600
+
+linux (2.6.24-16.28) hardy; urgency=low
+
+  [Tim Gardner]
+
+  * Revert "UBUNTU: x86: tsc prevent time going backwards"
+
+  [Kees Cook]
+
+  * AppArmor: implement mmap_min_addr check as done in mainline.
+
+  [Soren Hansen]
+
+  * Bring our virtio code up to date with 2.6.25-rc7
+
+  [Upstream Kernel Changes]
+
+  * Ubuntu: Revert all our virtio changes
+  * lguest: Reboot support
+  * lguest: adapt launcher to per-cpuness
+  * virtio: Implement skb_partial_csum_set, for setting partial csums on
+    untrusted packets.
+  * virtio: simplify config mechanism.
+  * virtio: explicit enable_cb/disable_cb rather than callback return.
+  * virtio: configuration change callback
+  * virtio: Fix vring_init/vring_size to take unsigned long
+  * virtio: clarify NO_NOTIFY flag usage
+  * virtio: remove unused id field from struct virtio_blk_outhdr
+  * virtio: Net header needs hdr_len
+  * virtio: Tweak virtio_net defines
+  * virtio: populate network rings in the probe routine, not open
+  * virtio: reset function
+  * virtio: handle interrupts after callbacks turned off
+  * virtio: Use the sg_phys convenience function.
+  * virtio: Allow virtio to be modular and used by modules
+  * virtnet: remove double ether_setup
+  * virtio: flush buffers on open
+  * virtio: free transmit skbs when notified, not on next xmit.
+  * virtio_net: parametrize the napi_weight for virtio receive queue.
+  * virtio_blk: provide getgeo
+  * virtio_blk: Dont waste major numbers
+  * virtio_blk: implement naming for vda-vdz,vdaa-vdzz,vdaaa-vdzzz
+  * virtio: PCI device
+  * virtio: Use PCI revision field to indicate virtio PCI ABI version
+  * virtio: balloon driver
+  * virtio net: fix oops on interface-up
+  * virtio: add missing #include <linux/delay.h>
+  * virtio: fix race in enable_cb
+  * virtio: handle > 2 billion page balloon targets
+  * virtio_net: Fix oops on early interrupts - introduced by virtio reset
+    code
+  * lguest: Do not append space to guests kernel command line
+  * virtio: Use spin_lock_irqsave/restore for virtio-pci
+  * virtio: Fix sysfs bits to have proper block symlink
+  * virtio: Enable netpoll interface for netconsole logging
+  * virtio_pci: unregister virtio device at device remove
+  * lguest: Add puppies which where previously missing.
+  * lguest: lguest.txt documentation fix
+  * lguest: Don't need comment terminator before disk section.
+  * virtio_pci iomem annotations
+  * virtio_net: remove overzealous printk
+  * virtio: remove overzealous BUG_ON.
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Tue, 08 Apr 2008 11:53:49 -0600
+
+linux (2.6.24-15.27) hardy; urgency=low
+
+  [Alan Stern]
+
+  * usb-storage: don't access beyond the end of the sg buffer
+    - LP: #204922
+
+  [Mario Limonciello]
+
+  * Enable Reset and SCO workaround on Dell 410 BT adapter
+
+  [Tim Gardner]
+
+  * Enable CONFIG_E1000 in the i386 virtual image.
+    - LP: #205646
+
+  [Thomas Gleixner]
+
+  * x86: tsc prevent time going backwards
+
+  [Matthew Garrett]
+
+  * Fix framebuffer fonts on non-x86 platforms
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Fri, 04 Apr 2008 08:14:49 -0600
+
 linux (2.6.24-15.26) hardy; urgency=low
 
   [Colin Ian King]

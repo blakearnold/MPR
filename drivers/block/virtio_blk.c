@@ -7,10 +7,10 @@
 #include <linux/scatterlist.h>
 
 #define VIRTIO_MAX_SG	(3+MAX_PHYS_SEGMENTS)
+#define PART_BITS 4
 
-MODULE_LICENSE("GPL");
+static int major, index;
 
-static unsigned char virtblk_index = 'a';
 struct virtio_blk
 {
 	spinlock_t lock;
@@ -154,17 +154,36 @@ static int virtblk_ioctl(struct inode *inode, struct file *filp,
 			      (void __user *)data);
 }
 
+/* We provide getgeo only to please some old bootloader/partitioning tools */
+static int virtblk_getgeo(struct block_device *bd, struct hd_geometry *geo)
+{
+	/* some standard values, similar to sd */
+	geo->heads = 1 << 6;
+	geo->sectors = 1 << 5;
+	geo->cylinders = get_capacity(bd->bd_disk) >> 11;
+	return 0;
+}
+
 static struct block_device_operations virtblk_fops = {
-	.ioctl = virtblk_ioctl,
-	.owner = THIS_MODULE,
+	.ioctl  = virtblk_ioctl,
+	.owner  = THIS_MODULE,
+	.getgeo = virtblk_getgeo,
 };
+
+static int index_to_minor(int index)
+{
+	return index << PART_BITS;
+}
 
 static int virtblk_probe(struct virtio_device *vdev)
 {
 	struct virtio_blk *vblk;
-	int err, major;
+	int err;
 	u64 cap;
 	u32 v;
+
+	if (index_to_minor(index) >= 1 << MINORBITS)
+		return -ENOSPC;
 
 	vdev->priv = vblk = kmalloc(sizeof(*vblk), GFP_KERNEL);
 	if (!vblk) {
@@ -189,17 +208,11 @@ static int virtblk_probe(struct virtio_device *vdev)
 		goto out_free_vq;
 	}
 
-	major = register_blkdev(0, "virtblk");
-	if (major < 0) {
-		err = major;
-		goto out_mempool;
-	}
-
 	/* FIXME: How many partitions?  How long is a piece of string? */
-	vblk->disk = alloc_disk(1 << 4);
+	vblk->disk = alloc_disk(1 << PART_BITS);
 	if (!vblk->disk) {
 		err = -ENOMEM;
-		goto out_unregister_blkdev;
+		goto out_mempool;
 	}
 
 	vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
@@ -208,11 +221,25 @@ static int virtblk_probe(struct virtio_device *vdev)
 		goto out_put_disk;
 	}
 
-	sprintf(vblk->disk->disk_name, "vd%c", virtblk_index++);
+	if (index < 26) {
+		sprintf(vblk->disk->disk_name, "vd%c", 'a' + index % 26);
+	} else if (index < (26 + 1) * 26) {
+		sprintf(vblk->disk->disk_name, "vd%c%c",
+			'a' + index / 26 - 1, 'a' + index % 26);
+	} else {
+		const unsigned int m1 = (index / 26 - 1) / 26 - 1;
+		const unsigned int m2 = (index / 26 - 1) % 26;
+		const unsigned int m3 =  index % 26;
+		sprintf(vblk->disk->disk_name, "vd%c%c%c",
+			'a' + m1, 'a' + m2, 'a' + m3);
+	}
+
 	vblk->disk->major = major;
-	vblk->disk->first_minor = 0;
+	vblk->disk->first_minor = index_to_minor(index);
 	vblk->disk->private_data = vblk;
 	vblk->disk->fops = &virtblk_fops;
+	vblk->disk->driverfs_dev = &vdev->dev;
+	index++;
 
 	/* If barriers are supported, tell block layer that queue is ordered */
 	if (vdev->config->feature(vdev, VIRTIO_BLK_F_BARRIER))
@@ -249,8 +276,6 @@ static int virtblk_probe(struct virtio_device *vdev)
 
 out_put_disk:
 	put_disk(vblk->disk);
-out_unregister_blkdev:
-	unregister_blkdev(major, "virtblk");
 out_mempool:
 	mempool_destroy(vblk->pool);
 out_free_vq:
@@ -266,12 +291,16 @@ static void virtblk_remove(struct virtio_device *vdev)
 	struct virtio_blk *vblk = vdev->priv;
 	int major = vblk->disk->major;
 
+	/* Nothing should be pending. */
 	BUG_ON(!list_empty(&vblk->reqs));
+
+	/* Stop all the virtqueues. */
+	vdev->config->reset(vdev);
+
 	blk_cleanup_queue(vblk->disk->queue);
 	put_disk(vblk->disk);
 	unregister_blkdev(major, "virtblk");
 	mempool_destroy(vblk->pool);
-	/* There should be nothing in the queue now, so no need to shutdown */
 	vdev->config->del_vq(vblk->vq);
 	kfree(vblk);
 }
@@ -291,11 +320,15 @@ static struct virtio_driver virtio_blk = {
 
 static int __init init(void)
 {
+	major = register_blkdev(0, "virtblk");
+	if (major < 0)
+		return major;
 	return register_virtio_driver(&virtio_blk);
 }
 
 static void __exit fini(void)
 {
+	unregister_blkdev(major, "virtblk");
 	unregister_virtio_driver(&virtio_blk);
 }
 module_init(init);

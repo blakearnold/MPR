@@ -41,16 +41,17 @@ struct virtqueue
  *	Returns NULL or the "data" token handed to add_buf.
  * @disable_cb: disable callbacks
  *	vq: the struct virtqueue we're talking about.
+ *	Note that this is not necessarily synchronous, hence unreliable and only
+ *	useful as an optimization.
  * @enable_cb: restart callbacks after disable_cb.
  *	vq: the struct virtqueue we're talking about.
- *	This returns "false" (and doesn't re-enable) if there are pending
- *	buffers in the queue, to avoid a race.
- * @shutdown: "unadd" all buffers.
- *	vq: the struct virtqueue we're talking about.
- *	Remove everything from the queue.
+ *	This re-enables callbacks; it returns "false" if there are pending
+ *	buffers in the queue, to detect a possible race between the driver
+ *	checking for more work, and enabling callbacks.
  *
  * Locking rules are straightforward: the driver is responsible for
- * locking.  No two operations may be invoked simultaneously.
+ * locking.  No two operations may be invoked simultaneously, with the exception
+ * of @disable_cb.
  *
  * All operations can be called in any context.
  */
@@ -67,8 +68,6 @@ struct virtqueue_ops {
 
 	void (*disable_cb)(struct virtqueue *vq);
 	bool (*enable_cb)(struct virtqueue *vq);
-
-	void (*shutdown)(struct virtqueue *vq);
 };
 
 /**
@@ -98,12 +97,15 @@ void unregister_virtio_device(struct virtio_device *dev);
  * @probe: the function to call when a device is found.  Returns a token for
  *    remove, or PTR_ERR().
  * @remove: the function when a device is removed.
+ * @config_changed: optional function to call when the device configuration
+ *    changes; may be called in interrupt context.
  */
 struct virtio_driver {
 	struct device_driver driver;
 	const struct virtio_device_id *id_table;
 	int (*probe)(struct virtio_device *dev);
 	void (*remove)(struct virtio_device *dev);
+	void (*config_changed)(struct virtio_device *dev);
 };
 
 int register_virtio_driver(struct virtio_driver *drv);

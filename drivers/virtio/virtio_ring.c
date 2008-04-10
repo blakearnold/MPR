@@ -20,8 +20,6 @@
 #include <linux/virtio_ring.h>
 #include <linux/device.h>
 
-MODULE_LICENSE("GPL");
-
 #ifdef DEBUG
 /* For development, we want to crash whenever the ring is screwed. */
 #define BAD_RING(vq, fmt...)			\
@@ -89,6 +87,8 @@ static int vring_add_buf(struct virtqueue *_vq,
 	if (vq->num_free < out + in) {
 		pr_debug("Can't add buf len %i - avail = %i\n",
 			 out + in, vq->num_free);
+		/* We notify *even if* VRING_USED_F_NO_NOTIFY is set here. */
+		vq->notify(&vq->vq);
 		END_USE(vq);
 		return -ENOSPC;
 	}
@@ -99,16 +99,14 @@ static int vring_add_buf(struct virtqueue *_vq,
 	head = vq->free_head;
 	for (i = vq->free_head; out; i = vq->vring.desc[i].next, out--) {
 		vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
-		vq->vring.desc[i].addr = (page_to_pfn(sg_page(sg))<<PAGE_SHIFT)
-			+ sg->offset;
+		vq->vring.desc[i].addr = sg_phys(sg);
 		vq->vring.desc[i].len = sg->length;
 		prev = i;
 		sg++;
 	}
 	for (; in; i = vq->vring.desc[i].next, in--) {
 		vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
-		vq->vring.desc[i].addr = (page_to_pfn(sg_page(sg))<<PAGE_SHIFT)
-			+ sg->offset;
+		vq->vring.desc[i].addr = sg_phys(sg);
 		vq->vring.desc[i].len = sg->length;
 		prev = i;
 		sg++;
@@ -173,16 +171,6 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
 	vq->num_free++;
 }
 
-/* FIXME: We need to tell other side about removal, to synchronize. */
-static void vring_shutdown(struct virtqueue *_vq)
-{
-	struct vring_virtqueue *vq = to_vvq(_vq);
-	unsigned int i;
-
-	for (i = 0; i < vq->vring.num; i++)
-		detach_buf(vq, i);
-}
-
 static inline bool more_used(const struct vring_virtqueue *vq)
 {
 	return vq->last_used_idx != vq->vring.used->idx;
@@ -198,8 +186,6 @@ static void *vring_get_buf(struct virtqueue *_vq, unsigned int *len)
 
 	if (!more_used(vq)) {
 		pr_debug("No more buffers in queue\n");
-		/* We notify *even if* VRING_USED_F_NO_NOTIFY is set here. */
-		vq->notify(&vq->vq);
 		END_USE(vq);
 		return NULL;
 	}
@@ -228,10 +214,7 @@ static void vring_disable_cb(struct virtqueue *_vq)
 {
 	struct vring_virtqueue *vq = to_vvq(_vq);
 
-	START_USE(vq);
-	BUG_ON(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT);
 	vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
-	END_USE(vq);
 }
 
 static bool vring_enable_cb(struct virtqueue *_vq)
@@ -246,7 +229,6 @@ static bool vring_enable_cb(struct virtqueue *_vq)
 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
 	mb();
 	if (unlikely(more_used(vq))) {
-		vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
 		END_USE(vq);
 		return false;
 	}
@@ -280,7 +262,6 @@ irqreturn_t vring_interrupt(int irq, void *_vq)
 
 	return IRQ_HANDLED;
 }
-
 EXPORT_SYMBOL_GPL(vring_interrupt);
 
 static struct virtqueue_ops vring_vq_ops = {
@@ -289,7 +270,6 @@ static struct virtqueue_ops vring_vq_ops = {
 	.kick = vring_kick,
 	.disable_cb = vring_disable_cb,
 	.enable_cb = vring_enable_cb,
-	.shutdown = vring_shutdown,
 };
 
 struct virtqueue *vring_new_virtqueue(unsigned int num,
@@ -335,12 +315,12 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
 
 	return &vq->vq;
 }
-
 EXPORT_SYMBOL_GPL(vring_new_virtqueue);
 
 void vring_del_virtqueue(struct virtqueue *vq)
 {
 	kfree(to_vvq(vq));
 }
-
 EXPORT_SYMBOL_GPL(vring_del_virtqueue);
+
+MODULE_LICENSE("GPL");
