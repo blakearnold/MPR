@@ -26,21 +26,17 @@ while (@ARGV) {
 
 sub check_reverts($) {
 	my ($entry) = @_;
-	my $found = 0;
-	my ($check, @replace);
+	my ($check);
 
 	foreach $check (reverse @reverts) {
 		my $desc = "Revert \"" . $entry->{'desc'} . "\"";
-		if ($check->{'desc'} = $desc) {
-			$found = 1;
-		} else {
-			push(@replace, \$check);
+		if ($check->{'desc'} eq $desc) {
+			@reverts = grep($_->{'desc'} ne $desc, @reverts);
+			return 1;
 		}
 	}
 
-	@reverts = @replace;
-
-	return $found;
+	return 0;
 }
 
 sub add_entry($) {
@@ -83,7 +79,7 @@ sub shortlog_entry($$$$) {
 		return;
 	}
 
-	return if &check_reverts($entry);
+	return if check_reverts($entry);
 
 	add_entry($entry);
 }
@@ -200,6 +196,7 @@ sub changelog_input {
 	}
 
 	foreach $entry (@reverts) {
+		print "Adding revert entry '" . $entry->{'desc'} . "'\n";
 		add_entry($entry);
 	}	
 }
