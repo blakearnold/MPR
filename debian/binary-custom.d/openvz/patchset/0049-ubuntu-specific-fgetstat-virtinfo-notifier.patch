@@ -1,0 +1,30 @@
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+
+In Ubuntu kernel, sys_fstat implemented via new function vfs_fgetattr, 
+where virtinfo_notifier_call is not presented. As result syscalls stat
+and fstat give different device id and inode numbers inside VE.
+
+http://forum.openvz.org/index.php?t=msg&th=5912
+
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -76,11 +76,19 @@ static int vfs_fgetattr(struct file *fil
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct inode *inode = dentry->d_inode;
+ 	int retval;
++	struct faudit_stat_arg arg;
+ 
+ 	retval = security_inode_getattr(mnt, dentry);
+ 	if (retval)
+ 		return retval;
+ 
++	arg.mnt = mnt;
++	arg.dentry = dentry;
++	arg.stat = stat;
++	if (virtinfo_notifier_call(VITYPE_FAUDIT, VIRTINFO_FAUDIT_STAT, &arg)
++			!= NOTIFY_DONE)
++		return arg.err;
++
+ 	if (file->f_op && file->f_op->fgetattr) {
+ 		return file->f_op->fgetattr(file, stat);
+ 	} else if (inode->i_op->getattr) {
