@@ -1,0 +1,14 @@
+Index: ubuntu-hardy/drivers/acpi/toshiba_acpi.c
+===================================================================
+--- ubuntu-hardy.orig/drivers/acpi/toshiba_acpi.c	2008-04-18 20:01:51.000000000 +0200
++++ ubuntu-hardy/drivers/acpi/toshiba_acpi.c	2008-04-18 20:02:27.000000000 +0200
+@@ -968,7 +968,8 @@
+ 		printk(MY_INFO "ktoshkeyd will check %d time%s per second\n",
+ 			hotkeys_check_per_sec, hotkeys_check_per_sec==1?"":"s");
+ 		if (init_threaded_acpi() >= 0) {
+-			init_MUTEX_LOCKED(&thread_sem);
++			init_MUTEX(&thread_sem);
++			down(&thread_sem);
+ 			kernel_thread(toshiba_acpi_thread, NULL, CLONE_KERNEL);
+ 			down(&thread_sem);
+ 		} else {
