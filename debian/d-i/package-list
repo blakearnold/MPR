@@ -171,3 +171,10 @@ Priority: extra
 Depends: kernel-image
 Description: crypto modules
  This package contains crypto modules.
+
+Package: fancontrol-modules
+Priority: standard
+Depends: kernel-image
+Description: Apple powermac fancontrol modules
+ Contains drivers for macintosh i2c bus as well as for the monitoring devices
+ connected to it. This allows to control the fans during installation.

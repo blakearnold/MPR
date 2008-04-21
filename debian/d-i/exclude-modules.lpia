@@ -6,3 +6,4 @@ md-modules
 pcmcia-storage-modules
 nic-pcmcia-modules
 pcmcia-modules
+fancontrol-modules

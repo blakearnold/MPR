@@ -2,3 +2,4 @@ efi-modules
 fb-modules
 acpi-modules
 cdrom-modules
+fancontrol-modules

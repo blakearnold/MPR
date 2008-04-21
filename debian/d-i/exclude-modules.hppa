@@ -8,3 +8,4 @@ acpi-modules
 cdrom-modules
 nfs-modules
 nic-usb-modules
+fancontrol-modules
