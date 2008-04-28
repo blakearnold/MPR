@@ -1110,6 +1110,16 @@ static void set_curr_task_fair(struct rq *rq)
 		set_next_entity(cfs_rq_of(se), se);
 }
 
+#ifdef CONFIG_FAIR_GROUP_SCHED
+static void moved_group_fair(struct task_struct *p)
+{
+	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+
+	update_curr(cfs_rq);
+	place_entity(cfs_rq, &p->se, 1);
+}
+#endif
+
 /*
  * All the scheduling class methods:
  */
@@ -1132,6 +1142,10 @@ static const struct sched_class fair_sched_class = {
 	.set_curr_task          = set_curr_task_fair,
 	.task_tick		= task_tick_fair,
 	.task_new		= task_new_fair,
+
+#ifdef CONFIG_FAIR_GROUP_SCHED
+	.moved_group		= moved_group_fair,
+#endif
 };
 
 #ifdef CONFIG_SCHED_DEBUG
