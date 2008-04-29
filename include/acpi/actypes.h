@@ -995,7 +995,6 @@ struct acpi_resource_irq {
 	u8 sharable;
 	u8 interrupt_count;
 	u8 interrupts[1];
-	u8 descriptor_length;
 };
 
 struct acpi_resource_dma {
@@ -1009,7 +1008,6 @@ struct acpi_resource_dma {
 struct acpi_resource_start_dependent {
 	u8 compatibility_priority;
 	u8 performance_robustness;
-	u8 descriptor_length;
 };
 
 /*
