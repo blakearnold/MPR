@@ -175,9 +175,9 @@ Index: linux-2.6.24.3-rt3/kernel/sched_fair.c
   *
   * This routine is mostly called to set cfs_rq->curr field when a task
 @@ -1277,6 +1313,9 @@ static const struct sched_class fair_sch
- 	.set_curr_task          = set_curr_task_fair,
- 	.task_tick		= task_tick_fair,
- 	.task_new		= task_new_fair,
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.moved_group		= moved_group_fair,
+ #endif
 +
 +	.prio_changed		= prio_changed_fair,
 +	.switched_to		= switched_to_fair,
