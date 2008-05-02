@@ -112,9 +112,9 @@ struct rpcbind_args {
 	u32			r_vers;
 	u32			r_prot;
 	unsigned short		r_port;
-	char *			r_netid;
-	char			r_addr[RPCB_MAXADDRLEN];
-	char *			r_owner;
+	const char *		r_netid;
+	const char *		r_addr;
+	const char *		r_owner;
 };
 
 static struct rpc_procinfo rpcb_procedures2[];
@@ -390,9 +390,7 @@ void rpcb_getport_async(struct rpc_task *task)
 	map->r_port = 0;
 	map->r_xprt = xprt_get(xprt);
 	map->r_netid = rpc_peeraddr2str(clnt, RPC_DISPLAY_NETID);
-	memcpy(map->r_addr,
-	       rpc_peeraddr2str(rpcb_clnt, RPC_DISPLAY_UNIVERSAL_ADDR),
-	       sizeof(map->r_addr));
+	map->r_addr = rpc_peeraddr2str(rpcb_clnt, RPC_DISPLAY_UNIVERSAL_ADDR);
 	map->r_owner = RPCB_OWNER_STRING;	/* ignored for GETADDR */
 
 	child = rpc_run_task(rpcb_clnt, RPC_TASK_ASYNC, &rpcb_getport_ops, map);
