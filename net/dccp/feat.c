@@ -30,7 +30,7 @@ int dccp_feat_change(struct dccp_minisock *dmsk, u8 type, u8 feature,
 	}
 	if (!dccp_feat_is_valid_length(type, feature, len)) {
 		DCCP_WARN("invalid length %d\n", len);
-		return 1;
+		return -EINVAL;
 	}
 	/* XXX add further sanity checks */
 
