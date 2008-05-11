@@ -256,7 +256,7 @@ void b43legacy_leds_update(struct b43legacy_wldev *dev, int activity)
 			continue;
 #endif /* CONFIG_B43LEGACY_DEBUG */
 		default:
-			B43legacy_BUG_ON(1);
+			break;
 		};
 
 		if (led->activelow)
