@@ -147,6 +147,10 @@
 #define  SSB_IDLOW_SSBREV	0xF0000000 /* Sonics Backplane Revision code */
 #define  SSB_IDLOW_SSBREV_22	0x00000000 /* <= 2.2 */
 #define  SSB_IDLOW_SSBREV_23	0x10000000 /* 2.3 */
+#define  SSB_IDLOW_SSBREV_24	0x40000000 /* ?? Found in BCM4328 */
+#define  SSB_IDLOW_SSBREV_25	0x50000000 /* ?? Not Found yet */
+#define  SSB_IDLOW_SSBREV_26	0x60000000 /* ?? Found in some BCM4311/2 */
+#define  SSB_IDLOW_SSBREV_27	0x70000000 /* ?? Found in some BCM4311/2 */
 #define SSB_IDHIGH		0x0FFC     /* SB Identification High */
 #define  SSB_IDHIGH_RCLO	0x0000000F /* Revision Code (low part) */
 #define  SSB_IDHIGH_CC		0x00008FF0 /* Core Code */

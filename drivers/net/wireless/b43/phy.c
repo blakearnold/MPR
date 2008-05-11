@@ -933,7 +933,7 @@ static void b43_phy_setupg(struct b43_wldev *dev)
 		for (i = 0; i < B43_TAB_SIGMASQR_SIZE; i++)
 			b43_ofdmtab_write16(dev, 0x5000, i,
 					    b43_tab_sigmasqr1[i]);
-	else if ((phy->rev > 2) && (phy->rev <= 8))
+	else if ((phy->rev > 2) && (phy->rev <= 9))
 		for (i = 0; i < B43_TAB_SIGMASQR_SIZE; i++)
 			b43_ofdmtab_write16(dev, 0x5000, i,
 					    b43_tab_sigmasqr2[i]);
