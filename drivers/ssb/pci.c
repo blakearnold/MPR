@@ -426,6 +426,7 @@ static int sprom_extract(struct ssb_bus *bus,
 	SPEX(crc, SSB_SPROM_REVISION, SSB_SPROM_REVISION_CRC,
 	     SSB_SPROM_REVISION_CRC_SHIFT);
 
+
 	if ((bus->chip_id & 0xFF00) == 0x4400) {
 		/* Workaround: The BCM44XX chip has a stupid revision
 		 * number stored in the SPROM.
@@ -443,6 +444,10 @@ static int sprom_extract(struct ssb_bus *bus,
 		if (out->revision >= 4)
 			goto unsupported;
 	}
+	if (out->r1.boardflags_lo == 0xFFFF)
+		out->r1.boardflags_lo = 0;  /* per specs */
+	if (out->r2.boardflags_hi == 0xFFFF)
+		out->r2.boardflags_hi = 0;  /* per specs */
 
 	return 0;
 unsupported:
