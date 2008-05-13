@@ -101,6 +101,9 @@ static const struct ssb_device_id b43_ssb_tbl[] = {
 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 7),
 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 9),
 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 10),
+	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 11),
+	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 13),
+	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 15),
 	SSB_DEVTABLE_END
 };
 
@@ -3079,7 +3082,7 @@ static int b43_phy_versioning(struct b43_wldev *dev)
 			unsupported = 1;
 		break;
 	case B43_PHYTYPE_G:
-		if (phy_rev > 8)
+		if (phy_rev > 9)
 			unsupported = 1;
 		break;
 	default:
@@ -3739,7 +3742,7 @@ static int b43_wireless_core_attach(struct b43_wldev *dev)
 		have_gphy = 0;
 		switch (dev->phy.type) {
 		case B43_PHYTYPE_A:
-			have_aphy = 1;
+			have_aphy = 0;
 			break;
 		case B43_PHYTYPE_B:
 			have_bphy = 1;
@@ -3852,6 +3855,8 @@ static int b43_one_core_attach(struct ssb_device *dev, struct b43_wl *wl)
 
 static void b43_sprom_fixup(struct ssb_bus *bus)
 {
+	struct pci_dev *pdev;
+
 	/* boardflags workarounds */
 	if (bus->boardinfo.vendor == SSB_BOARDVENDOR_DELL &&
 	    bus->chip_id == 0x4301 && bus->boardinfo.rev == 0x74)
@@ -3859,6 +3864,14 @@ static void b43_sprom_fixup(struct ssb_bus *bus)
 	if (bus->boardinfo.vendor == PCI_VENDOR_ID_APPLE &&
 	    bus->boardinfo.type == 0x4E && bus->boardinfo.rev > 0x40)
 		bus->sprom.r1.boardflags_lo |= B43_BFL_PACTRL;
+	if (bus->bustype == SSB_BUSTYPE_PCI) {
+		pdev = bus->host_pci;
+		if (pdev->vendor == PCI_VENDOR_ID_BROADCOM &&
+		    pdev->device == 0x4318 &&
+		    pdev->subsystem_vendor == PCI_VENDOR_ID_ASUSTEK &&
+		    pdev->subsystem_device == 0x100F)
+			bus->sprom.r1.boardflags_lo &= ~B43_BFL_BTCOEXIST;
+	}
 
 	/* Handle case when gain is not set in sprom */
 	if (bus->sprom.r1.antenna_gain_a == 0xFF)
