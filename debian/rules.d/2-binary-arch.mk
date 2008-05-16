@@ -213,16 +213,12 @@ binary-debs: $(stampdir)/stamp-flavours $(addprefix binary-,$(flavours)) \
 build-debs: $(addprefix build-,$(flavours))
 
 build-arch-deps = build-debs
-ifeq ($(is_ppa_build),)
 build-arch-deps += build-custom
-endif
 
 build-arch: $(build-arch-deps)
 
 binary-arch-deps = binary-debs
-ifeq ($(is_ppa_build),)
 binary-arch-deps += binary-custom
 binary-arch-deps += binary-udebs
-endif
 
 binary-arch: $(binary-arch-deps)

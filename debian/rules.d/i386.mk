@@ -6,9 +6,7 @@ defconfig	= defconfig
 # Only build -386 and -generic for PPA.
 #
 flavours = 386 generic
-ifeq ($(is_ppa_build),)
 flavours	+= server virtual
-endif
 build_image	= bzImage
 kernel_file	= arch/$(build_arch)/boot/bzImage
 install_file	= vmlinuz
@@ -20,6 +18,4 @@ loader		= grub
 #
 # No custom binaries for the PPA build.
 #
-ifeq ($(is_ppa_build),)
 custom_flavours	= rt xen openvz
-endif
