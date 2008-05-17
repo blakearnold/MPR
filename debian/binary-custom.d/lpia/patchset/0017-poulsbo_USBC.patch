@@ -44,7 +44,7 @@ index 904e57b..8e533bf 100644
  #
  # USB gadget drivers
 diff --git a/drivers/usb/gadget/ether.c b/drivers/usb/gadget/ether.c
-index 9e732bf..0c4508d 100644
+index 9e732bf..15a6dce 100644
 --- a/drivers/usb/gadget/ether.c
 +++ b/drivers/usb/gadget/ether.c
 @@ -19,7 +19,7 @@
@@ -72,7 +72,7 @@ index 9e732bf..0c4508d 100644
  
  #define DRIVER_DESC		"Ethernet Gadget"
 -#define DRIVER_VERSION		"May Day 2005"
-+#define	DRIVER_VERSION		"2.0.0.32L.0009"
++#define	DRIVER_VERSION		"2.0.0.32L.0010"
  
  static const char shortname [] = "ether";
  static const char driver_desc [] = DRIVER_DESC;
@@ -149,7 +149,7 @@ index 9e732bf..0c4508d 100644
  
  
 diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index 1d174dc..517a1b8 100644
+index 1d174dc..4a48112 100644
 --- a/drivers/usb/gadget/file_storage.c
 +++ b/drivers/usb/gadget/file_storage.c
 @@ -244,18 +244,23 @@
@@ -166,7 +166,7 @@ index 1d174dc..517a1b8 100644
  #define DRIVER_DESC		"File-backed Storage Gadget"
  #define DRIVER_NAME		"g_file_storage"
 -#define DRIVER_VERSION		"7 August 2007"
-+#define DRIVER_VERSION		"2.0.0.32L.0009"
++#define DRIVER_VERSION		"2.0.0.32L.0010"
  
  static const char longname[] = DRIVER_DESC;
  static const char shortname[] = DRIVER_NAME;
@@ -347,10 +347,10 @@ index f7f159c..41b5c9a 100644
  }
 diff --git a/drivers/usb/gadget/iusbc.c b/drivers/usb/gadget/iusbc.c
 new file mode 100644
-index 0000000..d2758f0
+index 0000000..345c64b
 --- /dev/null
 +++ b/drivers/usb/gadget/iusbc.c
-@@ -0,0 +1,3110 @@
+@@ -0,0 +1,3120 @@
 +/*
 + * Intel Poulsbo USB Client Controller Driver
 + * Copyright (C) 2006-07, Intel Corporation.
@@ -405,7 +405,7 @@ index 0000000..d2758f0
 +#include "iusbc.h"
 +
 +#define	DRIVER_DESC	"Intel Poulsbo USB Client Controller Driver"
-+#define	DRIVER_VERSION	"2.0.0.32L.0009"
++#define	DRIVER_VERSION	"2.0.0.32L.0010"
 +
 +#define	DMA_ADDR_INVALID	(~(dma_addr_t)0)
 +
@@ -428,9 +428,11 @@ index 0000000..d2758f0
 +static int force_fullspeed = 0;
 +
 +/* modprobe iusbc force_fullspeed=n" etc */
-+module_param (force_fullspeed, bool, S_IRUGO);
++/* XXX: remove this feature due to HW full-speed bug
++ * module_param (force_fullspeed, bool, S_IRUGO);
++ */
 +
-+#define RNDIS_INIT_HW_BUG
++//#define RNDIS_INIT_HW_BUG
 +//#define DMA_DISABLED
 +
 +/*-------------------------------------------------------------------------*/
@@ -574,7 +576,6 @@ index 0000000..d2758f0
 +
 +	/* ep_reset() has already been called */
 +	ep->stopped = 0;
-+	ep->out_overflow = 0;
 +	ep->is_in = (USB_DIR_IN & desc->bEndpointAddress) != 0;
 +
 +	/* sanity check type, direction, address */
@@ -1076,7 +1077,7 @@ index 0000000..d2758f0
 +		buf = req->req.buf;
 +
 +		/* req->buf haven't been DMAed for hardware bug? */
-+		if ((buf[0] == 0x9) && (buf[1] == 0x02)) {
++		if ((buf[0] == 0x09) && (buf[1] == 0x02)) {
 +			memcpy(buf, remote_ndis_initialize_msg, 24);
 +			DEBUG(ep->dev, "WORKAROUND HW BUG: ep0-out OUT\n");
 +		}
@@ -1111,23 +1112,26 @@ index 0000000..d2758f0
 +	dev = ep->dev;
 +	VDEBUG(ep->dev, "---> iusbc_queue() \n");
 +
-+	VDEBUG(ep->dev, "_req=%p, complete=%p, buf=%p, list_empty=%d\n",
-+			_req, _req->complete,
-+			_req->buf,
-+			list_empty(&req->queue));
-+
 +	if (dev->ep0state == EP0_DISCONNECT || ep->stopped)
 +		return -EINVAL;
 +
 +	if (!_req || !_req->complete || !_req->buf
-+			|| !list_empty(&req->queue))
++			|| !list_empty(&req->queue)){
++		VDEBUG(ep->dev, "_req=%p, complete=%p, buf=%p, list_empty=%d\n",
++				_req, _req->complete,
++				_req->buf,
++				list_empty(&req->queue));
 +		return -EINVAL;
++	}
 +
-+	if (!_ep || (!ep->desc && ep->num > 1))
-+		return -EINVAL;
++	if (!_ep || (!ep->desc && ep->num > 1)){
++		VDEBUG(ep->dev, "ep->desc=%p, ep->num=%d\n",
++				ep->desc, ep->num);
++		return -ESHUTDOWN;
++	}
 +
-+	dev = ep->dev;
-+
++	if (dev->ep0state == EP0_DISCONNECT)
++		return -ESHUTDOWN;
 +	if (unlikely(!dev->driver || dev->gadget.speed == USB_SPEED_UNKNOWN))
 +		return -ESHUTDOWN;
 +
@@ -1188,7 +1192,6 @@ index 0000000..d2758f0
 +		VDEBUG(ep->dev, "%s queue_dma()\n", _ep->name);
 +	}
 +
-+	ep->responded = 1;
 +	if (likely(req != 0)) {
 +		list_add_tail(&req->queue, &ep->queue);
 +		VDEBUG(ep->dev, "list_add_tail() \n");
@@ -1517,7 +1520,6 @@ index 0000000..d2758f0
 +	DEBUG(ep->dev, "---> iusbc_fifo_flush() \n");
 +
 +	if (!_ep || (!ep->desc && ep->num > 1)){
-+		VDEBUG(ep->dev, "XXX: return from iusbc_fifo_flush()\n");
 +		return;
 +	}
 +
@@ -1694,6 +1696,7 @@ index 0000000..d2758f0
 +	unsigned long		flags;
 +	const char		*name;
 +	const char		*speed;
++	volatile u32 		dev_sts;
 +
 +	dev = dev_get_drvdata(_dev);
 +	next = buf;
@@ -1705,9 +1708,10 @@ index 0000000..d2758f0
 +	else
 +		name = "(none)";
 +
-+	if (dev->gadget.speed == USB_SPEED_HIGH)
++	dev_sts = readl(&dev->regs->dev_sts);
++	if ((dev->gadget.speed == USB_SPEED_HIGH) && (dev_sts & CONNECTED))
 +		speed = "high speed";
-+	else if (dev->gadget.speed == USB_SPEED_FULL)
++	else if ((dev->gadget.speed == USB_SPEED_FULL) && (dev_sts & CONNECTED))
 +		speed = "full speed";
 +	else 
 +		speed = "unknown speed";
@@ -2587,8 +2591,6 @@ index 0000000..d2758f0
 +			le16_to_cpu(ctrl.wValue), le16_to_cpu(ctrl.wIndex),
 +			le16_to_cpu(ctrl.wLength));
 +
-+		dev->ep[1].responded = 0;
-+
 +		/* WORKAROUND: for RNDIS */
 +		/* CDC: SEND_ENCAPSULATED_COMMAND */
 +		if ((ctrl.bRequestType == 0x21)
@@ -2983,6 +2985,7 @@ index 0000000..d2758f0
 +static void iusbc_do_tasklet(unsigned long arg)
 +{
 +	u32		val_32;
++	volatile u32 dev_sts;
 +	struct iusbc	*dev;
 +	dev = (struct iusbc *) arg;
 +	DEBUG(dev, "---> iusbc_do_tasklet() \n");
@@ -2998,17 +3001,24 @@ index 0000000..d2758f0
 +		handle_device_irqs(dev);
 +	}
 +
-+	/* ep0-in/out control requests and interrupt */
-+	if (dev->int_sts & (EP0_IN_INTR | EP0_OUT_INTR)) {
-+		DEBUG(dev, "iusbc_do_tasklet -> handle_ep0_irqs\n");
-+		handle_ep0_irqs(dev);
-+	}
-+
-+	/* data endpoints requests interrupt */
-+	if (dev->int_sts & (EP1_IN_INTR | EP1_OUT_INTR | EP2_IN_INTR)) {
-+		DEBUG(dev, "iusbc_do_tasklet -> handle_ep_irqs\n");
-+		handle_ep_irqs(dev);
-+	}
++	/* QQQ: disable Full speed mode for D1 hw issues. */ 
++	dev_sts = readl(&dev->regs->dev_sts);
++	if ((dev_sts & RATE) && (dev_sts & CONNECTED)) {
++		/* ep0-in/out control requests and interrupt */
++		if (dev->int_sts & (EP0_IN_INTR | EP0_OUT_INTR)) {
++			DEBUG(dev, "iusbc_do_tasklet -> handle_ep0_irqs\n");
++			handle_ep0_irqs(dev);
++		}
++		/* data endpoints requests interrupt */
++		if (dev->int_sts & (EP1_IN_INTR | EP1_OUT_INTR | EP2_IN_INTR)) {
++			DEBUG(dev, "iusbc_do_tasklet -> handle_ep_irqs\n");
++			handle_ep_irqs(dev);
++		}
++	} else if (dev_sts & CONNECTED) {
++		stop_activity(dev, dev->driver);
++		dev->ep0state = EP0_DISCONNECT;
++		/*iusbc_pullup(&dev->gadget, 0);*/
++	}	
 +
 +	/* enable irqs again */
 +	val_32 = 0;
@@ -3463,10 +3473,10 @@ index 0000000..d2758f0
 +
 diff --git a/drivers/usb/gadget/iusbc.h b/drivers/usb/gadget/iusbc.h
 new file mode 100644
-index 0000000..5b6cfb7
+index 0000000..9e0517b
 --- /dev/null
 +++ b/drivers/usb/gadget/iusbc.h
-@@ -0,0 +1,218 @@
+@@ -0,0 +1,213 @@
 +/*
 + * Intel Poulsbo USB Client Controller Driver
 + * Copyright (C) 2006-07, Intel Corporation.
@@ -3615,13 +3625,8 @@ index 0000000..5b6cfb7
 +	struct list_head			queue;
 +	const struct usb_endpoint_descriptor	*desc;
 +	unsigned				num : 8,
-+						fifo_size : 12,
-+						in_fifo_validate : 1,
-+						out_overflow : 1,
 +						stopped : 1,
 +						is_in : 1,
-+						is_iso : 1,
-+						responded : 1,
 +						dma_mode : 2,
 +						ep_type : 2;
 +};
@@ -3686,7 +3691,7 @@ index 0000000..5b6cfb7
 +};
 +
 diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
-index db1b2bf..5b95038 100644
+index db1b2bf..d6b7a83 100644
 --- a/drivers/usb/gadget/rndis.c
 +++ b/drivers/usb/gadget/rndis.c
 @@ -40,7 +40,7 @@
@@ -3716,7 +3721,23 @@ index db1b2bf..5b95038 100644
  MODULE_PARM_DESC (rndis_debug, "enable debugging");
  
  #else
-@@ -898,7 +898,7 @@ static int rndis_query_response (int configNr, rndis_query_msg_type *buf)
+@@ -586,12 +586,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_802_3_MAXIMUM_LIST_SIZE:
+ 		DBG("%s: OID_802_3_MAXIMUM_LIST_SIZE\n", __FUNCTION__);
+ 		/* Multicast base address only */
+-		*outbuf = __constant_cpu_to_le32 (1);
++		*outbuf = __constant_cpu_to_le32 (32);
+ 		retval = 0;
+ 		break;
+ 
+ 	case OID_802_3_MAC_OPTIONS:
+ 		DBG("%s: OID_802_3_MAC_OPTIONS\n", __FUNCTION__);
++		*outbuf = __constant_cpu_to_le32 (0);
++		retval = 0;
+ 		break;
+ 
+ 	/* ieee802.3 statistics OIDs (table 4-4) */
+@@ -898,7 +900,7 @@ static int rndis_query_response (int configNr, rndis_query_msg_type *buf)
  
  static int rndis_set_response (int configNr, rndis_set_msg_type *buf)
  {
