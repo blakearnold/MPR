@@ -499,6 +499,14 @@ static int rndis_bind(struct usbnet *dev, struct usb_interface *intf)
 	net->hard_header_len += sizeof (struct rndis_data_hdr);
 	dev->hard_mtu = net->mtu + net->hard_header_len;
 
+	dev->maxpacket = usb_maxpacket(dev->udev, dev->out, 1);
+	if (dev->maxpacket == 0) {
+		if (netif_msg_probe(dev))
+			dev_dbg(&intf->dev, "dev->maxpacket can't be 0\n");
+		retval = -EINVAL;
+		goto fail_and_release;
+	}
+
 	dev->rx_urb_size = dev->hard_mtu + (dev->maxpacket + 1);
 	dev->rx_urb_size &= ~(dev->maxpacket - 1);
 	u.init->max_transfer_size = cpu_to_le32(dev->rx_urb_size);
