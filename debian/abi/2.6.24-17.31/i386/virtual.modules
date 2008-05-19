@@ -233,6 +233,7 @@ ip_vs_sh
 ip_vs_wlc
 ip_vs_wrr
 ipx
+iscsi_tcp
 isofs
 isp116x-hcd
 it8712f_wdt
@@ -245,6 +246,7 @@ kahlua
 khazad
 libata
 libcrc32c
+libiscsi
 libphy
 libsas
 linear
