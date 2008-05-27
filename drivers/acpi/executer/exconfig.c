@@ -268,6 +268,8 @@ acpi_ex_load_op(union acpi_operand_object *obj_desc,
 	struct acpi_table_desc table_desc;
 	acpi_native_uint table_index;
 	acpi_status status;
+	u32 length;
+	void *maddr;
 
 	ACPI_FUNCTION_TRACE(ex_load_op);
 
@@ -299,9 +301,24 @@ acpi_ex_load_op(union acpi_operand_object *obj_desc,
 			}
 		}
 
+ 		length = obj_desc->region.length;
+ 		table_desc.pointer = ACPI_ALLOCATE(length);
+ 		if (!table_desc.pointer) {
+ 			return_ACPI_STATUS(AE_NO_MEMORY);
+ 		}
+
+ 		maddr = acpi_os_map_memory(obj_desc->region.address, length);
+ 		if (!maddr) {
+ 			ACPI_FREE(table_desc.pointer);
+ 			return_ACPI_STATUS(AE_NO_MEMORY);
+ 		}
+ 		ACPI_MEMCPY(table_desc.pointer, maddr, length);
+ 		acpi_os_unmap_memory(maddr, length);
+
+ 		/* Keep the address for the pretty table info print */
 		table_desc.address = obj_desc->region.address;
 		table_desc.length = obj_desc->region.length;
-		table_desc.flags = ACPI_TABLE_ORIGIN_MAPPED;
+		table_desc.flags = ACPI_TABLE_ORIGIN_ALLOCATED;
 		break;
 
 	case ACPI_TYPE_BUFFER:	/* Buffer or resolved region_field */
