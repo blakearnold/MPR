@@ -1,0 +1,32 @@
+X-Git-Url: http://git.openvz.org/?p=linux-2.6.24-openvz;a=blobdiff_plain;f=mm%2Fmmap.c;fp=mm%2Fmmap.c;h=89731b3901454e0abfb9544d7ee0be8b13e310aa;hp=15678aa6ec73a4389d1c523fe542144cd3050836;hb=8d7a5ca70e9913a71ec0ac9dccdb6ce85c23ac4b;hpb=148ba276d7db5fd498d17e2769291e7f17446233
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 15678aa..89731b3 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -910,7 +910,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
+ 			prot |= PROT_EXEC;
+ 
+ 	if (!len)
++		return -EINVAL;
+-		return addr;
+ 
+ 	if (!(flags & MAP_FIXED))
+ 		addr = round_hint_to_min(addr);
+
+X-Git-Url: http://git.openvz.org/?p=linux-2.6.24-openvz;a=blobdiff_plain;f=arch%2Fia64%2Fkernel%2Fsys_ia64.c;fp=arch%2Fia64%2Fkernel%2Fsys_ia64.c;h=e93e7d35dbade3cd9478d187e452a50125e6cb7e;hp=1eda194b95595110497adb009e457f8fe5c9d116;hb=8ddefba8a401d78484899d05c0f5d3b45a4e8e0b;hpb=d5642eabbc0edd21ad78f813ece35cc03761cb84
+
+diff --git a/arch/ia64/kernel/sys_ia64.c b/arch/ia64/kernel/sys_ia64.c
+index 1eda194..e93e7d3 100644
+--- a/arch/ia64/kernel/sys_ia64.c
++++ b/arch/ia64/kernel/sys_ia64.c
+@@ -204,7 +204,7 @@ do_mmap2 (unsigned long addr, unsigned long len, int prot, int flags, int fd, un
+ 
+ 	/* Careful about overflows.. */
+ 	len = PAGE_ALIGN(len);
++	if (!len || len > TASK_SIZE) {
+-	if (len > TASK_SIZE) {
+ 		addr = -EINVAL;
+ 		goto out;
+ 	}
+
