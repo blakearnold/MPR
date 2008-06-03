@@ -1,0 +1,47 @@
+commit 24e7cd454bb9f95fbda41bb4e8f9537747803859
+Author: Alexey Dobriyan <adobriyan@openvz.org>
+Date:   Wed May 28 19:51:14 2008 +0400
+
+    Remove spurious warnings in kernel/time.c
+    
+    E.g. code in clock_t_to_jiffies() divides ~0UL thus assuming that all
+    "unsigned long" range is valid. Ditto for other functions. Alexey said
+    these warnings are old debugging stuff.
+    
+    http://bugzilla.openvz.org/show_bug.cgi?id=898
+
+diff --git a/kernel/time.c b/kernel/time.c
+index cb4894a..09d3c45 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -577,14 +577,12 @@ EXPORT_SYMBOL(jiffies_to_clock_t);
+ unsigned long clock_t_to_jiffies(unsigned long x)
+ {
+ #if (HZ % USER_HZ)==0
+-	WARN_ON((long)x < 0);
+ 	if (x >= ~0UL / (HZ / USER_HZ))
+ 		return ~0UL;
+ 	return x * (HZ / USER_HZ);
+ #else
+ 	u64 jif;
+ 
+-	WARN_ON((long)x < 0);
+ 	/* Don't worry about loss of precision here .. */
+ 	if (x >= ~0UL / HZ * USER_HZ)
+ 		return ~0UL;
+@@ -599,7 +597,6 @@ EXPORT_SYMBOL(clock_t_to_jiffies);
+ 
+ u64 jiffies_64_to_clock_t(u64 x)
+ {
+-	WARN_ON((s64)x < 0);
+ #if (TICK_NSEC % (NSEC_PER_SEC / USER_HZ)) == 0
+ 	do_div(x, HZ / USER_HZ);
+ #else
+@@ -618,7 +615,6 @@ EXPORT_SYMBOL(jiffies_64_to_clock_t);
+ 
+ u64 nsec_to_clock_t(u64 x)
+ {
+-	WARN_ON((s64)x < 0);
+ #if (NSEC_PER_SEC % USER_HZ) == 0
+ 	do_div(x, (NSEC_PER_SEC / USER_HZ));
+ #elif (USER_HZ % 512) == 0
