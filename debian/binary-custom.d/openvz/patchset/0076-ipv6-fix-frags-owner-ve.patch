@@ -1,0 +1,49 @@
+commit a628e361137fa399f047747e1df2ed914655e560
+Author: Alexey Dobriyan <adobriyan@openvz.org>
+Date:   Thu May 29 15:18:19 2008 +0400
+
+    IPv6: get frag's owner VE from inet_frag_queue
+    
+    IPv6 specific frag queue doesn't need owner_ve, because it's already in core
+    data structure (struct inet_frag_queue).
+    
+    And it's in fact NULL, which is the cause of
+    http://bugzilla.openvz.org/show_bug.cgi?id=899
+
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index 846c622..2cc9769 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -81,7 +81,6 @@ struct frag_queue
+ 	int			iif;
+ 	unsigned int		csum;
+ 	__u16			nhoffset;
+-	struct ve_struct	*owner_ve;
+ };
+ 
+ struct inet_frags_ctl ip6_frags_ctl __read_mostly = {
+@@ -154,7 +153,7 @@ int ip6_frag_match(struct inet_frag_queue *q, void *a)
+ 	return (fq->id == arg->id &&
+ 			ipv6_addr_equal(&fq->saddr, arg->src) &&
+ 			ipv6_addr_equal(&fq->daddr, arg->dst) &&
+-			fq->owner_ve == get_exec_env());
++			q->owner_ve == get_exec_env());
+ }
+ EXPORT_SYMBOL(ip6_frag_match);
+ 
+@@ -204,12 +203,12 @@ static void ip6_evictor(struct inet6_dev *idev)
+ 
+ static void ip6_frag_expire(unsigned long data)
+ {
+-	struct frag_queue *fq;
++	struct inet_frag_queue *q = (struct inet_frag_queue *)data;
++	struct frag_queue *fq = container_of(q, struct frag_queue, q);
+ 	struct net_device *dev = NULL;
+ 	struct ve_struct *old_ve;
+ 
+-	fq = container_of((struct inet_frag_queue *)data, struct frag_queue, q);
+-	old_ve = set_exec_env(fq->owner_ve);
++	old_ve = set_exec_env(q->owner_ve);
+ 
+ 	spin_lock(&fq->q.lock);
+ 
