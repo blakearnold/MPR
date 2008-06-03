@@ -1,0 +1,82 @@
+commit 5f318dd06be87f85073fb9d8a4c73c5554f08c31
+Author: Alexey Dobriyan <adobriyan@openvz.org>
+Date:   Mon May 26 14:36:30 2008 +0400
+
+    UBC: drop cpuset lock from OOM handling
+    
+    cpuset_lock dances around OOM killing are gone in main code, so
+    no need to account for them.
+    
+    Mainline commit 3ff566963ce804809af9e32331b287eedeeff501
+    Bug 112959
+    
+    =====================================
+    [ BUG: bad unlock balance detected! ]
+    -------------------------------------
+    tstspoof/29391 is trying to release lock (callback_mutex) at: [<c04488d2>] ub_oom_lock+0x9a/0xd6
+    but there are no more locks to release!
+    other info that might help us debug this:
+    1 lock held by tstspoof/29391:
+     #0:  (&mm->mmap_sem){----}, at: [<c060b06d>] do_page_fault+0x1d9/0x5fb
+    stack backtrace:
+    Pid: 29391, comm: tstspoof Not tainted 2.6.24-openvz #4
+     [<c044dc24>] print_unlock_inbalance_bug+0xe7/0xf3
+     [<c04488d2>] ub_oom_lock+0x9a/0xd6
+     [<c0440265>] ktime_get_ts+0x16/0x44
+     [<c0444b22>] tick_program_event+0x33/0x52
+     [<c044e984>] mark_held_locks+0x39/0x53
+     [<c040516b>] restore_nocheck+0x12/0x15
+     [<c044eb6b>] trace_hardirqs_on+0x122/0x145
+     [<c04488d2>] ub_oom_lock+0x9a/0xd6
+     [<c044fdfc>] lock_release+0x148/0x16e
+     [<c0608291>] __mutex_unlock_slowpath+0xd3/0x140
+     [<c04488d2>] ub_oom_lock+0x9a/0xd6
+     [<c043d365>] autoremove_wake_function+0x0/0x35
+     [<c046a876>] out_of_memory+0x5d/0x177
+     [<c046c823>] __alloc_pages+0xc3/0x38b
+     [<c04761ff>] handle_mm_fault+0x226/0x87e
+     [<c060b06d>] do_page_fault+0x1d9/0x5fb
+     [<c060b115>] do_page_fault+0x281/0x5fb
+     [<c040516b>] restore_nocheck+0x12/0x15
+     [<c060ae94>] do_page_fault+0x0/0x5fb
+     [<c0609a92>] error_code+0x72/0x78
+
+diff --git a/kernel/bc/oom_kill.c b/kernel/bc/oom_kill.c
+index 6787750..f8a75c7 100644
+--- a/kernel/bc/oom_kill.c
++++ b/kernel/bc/oom_kill.c
+@@ -37,7 +37,6 @@ static void ub_clear_oom(void)
+ 	rcu_read_unlock();
+ }
+ 
+-/* Called with cpuset_lock held */
+ int ub_oom_lock(void)
+ {
+ 	int timeout;
+@@ -63,11 +62,9 @@ int ub_oom_lock(void)
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		add_wait_queue(&oom_wq, &oom_w);
+ 		spin_unlock(&oom_lock);
+-		cpuset_unlock();
+ 
+ 		timeout = schedule_timeout(timeout);
+ 
+-		cpuset_lock();
+ 		spin_lock(&oom_lock);
+ 		remove_wait_queue(&oom_wq, &oom_w);
+ 	}
+@@ -176,7 +173,6 @@ void ub_out_of_memory(struct user_beancounter *scope)
+ 	struct user_beancounter *ub;
+ 	struct task_struct *p;
+ 
+-	cpuset_lock();
+ 	spin_lock(&oom_lock);
+ 	ub_clear_oom();
+ 	ub = get_beancounter(scope);
+@@ -195,6 +191,5 @@ retry:
+ unlock:
+ 	read_unlock(&tasklist_lock);
+ 	spin_unlock(&oom_lock);
+-	cpuset_unlock();
+ }
+ EXPORT_SYMBOL(ub_out_of_memory);
