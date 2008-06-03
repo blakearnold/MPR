@@ -1,0 +1,23 @@
+commit 72746db0ffbf3715516991a14903b6d30d8d96ed
+Author: Alexey Dobriyan <adobriyan@openvz.org>
+Date:   Mon Jun 2 17:53:28 2008 +0400
+
+    proc: fix proc_cwd_link
+    
+    If d_root_check() in there fails, we shouldn't pretend everything is OK
+    and leave mnt unitialized or NULL (in case /proc/*/cwd).
+    
+    http://bugzilla.openvz.org/show_bug.cgi?id=900
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index da0be8b..8579ee6 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -171,7 +171,6 @@ static int proc_cwd_link(struct inode *inode, struct dentry **dentry, struct vfs
+ 			*dentry = dget(fs->pwd);
+ 		}
+ 		read_unlock(&fs->lock);
+-		result = 0;
+ 		put_fs_struct(fs);
+ 	}
+ 	return result;
