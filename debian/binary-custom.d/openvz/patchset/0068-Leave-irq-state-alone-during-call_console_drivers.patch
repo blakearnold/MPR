@@ -1,0 +1,31 @@
+From 551b0650d9b192116226b8f55bdeda4953a062d6 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Tue, 22 Apr 2008 15:20:19 +0400
+Subject: [PATCH 67/67] Leave irq state alone during call_console_drivers()
+
+Mainline does so at least.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=812
+---
+ kernel/printk.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index bd62078..0c91174 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1105,9 +1105,9 @@ static unsigned long do_release_console_sem(unsigned long *flags)
+ 		_con_start = con_start;
+ 		_log_end = log_end;
+ 		con_start = log_end;		/* Flush */
+-		spin_unlock_irqrestore(&logbuf_lock, *flags);
++		spin_unlock(&logbuf_lock);
+ 		call_console_drivers(_con_start, _log_end);
+-		spin_lock_irqsave(&logbuf_lock, *flags);
++		spin_lock(&logbuf_lock);
+ 	}
+ out:
+ 	return wake_klogd;
+-- 
+1.5.4.3
+

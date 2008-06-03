@@ -1,0 +1,70 @@
+From 2670e872531c35866f12598970ee812456c0e9ee Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 1 Apr 2008 18:28:28 +0400
+Subject: [PATCH 58/67] Add per-VE /proc/net/raw6
+
+Show only connections of current VE (already implemented)
+
+Required for netstat
+http://bugzilla.openvz.org/show_bug.cgi?id=860
+
+and fix small bug in v4 raw socket proc -- call unregister_pernet_subsys
+instead of remove_proc_entry().
+---
+ net/ipv4/raw.c |    2 +-
+ net/ipv6/raw.c |   21 ++++++++++++++++++---
+ 2 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index 8e0df71..abf5873 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -953,6 +953,6 @@ int __init raw_proc_init(void)
+ 
+ void __init raw_proc_exit(void)
+ {
+-	proc_net_remove(&init_net, "raw");
++	unregister_pernet_subsys(&raw_net_ops);
+ }
+ #endif /* CONFIG_PROC_FS */
+diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
+index f6dcbe4..1cc3e0f 100644
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -1314,15 +1314,30 @@ static const struct file_operations raw6_seq_fops = {
+ 	.release =	seq_release_private,
+ };
+ 
+-int __init raw6_proc_init(void)
++static int raw6_net_init(struct net *net)
+ {
+-	if (!proc_net_fops_create(&init_net, "raw6", S_IRUGO, &raw6_seq_fops))
++	if (!proc_net_fops_create(net, "raw6", S_IRUGO, &raw6_seq_fops))
+ 		return -ENOMEM;
+ 	return 0;
+ }
+ 
++static void raw6_net_exit(struct net *net)
++{
++	proc_net_remove(net, "raw6");
++}
++
++static struct pernet_operations raw6_net_ops = {
++	.init = raw6_net_init,
++	.exit = raw6_net_exit,
++};
++
++int __init raw6_proc_init(void)
++{
++	return register_pernet_subsys(&raw6_net_ops);
++}
++
+ void raw6_proc_exit(void)
+ {
+-	proc_net_remove(&init_net, "raw6");
++	unregister_pernet_subsys(&raw6_net_ops);
+ }
+ #endif	/* CONFIG_PROC_FS */
+-- 
+1.5.4.3
+

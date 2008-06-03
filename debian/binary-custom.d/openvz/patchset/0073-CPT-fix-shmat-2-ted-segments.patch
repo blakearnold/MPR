@@ -1,0 +1,463 @@
+From f28668f8d342c3797cb5cc468675e5ed1012aac3 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Sun, 4 May 2008 17:45:04 +0400
+Subject: [PATCH 72/72] CPT: fix shmat(2)'ted segments
+
+Commit bc56bba8f31bd99f350a5ebfd43d50f411b620c7 aka
+"[PATCH] shm: make sysv ipc shared memory use stacked files"...
+
+It changed number and relationship of "struct file"s associated
+with SysV shmem:
+
+Before: one struct file for each shmem segment
+ After: one struct file for each shmem segment
+        + one struct file (different) for each shmat(2) call.
+
+Obviously checkpointing broke horribly. There aren't any files of second sort
+in image and they have to be recreated by hand.
+
+What code will do:
+a) if CPT_OBJ_SYSV_SHM object restored first -- fine, restore as previous kernels did
+b) if CPT_VMA_TYPE_SHM restored first -- restore corresponding segment, then do more
+	or less similar to what do_shmat() does.
+c) if shmem segment already was restored, correct refcounting and just do shmat() part
+
+http://bugzilla.openvz.org/show_bug.cgi?id=850
+---
+ include/linux/ipc.h      |   20 +++++++++++
+ include/linux/shm.h      |   25 +++++++++++++
+ ipc/shm.c                |   28 +--------------
+ ipc/util.c               |    3 +-
+ ipc/util.h               |   19 ----------
+ kernel/cpt/cpt_files.c   |    7 ++++
+ kernel/cpt/cpt_files.h   |    5 +--
+ kernel/cpt/cpt_mm.c      |    8 +++--
+ kernel/cpt/rst_files.c   |    2 +-
+ kernel/cpt/rst_mm.c      |    2 +-
+ kernel/cpt/rst_sysvipc.c |   86 ++++++++++++++++++++++++++++++++++++++++++++-
+ 11 files changed, 149 insertions(+), 56 deletions(-)
+
+diff --git a/include/linux/ipc.h b/include/linux/ipc.h
+index 408696e..b7ac734 100644
+--- a/include/linux/ipc.h
++++ b/include/linux/ipc.h
+@@ -80,8 +80,21 @@ struct ipc_kludge {
+ #ifdef __KERNEL__
+ 
+ #include <linux/kref.h>
++#include <linux/idr.h>
++#include <linux/rcupdate.h>
+ #include <linux/spinlock.h>
+ 
++#define IPC_SEM_IDS	0
++#define IPC_MSG_IDS	1
++#define IPC_SHM_IDS	2
++
++struct ipc_ids {
++	int in_use;
++	unsigned short seq;
++	unsigned short seq_max;
++	struct rw_semaphore rw_mutex;
++	struct idr ipcs_idr;
++};
+ #define IPCMNI 32768  /* <= MAX_INT limit for ipc arrays (including sysctl changes) */
+ 
+ /* used by in-kernel data structures */
+@@ -100,6 +113,13 @@ struct kern_ipc_perm
+ 	void		*security;
+ };
+ 
++struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
++static inline void ipc_unlock(struct kern_ipc_perm *perm)
++{
++	spin_unlock(&perm->lock);
++	rcu_read_unlock();
++}
++
+ struct ipc_ids;
+ struct ipc_namespace {
+ 	struct kref	kref;
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+index 19fd699..b2c48c4 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -75,6 +75,15 @@ struct shm_info {
+ };
+ 
+ #ifdef __KERNEL__
++struct shm_file_data {
++	int id;
++	struct ipc_namespace *ns;
++	struct file *file;
++	const struct vm_operations_struct *vm_ops;
++};
++#define shm_file_data(file) (*((struct shm_file_data **)&(file)->private_data))
++#define shm_ids(ns)	(*((ns)->ids[IPC_SHM_IDS]))
++
+ struct shmid_kernel /* private to the kernel */
+ {	
+ 	struct kern_ipc_perm	shm_perm;
+@@ -89,6 +98,20 @@ struct shmid_kernel /* private to the kernel */
+ 	struct user_struct	*mlock_user;
+ };
+ 
++/*
++ * shm_lock_(check_) routines are called in the paths where the rw_mutex
++ * is not held.
++ */
++static inline struct shmid_kernel *shm_lock(struct ipc_namespace *ns, int id)
++{
++	struct kern_ipc_perm *ipcp = ipc_lock(&shm_ids(ns), id);
++
++	return container_of(ipcp, struct shmid_kernel, shm_perm);
++}
++
++#define shm_unlock(shp)			\
++	ipc_unlock(&(shp)->shm_perm)
++
+ /* shm_mode upper byte flags */
+ #define	SHM_DEST	01000	/* segment will be destroyed on last detach */
+ #define SHM_LOCKED      02000   /* segment will not be swapped */
+@@ -112,6 +135,8 @@ static inline int is_file_shm_hugepages(struct file *file)
+ 
+ int sysvipc_walk_shm(int (*func)(struct shmid_kernel*, void *), void *arg);
+ struct file * sysvipc_setup_shm(key_t key, int shmid, size_t size, int shmflg);
++extern const struct file_operations shmem_file_operations;
++extern const struct file_operations shm_file_operations;
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 14f0cc2..03cf380 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -47,24 +47,10 @@
+ 
+ #include "util.h"
+ 
+-struct shm_file_data {
+-	int id;
+-	struct ipc_namespace *ns;
+-	struct file *file;
+-	const struct vm_operations_struct *vm_ops;
+-};
+-
+-#define shm_file_data(file) (*((struct shm_file_data **)&(file)->private_data))
+-
+-static const struct file_operations shm_file_operations;
+ static struct vm_operations_struct shm_vm_ops;
+ 
+ static struct ipc_ids init_shm_ids;
+ 
+-#define shm_ids(ns)	(*((ns)->ids[IPC_SHM_IDS]))
+-
+-#define shm_unlock(shp)			\
+-	ipc_unlock(&(shp)->shm_perm)
+ #define shm_buildid(id, seq)	ipc_buildid(id, seq)
+ 
+ static int newseg(struct ipc_namespace *, struct ipc_params *);
+@@ -165,17 +151,6 @@ static inline struct shmid_kernel *shm_lock_check_down(
+ 	return container_of(ipcp, struct shmid_kernel, shm_perm);
+ }
+ 
+-/*
+- * shm_lock_(check_) routines are called in the paths where the rw_mutex
+- * is not held.
+- */
+-static inline struct shmid_kernel *shm_lock(struct ipc_namespace *ns, int id)
+-{
+-	struct kern_ipc_perm *ipcp = ipc_lock(&shm_ids(ns), id);
+-
+-	return container_of(ipcp, struct shmid_kernel, shm_perm);
+-}
+-
+ static inline struct shmid_kernel *shm_lock_check(struct ipc_namespace *ns,
+ 						int id)
+ {
+@@ -402,12 +377,13 @@ int is_file_shm_hugepages(struct file *file)
+ 	return ret;
+ }
+ 
+-static const struct file_operations shm_file_operations = {
++const struct file_operations shm_file_operations = {
+ 	.mmap		= shm_mmap,
+ 	.fsync		= shm_fsync,
+ 	.release	= shm_release,
+ 	.get_unmapped_area	= shm_get_unmapped_area,
+ };
++EXPORT_SYMBOL_GPL(shm_file_operations);
+ 
+ static struct vm_operations_struct shm_vm_ops = {
+ 	.open	= shm_open,	/* callback for a new vm-area open */
+diff --git a/ipc/util.c b/ipc/util.c
+index 50d9838..8e0a7db 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -278,7 +278,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size, int reqi
+ 		id = reqid % SEQ_MULTIPLIER;
+ 		err = idr_get_new_above(&ids->ipcs_idr, new, id, &id);
+ 		if (err || id != (reqid % SEQ_MULTIPLIER))
+-			return -1;
++			return -EEXIST;
+ 		goto found;
+ 	}
+ 
+@@ -749,6 +749,7 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *ids, int id)
+ 
+ 	return out;
+ }
++EXPORT_SYMBOL_GPL(ipc_lock);
+ 
+ /**
+  * ipc_lock_down - Lock an ipc structure with rw_sem held
+diff --git a/ipc/util.h b/ipc/util.h
+index 711740c..7ddaf0f 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -28,14 +28,6 @@ void sem_exit_ns(struct ipc_namespace *ns);
+ void msg_exit_ns(struct ipc_namespace *ns);
+ void shm_exit_ns(struct ipc_namespace *ns);
+ 
+-struct ipc_ids {
+-	int in_use;
+-	unsigned short seq;
+-	unsigned short seq_max;
+-	struct rw_semaphore rw_mutex;
+-	struct idr ipcs_idr;
+-};
+-
+ /*
+  * Structure that holds the parameters needed by the ipc operations
+  * (see after)
+@@ -76,10 +68,6 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
+ #define ipc_init_proc_interface(path, header, ids, show) do {} while (0)
+ #endif
+ 
+-#define IPC_SEM_IDS	0
+-#define IPC_MSG_IDS	1
+-#define IPC_SHM_IDS	2
+-
+ #define ipcid_to_idx(id) ((id) % SEQ_MULTIPLIER)
+ 
+ /* must be called with ids->rw_mutex acquired for writing */
+@@ -115,7 +103,6 @@ void ipc_rcu_putref(void *ptr);
+  * ipc_lock: called without that lock held
+  */
+ struct kern_ipc_perm *ipc_lock_down(struct ipc_ids *, int);
+-struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
+ 
+ void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
+ void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
+@@ -156,12 +143,6 @@ static inline void ipc_lock_by_ptr(struct kern_ipc_perm *perm)
+ 	spin_lock(&perm->lock);
+ }
+ 
+-static inline void ipc_unlock(struct kern_ipc_perm *perm)
+-{
+-	spin_unlock(&perm->lock);
+-	rcu_read_unlock();
+-}
+-
+ static inline struct kern_ipc_perm *ipc_lock_check_down(struct ipc_ids *ids,
+ 						int id)
+ {
+diff --git a/kernel/cpt/cpt_files.c b/kernel/cpt/cpt_files.c
+index 6b3885e..fbba10b 100644
+--- a/kernel/cpt/cpt_files.c
++++ b/kernel/cpt/cpt_files.c
+@@ -609,6 +609,13 @@ static int dump_content_regular(struct file *file, struct cpt_context *ctx)
+ 		return -EINVAL;
+ 
+ 	do_read = file->f_op->read;
++	if (file->f_op == &shm_file_operations) {
++		struct shm_file_data *sfd = file->private_data;
++
++		cpt_dump_content_sysvshm(sfd->file, ctx);
++
++		return 0;
++	}
+ 	if (file->f_op == &shmem_file_operations) {
+ 		do_read = file->f_dentry->d_inode->i_fop->read;
+ 		cpt_dump_content_sysvshm(file, ctx);
+diff --git a/kernel/cpt/cpt_files.h b/kernel/cpt/cpt_files.h
+index b08afea..7770ab2 100644
+--- a/kernel/cpt/cpt_files.h
++++ b/kernel/cpt/cpt_files.h
+@@ -9,7 +9,8 @@ int cpt_dump_fs_struct(struct cpt_context *ctx);
+ int cpt_dump_content_sysvshm(struct file *file, struct cpt_context *ctx);
+ int cpt_dump_content_tty(struct file *file, struct cpt_context *ctx);
+ int cpt_dump_tty(cpt_object_t *, struct cpt_context *ctx);
+-struct file * rst_sysv_shm(loff_t pos, struct cpt_context *ctx);
++struct file * rst_sysv_shm_vma(struct cpt_vma_image *vmai, struct cpt_context *ctx);
++struct file * rst_sysv_shm_itself(loff_t pos, struct cpt_context *ctx);
+ struct file * rst_open_tty(struct cpt_file_image *fi, struct cpt_inode_image *ii, unsigned flags, struct cpt_context *ctx);
+ __u32 cpt_tty_fasync(struct file *file, struct cpt_context *ctx);
+ 
+@@ -68,5 +69,3 @@ int cpt_verify_overmount(char *path, struct dentry *d, struct vfsmount *mnt,
+ 	 strcmp(mnt->mnt_sb->s_type->name, "devpts") != 0 && \
+ 	 strcmp(mnt->mnt_sb->s_type->name, "proc") != 0 && \
+ 	 strcmp(mnt->mnt_sb->s_type->name, "sysfs") != 0)
+-
+-extern const struct file_operations shmem_file_operations;
+diff --git a/kernel/cpt/cpt_mm.c b/kernel/cpt/cpt_mm.c
+index 3c462b8..08aefe2 100644
+--- a/kernel/cpt/cpt_mm.c
++++ b/kernel/cpt/cpt_mm.c
+@@ -653,10 +653,12 @@ static int dump_one_vma(cpt_object_t *mmobj,
+ 		cpt_object_t *obj = lookup_cpt_object(CPT_OBJ_FILE, vma->vm_file, ctx);
+ 		if (obj == NULL) BUG();
+ 		filp = obj->o_obj;
+-		if (filp->f_op &&
+-		    filp->f_op->read == NULL &&
+-		    filp->f_dentry->d_inode->i_sb->s_magic == FSMAGIC_TMPFS)
++		if (filp->f_op == &shm_file_operations) {
++			struct shm_file_data *sfd = filp->private_data;
++
+ 			v->cpt_type = CPT_VMA_TYPE_SHM;
++			obj = lookup_cpt_object(CPT_OBJ_FILE, sfd->file, ctx);
++		}
+ 		v->cpt_file = obj->o_pos;
+ 	}
+ 
+diff --git a/kernel/cpt/rst_files.c b/kernel/cpt/rst_files.c
+index 4b4079c..2b6b767 100644
+--- a/kernel/cpt/rst_files.c
++++ b/kernel/cpt/rst_files.c
+@@ -1640,7 +1640,7 @@ int rst_stray_files(struct cpt_context *ctx)
+ 
+ 			dprintk_ctx("stray file %Ld\n", sec);
+ 
+-			file = rst_sysv_shm(sec, ctx);
++			file = rst_sysv_shm_itself(sec, ctx);
+ 
+ 			if (IS_ERR(file)) {
+ 				eprintk_ctx("rst_stray_files: %ld\n", PTR_ERR(file));
+diff --git a/kernel/cpt/rst_mm.c b/kernel/cpt/rst_mm.c
+index 1f1e472..9b9808d 100644
+--- a/kernel/cpt/rst_mm.c
++++ b/kernel/cpt/rst_mm.c
+@@ -511,7 +511,7 @@ static int do_rst_vma(struct cpt_vma_image *vmai, loff_t vmapos, loff_t mmpos, s
+ 				return PTR_ERR(file);
+ 			}
+ 		} else if (vmai->cpt_type == CPT_VMA_TYPE_SHM) {
+-			file = rst_sysv_shm(vmai->cpt_file, ctx);
++			file = rst_sysv_shm_vma(vmai, ctx);
+ 			if (IS_ERR(file))
+ 				return PTR_ERR(file);
+ 		}
+diff --git a/kernel/cpt/rst_sysvipc.c b/kernel/cpt/rst_sysvipc.c
+index f3c9afe..8803de5 100644
+--- a/kernel/cpt/rst_sysvipc.c
++++ b/kernel/cpt/rst_sysvipc.c
+@@ -131,7 +131,7 @@ static int fixup_shm_data(struct file *file, loff_t pos, loff_t end,
+ 	return 0;
+ }
+ 
+-struct file * rst_sysv_shm(loff_t pos, struct cpt_context *ctx)
++struct file * rst_sysv_shm_itself(loff_t pos, struct cpt_context *ctx)
+ {
+ 	struct file *file;
+ 	int err;
+@@ -156,16 +156,98 @@ struct file * rst_sysv_shm(loff_t pos, struct cpt_context *ctx)
+ 		goto err_out;
+ 	dpos += u.shmi.cpt_next;
+ 
+-	file = sysvipc_setup_shm(u.shmi.cpt_key, u.shmi.cpt_id, 
++	file = sysvipc_setup_shm(u.shmi.cpt_key, u.shmi.cpt_id,
+ 				 u.shmi.cpt_segsz, u.shmi.cpt_mode);
+ 	if (!IS_ERR(file)) {
+ 		err = fixup_shm(file, &u.shmi);
+ 		if (err != -EEXIST && dpos < epos)
+ 			err = fixup_shm_data(file, dpos, epos, ctx);
++	} else if (IS_ERR(file) && PTR_ERR(file) == -EEXIST) {
++		struct ipc_namespace *ipc_ns = current->nsproxy->ipc_ns;
++		struct shmid_kernel *shp;
++
++		shp = shm_lock(ipc_ns, u.shmi.cpt_id);
++		BUG_ON(IS_ERR(shp));
++		get_file(shp->shm_file);
++		file = shp->shm_file;
++		shm_unlock(shp);
+ 	}
++	return file;
++
++err_out:
++	return ERR_PTR(err);
++}
++
++struct file * rst_sysv_shm_vma(struct cpt_vma_image *vmai, struct cpt_context *ctx)
++{
++	struct ipc_namespace *ipc_ns = current->nsproxy->ipc_ns;
++	struct file *file;
++	union {
++		struct cpt_file_image		fi;
++		struct cpt_inode_image		ii;
++		struct cpt_sysvshm_image	shmi;
++	} u;
++	struct shmid_kernel *shp;
++	struct shm_file_data *sfd;
++	struct path path;
++	mode_t f_mode;
++	loff_t pos;
++	int err;
++
++	pos = vmai->cpt_file;
++	file = rst_sysv_shm_itself(pos, ctx);
++	if (IS_ERR(file) && PTR_ERR(file) != -EEXIST)
++		return file;
++	fput(file);
++
++	err = rst_get_object(CPT_OBJ_FILE, pos, &u.fi, ctx);
++	if (err < 0)
++		goto err_out;
++	pos = u.fi.cpt_inode;
++	err = rst_get_object(CPT_OBJ_INODE, pos, &u.ii, ctx);
++	if (err < 0)
++		goto err_out;
++	err = rst_get_object(CPT_OBJ_SYSV_SHM, pos + u.ii.cpt_hdrlen, &u.shmi, ctx);
++	if (err < 0)
++		goto err_out;
++
++	shp = shm_lock(ipc_ns, u.shmi.cpt_id);
++	BUG_ON(IS_ERR(shp));
++	path.dentry = dget(shp->shm_file->f_path.dentry);
++	path.mnt    = shp->shm_file->f_path.mnt;
++	shm_unlock(shp);
++
++	err = -ENOMEM;
++	sfd = kzalloc(sizeof(*sfd), GFP_KERNEL);
++	if (!sfd)
++		goto out_put_dentry;
++
++	f_mode = 0;
++	if (vmai->cpt_flags & VM_READ)
++		f_mode |= FMODE_READ;
++	if (vmai->cpt_flags & VM_WRITE)
++		f_mode |= FMODE_WRITE;
++	if (vmai->cpt_flags & VM_EXEC)
++		f_mode |= FMODE_EXEC;
++
++	err = -ENOMEM;
++	file = alloc_file(path.mnt, path.dentry, f_mode, &shm_file_operations);
++	if (!file)
++		goto out_free;
++
++	file->private_data = sfd;
++	file->f_mapping = shp->shm_file->f_mapping;
++	sfd->id = shp->shm_perm.id;
++	sfd->ns = get_ipc_ns(ipc_ns);
++	sfd->file = shp->shm_file;
++	sfd->vm_ops = NULL;
+ 
+ 	return file;
+ 
++out_free:
++	kfree(sfd);
++out_put_dentry:
++	dput(path.dentry);
+ err_out:
+ 	return ERR_PTR(err);
+ }
+-- 
+1.5.4.3
+

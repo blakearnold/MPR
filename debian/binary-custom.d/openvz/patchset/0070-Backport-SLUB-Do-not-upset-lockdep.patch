@@ -1,0 +1,74 @@
+From 6b35cc2ae08825f32c9e5a763c14aa89905d2444 Mon Sep 17 00:00:00 2001
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri, 25 Apr 2008 13:11:31 +0400
+Subject: [PATCH 69/72] Backport "SLUB: Do not upset lockdep"
+
+http://bugzilla.openvz.org/show_bug.cgi?id=873
+
+commit ba84c73c7ae21fc891a3c2576fa3be42752fce53
+Author: root <root@programming.kicks-ass.net>
+Date:   Mon Jan 7 23:20:28 2008 -0800
+
+    SLUB: Do not upset lockdep
+
+    inconsistent {softirq-on-W} -> {in-softirq-W} usage.
+    swapper/0 [HC0[0]:SC1[1]:HE0:SE0] takes:
+     (&n->list_lock){-+..}, at: [<ffffffff802935c1>] add_partial+0x31/0xa0
+    {softirq-on-W} state was registered at:
+      [<ffffffff80259fb8>] __lock_acquire+0x3e8/0x1140
+      [<ffffffff80259838>] debug_check_no_locks_freed+0x188/0x1a0
+      [<ffffffff8025ad65>] lock_acquire+0x55/0x70
+      [<ffffffff802935c1>] add_partial+0x31/0xa0
+      [<ffffffff805c76de>] _spin_lock+0x1e/0x30
+      [<ffffffff802935c1>] add_partial+0x31/0xa0
+      [<ffffffff80296f9c>] kmem_cache_open+0x1cc/0x330
+      [<ffffffff805c7984>] _spin_unlock_irq+0x24/0x30
+      [<ffffffff802974f4>] create_kmalloc_cache+0x64/0xf0
+      [<ffffffff80295640>] init_alloc_cpu_cpu+0x70/0x90
+      [<ffffffff8080ada5>] kmem_cache_init+0x65/0x1d0
+      [<ffffffff807f1b4e>] start_kernel+0x23e/0x350
+      [<ffffffff807f112d>] _sinittext+0x12d/0x140
+      [<ffffffffffffffff>] 0xffffffffffffffff
+
+    This change isn't really necessary for correctness, but it prevents lockdep
+    from getting upset and then disabling itself.
+
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: Christoph Lameter <clameter@sgi.com>
+    Cc: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Christoph Lameter <clameter@sgi.com>
+---
+ mm/slub.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index ad0717a..734b0ba 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2127,6 +2127,7 @@ static struct kmem_cache_node *early_kmem_cache_node_alloc(gfp_t gfpflags,
+ {
+ 	struct page *page;
+ 	struct kmem_cache_node *n;
++	unsigned long flags;
+ 
+ 	BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
+ 
+@@ -2151,7 +2152,14 @@ static struct kmem_cache_node *early_kmem_cache_node_alloc(gfp_t gfpflags,
+ #endif
+ 	init_kmem_cache_node(n);
+ 	atomic_long_inc(&n->nr_slabs);
++	/*
++	 * lockdep requires consistent irq usage for each lock
++	 * so even though there cannot be a race this early in
++	 * the boot sequence, we still disable irqs.
++	 */
++	local_irq_save(flags);
+ 	add_partial(n, page);
++	local_irq_restore(flags);
+ 	return n;
+ }
+ 
+-- 
+1.5.4.3
+

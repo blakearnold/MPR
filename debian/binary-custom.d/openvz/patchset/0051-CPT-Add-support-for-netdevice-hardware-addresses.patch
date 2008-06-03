@@ -1,0 +1,223 @@
+From bbd642a14f3281af16b0280afcf23c583531bd8b Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Tue, 25 Mar 2008 18:50:22 +0300
+Subject: [PATCH 50/67] CPT: Add support for netdevice hardware addresses
+
+In current implementation netdevice hardware (MAC) address is not saved, so
+devices like tap will have different MAC address after restore. This will
+lead to creation of new local IPv6 address based on MAC address.
+
+This patch allows to save/restore hardware addresses on all netdevices.
+
+Also this patch changes cpt image version.
+This is done because of following code we have now:
+
+                err = rst_get_object(CPT_OBJ_NET_DEVICE, sec, &di, ctx);
+                if (err)
+                        return err;
+
+                if (di.cpt_next > sizeof(di)) {
+                        err = rst_restore_tuntap(sec, &di, ctx);
+                        if (err)
+                                return err;
+                }
+
+It was supposed that we will have only netdevice image or netdevice image and
+tuntap image.
+
+With new code it will be possible to have netdevice and hwaddr image, so old
+kernel will consider hwaddr image as tuntap image. And will return -EINVAL
+while reading this image.
+So, migration to old kernel is prohibited, just to be sure that sensible error
+will be returned in this case.
+
+Bug #96040
+---
+ include/linux/cpt_image.h |   12 +++++++++++
+ kernel/cpt/cpt_net.c      |   14 ++++++++++++
+ kernel/cpt/rst_net.c      |   49 +++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 71 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/cpt_image.h b/include/linux/cpt_image.h
+index 731346c..20f23b4 100644
+--- a/include/linux/cpt_image.h
++++ b/include/linux/cpt_image.h
+@@ -96,6 +96,7 @@ enum _cpt_object_type
+ 	CPT_OBJ_INOTIFY_EVENT,
+ 	CPT_OBJ_TASK_AUX,
+ 	CPT_OBJ_NET_TUNTAP,
++	CPT_OBJ_NET_HWADDR,
+ };
+ 
+ #define CPT_ALIGN(n) (((n)+7)&~7)
+@@ -109,8 +110,10 @@ struct cpt_major_hdr
+ #define CPT_VERSION_8		0
+ #define CPT_VERSION_9		0x100
+ #define CPT_VERSION_9_1		0x101
++#define CPT_VERSION_9_2		0x102
+ #define CPT_VERSION_16		0x200
+ #define CPT_VERSION_18		0x300
++#define CPT_VERSION_18_1	0x301
+ #define CPT_VERSION_20		0x400
+ #define CPT_VERSION_24		0x500
+ 	__u16	cpt_os_arch;		/* Architecture */
+@@ -1501,6 +1504,15 @@ struct cpt_tuntap_image {
+ 	__u32	cpt_net_filter[2];
+ } __attribute__ ((aligned (8)));
+ 
++struct cpt_hwaddr_image {
++	__u64	cpt_next;
++	__u32	cpt_object;
++	__u16	cpt_hdrlen;
++	__u16	cpt_content;
++
++	__u8	cpt_dev_addr[32];
++} __attribute__ ((aligned (8)));
++
+ struct cpt_ifaddr_image {
+ 	__u64	cpt_next;
+ 	__u32	cpt_object;
+diff --git a/kernel/cpt/cpt_net.c b/kernel/cpt/cpt_net.c
+index e3a73f4..4e3dcec 100644
+--- a/kernel/cpt/cpt_net.c
++++ b/kernel/cpt/cpt_net.c
+@@ -86,6 +86,7 @@ int cpt_dump_link(struct cpt_context * ctx)
+ 	cpt_open_section(ctx, CPT_SECT_NET_DEVICE);
+ 	for_each_netdev(net, dev) {
+ 		struct cpt_netdev_image v;
++		struct cpt_hwaddr_image hw;
+ 		loff_t saved_obj;
+ 
+ 		cpt_open_object(NULL, ctx);
+@@ -101,7 +102,20 @@ int cpt_dump_link(struct cpt_context * ctx)
+ 		ctx->write(&v, sizeof(v), ctx);
+ 
+ 		cpt_push_object(&saved_obj, ctx);
++
+ 		cpt_dump_tuntap(dev, ctx);
++		
++		/* Dump hardware address */
++		cpt_open_object(NULL, ctx);
++		hw.cpt_next = CPT_NULL;
++		hw.cpt_object = CPT_OBJ_NET_HWADDR;
++		hw.cpt_hdrlen = sizeof(hw);
++		hw.cpt_content = CPT_CONTENT_VOID;
++		BUG_ON(sizeof(hw.cpt_dev_addr) != sizeof(dev->dev_addr));
++		memcpy(hw.cpt_dev_addr, dev->dev_addr, sizeof(hw.cpt_dev_addr));
++		ctx->write(&hw, sizeof(hw), ctx);
++		cpt_close_object(ctx);
++		
+ 		cpt_pop_object(&saved_obj, ctx);
+ 
+ 		cpt_close_object(ctx);
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index 934da78..2703800 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -301,7 +301,7 @@ int rst_resume_network(struct cpt_context *ctx)
+ }
+ 
+ /* We do not restore skb queue, just reinit it */
+-static int rst_restore_tuntap(loff_t pos, struct cpt_netdev_image *di,
++static int rst_restore_tuntap(loff_t start, struct cpt_netdev_image *di,
+ 			struct cpt_context *ctx)
+ {
+ 	int err = -ENODEV;
+@@ -310,12 +310,14 @@ static int rst_restore_tuntap(loff_t pos, struct cpt_netdev_image *di,
+ 	struct net_device *dev;
+ 	struct file *bind_file = NULL;
+ 	struct tun_struct *tun;
++	loff_t pos;
+ 
+-	pos += di->cpt_hdrlen;
++	pos = start + di->cpt_hdrlen;
+ 	err = rst_get_object(CPT_OBJ_NET_TUNTAP, pos, &ti, ctx);
+ 	if (err)
+ 		return err;
+ 
++	pos += ti.cpt_next;
+ 	if (ti.cpt_bindfile) {
+ 		bind_file = rst_file(ti.cpt_bindfile, -1, ctx);
+ 		if (IS_ERR(bind_file)) {
+@@ -353,6 +355,17 @@ static int rst_restore_tuntap(loff_t pos, struct cpt_netdev_image *di,
+ 		eprintk_ctx("failed to register tun/tap net device\n");
+ 		goto out;
+ 	}
++	if (pos < start + di->cpt_next) {
++		struct cpt_hwaddr_image hw;
++		/* Restore hardware address */
++		err = rst_get_object(CPT_OBJ_NET_HWADDR, pos,
++				&hw, ctx);
++		if (err)
++			goto out;
++		BUG_ON(sizeof(hw.cpt_dev_addr) != sizeof(dev->dev_addr));
++		memcpy(dev->dev_addr, hw.cpt_dev_addr,
++				sizeof(hw.cpt_dev_addr));
++	}
+ 	list_add(&tun->list, &tun_dev_list);
+ 
+ 	bind_file->private_data = tun;
+@@ -389,16 +402,28 @@ int rst_restore_netdev(struct cpt_context *ctx)
+ 	endsec = sec + h.cpt_next;
+ 	sec += h.cpt_hdrlen;
+ 	while (sec < endsec) {
+-		int err;
++		loff_t pos;
+ 		struct net_device *dev_new;
+ 		err = rst_get_object(CPT_OBJ_NET_DEVICE, sec, &di, ctx);
+ 		if (err)
+ 			return err;
+ 
++		pos = sec + di.cpt_hdrlen;
+ 		if (di.cpt_next > sizeof(di)) {
+-			err = rst_restore_tuntap(sec, &di, ctx);
++			struct cpt_object_hdr hdr;
++			err = ctx->pread(&hdr, sizeof(struct cpt_object_hdr),
++					ctx, sec + di.cpt_hdrlen);
+ 			if (err)
+ 				return err;
++			if (hdr.cpt_object == CPT_OBJ_NET_TUNTAP) {
++				err = rst_restore_tuntap(sec, &di, ctx);
++				if (err) {
++					eprintk_ctx("restore tuntap %s: %d\n",
++							di.cpt_name, err);
++					return err;
++				}
++				pos += hdr.cpt_next;
++			}
+ 		}
+ 
+ 		rtnl_lock();
+@@ -437,6 +462,19 @@ int rst_restore_netdev(struct cpt_context *ctx)
+ 				if (err)
+ 					eprintk_ctx("dev_change_flags err: %d\n", err);
+ 			}
++			if (pos < sec + di.cpt_next) {
++				struct cpt_hwaddr_image hw;
++				/* Restore hardware address */
++				err = rst_get_object(CPT_OBJ_NET_HWADDR, pos,
++						&hw, ctx);
++				if (err)
++					goto out;
++				BUG_ON(sizeof(hw.cpt_dev_addr) !=
++						sizeof(dev->dev_addr));
++				memcpy(dev->dev_addr, hw.cpt_dev_addr,
++						sizeof(hw.cpt_dev_addr));
++				pos += hw.cpt_next;
++			}
+ 		} else {
+ 			eprintk_ctx("unknown interface 2 %s\n", di.cpt_name);
+ 		}
+@@ -444,6 +482,9 @@ int rst_restore_netdev(struct cpt_context *ctx)
+ 		sec += di.cpt_next;
+ 	}
+ 	return 0;
++out:
++	rtnl_unlock();
++	return err;
+ }
+ 
+ static int dumpfn(void *arg)
+-- 
+1.5.4.3
+

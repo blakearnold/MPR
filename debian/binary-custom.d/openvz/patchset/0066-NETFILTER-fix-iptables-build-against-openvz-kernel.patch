@@ -1,0 +1,48 @@
+From 12242e1c13001ab1345f4fa5cd2d074e07055819 Mon Sep 17 00:00:00 2001
+From: Peter Volkov <pva@gentoo.org>
+Date: Fri, 18 Apr 2008 19:54:54 +0400
+Subject: [PATCH 65/67] NETFILTER: fix iptables build against -openvz kernel headers
+
+http://bugzilla.openvz.org/show_bug.cgi?id=875
+---
+ include/linux/netfilter/xt_hashlimit.h    |    2 ++
+ include/linux/netfilter_ipv4/ipt_recent.h |    3 +++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/netfilter/xt_hashlimit.h b/include/linux/netfilter/xt_hashlimit.h
+index 934930b..9ef74c4 100644
+--- a/include/linux/netfilter/xt_hashlimit.h
++++ b/include/linux/netfilter/xt_hashlimit.h
+@@ -38,9 +38,11 @@ struct xt_hashlimit_info {
+ 	} u;
+ };
+ 
++#ifdef __KERNEL__
+ struct ve_xt_hashlimit {
+ 	struct hlist_head	hashlimit_htables;
+ 	struct proc_dir_entry	*hashlimit_procdir4;
+ 	struct proc_dir_entry	*hashlimit_procdir6;
+ };
++#endif
+ #endif /*_XT_HASHLIMIT_H*/
+diff --git a/include/linux/netfilter_ipv4/ipt_recent.h b/include/linux/netfilter_ipv4/ipt_recent.h
+index 2ad01d9..4cc62b2 100644
+--- a/include/linux/netfilter_ipv4/ipt_recent.h
++++ b/include/linux/netfilter_ipv4/ipt_recent.h
+@@ -24,10 +24,13 @@ struct ipt_recent_info {
+ 	u_int8_t    side;
+ };
+ 
++#ifdef __KERNEL__
+ struct ve_ipt_recent {
+ 	struct list_head	tables;
+ #ifdef CONFIG_PROC_FS
+ 	struct proc_dir_entry	*proc_dir;
+ #endif
+ };
++#endif
++
+ #endif /*_IPT_RECENT_H*/
+-- 
+1.5.4.3
+

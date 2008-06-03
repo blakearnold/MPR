@@ -1,0 +1,30 @@
+From c9d0e80b84a8327381ba9f8a09e5248d7b52b851 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Wed, 30 Apr 2008 13:55:27 +0400
+Subject: [PATCH 70/72] NETFILTER: remove mismerge in mark_source_chains()
+
+---
+ net/ipv4/netfilter/ip_tables.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
+index ca47b8a..c36e32c 100644
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -506,13 +506,6 @@ mark_source_chains(struct xt_table_info *newinfo,
+ 					return 0;
+ 				}
+ 
+-				if (t->verdict < -NF_MAX_VERDICT - 1) {
+-					duprintf("mark_source_chains: bad "
+-						"negative verdict (%i)\n",
+-							t->verdict);
+-					return 0;
+-				}
+-
+ 				/* Return: backtrack through the last
+ 				   big jump. */
+ 				do {
+-- 
+1.5.4.3
+

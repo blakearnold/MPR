@@ -1,0 +1,54 @@
+From 55f446a3291f66d97b068470e7ae88bd18b8fd59 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 1 Apr 2008 16:49:17 +0400
+Subject: [PATCH 54/67] IPV6: make /proc/net/if_inet6 visible in VE
+
+Logic for showing per-VE IPv6 addresses is already in place.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=857
+---
+ net/ipv6/addrconf.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index afe811d..9f15d4f 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2854,16 +2854,31 @@ static const struct file_operations if6_fops = {
+ 	.release	= seq_release_private,
+ };
+ 
+-int __init if6_proc_init(void)
++static int ipv6_proc_net_init(struct net *net)
+ {
+-	if (!proc_net_fops_create(&init_net, "if_inet6", S_IRUGO, &if6_fops))
++	if (!proc_net_fops_create(net, "if_inet6", S_IRUGO, &if6_fops))
+ 		return -ENOMEM;
+ 	return 0;
+ }
+ 
++static void ipv6_proc_net_exit(struct net *net)
++{
++	proc_net_remove(net, "if_inet6");
++}
++
++static struct pernet_operations ipv6_proc_net_ops = {
++	.init = ipv6_proc_net_init,
++	.exit = ipv6_proc_net_exit,
++};
++
++int __init if6_proc_init(void)
++{
++	return register_pernet_subsys(&ipv6_proc_net_ops);
++}
++
+ void if6_proc_exit(void)
+ {
+-	proc_net_remove(&init_net, "if_inet6");
++	unregister_pernet_subsys(&ipv6_proc_net_ops);
+ }
+ #endif	/* CONFIG_PROC_FS */
+ 
+-- 
+1.5.4.3
+

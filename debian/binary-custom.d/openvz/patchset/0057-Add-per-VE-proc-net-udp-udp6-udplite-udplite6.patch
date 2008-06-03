@@ -1,0 +1,208 @@
+From 452bdf6ea996f2e9e030822d87d9106bf33e0677 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 1 Apr 2008 17:55:52 +0400
+Subject: [PATCH 56/67] Add per-VE /proc/net/{udp,udp6,udplite,udplite6}
+
+Show only connections of current VE (already implemented).
+Required for netstat.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=860
+---
+ include/net/udp.h  |    4 ++--
+ net/ipv4/udp.c     |   27 +++++++++++++++++++++------
+ net/ipv4/udplite.c |   17 ++++++++++++++++-
+ net/ipv6/udp.c     |   19 +++++++++++++++++--
+ net/ipv6/udplite.c |   19 +++++++++++++++++--
+ 5 files changed, 73 insertions(+), 13 deletions(-)
+
+diff --git a/include/net/udp.h b/include/net/udp.h
+index 71967e3..20bc0ab 100644
+--- a/include/net/udp.h
++++ b/include/net/udp.h
+@@ -180,8 +180,8 @@ struct udp_iter_state {
+ };
+ 
+ #ifdef CONFIG_PROC_FS
+-extern int udp_proc_register(struct udp_seq_afinfo *afinfo);
+-extern void udp_proc_unregister(struct udp_seq_afinfo *afinfo);
++extern int udp_proc_register(struct net *net, struct udp_seq_afinfo *afinfo);
++extern void udp_proc_unregister(struct net *net, struct udp_seq_afinfo *afinfo);
+ 
+ extern int  udp4_proc_init(void);
+ extern void udp4_proc_exit(void);
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 32fddac..a27ed8a 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1576,7 +1576,7 @@ out_kfree:
+ }
+ 
+ /* ------------------------------------------------------------------------ */
+-int udp_proc_register(struct udp_seq_afinfo *afinfo)
++int udp_proc_register(struct net *net, struct udp_seq_afinfo *afinfo)
+ {
+ 	struct proc_dir_entry *p;
+ 	int rc = 0;
+@@ -1589,7 +1589,7 @@ int udp_proc_register(struct udp_seq_afinfo *afinfo)
+ 	afinfo->seq_fops->llseek	= seq_lseek;
+ 	afinfo->seq_fops->release	= seq_release_private;
+ 
+-	p = proc_net_fops_create(&init_net, afinfo->name, S_IRUGO, afinfo->seq_fops);
++	p = proc_net_fops_create(net, afinfo->name, S_IRUGO, afinfo->seq_fops);
+ 	if (p)
+ 		p->data = afinfo;
+ 	else
+@@ -1597,11 +1597,11 @@ int udp_proc_register(struct udp_seq_afinfo *afinfo)
+ 	return rc;
+ }
+ 
+-void udp_proc_unregister(struct udp_seq_afinfo *afinfo)
++void udp_proc_unregister(struct net *net, struct udp_seq_afinfo *afinfo)
+ {
+ 	if (!afinfo)
+ 		return;
+-	proc_net_remove(&init_net, afinfo->name);
++	proc_net_remove(net, afinfo->name);
+ 	memset(afinfo->seq_fops, 0, sizeof(*afinfo->seq_fops));
+ }
+ 
+@@ -1651,14 +1651,29 @@ static struct udp_seq_afinfo udp4_seq_afinfo = {
+ 	.seq_fops	= &udp4_seq_fops,
+ };
+ 
++static int udp4_proc_net_init(struct net *net)
++{
++	return udp_proc_register(net, &udp4_seq_afinfo);
++}
++
++static void udp4_proc_net_exit(struct net *net)
++{
++	udp_proc_unregister(net, &udp4_seq_afinfo);
++}
++
++static struct pernet_operations udp4_proc_net_ops = {
++	.init = udp4_proc_net_init,
++	.exit = udp4_proc_net_exit,
++};
++
+ int __init udp4_proc_init(void)
+ {
+-	return udp_proc_register(&udp4_seq_afinfo);
++	return register_pernet_subsys(&udp4_proc_net_ops);
+ }
+ 
+ void udp4_proc_exit(void)
+ {
+-	udp_proc_unregister(&udp4_seq_afinfo);
++	unregister_pernet_subsys(&udp4_proc_net_ops);
+ }
+ #endif /* CONFIG_PROC_FS */
+ 
+diff --git a/net/ipv4/udplite.c b/net/ipv4/udplite.c
+index f5baeb3..c66933b 100644
+--- a/net/ipv4/udplite.c
++++ b/net/ipv4/udplite.c
+@@ -92,6 +92,21 @@ static struct udp_seq_afinfo udplite4_seq_afinfo = {
+ 	.seq_show	= udp4_seq_show,
+ 	.seq_fops	= &udplite4_seq_fops,
+ };
++
++static int udplite4_proc_net_init(struct net *net)
++{
++	return udp_proc_register(net, &udplite4_seq_afinfo);
++}
++
++static void udplite4_proc_net_exit(struct net *net)
++{
++	udp_proc_unregister(net, &udplite4_seq_afinfo);
++}
++
++static struct pernet_operations udplite4_proc_net_ops = {
++	.init = udplite4_proc_net_init,
++	.exit = udplite4_proc_net_exit,
++};
+ #endif
+ 
+ void __init udplite4_register(void)
+@@ -105,7 +120,7 @@ void __init udplite4_register(void)
+ 	inet_register_protosw(&udplite4_protosw);
+ 
+ #ifdef CONFIG_PROC_FS
+-	if (udp_proc_register(&udplite4_seq_afinfo)) /* udplite4_proc_init() */
++	if (register_pernet_subsys(&udplite4_proc_net_ops)) /* udplite4_proc_init() */
+ 		printk(KERN_ERR "%s: Cannot register /proc!\n", __FUNCTION__);
+ #endif
+ 	return;
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index a28f405..bf170a8 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -961,13 +961,28 @@ static struct udp_seq_afinfo udp6_seq_afinfo = {
+ 	.seq_fops	= &udp6_seq_fops,
+ };
+ 
++static int udp6_proc_net_init(struct net *net)
++{
++	return udp_proc_register(net, &udp6_seq_afinfo);
++}
++
++static void udp6_proc_net_exit(struct net *net)
++{
++	udp_proc_unregister(net, &udp6_seq_afinfo);
++}
++
++static struct pernet_operations udp6_proc_net_ops = {
++	.init = udp6_proc_net_init,
++	.exit = udp6_proc_net_exit,
++};
++
+ int __init udp6_proc_init(void)
+ {
+-	return udp_proc_register(&udp6_seq_afinfo);
++	return register_pernet_subsys(&udp6_proc_net_ops);
+ }
+ 
+ void udp6_proc_exit(void) {
+-	udp_proc_unregister(&udp6_seq_afinfo);
++	unregister_pernet_subsys(&udp6_proc_net_ops);
+ }
+ #endif /* CONFIG_PROC_FS */
+ 
+diff --git a/net/ipv6/udplite.c b/net/ipv6/udplite.c
+index 5a0379f..992e677 100644
+--- a/net/ipv6/udplite.c
++++ b/net/ipv6/udplite.c
+@@ -96,13 +96,28 @@ static struct udp_seq_afinfo udplite6_seq_afinfo = {
+ 	.seq_fops	= &udplite6_seq_fops,
+ };
+ 
++static int udplite6_proc_net_init(struct net *net)
++{
++	return udp_proc_register(net, &udplite6_seq_afinfo);
++}
++
++static void udplite6_proc_net_exit(struct net *net)
++{
++	udp_proc_unregister(net, &udplite6_seq_afinfo);
++}
++
++static struct pernet_operations udplite6_proc_net_ops = {
++	.init = udplite6_proc_net_init,
++	.exit = udplite6_proc_net_exit,
++};
++
+ int __init udplite6_proc_init(void)
+ {
+-	return udp_proc_register(&udplite6_seq_afinfo);
++	return register_pernet_subsys(&udplite6_proc_net_ops);
+ }
+ 
+ void udplite6_proc_exit(void)
+ {
+-	udp_proc_unregister(&udplite6_seq_afinfo);
++	unregister_pernet_subsys(&udplite6_proc_net_ops);
+ }
+ #endif
+-- 
+1.5.4.3
+

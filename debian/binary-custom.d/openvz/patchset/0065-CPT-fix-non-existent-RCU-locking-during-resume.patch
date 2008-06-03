@@ -1,0 +1,170 @@
+From 2898400a6c100c60930ac3f0ae54f19e3199a4ab Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 18 Apr 2008 19:41:05 +0400
+Subject: [PATCH 64/67] CPT: fix non-existent RCU locking during resume
+
+The rules are that manipulations with pid's found by find_vpid()
+should be done under RCU lock.
+---
+ kernel/cpt/rst_process.c |   32 ++++++++++++++++++--------------
+ kernel/cpt/rst_tty.c     |    9 +++++++--
+ 2 files changed, 25 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/cpt/rst_process.c b/kernel/cpt/rst_process.c
+index 8388f32..c54f04e 100644
+--- a/kernel/cpt/rst_process.c
++++ b/kernel/cpt/rst_process.c
+@@ -230,7 +230,8 @@ int rst_process_linkage(cpt_context_t *ctx)
+ 		if (task_pgrp_vnr(tsk) != ti->cpt_pgrp) {
+ 			struct pid *pid;
+ 
+-			pid = get_pid(find_vpid(ti->cpt_pgrp));
++			rcu_read_lock();
++			pid = find_vpid(ti->cpt_pgrp);
+ 			if (!pid) {
+ 				eprintk_ctx("illegal PGRP " CPT_FID "\n", CPT_TID(tsk));
+ 				return -EINVAL;
+@@ -240,23 +241,21 @@ int rst_process_linkage(cpt_context_t *ctx)
+ 			if (task_pgrp_nr(tsk) != pid_nr(pid)) {
+ 				detach_pid(tsk, PIDTYPE_PGID);
+ 				set_task_pgrp(tsk, pid_nr(pid));
+-				if (thread_group_leader(tsk)) {
+-					get_pid(pid);
++				if (thread_group_leader(tsk))
+ 					attach_pid(tsk, PIDTYPE_PGID, pid);
+-				}
+ 			}
+ 			write_unlock_irq(&tasklist_lock);
+ 			if (task_pgrp_nr(tsk) != pid_nr(pid)) {
+-				put_pid(pid);
+ 				eprintk_ctx("cannot set PGRP " CPT_FID "\n", CPT_TID(tsk));
+ 				return -EINVAL;
+ 			}
+-			put_pid(pid);
++			rcu_read_unlock();
+ 		}
+ 		if (task_session_vnr(tsk) != ti->cpt_session) {
+ 			struct pid *pid;
+ 
+-			pid = get_pid(find_vpid(ti->cpt_session));
++			rcu_read_lock();
++			pid = find_vpid(ti->cpt_session);
+ 			if (!pid) {
+ 				eprintk_ctx("illegal SID " CPT_FID "\n", CPT_TID(tsk));
+ 				return -EINVAL;
+@@ -266,28 +265,27 @@ int rst_process_linkage(cpt_context_t *ctx)
+ 			if (task_session_nr(tsk) != pid_nr(pid)) {
+ 				detach_pid(tsk, PIDTYPE_SID);
+ 				set_task_session(tsk, pid_nr(pid));
+-				if (thread_group_leader(tsk)) {
+-					get_pid(pid);
++				if (thread_group_leader(tsk))
+ 					attach_pid(tsk, PIDTYPE_SID, pid);
+-				}
+ 			}
+ 			write_unlock_irq(&tasklist_lock);
+ 			if (task_session_nr(tsk) != pid_nr(pid)) {
+-				put_pid(pid);
+ 				eprintk_ctx("cannot set SID " CPT_FID "\n", CPT_TID(tsk));
+ 				return -EINVAL;
+ 			}
+-			put_pid(pid);
++			rcu_read_unlock();
+ 		}
+ 		if (ti->cpt_old_pgrp > 0 && !tsk->signal->tty_old_pgrp) {
+ 			struct pid *pid;
+ 
++			rcu_read_lock();
+ 			pid = get_pid(find_vpid(ti->cpt_old_pgrp));
+ 			if (!pid) {
+ 				eprintk_ctx("illegal OLD_PGRP " CPT_FID "\n", CPT_TID(tsk));
+ 				return -EINVAL;
+ 			}
+ 			tsk->signal->tty_old_pgrp = pid;
++			rcu_read_unlock();
+ 		}
+ 	}
+ 
+@@ -300,7 +298,7 @@ struct pid *alloc_vpid_safe(pid_t vnr)
+ 
+ 	pid = alloc_pid(current->nsproxy->pid_ns, vnr);
+ 	if (!pid)
+-		pid = get_pid(find_vpid(vnr));
++		pid = find_vpid(vnr);
+ 	return pid;
+ }
+ 
+@@ -321,6 +319,7 @@ restore_one_signal_struct(struct cpt_task_image *ti, int *exiting, cpt_context_t
+ 	if (task_pgrp_vnr(current) != si->cpt_pgrp) {
+ 		struct pid * pid = NULL, *free = NULL;
+ 
++		rcu_read_lock();
+ 		if (si->cpt_pgrp_type == CPT_PGRP_ORPHAN) {
+ #if 0
+ 			if (!is_virtual_pid(si->cpt_pgrp)) {
+@@ -346,6 +345,7 @@ restore_one_signal_struct(struct cpt_task_image *ti, int *exiting, cpt_context_t
+ 		write_unlock_irq(&tasklist_lock);
+ 		if (free != NULL)
+ 			free_pid(free);
++		rcu_read_unlock();
+ 	}
+ 
+ 	current->signal->tty_old_pgrp = NULL;
+@@ -359,8 +359,10 @@ restore_one_signal_struct(struct cpt_task_image *ti, int *exiting, cpt_context_t
+ 				return -EINVAL;
+ 			}
+ 		} else {
++			rcu_read_lock();
+ 			current->signal->tty_old_pgrp =
+-				alloc_vpid_safe(si->cpt_old_pgrp);
++				get_pid(alloc_vpid_safe(si->cpt_old_pgrp));
++			rcu_read_unlock();
+ 			if (!current->signal->tty_old_pgrp) {
+ 				dprintk_ctx("forward old tty PGID\n");
+ 				current->signal->tty_old_pgrp = NULL;
+@@ -371,6 +373,7 @@ restore_one_signal_struct(struct cpt_task_image *ti, int *exiting, cpt_context_t
+ 	if (task_session_vnr(current) != si->cpt_session) {
+ 		struct pid * pid = NULL, *free = NULL;
+ 
++		rcu_read_lock();
+ 		if (si->cpt_session_type == CPT_PGRP_ORPHAN) {
+ #if 0
+ 			if (!is_virtual_pid(si->cpt_session)) {
+@@ -398,6 +401,7 @@ restore_one_signal_struct(struct cpt_task_image *ti, int *exiting, cpt_context_t
+ 		write_unlock_irq(&tasklist_lock);
+ 		if (free != NULL)
+ 			free_pid(free);
++		rcu_read_unlock();
+ 	}
+ 
+ 	cpt_sigset_import(&current->signal->shared_pending.signal, si->cpt_sigpending);
+diff --git a/kernel/cpt/rst_tty.c b/kernel/cpt/rst_tty.c
+index f6d90aa..48bc4ce 100644
+--- a/kernel/cpt/rst_tty.c
++++ b/kernel/cpt/rst_tty.c
+@@ -350,7 +350,9 @@ int rst_tty_jobcontrol(struct cpt_context *ctx)
+ 		if (obj) {
+ 			struct tty_struct *stty = obj->o_obj;
+ 			if ((int)pibuf->cpt_pgrp > 0) {
+-				stty->pgrp = alloc_vpid_safe(pibuf->cpt_pgrp);
++				rcu_read_lock();
++				stty->pgrp = get_pid(alloc_vpid_safe(pibuf->cpt_pgrp));
++				rcu_read_unlock();
+ 				if (!stty->pgrp)
+ 					dprintk_ctx("unknown tty pgrp %d\n", pibuf->cpt_pgrp);
+ 			} else if (pibuf->cpt_pgrp) {
+@@ -364,7 +366,10 @@ int rst_tty_jobcontrol(struct cpt_context *ctx)
+ 			}
+ 			if ((int)pibuf->cpt_session > 0) {
+ 				struct pid *sess;
+-				sess = alloc_vpid_safe(pibuf->cpt_session);
++
++				rcu_read_lock();
++				sess = get_pid(alloc_vpid_safe(pibuf->cpt_session));
++				rcu_read_unlock();
+ 				if (!sess) {
+ 					dprintk_ctx("unknown tty session %d\n", pibuf->cpt_session);
+ 				} else if (!stty->session) {
+-- 
+1.5.4.3
+

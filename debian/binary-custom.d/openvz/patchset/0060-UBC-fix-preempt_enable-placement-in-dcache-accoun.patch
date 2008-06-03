@@ -1,0 +1,34 @@
+From c77d67e020b658888c69f9133850e298b7c3d02e Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 4 Apr 2008 12:39:42 +0400
+Subject: [PATCH 59/67] UBC: fix preempt_enable() placement in dcache accounting
+
+---
+ fs/dcache.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index b69a57e..f32cef2 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -231,14 +231,14 @@ kill_it:
+ 	ub = dentry->dentry_bc.d_ub;
+ 	d_ubsize = dentry->dentry_bc.d_ubsize;
+ 	dentry = d_kill(dentry);
++	preempt_disable();
+ 	if (ub_dentry_on) {
+ 		uncharge_dcache(ub, d_ubsize);
+ 		put_beancounter(ub);
+ 	}
+-	if (dentry) {
+-		preempt_disable();
++	if (dentry) 
+ 		goto repeat;
+-	}
++	preempt_enable();
+ }
+ 
+ void dput(struct dentry *dentry)
+-- 
+1.5.4.3
+

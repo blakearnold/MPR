@@ -1,0 +1,16 @@
+From 483a70883c85acf684ffbd8fa6a4c9bfade878f3 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Thu, 8 May 2008 13:04:01 +0400
+Subject: [PATCH 73/73] Linux 2.6.24-ovz005
+
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 4da686d..6aff93f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -2,1 +2,1 @@ VERSION = 2
+-VZVERSION = ovz004
++VZVERSION = ovz005

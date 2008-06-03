@@ -1,0 +1,40 @@
+From ddaf8cd72814753b729bf7c6df1b9eaf07e4bafe Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Wed, 9 Apr 2008 18:23:02 +0400
+Subject: [PATCH 61/67] ms: don't clear afinfo->seq_fops during netns stop
+
+afinfo structures are shared, so netns shouldn't clear it for everyone.
+This can result in situation when ->open won't be run, because it was
+cleared, but ->read will be.
+---
+ net/ipv4/tcp_ipv4.c |    1 -
+ net/ipv4/udp.c      |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 1a83482..2d132db 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -2316,7 +2316,6 @@ void tcp_proc_unregister(struct net *net, struct tcp_seq_afinfo *afinfo)
+ 		return;
+ 
+ 	proc_net_remove(net, afinfo->name);
+-	memset(afinfo->seq_fops, 0, sizeof(*afinfo->seq_fops));
+ }
+ 
+ static void get_openreq4(struct sock *sk, struct request_sock *req,
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index a27ed8a..959ea53 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1602,7 +1602,6 @@ void udp_proc_unregister(struct net *net, struct udp_seq_afinfo *afinfo)
+ 	if (!afinfo)
+ 		return;
+ 	proc_net_remove(net, afinfo->name);
+-	memset(afinfo->seq_fops, 0, sizeof(*afinfo->seq_fops));
+ }
+ 
+ /* ------------------------------------------------------------------------ */
+-- 
+1.5.4.3
+

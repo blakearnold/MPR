@@ -1,0 +1,244 @@
+From ae528ceeeffe35582a2e81c5ce4adbd8f6e3facd Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Tue, 25 Mar 2008 19:03:58 +0300
+Subject: [PATCH 51/67] CPT: enhance support of veth device
+
+In current implementation veth devices are not dumped correctly and
+we can lose private veth data.
+
+This patch allows to save/restore private veth data.
+---
+ drivers/net/vzethdev.c    |   17 +----------------
+ include/linux/cpt_image.h |   11 +++++++++++
+ include/linux/veth.h      |   27 +++++++++++++++++++++++++++
+ kernel/cpt/cpt_net.c      |   28 ++++++++++++++++++++++++++++
+ kernel/cpt/rst_net.c      |   38 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 105 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/vzethdev.c b/drivers/net/vzethdev.c
+index 05d2ec5..5fe9fae 100644
+--- a/drivers/net/vzethdev.c
++++ b/drivers/net/vzethdev.c
+@@ -44,6 +44,7 @@
+ #include <linux/if_arp.h>	/* For ARPHRD_ETHER */
+ #include <linux/ethtool.h>
+ #include <linux/ve_proto.h>
++#include <linux/veth.h>
+ #include <linux/vzctl.h>
+ #include <linux/vzctl_veth.h>
+ 
+@@ -52,26 +53,10 @@
+ #include <linux/vzcalluser.h>
+ #include <linux/nfcalls.h>
+ 
+-struct veth_struct
+-{
+-	struct net_device_stats stats;
+-	struct net_device	*pair;
+-	struct list_head	hwaddr_list;
+-	struct net_device_stats	*real_stats;
+-	int			allow_mac_change;
+-};
+-
+ static LIST_HEAD(veth_hwaddr_list);
+ static DEFINE_RWLOCK(ve_hwaddr_lock);
+ static DECLARE_MUTEX(hwaddr_sem);
+ 
+-#define veth_from_netdev(dev) \
+-	((struct veth_struct *)(netdev_priv(dev)))
+-static inline struct net_device * veth_to_netdev(struct veth_struct *veth)
+-{
+-	return (struct net_device *)((char *)veth - ((sizeof(struct net_device) + NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST));
+-}
+-
+ static inline struct net_device_stats *
+ veth_stats(struct net_device *dev, int cpuid)
+ {
+diff --git a/include/linux/cpt_image.h b/include/linux/cpt_image.h
+index 20f23b4..045bc1f 100644
+--- a/include/linux/cpt_image.h
++++ b/include/linux/cpt_image.h
+@@ -97,6 +97,7 @@ enum _cpt_object_type
+ 	CPT_OBJ_TASK_AUX,
+ 	CPT_OBJ_NET_TUNTAP,
+ 	CPT_OBJ_NET_HWADDR,
++	CPT_OBJ_NET_VETH,
+ };
+ 
+ #define CPT_ALIGN(n) (((n)+7)&~7)
+@@ -1504,6 +1505,16 @@ struct cpt_tuntap_image {
+ 	__u32	cpt_net_filter[2];
+ } __attribute__ ((aligned (8)));
+ 
++struct cpt_veth_image {
++	__u64	cpt_next;
++	__u32	cpt_object;
++	__u16	cpt_hdrlen;
++	__u16	cpt_content;
++
++	__u32	cpt_allow_mac_change;
++	__u32	__cpt_pad;
++} __attribute__ ((aligned (8)));
++
+ struct cpt_hwaddr_image {
+ 	__u64	cpt_next;
+ 	__u32	cpt_object;
+diff --git a/include/linux/veth.h b/include/linux/veth.h
+index 3354c1e..9d0273f 100644
+--- a/include/linux/veth.h
++++ b/include/linux/veth.h
+@@ -1,3 +1,12 @@
++/*
++ *  include/linux/veth.h
++ *
++ *  Copyright (C) 2007  SWsoft
++ *  All rights reserved.
++ *  
++ *  Licensing governed by "linux/COPYING.SWsoft" file.
++ *
++ */
+ #ifndef __NET_VETH_H_
+ #define __NET_VETH_H_
+ 
+@@ -9,4 +18,22 @@ enum {
+ #define VETH_INFO_MAX	(__VETH_INFO_MAX - 1)
+ };
+ 
++#ifdef __KERNEL__
++struct veth_struct
++{
++	struct net_device_stats stats;
++	struct net_device	*pair;
++	struct list_head	hwaddr_list;
++	struct net_device_stats	*real_stats;
++	int			allow_mac_change;
++};
++
++#define veth_from_netdev(dev) \
++	((struct veth_struct *)(netdev_priv(dev)))
++static inline struct net_device * veth_to_netdev(struct veth_struct *veth)
++{
++	return (struct net_device *)((char *)veth - ((sizeof(struct net_device) + NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST));
++}
++#endif
++
+ #endif
+diff --git a/kernel/cpt/cpt_net.c b/kernel/cpt/cpt_net.c
+index 4e3dcec..4fe5ca7 100644
+--- a/kernel/cpt/cpt_net.c
++++ b/kernel/cpt/cpt_net.c
+@@ -31,12 +31,38 @@
+ #include <linux/cpt_image.h>
+ #include <linux/nfcalls.h>
+ #include <linux/if_tun.h>
++#include <linux/veth.h>
+ 
+ #include "cpt_obj.h"
+ #include "cpt_context.h"
+ #include "cpt_kernel.h"
+ #include "cpt_syscalls.h"
+ 
++static void cpt_dump_veth(struct net_device *dev, struct cpt_context * ctx)
++{
++#if defined(CONFIG_VE_ETHDEV) || defined(CONFIG_VE_ETHDEV_MODULE)
++	struct cpt_veth_image v;
++	struct veth_struct *veth;
++
++	if (!KSYMREF(veth_open) || dev->open != KSYMREF(veth_open))
++		return;
++
++	veth = veth_from_netdev(dev);
++	cpt_open_object(NULL, ctx);
++
++	v.cpt_next = CPT_NULL;
++	v.cpt_object = CPT_OBJ_NET_VETH;
++	v.cpt_hdrlen = sizeof(v);
++	v.cpt_content = CPT_CONTENT_VOID;
++
++	v.cpt_allow_mac_change = veth->allow_mac_change;
++
++	ctx->write(&v, sizeof(v), ctx);
++	cpt_close_object(ctx);
++#endif
++	return;
++}
++
+ static void cpt_dump_tuntap(struct net_device *dev, struct cpt_context * ctx)
+ {
+ #if defined(CONFIG_TUN) || defined(CONFIG_TUN_MODULE)
+@@ -105,6 +131,8 @@ int cpt_dump_link(struct cpt_context * ctx)
+ 
+ 		cpt_dump_tuntap(dev, ctx);
+ 		
++		cpt_dump_veth(dev, ctx);
++
+ 		/* Dump hardware address */
+ 		cpt_open_object(NULL, ctx);
+ 		hw.cpt_next = CPT_NULL;
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index 2703800..df6b659 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -30,6 +30,8 @@
+ #include <net/ip_fib.h>
+ #include <net/addrconf.h>
+ #include <linux/if_tun.h>
++#include <linux/veth.h>
++#include <linux/nfcalls.h>
+ 
+ #include "cpt_obj.h"
+ #include "cpt_context.h"
+@@ -378,6 +380,28 @@ out:
+ 	return err;
+ }
+ 
++static int rst_restore_veth(loff_t pos, struct net_device *dev,
++			struct cpt_context *ctx)
++{
++	int err = -ENODEV;
++#if defined(CONFIG_VE_ETHDEV) || defined(CONFIG_VE_ETHDEV_MODULE)
++	struct cpt_veth_image vi;
++	struct veth_struct *veth;
++
++	if (!KSYMREF(veth_open) || dev->open != KSYMREF(veth_open)) {
++		eprintk_ctx("Module vzethdev is not loaded, "
++			    "or device %s is not a veth device\n", dev->name);
++		return -EINVAL;
++	}
++	err = rst_get_object(CPT_OBJ_NET_VETH, pos, &vi, ctx);
++	if (err)
++		return err;
++	veth = veth_from_netdev(dev);
++	veth->allow_mac_change = vi.cpt_allow_mac_change;
++#endif
++	return err;
++}
++
+ int rst_restore_netdev(struct cpt_context *ctx)
+ {
+ 	struct net *net = get_exec_env()->ve_ns->net_ns;
+@@ -463,7 +487,21 @@ int rst_restore_netdev(struct cpt_context *ctx)
+ 					eprintk_ctx("dev_change_flags err: %d\n", err);
+ 			}
+ 			if (pos < sec + di.cpt_next) {
++				struct cpt_object_hdr hdr;
+ 				struct cpt_hwaddr_image hw;
++				err = ctx->pread(&hdr, sizeof(struct cpt_object_hdr),
++						ctx, pos);
++				if (err)
++					goto out;
++				if (hdr.cpt_object == CPT_OBJ_NET_VETH) {
++					err = rst_restore_veth(pos, dev, ctx);
++					if (err) {
++						eprintk_ctx("restore veth %s: %d\n",
++								di.cpt_name, err);
++						goto out;
++					}
++					pos += hdr.cpt_next;
++				}
+ 				/* Restore hardware address */
+ 				err = rst_get_object(CPT_OBJ_NET_HWADDR, pos,
+ 						&hw, ctx);
+-- 
+1.5.4.3
+

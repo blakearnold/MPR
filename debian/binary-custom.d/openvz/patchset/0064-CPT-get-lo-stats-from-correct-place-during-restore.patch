@@ -1,0 +1,26 @@
+From 222a18fcb23b6a7a9c7375f07283fd0789b0ae59 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Wed, 9 Apr 2008 20:13:14 +0400
+Subject: [PATCH 62/67] CPT: get lo stats from correct place during restore
+
+struct pcpu_lstats and struct net_device_stats aren't the same.
+---
+ kernel/cpt/rst_net.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index 2cb47a4..4a0070e 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -421,7 +421,7 @@ static int rst_restore_netstats(loff_t pos, struct net_device *dev,
+ 	BUG_ON(sizeof(struct cpt_netstats_image) != n->cpt_hdrlen);
+ 	preempt_disable();
+ 	if (dev == lo)
+-		stats = netdev_priv(lo);
++		stats = &lo->stats;
+ #if defined(CONFIG_VE_ETHDEV) || defined(CONFIG_VE_ETHDEV_MODULE)
+ 	else if (KSYMREF(veth_open) && dev->open == KSYMREF(veth_open))
+ 		stats = veth_stats(dev, smp_processor_id());
+-- 
+1.5.4.3
+

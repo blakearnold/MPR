@@ -1,0 +1,112 @@
+From b9f72ff552da04eb5f741f0a7d81c24affa5ce55 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Thu, 10 Apr 2008 18:35:29 +0400
+Subject: [PATCH 63/67] CPT: fix epoll checkpointing
+
+eventpoll inodes are created via anon_inodes infrastructure which means they
+all have the same magic in superblock: ANON_INODE_FS_MAGIC. Filtering epoll
+inodes by magic can't work. So, do it by looking at file->f_op.
+---
+ kernel/cpt/cpt_epoll.c   |    2 --
+ kernel/cpt/cpt_files.c   |   12 ++++--------
+ kernel/cpt/cpt_files.h   |    1 +
+ kernel/cpt/cpt_fsmagic.h |    1 -
+ kernel/cpt/rst_epoll.c   |    1 -
+ 5 files changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/cpt/cpt_epoll.c b/kernel/cpt/cpt_epoll.c
+index 68387e2..81d2b98 100644
+--- a/kernel/cpt/cpt_epoll.c
++++ b/kernel/cpt/cpt_epoll.c
+@@ -38,8 +38,6 @@
+ #include "cpt_fsmagic.h"
+ #include "cpt_syscalls.h"
+ 
+-extern struct file_operations eventpoll_fops;
+-
+ int cpt_dump_epolldev(cpt_object_t *obj, cpt_context_t *ctx)
+ {
+ 	int err = 0;
+diff --git a/kernel/cpt/cpt_files.c b/kernel/cpt/cpt_files.c
+index 582bda4..6b3885e 100644
+--- a/kernel/cpt/cpt_files.c
++++ b/kernel/cpt/cpt_files.c
+@@ -511,7 +511,7 @@ static int dump_one_file(cpt_object_t *obj, struct file *file, cpt_context_t *ct
+ 		if (file->f_flags&FASYNC)
+ 			v->cpt_fown_fd = cpt_socket_fasync(file, ctx);
+ 	}
+-	if (file->f_dentry->d_inode->i_sb->s_magic == FSMAGIC_EPOLL) {
++	if (file->f_op == &eventpoll_fops) {
+ 		v->cpt_priv = file->f_dentry->d_inode->i_ino;
+ 		v->cpt_lflags |= CPT_DENTRY_EPOLL;
+ 	}
+@@ -942,11 +942,7 @@ static int dump_one_inode(struct file *file, struct dentry *d,
+ 	    !cpt_replaced(d, mnt, ctx))
+ 		dump_it = 1;
+ 	if (!S_ISREG(ino->i_mode) && !S_ISDIR(ino->i_mode)) {
+-		/* One more bug in epoll: invalid inode mode.
+-		 * What a load of crap...
+-		 */
+-		if (ino->i_sb->s_magic == FSMAGIC_EPOLL &&
+-		    (ino->i_mode & S_IFMT) == 0)
++		if (file->f_op == &eventpoll_fops)
+ 			return 0;
+ 		dump_it = 1;
+ 	}
+@@ -1059,7 +1055,7 @@ int cpt_dump_files(struct cpt_context *ctx)
+ 
+ 		if ((err = dump_one_file(obj, file, ctx)) != 0)
+ 			return err;
+-		if (file->f_dentry->d_inode->i_sb->s_magic == FSMAGIC_EPOLL)
++		if (file->f_op == &eventpoll_fops)
+ 			epoll_nr++;
+ 		if (file->f_dentry->d_inode->i_sb->s_magic == FSMAGIC_INOTIFY)
+ 			inotify_nr++;
+@@ -1070,7 +1066,7 @@ int cpt_dump_files(struct cpt_context *ctx)
+ 		cpt_open_section(ctx, CPT_SECT_EPOLL);
+ 		for_each_object(obj, CPT_OBJ_FILE) {
+ 			struct file *file = obj->o_obj;
+-			if (file->f_dentry->d_inode->i_sb->s_magic == FSMAGIC_EPOLL) {
++			if (file->f_op == &eventpoll_fops) {
+ 				int err;
+ 				if ((err = cpt_dump_epolldev(obj, ctx)) != 0)
+ 					return err;
+diff --git a/kernel/cpt/cpt_files.h b/kernel/cpt/cpt_files.h
+index a4cb0fd..b08afea 100644
+--- a/kernel/cpt/cpt_files.h
++++ b/kernel/cpt/cpt_files.h
+@@ -37,6 +37,7 @@ int rst_tty_jobcontrol(struct cpt_context *ctx);
+ void rst_flush_filejobs(struct cpt_context *);
+ int rst_do_filejobs(struct cpt_context *);
+ 
++extern struct file_operations eventpoll_fops;
+ int rst_eventpoll(struct cpt_context *);
+ struct file *cpt_open_epolldev(struct cpt_file_image *fi,
+ 			       unsigned flags,
+diff --git a/kernel/cpt/cpt_fsmagic.h b/kernel/cpt/cpt_fsmagic.h
+index 45c4fb8..142e539 100644
+--- a/kernel/cpt/cpt_fsmagic.h
++++ b/kernel/cpt/cpt_fsmagic.h
+@@ -5,7 +5,6 @@
+ #define FSMAGIC_SOCKFS	0x534F434B
+ #define FSMAGIC_PFMFS	0xa0b4d889
+ #define FSMAGIC_BDEV	0x62646576
+-#define FSMAGIC_EPOLL	0x03111965
+ #define FSMAGIC_FUTEX	0x0BAD1DEA
+ #define FSMAGIC_INOTIFY	0x2BAD1DEA
+ #define FSMAGIC_MQUEUE	0x19800202
+diff --git a/kernel/cpt/rst_epoll.c b/kernel/cpt/rst_epoll.c
+index 913ceab..0ac4cae 100644
+--- a/kernel/cpt/rst_epoll.c
++++ b/kernel/cpt/rst_epoll.c
+@@ -39,7 +39,6 @@
+ #include "cpt_syscalls.h"
+ 
+ /* Those funcations are static in fs/eventpoll.c */
+-extern struct file_operations eventpoll_fops;
+ extern int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 		     struct file *tfile, int fd);
+ extern struct epitem *ep_find(struct eventpoll *ep, struct file *file, int fd);
+-- 
+1.5.4.3
+

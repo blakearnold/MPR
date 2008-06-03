@@ -1,0 +1,47 @@
+From e6c66d4324baffd63b43c39f9100453ae3889562 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 7 Apr 2008 15:20:16 +0400
+Subject: [PATCH 60/67] UBC: fix use-after-free in dcache accounting
+
+After ->d_count is decremented and dcache_lock is dropped dentry can
+dissapear at any moment, so we can't start uncharging from it to root.
+---
+ fs/dcache.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index f32cef2..09fdd5e 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -185,9 +185,16 @@ static void dput_recursive(struct dentry *dentry)
+ 	unsigned long d_ubsize;
+ 
+ repeat:
+-	if (!atomic_dec_and_lock(&dentry->d_count, &dcache_lock)) {
+-		ub_dentry_uncharge(dentry);
+-		goto out_preempt;
++	if (unlikely(ub_dentry_on)) {
++		spin_lock(&dcache_lock);
++		if (!atomic_dec_and_test(&dentry->d_count)) {
++			ub_dentry_uncharge_locked(dentry);
++			spin_unlock(&dcache_lock);
++			goto out_preempt;
++		}
++	} else {
++		if (!atomic_dec_and_lock(&dentry->d_count, &dcache_lock))
++			goto out_preempt;
+ 	}
+ 
+ 	spin_lock(&dentry->d_lock);
+@@ -232,7 +239,7 @@ kill_it:
+ 	d_ubsize = dentry->dentry_bc.d_ubsize;
+ 	dentry = d_kill(dentry);
+ 	preempt_disable();
+-	if (ub_dentry_on) {
++	if (unlikely(ub_dentry_on)) {
+ 		uncharge_dcache(ub, d_ubsize);
+ 		put_beancounter(ub);
+ 	}
+-- 
+1.5.4.3
+

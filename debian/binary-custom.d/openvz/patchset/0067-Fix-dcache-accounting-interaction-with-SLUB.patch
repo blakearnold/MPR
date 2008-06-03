@@ -1,0 +1,88 @@
+From aa10c926328212bb916e1c8e925497881c648dd3 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Tue, 22 Apr 2008 14:47:50 +0400
+Subject: [PATCH 66/67] Fix dcache accounting interaction with SLUB
+
+SLUB passes allocations greater than PAGE_SIZE/2 directly to page
+allocator, so in case of large names there is no cache associated with
+them and no ->objuse counter.
+
+Account for PAGE_SIZE in such cases.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=878
+---
+ include/linux/slab.h |    1 +
+ kernel/bc/dcache.c   |    2 +-
+ mm/slab.c            |    5 +++++
+ mm/slub.c            |   14 ++++++++++++++
+ 4 files changed, 21 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 6d1d2f4..8f34584 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -83,6 +83,7 @@ int kmem_ptr_validate(struct kmem_cache *cachep, const void *ptr);
+ extern void show_slab_info(void);
+ int kmem_cache_objuse(struct kmem_cache *cachep);
+ int kmem_obj_objuse(void *obj);
++int kmem_dname_objuse(void *obj);
+ unsigned long ub_cache_growth(struct kmem_cache *cachep);
+ 
+ #ifdef CONFIG_BEANCOUNTERS
+diff --git a/kernel/bc/dcache.c b/kernel/bc/dcache.c
+index a9114e8..2242d64 100644
+--- a/kernel/bc/dcache.c
++++ b/kernel/bc/dcache.c
+@@ -163,7 +163,7 @@ static inline unsigned long d_charge_size(struct dentry *dentry)
+ 	/* dentry's d_name is already set to appropriate value (see d_alloc) */
+ 	return kmem_cache_objuse(inode_cachep) + kmem_cache_objuse(dentry_cache) +
+ 		(dname_external(dentry) ?
+-		 kmem_obj_objuse((void *)dentry->d_name.name) : 0);
++		 kmem_dname_objuse((void *)dentry->d_name.name) : 0);
+ }
+ 
+ /*
+diff --git a/mm/slab.c b/mm/slab.c
+index 4605df4..e4b09a2 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -755,6 +755,11 @@ int kmem_obj_objuse(void *obj)
+ 	return virt_to_cache(obj)->objuse;
+ }
+ 
++int kmem_dname_objuse(void *obj)
++{
++	return virt_to_cache(obj)->objuse;
++}
++
+ unsigned long ub_cache_growth(struct kmem_cache *cachep)
+ {
+ 	return (cachep->grown - cachep->reaped - cachep->shrunk)
+diff --git a/mm/slub.c b/mm/slub.c
+index 68cff78..ad0717a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -362,6 +362,20 @@ int kmem_obj_objuse(void *obj)
+ 
+ EXPORT_SYMBOL(kmem_obj_objuse);
+ 
++int kmem_dname_objuse(void *obj)
++{
++	struct kmem_cache *s;
++
++	/*
++	 * Allocations larger than PAGE_SIZE/2 go directly through
++	 * __get_free_pages() and aren't associated with any cache.
++	 */
++	s = virt_to_head_page(obj)->slab;
++	if (!s)
++		return PAGE_SIZE;
++	return kmem_cache_objuse(s);
++}
++
+ #define page_ubs(pg)	(pg->bc.slub_ubs)
+ 
+ struct user_beancounter **ub_slab_ptr(struct kmem_cache *s, void *obj)
+-- 
+1.5.4.3
+

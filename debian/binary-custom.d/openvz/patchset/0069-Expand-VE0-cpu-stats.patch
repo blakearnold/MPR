@@ -1,0 +1,32 @@
+From f293cb5b21c98bc78af5e64b11dbfce603843b27 Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Tue, 22 Apr 2008 19:39:43 +0400
+Subject: [PATCH 68/72] Expand VE0 cpu stats
+
+Stable commit 28680bfb8269703def997e2269caf9bfe2de489c
+shrank struct percpu_data from NR_CPUS pointers to just 1,
+so space for VE0 cpu statistics (which is allocated very early)
+was too small resulting in oops in
+account_system_time()/update_ve_cpu_time().
+---
+ kernel/ve/ve.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/ve/ve.c b/kernel/ve/ve.c
+index 8a1e8c5..04da442 100644
+--- a/kernel/ve/ve.c
++++ b/kernel/ve/ve.c
+@@ -118,7 +118,9 @@ struct ve_struct ve0 = {
+ EXPORT_SYMBOL(ve0);
+ 
+ #ifdef CONFIG_SMP
+-static struct percpu_data ve0_cpu_stats;
++static struct {
++	void *ptrs[NR_CPUS];
++} ve0_cpu_stats;
+ #endif
+ static struct ve_cpu_stats ve0_cpu_stats_data[NR_CPUS];
+ 
+-- 
+1.5.4.3
+

@@ -1,0 +1,369 @@
+From b343c030e374d9eb767d27df01e85dd17567f561 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Wed, 26 Mar 2008 12:12:35 +0300
+Subject: [PATCH 52/67] CPT: add support for network statistics
+
+In current implementation network statistics are not dumped at all.
+This patch allows to save/restore network statistics on all supported network
+devices.
+
+Statistics is restored on current cpu.
+---
+ drivers/net/venet_core.c  |   14 ------
+ drivers/net/vzethdev.c    |    6 ---
+ include/linux/cpt_image.h |   33 +++++++++++++++
+ include/linux/venet.h     |   14 ++++++
+ include/linux/veth.h      |    6 +++
+ kernel/cpt/cpt_net.c      |   49 ++++++++++++++++++++++
+ kernel/cpt/rst_net.c      |   99 +++++++++++++++++++++++++++++++++++++++-----
+ 7 files changed, 189 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/net/venet_core.c b/drivers/net/venet_core.c
+index 576a0b3..8355627 100644
+--- a/drivers/net/venet_core.c
++++ b/drivers/net/venet_core.c
+@@ -53,20 +53,6 @@ struct list_head ip_entry_hash_table[VEIP_HASH_SZ];
+ rwlock_t veip_hash_lock = RW_LOCK_UNLOCKED;
+ LIST_HEAD(veip_lh);
+ 
+-struct venet_stats {
+-	struct net_device_stats	stats;
+-	struct net_device_stats	*real_stats;
+-};
+-
+-static inline struct net_device_stats *
+-venet_stats(struct net_device *dev, int cpu)
+-{
+-	struct venet_stats *stats;
+-	stats = (struct venet_stats*)dev->priv;
+-	return per_cpu_ptr(stats->real_stats, cpu);
+-}
+-
+-
+ #define ip_entry_hash_function(ip)  (ntohl(ip) & (VEIP_HASH_SZ - 1))
+ 
+ void ip_entry_hash(struct ip_entry_struct *entry, struct veip_struct *veip)
+diff --git a/drivers/net/vzethdev.c b/drivers/net/vzethdev.c
+index 5fe9fae..2c52593 100644
+--- a/drivers/net/vzethdev.c
++++ b/drivers/net/vzethdev.c
+@@ -57,12 +57,6 @@ static LIST_HEAD(veth_hwaddr_list);
+ static DEFINE_RWLOCK(ve_hwaddr_lock);
+ static DECLARE_MUTEX(hwaddr_sem);
+ 
+-static inline struct net_device_stats *
+-veth_stats(struct net_device *dev, int cpuid)
+-{
+-	return per_cpu_ptr(veth_from_netdev(dev)->real_stats, cpuid);
+-}
+-
+ struct net_device * veth_dev_start(char *dev_addr, char *name);
+ 
+ struct veth_struct *hwaddr_entry_lookup(char *name)
+diff --git a/include/linux/cpt_image.h b/include/linux/cpt_image.h
+index 045bc1f..158980e 100644
+--- a/include/linux/cpt_image.h
++++ b/include/linux/cpt_image.h
+@@ -98,6 +98,7 @@ enum _cpt_object_type
+ 	CPT_OBJ_NET_TUNTAP,
+ 	CPT_OBJ_NET_HWADDR,
+ 	CPT_OBJ_NET_VETH,
++	CPT_OBJ_NET_STATS,
+ };
+ 
+ #define CPT_ALIGN(n) (((n)+7)&~7)
+@@ -1524,6 +1525,38 @@ struct cpt_hwaddr_image {
+ 	__u8	cpt_dev_addr[32];
+ } __attribute__ ((aligned (8)));
+ 
++struct cpt_netstats_image {
++	__u64	cpt_next;
++	__u32	cpt_object;
++	__u16	cpt_hdrlen;
++	__u16	cpt_content;
++
++	__u64	cpt_rx_packets;
++	__u64	cpt_tx_packets;
++	__u64	cpt_rx_bytes;
++	__u64	cpt_tx_bytes;
++	__u64	cpt_rx_errors;
++	__u64	cpt_tx_errors;
++	__u64	cpt_rx_dropped;
++	__u64	cpt_tx_dropped;
++	__u64	cpt_multicast;
++	__u64	cpt_collisions;
++	__u64	cpt_rx_length_errors;
++	__u64	cpt_rx_over_errors;
++	__u64	cpt_rx_crc_errors;
++	__u64	cpt_rx_frame_errors;
++	__u64	cpt_rx_fifo_errors;
++	__u64	cpt_rx_missed_errors;
++	__u64	cpt_tx_aborted_errors;
++	__u64	cpt_tx_carrier_errors;
++	__u64	cpt_tx_fifo_errors;
++	__u64	cpt_tx_heartbeat_errors;
++	__u64	cpt_tx_window_errors;
++	__u64	cpt_rx_compressed;
++	__u64	cpt_tx_compressed;
++	__u64	pad[4];
++} __attribute__ ((aligned (8)));
++
+ struct cpt_ifaddr_image {
+ 	__u64	cpt_next;
+ 	__u32	cpt_object;
+diff --git a/include/linux/venet.h b/include/linux/venet.h
+index 3a6903a..14cf89e 100644
+--- a/include/linux/venet.h
++++ b/include/linux/venet.h
+@@ -15,11 +15,17 @@
+ #include <linux/spinlock.h>
+ #include <linux/vzcalluser.h>
+ #include <linux/veip.h>
++#include <linux/netdevice.h>
+ 
+ #define VEIP_HASH_SZ 512
+ 
+ struct ve_struct;
+ struct venet_stat;
++struct venet_stats {
++	struct net_device_stats	stats;
++	struct net_device_stats	*real_stats;
++};
++
+ struct ip_entry_struct
+ {
+ 	struct ve_addr_struct	addr;
+@@ -39,6 +45,14 @@ struct veip_struct
+ 	envid_t			veid;
+ };
+ 
++static inline struct net_device_stats *
++venet_stats(struct net_device *dev, int cpu)
++{
++	struct venet_stats *stats;
++	stats = (struct venet_stats*)dev->priv;
++	return per_cpu_ptr(stats->real_stats, cpu);
++}
++
+ /* veip_hash_lock should be taken for write by caller */
+ void ip_entry_hash(struct ip_entry_struct *entry, struct veip_struct *veip);
+ /* veip_hash_lock should be taken for write by caller */
+diff --git a/include/linux/veth.h b/include/linux/veth.h
+index 9d0273f..34cfe2b 100644
+--- a/include/linux/veth.h
++++ b/include/linux/veth.h
+@@ -36,4 +36,10 @@ static inline struct net_device * veth_to_netdev(struct veth_struct *veth)
+ }
+ #endif
+ 
++static inline struct net_device_stats *
++veth_stats(struct net_device *dev, int cpuid)
++{
++	return per_cpu_ptr(veth_from_netdev(dev)->real_stats, cpuid);
++}
++
+ #endif
+diff --git a/kernel/cpt/cpt_net.c b/kernel/cpt/cpt_net.c
+index 4fe5ca7..2926d24 100644
+--- a/kernel/cpt/cpt_net.c
++++ b/kernel/cpt/cpt_net.c
+@@ -63,6 +63,53 @@ static void cpt_dump_veth(struct net_device *dev, struct cpt_context * ctx)
+ 	return;
+ }
+ 
++static void cpt_dump_netstats(struct net_device *dev, struct cpt_context * ctx)
++{
++	struct cpt_netstats_image *n;
++	struct net_device_stats *stats;
++
++	if (!dev->get_stats)
++		return;
++
++	n = cpt_get_buf(ctx);
++	stats = dev->get_stats(dev);
++	cpt_open_object(NULL, ctx);
++
++	n->cpt_next = CPT_NULL;
++	n->cpt_object = CPT_OBJ_NET_STATS;
++	n->cpt_hdrlen = sizeof(*n);
++	n->cpt_content = CPT_CONTENT_VOID;
++
++	n->cpt_rx_packets = stats->rx_packets;
++	n->cpt_tx_packets = stats->tx_packets;
++	n->cpt_rx_bytes = stats->rx_bytes;
++	n->cpt_tx_bytes = stats->tx_bytes;
++	n->cpt_rx_errors = stats->rx_errors;
++	n->cpt_tx_errors = stats->tx_errors;
++	n->cpt_rx_dropped = stats->rx_dropped;
++	n->cpt_tx_dropped = stats->tx_dropped;
++	n->cpt_multicast = stats->multicast;
++	n->cpt_collisions = stats->collisions;
++	n->cpt_rx_length_errors = stats->rx_length_errors;
++	n->cpt_rx_over_errors = stats->rx_over_errors;
++	n->cpt_rx_crc_errors = stats->rx_crc_errors;
++	n->cpt_rx_frame_errors = stats->rx_frame_errors;
++	n->cpt_rx_fifo_errors = stats->rx_fifo_errors;
++	n->cpt_rx_missed_errors = stats->rx_missed_errors;
++	n->cpt_tx_aborted_errors = stats->tx_aborted_errors;
++	n->cpt_tx_carrier_errors = stats->tx_carrier_errors;
++	n->cpt_tx_fifo_errors = stats->tx_fifo_errors;
++	n->cpt_tx_heartbeat_errors = stats->tx_heartbeat_errors;
++	n->cpt_tx_window_errors = stats->tx_window_errors;
++	n->cpt_rx_compressed = stats->rx_compressed;
++	n->cpt_tx_compressed = stats->tx_compressed;
++
++	ctx->write(n, sizeof(*n), ctx);
++	cpt_close_object(ctx);
++	cpt_release_buf(ctx);
++	return;
++}
++
+ static void cpt_dump_tuntap(struct net_device *dev, struct cpt_context * ctx)
+ {
+ #if defined(CONFIG_TUN) || defined(CONFIG_TUN_MODULE)
+@@ -144,6 +191,8 @@ int cpt_dump_link(struct cpt_context * ctx)
+ 		ctx->write(&hw, sizeof(hw), ctx);
+ 		cpt_close_object(ctx);
+ 		
++		cpt_dump_netstats(dev, ctx);
++
+ 		cpt_pop_object(&saved_obj, ctx);
+ 
+ 		cpt_close_object(ctx);
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index df6b659..2cb47a4 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -32,6 +32,7 @@
+ #include <linux/if_tun.h>
+ #include <linux/veth.h>
+ #include <linux/nfcalls.h>
++#include <linux/venet.h>
+ 
+ #include "cpt_obj.h"
+ #include "cpt_context.h"
+@@ -402,6 +403,73 @@ static int rst_restore_veth(loff_t pos, struct net_device *dev,
+ 	return err;
+ }
+ 
++static int rst_restore_netstats(loff_t pos, struct net_device *dev,
++			struct cpt_context * ctx)
++{
++	struct cpt_netstats_image *n;
++	struct net_device_stats *stats = NULL;
++	struct net_device *lo = get_exec_env()->ve_ns->net_ns->loopback_dev;
++	int err;
++
++	if (!dev->get_stats)
++		return 0;
++
++	n = cpt_get_buf(ctx);
++	err = rst_get_object(CPT_OBJ_NET_STATS, pos, n, ctx);
++	if (err)
++		goto out;
++	BUG_ON(sizeof(struct cpt_netstats_image) != n->cpt_hdrlen);
++	preempt_disable();
++	if (dev == lo)
++		stats = netdev_priv(lo);
++#if defined(CONFIG_VE_ETHDEV) || defined(CONFIG_VE_ETHDEV_MODULE)
++	else if (KSYMREF(veth_open) && dev->open == KSYMREF(veth_open))
++		stats = veth_stats(dev, smp_processor_id());
++#endif
++#if defined(CONFIG_VE_NETDEV) || defined(CONFIG_VE_NETDEV_MODULE)
++	else if (dev == get_exec_env()->_venet_dev)
++		stats = venet_stats(dev, smp_processor_id());
++#endif
++#if defined(CONFIG_TUN) || defined(CONFIG_TUN_MODULE)
++	if (dev->open == tun_net_open)
++		stats = &dev->stats;
++#endif
++	if (!stats) {
++		err = -ENODEV;
++		eprintk_ctx("Network device %s is not supported\n", dev->name);
++		goto out;
++	}
++
++	stats->rx_packets = n->cpt_rx_packets;
++	stats->tx_packets = n->cpt_tx_packets;
++	stats->rx_bytes = n->cpt_rx_bytes;
++	stats->tx_bytes = n->cpt_tx_bytes;
++	stats->rx_errors = n->cpt_rx_errors;
++	stats->tx_errors = n->cpt_tx_errors;
++	stats->rx_dropped = n->cpt_rx_dropped;
++	stats->tx_dropped = n->cpt_tx_dropped;
++	stats->multicast = n->cpt_multicast;
++	stats->collisions = n->cpt_collisions;
++	stats->rx_length_errors = n->cpt_rx_length_errors;
++	stats->rx_over_errors = n->cpt_rx_over_errors;
++	stats->rx_crc_errors = n->cpt_rx_crc_errors;
++	stats->rx_frame_errors = n->cpt_rx_frame_errors;
++	stats->rx_fifo_errors = n->cpt_rx_fifo_errors;
++	stats->rx_missed_errors = n->cpt_rx_missed_errors;
++	stats->tx_aborted_errors = n->cpt_tx_aborted_errors;
++	stats->tx_carrier_errors = n->cpt_tx_carrier_errors;
++	stats->tx_fifo_errors = n->cpt_tx_fifo_errors;
++	stats->tx_heartbeat_errors = n->cpt_tx_heartbeat_errors;
++	stats->tx_window_errors = n->cpt_tx_window_errors;
++	stats->rx_compressed = n->cpt_rx_compressed;
++	stats->tx_compressed = n->cpt_tx_compressed;
++
++out:
++	preempt_enable();
++	cpt_release_buf(ctx);
++	return err;
++}
++
+ int rst_restore_netdev(struct cpt_context *ctx)
+ {
+ 	struct net *net = get_exec_env()->ve_ns->net_ns;
+@@ -486,9 +554,8 @@ int rst_restore_netdev(struct cpt_context *ctx)
+ 				if (err)
+ 					eprintk_ctx("dev_change_flags err: %d\n", err);
+ 			}
+-			if (pos < sec + di.cpt_next) {
++			while (pos < sec + di.cpt_next) {
+ 				struct cpt_object_hdr hdr;
+-				struct cpt_hwaddr_image hw;
+ 				err = ctx->pread(&hdr, sizeof(struct cpt_object_hdr),
+ 						ctx, pos);
+ 				if (err)
+@@ -500,18 +567,26 @@ int rst_restore_netdev(struct cpt_context *ctx)
+ 								di.cpt_name, err);
+ 						goto out;
+ 					}
+-					pos += hdr.cpt_next;
+-				}
+-				/* Restore hardware address */
+-				err = rst_get_object(CPT_OBJ_NET_HWADDR, pos,
+-						&hw, ctx);
+-				if (err)
+-					goto out;
++				} else if (hdr.cpt_object == CPT_OBJ_NET_HWADDR) {
++					/* Restore hardware address */
++					struct cpt_hwaddr_image hw;
++					err = rst_get_object(CPT_OBJ_NET_HWADDR,
++							pos, &hw, ctx);
++					if (err)
++						goto out;
+ 				BUG_ON(sizeof(hw.cpt_dev_addr) !=
+ 						sizeof(dev->dev_addr));
+-				memcpy(dev->dev_addr, hw.cpt_dev_addr,
+-						sizeof(hw.cpt_dev_addr));
+-				pos += hw.cpt_next;
++					memcpy(dev->dev_addr, hw.cpt_dev_addr,
++							sizeof(hw.cpt_dev_addr));
++				} else if (hdr.cpt_object == CPT_OBJ_NET_STATS) {
++					err = rst_restore_netstats(pos, dev, ctx);
++					if (err) {
++						eprintk_ctx("rst stats %s: %d\n",
++								di.cpt_name, err);
++						goto out;
++					}
++				}
++				pos += hdr.cpt_next;
+ 			}
+ 		} else {
+ 			eprintk_ctx("unknown interface 2 %s\n", di.cpt_name);
+-- 
+1.5.4.3
+
