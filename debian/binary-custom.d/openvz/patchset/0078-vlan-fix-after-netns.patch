@@ -1,0 +1,203 @@
+commit beee05115ef107e73bb6e7eef7dce9532caf0687
+Author: Alexey Dobriyan <adobriyan@openvz.org>
+Date:   Tue May 20 16:42:16 2008 +0400
+
+    VLAN: fix rmmod 8021q with vlan interface setup
+
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index b4c8a23..c356a24 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -21,6 +21,7 @@
+ #include <asm/uaccess.h> /* for copy_from_user */
+ #include <linux/capability.h>
+ #include <linux/module.h>
++#include <linux/nsproxy.h>
+ #include <linux/netdevice.h>
+ #include <linux/skbuff.h>
+ #include <net/datalink.h>
+@@ -231,8 +232,9 @@ static void vlan_group_free(struct vlan_group *grp)
+ 	kfree(grp);
+ }
+ 
+-static struct vlan_group *vlan_group_alloc(int ifindex)
++static struct vlan_group *vlan_group_alloc(struct net_device *real_dev)
+ {
++	int ifindex = real_dev->ifindex;
+ 	struct vlan_group *grp;
+ 	unsigned int size;
+ 	unsigned int i;
+@@ -250,6 +252,7 @@ static struct vlan_group *vlan_group_alloc(int ifindex)
+ 	}
+ 
+ 	grp->real_dev_ifindex = ifindex;
++	grp->owner = get_ve(real_dev->owner_env);
+ 	hlist_add_head_rcu(&grp->hlist,
+ 			   &vlan_group_hash[vlan_grp_hashfn(ifindex)]);
+ 	return grp;
+@@ -508,7 +511,7 @@ int register_vlan_dev(struct net_device *dev)
+ 
+ 	grp = __vlan_find_group(real_dev->ifindex, real_dev->owner_env);
+ 	if (!grp) {
+-		ngrp = grp = vlan_group_alloc(real_dev->ifindex);
++		ngrp = grp = vlan_group_alloc(real_dev);
+ 		if (!grp)
+ 			return -ENOBUFS;
+ 	}
+@@ -601,6 +604,7 @@ static int register_vlan_device(struct net_device *real_dev,
+ 	if (new_dev == NULL)
+ 		return -ENOBUFS;
+ 
++	new_dev->nd_net = get_exec_env()->ve_ns->net_ns;
+ 	/* need 4 bytes for extra VLAN header info,
+ 	 * hope the underlying device can handle it.
+ 	 */
+@@ -802,7 +806,7 @@ static int vlan_ioctl_handler(struct net *net, void __user *arg)
+ 	case GET_VLAN_REALDEV_NAME_CMD:
+ 	case GET_VLAN_VID_CMD:
+ 		err = -ENODEV;
+-		dev = __dev_get_by_name(&init_net, args.device1);
++		dev = __dev_get_by_name(net, args.device1);
+ 		if (!dev)
+ 			goto out;
+ 
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 1493b9e..800da47 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -122,11 +122,6 @@ int vlan_skb_recv(struct sk_buff *skb, struct net_device *dev,
+ 	unsigned short vlan_TCI;
+ 	__be16 proto;
+ 
+-	if (dev->nd_net != &init_net) {
+-		kfree_skb(skb);
+-		return -1;
+-	}
+-
+ 	if ((skb = skb_share_check(skb, GFP_ATOMIC)) == NULL)
+ 		return -1;
+ 
+diff --git a/net/8021q/vlan_netlink.c b/net/8021q/vlan_netlink.c
+index 0996185..cb74c5f 100644
+--- a/net/8021q/vlan_netlink.c
++++ b/net/8021q/vlan_netlink.c
+@@ -113,7 +113,7 @@ static int vlan_newlink(struct net_device *dev,
+ 
+ 	if (!tb[IFLA_LINK])
+ 		return -EINVAL;
+-	real_dev = __dev_get_by_index(&init_net, nla_get_u32(tb[IFLA_LINK]));
++	real_dev = __dev_get_by_index(dev->nd_net, nla_get_u32(tb[IFLA_LINK]));
+ 	if (!real_dev)
+ 		return -ENODEV;
+ 
+diff --git a/net/8021q/vlanproc.c b/net/8021q/vlanproc.c
+index af38076..1207c21 100644
+--- a/net/8021q/vlanproc.c
++++ b/net/8021q/vlanproc.c
+@@ -23,6 +23,7 @@
+ #include <linux/kernel.h>
+ #include <linux/slab.h>		/* kmalloc(), kfree() */
+ #include <linux/mm.h>
++#include <linux/nsproxy.h>
+ #include <linux/string.h>	/* inline mem*, str* functions */
+ #include <linux/init.h>		/* __initfunc et al. */
+ #include <asm/byteorder.h>	/* htons(), etc. */
+@@ -79,7 +80,24 @@ static const struct seq_operations vlan_seq_ops = {
+ 
+ static int vlan_seq_open(struct inode *inode, struct file *file)
+ {
+-	return seq_open(file, &vlan_seq_ops);
++	struct seq_file *m;
++	int rv;
++
++	rv = seq_open(file, &vlan_seq_ops);
++	if (rv < 0)
++		return rv;
++	m = file->private_data;
++	m->private = get_proc_net(inode);
++	return 0;
++}
++
++static int vlan_seq_release(struct inode *inode, struct file *file)
++{
++	struct seq_file *m = file->private_data;
++	struct net *net = m->private;
++
++	put_net(net);
++	return seq_release(inode, file);
+ }
+ 
+ static const struct file_operations vlan_fops = {
+@@ -87,7 +105,7 @@ static const struct file_operations vlan_fops = {
+ 	.open    = vlan_seq_open,
+ 	.read    = seq_read,
+ 	.llseek  = seq_lseek,
+-	.release = seq_release,
++	.release = vlan_seq_release,
+ };
+ 
+ /*
+@@ -148,11 +166,13 @@ static const char *vlan_name_type_str[VLAN_NAME_TYPE_HIGHEST] = {
+ 
+ void vlan_proc_cleanup(void)
+ {
++	struct net *net = get_exec_env()->ve_ns->net_ns;
++
+ 	if (proc_vlan_conf)
+ 		remove_proc_entry(name_conf, proc_vlan_dir);
+ 
+ 	if (proc_vlan_dir)
+-		proc_net_remove(&init_net, name_root);
++		proc_net_remove(net, name_root);
+ 
+ 	/* Dynamically added entries should be cleaned up as their vlan_device
+ 	 * is removed, so we should not have to take care of it here...
+@@ -165,8 +185,11 @@ void vlan_proc_cleanup(void)
+ 
+ int vlan_proc_init(void)
+ {
+-	proc_vlan_dir = proc_mkdir(name_root, init_net.proc_net);
++	struct net *net = get_exec_env()->ve_ns->net_ns;
++
++	proc_vlan_dir = proc_mkdir(name_root, net->proc_net);
+ 	if (proc_vlan_dir) {
++		proc_vlan_dir->data = net;
+ 		proc_vlan_conf = create_proc_entry(name_conf,
+ 						   S_IFREG|S_IRUSR|S_IWUSR,
+ 						   proc_vlan_dir);
+@@ -254,6 +277,7 @@ static inline int is_vlan_dev(struct net_device *dev)
+ /* start read of /proc/net/vlan/config */
+ static void *vlan_seq_start(struct seq_file *seq, loff_t *pos)
+ {
++	struct net *net = seq->private;
+ 	struct net_device *dev;
+ 	loff_t i = 1;
+ 
+@@ -262,7 +286,7 @@ static void *vlan_seq_start(struct seq_file *seq, loff_t *pos)
+ 	if (*pos == 0)
+ 		return SEQ_START_TOKEN;
+ 
+-	for_each_netdev(&init_net, dev) {
++	for_each_netdev(net, dev) {
+ 		if (!is_vlan_dev(dev))
+ 			continue;
+ 
+@@ -275,15 +299,16 @@ static void *vlan_seq_start(struct seq_file *seq, loff_t *pos)
+ 
+ static void *vlan_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
++	struct net *net = seq->private;
+ 	struct net_device *dev;
+ 
+ 	++*pos;
+ 
+ 	dev = (struct net_device *)v;
+ 	if (v == SEQ_START_TOKEN)
+-		dev = net_device_entry(&init_net.dev_base_head);
++		dev = net_device_entry(&net->dev_base_head);
+ 
+-	for_each_netdev_continue(&init_net, dev) {
++	for_each_netdev_continue(net, dev) {
+ 		if (!is_vlan_dev(dev))
+ 			continue;
+ 
