@@ -13,6 +13,7 @@
 #ifndef __ASSEMBLY__
 
 #include <asm/errno.h>
+#include <asm/system.h>
 
 static inline unsigned long long native_read_msr(unsigned int msr)
 {
@@ -69,7 +70,11 @@ static inline int native_write_msr_safe(unsigned int msr,
 static inline unsigned long long native_read_tsc(void)
 {
 	unsigned long long val;
+
+	rdtsc_barrier();
 	asm volatile("rdtsc" : "=A" (val));
+	rdtsc_barrier();
+
 	return val;
 }
 
