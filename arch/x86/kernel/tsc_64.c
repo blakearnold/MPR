@@ -10,7 +10,6 @@
 
 #include <asm/hpet.h>
 #include <asm/timex.h>
-#include <asm/timer.h>
 #include <asm/vgtod.h>
 
 static int notsc __initdata = 0;
