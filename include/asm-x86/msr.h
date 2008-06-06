@@ -174,6 +174,7 @@ static inline int wrmsr_safe_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h)
 
 #ifndef __ASSEMBLY__
 #include <linux/errno.h>
+#include <asm/system.h>
 /*
  * Access to machine-specific registers (available on 586 and better only)
  * Note: the rd* operations modify the parameters directly (without using
@@ -228,7 +229,11 @@ static inline int wrmsr_safe_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h)
 static inline unsigned long long native_read_tsc(void)
 {
 	unsigned long long val;
+
+	rdtsc_barrier();
 	rdtscll(val);
+	rdtsc_barrier();
+
 	return val;
 }
 
