@@ -225,6 +225,13 @@ static inline int wrmsr_safe_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h)
 
 #define write_rdtscp_aux(val) wrmsr(0xc0000103, val, 0)
 
+static inline unsigned long long native_read_tsc(void)
+{
+	unsigned long long val;
+	rdtscll(val);
+	return val;
+}
+
 #define rdpmc(counter,low,high) \
      __asm__ __volatile__("rdpmc" \
 			  : "=a" (low), "=d" (high) \
