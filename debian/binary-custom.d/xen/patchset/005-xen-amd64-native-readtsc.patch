@@ -1,0 +1,19 @@
+diff -r -u --new-file custom-source-xen/include/asm-x86/mach-xen/asm/msr.h custom-source-xen.amd64-native-readtsc/include/asm-x86/mach-xen/asm/msr.h
+--- custom-source-xen/include/asm-x86/mach-xen/asm/msr.h	2008-06-07 13:35:36.000000000 -0600
++++ custom-source-xen.amd64-native-readtsc/include/asm-x86/mach-xen/asm/msr.h	2008-06-07 13:34:46.000000000 -0600
+@@ -216,6 +216,15 @@
+ 
+ #define write_rdtscp_aux(val) wrmsr(0xc0000103, val, 0)
+ 
++static inline unsigned long long native_read_tsc(void)
++{
++	unsigned long long val;
++	rdtsc_barrier();
++	rdtscll(val);
++	rdtsc_barrier();
++	return val;
++}
++
+ #define rdpmc(counter,low,high) \
+      __asm__ __volatile__("rdpmc" \
+ 			  : "=a" (low), "=d" (high) \
