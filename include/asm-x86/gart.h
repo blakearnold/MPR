@@ -10,6 +10,7 @@ extern void gart_iommu_init(void);
 extern void gart_iommu_shutdown(void);
 extern void __init gart_parse_options(char *);
 extern void gart_iommu_hole_init(void);
+extern void set_up_gart_resume(u32, u32);
 extern int fallback_aper_order;
 extern int fallback_aper_force;
 extern int gart_iommu_aperture;

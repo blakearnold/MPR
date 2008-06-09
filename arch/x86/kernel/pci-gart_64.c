@@ -493,14 +493,71 @@ static __init unsigned read_aperture(struct pci_dev *dev, u32 *size)
 	return aper_base;
 } 
 
+static void enable_gart_translations(void)
+{
+	int i;
+
+	for (i = 0; i < num_k8_northbridges; i++) {
+		struct pci_dev *dev = k8_northbridges[i];
+		u32 ctl;
+		u32 gatt_reg;
+
+		gatt_reg = __pa(agp_gatt_table) >> 12;
+		gatt_reg <<= 4;
+		pci_write_config_dword(dev, 0x98, gatt_reg);
+		pci_read_config_dword(dev, 0x90, &ctl);
+
+		ctl |= 1;
+		ctl &= ~((1<<4) | (1<<5));
+
+		pci_write_config_dword(dev, 0x90, ctl);
+	}
+}
+
+/*
+ * If fix_up_north_bridges is set, the north bridges have to be fixed up on
+ * resume in the same way as they are handled in gart_iommu_hole_init().
+ */
+static bool fix_up_north_bridges;
+static u32 aperture_order;
+static u32 aperture_alloc;
+
+void set_up_gart_resume(u32 aper_order, u32 aper_alloc)
+{
+	fix_up_north_bridges = true;
+	aperture_order = aper_order;
+	aperture_alloc = aper_alloc;
+}
+
 static int gart_resume(struct sys_device *dev)
 {
+	printk(KERN_INFO "PCI-DMA: Resuming GART IOMMU\n");
+
+	if (fix_up_north_bridges) {
+		int i;
+
+		printk(KERN_INFO "PCI-DMA: Restoring GART aperture settings\n");
+
+		for (i = 0; i < num_k8_northbridges; i++) {
+			struct pci_dev *dev = k8_northbridges[i];
+
+			/*
+			 * Don't enable translations just yet.  That is the next
+			 * step.  Restore the pre-suspend aperture settings.
+			 */
+			pci_write_config_dword(dev, 0x90, aperture_order << 1);
+			pci_write_config_dword(dev, 0x94, aperture_alloc >> 25);
+		}
+	}
+
+	enable_gart_translations();
+
 	return 0;
 }
 
 static int gart_suspend(struct sys_device *dev, pm_message_t state)
 {
-	return -EINVAL;
+	return 0;
 }
 
 static struct sysdev_class gart_sysdev_class = {
@@ -557,21 +614,7 @@ static __init int init_k8_gatt(struct agp_kern_info *info)
 	memset(gatt, 0, gatt_size); 
 	agp_gatt_table = gatt;
 
-	for (i = 0; i < num_k8_northbridges; i++) {
-		u32 ctl; 
-		u32 gatt_reg; 
-
-		dev = k8_northbridges[i];
-		gatt_reg = __pa(gatt) >> 12; 
-		gatt_reg <<= 4; 
-		pci_write_config_dword(dev, 0x98, gatt_reg);
-		pci_read_config_dword(dev, 0x90, &ctl); 
-
-		ctl |= 1;
-		ctl &= ~((1<<4) | (1<<5));
-
-		pci_write_config_dword(dev, 0x90, ctl); 
-	}
+	enable_gart_translations();
 
 	error = sysdev_class_register(&gart_sysdev_class);
 	if (!error)

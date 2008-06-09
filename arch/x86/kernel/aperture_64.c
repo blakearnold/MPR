@@ -299,4 +299,6 @@ void __init gart_iommu_hole_init(void)
 		write_pci_config(0, num, 3, 0x90, aper_order<<1); 
 		write_pci_config(0, num, 3, 0x94, aper_alloc>>25); 
 	} 
+
+	set_up_gart_resume(aper_order, aper_alloc);
 } 
