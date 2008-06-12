@@ -66,7 +66,7 @@ endif
 	@echo "CONCURRENCY_LEVEL = $(CONCURRENCY_LEVEL)"
 
 printchanges:
-	@git-log --pretty=short Ubuntu-$(release)-$(prev_revision)..HEAD | \
+	@git-log Ubuntu-$(release)-$(prev_revision)..HEAD | \
 		perl -w -f debian/scripts/misc/git-ubuntu-log $(ubuntu_log_opts)
 
 insertchanges:

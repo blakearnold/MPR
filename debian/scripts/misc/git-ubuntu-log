@@ -175,7 +175,7 @@ sub changelog_input {
 				while (<STDIN>) {
 					$ignore = 1 if /^ *Ignore: yes/i;
 					$bug = $2 if /^ *Bug: *(#|)(.*)/;
-					last if /^$/;
+					last if /^commit /;
 				}
 			} else {
 				$author = $kernel_auth;
@@ -188,6 +188,10 @@ sub changelog_input {
 			}
 
 			$pstate = 1;
+			if ($_ && /^commit (.*)/) {
+				$commit = $1;
+				$pstate++;
+			}
 		}
 	
 		else {
