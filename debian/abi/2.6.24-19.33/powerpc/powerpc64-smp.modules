@@ -981,6 +981,7 @@ parport_cs
 parport_pc
 parport_serial
 pasemi_edac
+pasemi_mac
 pasemi-rng
 pata_amd
 pata_cs5520

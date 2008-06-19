@@ -752,6 +752,12 @@ static acpi_status pnpacpi_type_resources(struct acpi_resource *res, void *data)
 	if (pnpacpi_supported_resource(res)) {
 		(*resource)->type = res->type;
 		(*resource)->length = sizeof(struct acpi_resource);
+		if (res->type == ACPI_RESOURCE_TYPE_IRQ)
+			(*resource)->data.irq.descriptor_length =
+				res->data.irq.descriptor_length;
+		if (res->type == ACPI_RESOURCE_TYPE_START_DEPENDENT)
+			(*resource)->data.start_dpf.descriptor_length =
+				res->data.start_dpf.descriptor_length;
 		(*resource)++;
 	}
 
