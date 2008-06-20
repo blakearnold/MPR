@@ -1595,6 +1595,7 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
 		return -EINVAL;
 	}
 
+	dev->cpu = pr->id;
 	for (i = 1; i < ACPI_PROCESSOR_MAX_POWER && i <= max_cstate; i++) {
 		cx = &pr->power.states[i];
 		state = &dev->states[count];
@@ -1653,7 +1654,7 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
 
 int acpi_processor_cst_has_changed(struct acpi_processor *pr)
 {
-	int ret;
+	int ret = 0;
 
 	if (boot_option_idle_override)
 		return 0;
@@ -1671,8 +1672,11 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
 	cpuidle_pause_and_lock();
 	cpuidle_disable_device(&pr->power.dev);
 	acpi_processor_get_power_info(pr);
-	acpi_processor_setup_cpuidle(pr);
-	ret = cpuidle_enable_device(&pr->power.dev);
+	if (pr->flags.power) {
+		acpi_processor_setup_cpuidle(pr);
+		ret = cpuidle_enable_device(&pr->power.dev);
+	}
+
 	cpuidle_resume_and_unlock();
 
 	return ret;
@@ -1727,7 +1731,6 @@ int __cpuinit acpi_processor_power_init(struct acpi_processor *pr,
 	if (pr->flags.power) {
 #ifdef CONFIG_CPU_IDLE
 		acpi_processor_setup_cpuidle(pr);
-		pr->power.dev.cpu = pr->id;
 		if (cpuidle_register_device(&pr->power.dev))
 			return -EIO;
 #endif
@@ -1768,8 +1771,7 @@ int acpi_processor_power_exit(struct acpi_processor *pr,
 		return 0;
 
 #ifdef CONFIG_CPU_IDLE
-	if (pr->flags.power)
-		cpuidle_unregister_device(&pr->power.dev);
+	cpuidle_unregister_device(&pr->power.dev);
 #endif
 	pr->flags.power_setup_done = 0;
 
