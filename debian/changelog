@@ -1,3 +1,24 @@
+linux (2.6.24-19.35) hardy-security; urgency=low
+
+  [Upstream Kernel Changes]
+
+  * (CVE-2007-6282) [ESP]: Ensure IV is in linear part of the skb to avoid
+    BUG() due to OOB access
+  * (CVE-2008-1673) asn1: additional sanity checking during BER decoding
+  * (CVE-2008-2136) sit: Add missing kfree_skb() on pskb_may_pull()
+    failure.
+  * (CVE-2008-2137) sparc: Fix mmap VA span checking.
+  * (CVE-2008-2148) vfs: fix permission checking in sys_utimensat
+  * (CVE-2008-2358) dccp: return -EINVAL on invalid feature length
+  * (CVE-2008-2750) l2tp: Fix potential memory corruption in
+    pppol2tp_recvmsg()
+  * (CVE-2008-1615) x86_64: fix CS corruption on iret
+  * fuse: fix permission checking
+  * (CVE-2008-2826) sctp: Make sure N * sizeof(union sctp_addr) does not
+    overflow.
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Tue, 01 Jul 2008 10:40:28 -0600
+
 linux (2.6.24-19.34) hardy-proposed; urgency=low
 
   [Amit Kucheria]
