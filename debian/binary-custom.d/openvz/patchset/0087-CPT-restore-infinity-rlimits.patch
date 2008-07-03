@@ -1,0 +1,82 @@
+From 9c66d6c6e0fce81d77bcff3844cfbc7f7f591881 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 087/103] CPT restore infinity rlimits
+
+During 32bit to 64bit migration rlimits were restored incorrectly due to
+different size of long on 32bit and 64bit archs. Now simple conversion is
+introduced in case of 32bit-64bit migration. Infinity values are restored as
+infinity values. Error is returned if value greater than RLIM_INFINITY32 is
+found in dump during restore on 32bit arch.
+
+Bug #111965
+---
+ kernel/cpt/rst_process.c |   45 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 43 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cpt/rst_process.c b/kernel/cpt/rst_process.c
+index c54f04e..2630538 100644
+--- a/kernel/cpt/rst_process.c
++++ b/kernel/cpt/rst_process.c
+@@ -1193,6 +1193,32 @@ static void rst_apply_mxcsr_mask(struct task_struct *tsk)
+ #endif
+ }
+ 
++#define RLIM_INFINITY32		0xffffffff
++#define RLIM_INFINITY64		(~0ULL)
++
++#ifdef CONFIG_X86_64
++#define rst_rlim_32_to_64(a, i, t, im)					\
++do {									\
++	if (im->cpt_rlim_##a[i] == RLIM_INFINITY32)			\
++		t->signal->rlim[i].rlim_##a = RLIM_INFINITY64;		\
++	else								\
++		t->signal->rlim[i].rlim_##a = im->cpt_rlim_##a[i];	\
++} while (0)
++#elif defined(CONFIG_X86_32)
++#define rst_rlim_64_to_32(a, i, t, im)					\
++do {									\
++	if (im->cpt_rlim_##a[i] == RLIM_INFINITY64)			\
++		t->signal->rlim[i].rlim_##a = RLIM_INFINITY32;		\
++	else if (im->cpt_rlim_##a[i] > RLIM_INFINITY32) {		\
++		eprintk_ctx("rlimit %Lu is too high for 32-bit task, "	\
++			    "dump file is corrupted\n",			\
++			    im->cpt_rlim_##a[i]);			\
++		return -EINVAL;						\
++	} else								\
++		t->signal->rlim[i].rlim_##a = im->cpt_rlim_##a[i];	\
++} while (0)
++#endif
++
+ int rst_restore_process(struct cpt_context *ctx)
+ {
+ 	cpt_object_t *obj;
+@@ -1328,8 +1354,23 @@ int rst_restore_process(struct cpt_context *ctx)
+ 			tsk->signal->cmaj_flt = ti->cpt_cmaj_flt;
+ 
+ 			for (i=0; i<RLIM_NLIMITS; i++) {
+-				tsk->signal->rlim[i].rlim_cur = ti->cpt_rlim_cur[i];
+-				tsk->signal->rlim[i].rlim_max = ti->cpt_rlim_max[i];
++#ifdef CONFIG_X86_64
++				if (ctx->image_arch == CPT_OS_ARCH_I386) {
++					rst_rlim_32_to_64(cur, i, tsk, ti);
++					rst_rlim_32_to_64(max, i, tsk, ti);
++				} else 
++#elif defined(CONFIG_X86_32)
++				if (ctx->image_arch == CPT_OS_ARCH_EMT64) {
++					rst_rlim_64_to_32(cur, i, tsk, ti);
++					rst_rlim_64_to_32(max, i, tsk, ti);
++				} else 
++#endif
++				{
++					tsk->signal->rlim[i].rlim_cur =
++						ti->cpt_rlim_cur[i];
++					tsk->signal->rlim[i].rlim_max =
++						ti->cpt_rlim_max[i];
++				}
+ 			}
+ 		}
+ #endif
+-- 
+1.5.4.3
+

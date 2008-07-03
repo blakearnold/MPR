@@ -1,0 +1,27 @@
+From fdf061b9895ab15cfd55f6fdcd5375bd31c3f350 Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Mon, 30 Jun 2008 12:41:16 +0400
+Subject: [PATCH 080/103] CPT checkrunning
+ Check that VE is not running on restore.
+
+#99679
+---
+ kernel/cpt/rst_undump.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cpt/rst_undump.c b/kernel/cpt/rst_undump.c
+index 13aa020..26eb211 100644
+--- a/kernel/cpt/rst_undump.c
++++ b/kernel/cpt/rst_undump.c
+@@ -144,7 +144,7 @@ static int vps_rst_reparent_root(cpt_object_t *obj, struct cpt_context *ctx)
+ 	param.known_features = (ctx->image_version < CPT_VERSION_18) ?
+ 		VE_FEATURES_OLD : ~(__u64)0;
+ 
+-	err = real_env_create(ctx->ve_id, VE_CREATE|VE_LOCK, 2,
++	err = real_env_create(ctx->ve_id, VE_CREATE|VE_LOCK|VE_EXCLUSIVE, 2,
+ 			&param, sizeof(param));
+ 	if (err < 0)
+ 		eprintk_ctx("real_env_create: %d\n", err);
+-- 
+1.5.4.3
+

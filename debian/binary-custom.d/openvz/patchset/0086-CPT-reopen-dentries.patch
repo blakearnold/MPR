@@ -1,0 +1,83 @@
+From 3a7f9103e864afaf9ee091a792fee72e2918bfd8 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:48 +0400
+Subject: [PATCH 086/103] CPT reopen dentries
+
+Dentries were not reopened correctly during checkpointing and restore.
+
+Two bugs fixed:
+1. In case of huge files (more then 2Gb) dentry_open() returns -EFBIG if
+   O_LARGEFILE flag is not set. This flag should be used for temporary files
+   used during checkpointing and restore process.
+   Bug #99544
+
+2. In dump_content_regular() we have following code:
+  file = dentry_open(dget(file->f_dentry),
+			mntget(file->f_vfsmnt), O_RDONLY);
+  if (IS_ERR(file)) {
+	cpt_printk_dentry(file->f_dentry, file->f_vfsmnt);
+	eprintk_ctx("cannot reopen file for read %ld\n", PTR_ERR(file));
+	return PTR_ERR(file);
+  }
+
+  Which results in kernel oops if dentry_open() returns error
+  (e.g. -EFBIG because of bug #99544)
+
+  Bug #99542
+---
+ kernel/cpt/cpt_files.c |   15 +++++++++------
+ kernel/cpt/rst_files.c |    3 ++-
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/cpt/cpt_files.c b/kernel/cpt/cpt_files.c
+index e728b64..ec24ba7 100644
+--- a/kernel/cpt/cpt_files.c
++++ b/kernel/cpt/cpt_files.c
+@@ -627,13 +627,16 @@ static int dump_content_regular(struct file *file, struct cpt_context *ctx)
+ 
+ 	if (!(file->f_mode & FMODE_READ) ||
+ 	    (file->f_flags & O_DIRECT)) {
+-		file = dentry_open(dget(file->f_dentry),
+-				   mntget(file->f_vfsmnt), O_RDONLY);
+-		if (IS_ERR(file)) {
++		struct file *filp;
++		filp = dentry_open(dget(file->f_dentry),
++				   mntget(file->f_vfsmnt),
++				   O_RDONLY | O_LARGEFILE);
++		if (IS_ERR(filp)) {
+ 			cpt_printk_dentry(file->f_dentry, file->f_vfsmnt);
+-			eprintk_ctx("cannot reopen file for read %ld\n", PTR_ERR(file));
+-			return PTR_ERR(file);
++			eprintk_ctx("cannot reopen file for read %ld\n", PTR_ERR(filp));
++			return PTR_ERR(filp);
+ 		}
++		file = filp;
+ 	} else {
+ 		atomic_inc(&file->f_count);
+ 	}
+@@ -895,7 +898,7 @@ static int find_linked_dentry(struct dentry *d, struct vfsmount *mnt,
+ 		return -EINVAL;
+ 
+ 	mntget(mnt);
+-	f = dentry_open(de, mnt, O_RDONLY);
++	f = dentry_open(de, mnt, O_RDONLY | O_LARGEFILE);
+ 	if (IS_ERR(f))
+ 		return PTR_ERR(f);
+ 
+diff --git a/kernel/cpt/rst_files.c b/kernel/cpt/rst_files.c
+index fd29b60..06dcc2c 100644
+--- a/kernel/cpt/rst_files.c
++++ b/kernel/cpt/rst_files.c
+@@ -524,7 +524,8 @@ static int fixup_reg_data(struct file *file, loff_t pos, loff_t end,
+ 			    (file->f_flags&O_DIRECT)) {
+ 				fput(file);
+ 				file = dentry_open(dget(file->f_dentry),
+-						   mntget(file->f_vfsmnt), O_WRONLY);
++						   mntget(file->f_vfsmnt),
++						   O_WRONLY | O_LARGEFILE);
+ 				if (IS_ERR(file)) {
+ 					__cpt_release_buf(ctx);
+ 					return PTR_ERR(file);
+-- 
+1.5.4.3
+

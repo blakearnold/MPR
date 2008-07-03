@@ -1,0 +1,66 @@
+From 7d73bf886255be04c87db19c31076dd282a849e0 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 091/103] UBC proc nlink
+ Override getattr callback on /proc/bc and ubc entries to get correct nlink.
+
+---
+ kernel/bc/proc.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/bc/proc.c b/kernel/bc/proc.c
+index 433095f..caf4b1b 100644
+--- a/kernel/bc/proc.c
++++ b/kernel/bc/proc.c
+@@ -601,6 +601,17 @@ static struct dentry *bc_entry_lookup(struct inode *dir, struct dentry *dentry,
+ 	return bc_lookup(ub, dir, dentry);
+ }
+ 
++static int bc_entry_getattr(struct vfsmount *mnt, struct dentry *dentry,
++		struct kstat *stat)
++{
++	struct user_beancounter *ub;
++
++	generic_fillattr(dentry->d_inode, stat);
++	ub = (struct user_beancounter *)dentry->d_fsdata;
++	stat->nlink = ub->ub_childs + 2;
++	return 0;
++}
++
+ static struct file_operations bc_entry_fops = {
+ 	.read = generic_read_dir,
+ 	.readdir = bc_entry_readdir,
+@@ -608,6 +619,7 @@ static struct file_operations bc_entry_fops = {
+ 
+ static struct inode_operations bc_entry_iops = {
+ 	.lookup = bc_entry_lookup,
++	.getattr = bc_entry_getattr,
+ };
+ 
+ /*
+@@ -645,6 +657,14 @@ static struct dentry *bc_root_lookup(struct inode *dir, struct dentry *dentry,
+ 	return bc_lookup(ub, dir, dentry);
+ }
+ 
++static int bc_root_getattr(struct vfsmount *mnt, struct dentry *dentry,
++	struct kstat *stat)
++{
++	generic_fillattr(dentry->d_inode, stat);
++	stat->nlink = ub_count + 2;
++	return 0;
++}
++
+ static struct file_operations bc_root_fops = {
+ 	.read = generic_read_dir,
+ 	.readdir = bc_root_readdir,
+@@ -652,6 +672,7 @@ static struct file_operations bc_root_fops = {
+ 
+ static struct inode_operations bc_root_iops = {
+ 	.lookup = bc_root_lookup,
++	.getattr = bc_root_getattr,
+ };
+ 
+ static int __init ub_init_proc(void)
+-- 
+1.5.4.3
+
