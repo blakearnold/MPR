@@ -590,6 +590,11 @@ static struct pci_driver ahci_pci_driver = {
 };
 
 
+static inline int ahci_zero_nr_ports(u32 cap)
+{
+	return cap & ~0x1f;
+}
+
 static inline int ahci_nr_ports(u32 cap)
 {
 	return (cap & 0x1f) + 1;
@@ -661,6 +666,7 @@ static void ahci_save_initial_config(struct pci_dev *pdev,
 			   "JMB361 has only one port, port_map 0x%x -> 0x%x\n",
 			   port_map, 1);
 		port_map = 1;
+		cap = ahci_zero_nr_ports(cap);
 	}
 
 	/*
