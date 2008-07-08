@@ -1,0 +1,74 @@
+From c9d58c128b1abebc32e9a6d4fbd9209830c3fef6 Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Wed, 2 Jul 2008 19:55:19 +0400
+Subject: [PATCH 098/103] VE igmp owner ve
+
+IGMP packets should be sent in the context of correct VE.
+
+Timers by default are processed in the context of VE0.
+Obtain the context from device and send the packet inside it.
+(Add 2 more timers after tangaldi's patch).
+---
+ net/ipv4/igmp.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index c81ec13..5bfd510 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -703,22 +703,28 @@ static int igmp_send_report(struct in_device *in_dev, struct ip_mc_list *pmc,
+ static void igmp_gq_timer_expire(unsigned long data)
+ {
+ 	struct in_device *in_dev = (struct in_device *)data;
++	struct ve_struct *old_env;
+ 
++	old_env = set_exec_env(in_dev->dev->owner_env);
+ 	in_dev->mr_gq_running = 0;
+ 	igmpv3_send_report(in_dev, NULL);
+ 	__in_dev_put(in_dev);
++	(void)set_exec_env(old_env);
+ }
+ 
+ static void igmp_ifc_timer_expire(unsigned long data)
+ {
+ 	struct in_device *in_dev = (struct in_device *)data;
++	struct ve_struct *old_env;
+ 
++	old_env = set_exec_env(in_dev->dev->owner_env);
+ 	igmpv3_send_cr(in_dev);
+ 	if (in_dev->mr_ifc_count) {
+ 		in_dev->mr_ifc_count--;
+ 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
+ 	}
+ 	__in_dev_put(in_dev);
++	(void)set_exec_env(old_env);
+ }
+ 
+ static void igmp_ifc_event(struct in_device *in_dev)
+@@ -735,6 +741,7 @@ static void igmp_timer_expire(unsigned long data)
+ {
+ 	struct ip_mc_list *im=(struct ip_mc_list *)data;
+ 	struct in_device *in_dev = im->interface;
++	struct ve_struct *old_env;
+ 
+ 	spin_lock(&im->lock);
+ 	im->tm_running=0;
+@@ -746,6 +753,7 @@ static void igmp_timer_expire(unsigned long data)
+ 	im->reporter = 1;
+ 	spin_unlock(&im->lock);
+ 
++	old_env = set_exec_env(in_dev->dev->owner_env);
+ 	if (IGMP_V1_SEEN(in_dev))
+ 		igmp_send_report(in_dev, im, IGMP_HOST_MEMBERSHIP_REPORT);
+ 	else if (IGMP_V2_SEEN(in_dev))
+@@ -754,6 +762,7 @@ static void igmp_timer_expire(unsigned long data)
+ 		igmp_send_report(in_dev, im, IGMPV3_HOST_MEMBERSHIP_REPORT);
+ 
+ 	ip_ma_put(im);
++	(void)set_exec_env(old_env);
+ }
+ 
+ /* mark EXCLUDE-mode sources */
+-- 
+1.5.4.3
+

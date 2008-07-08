@@ -1,0 +1,55 @@
+From a984380ffcba9d10f107d318158427f2eea50900 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:48 +0400
+Subject: [PATCH 083/103] CPT inotify on symlink
+
+Inside VE file /etc/mtab is a symlink to /proc/mounts.
+FreeNX server with KDE creates inotify on /etc/mtab file.
+To restore such inotify we need to obtain dentry with path_lookup() and
+restore inotify on it.
+
+Bug #96464
+---
+ kernel/cpt/rst_files.c |   25 ++++++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cpt/rst_files.c b/kernel/cpt/rst_files.c
+index 579f9b7..fd29b60 100644
+--- a/kernel/cpt/rst_files.c
++++ b/kernel/cpt/rst_files.c
+@@ -1215,8 +1215,31 @@ int cpt_get_dentry(struct dentry **dp, struct vfsmount **mp,
+ 		return err;
+ 
+ 	file = rst_file(*pos, -2, ctx);
+-	if (IS_ERR(file))
++	if (IS_ERR(file)) {
++		if (PTR_ERR(file) == -EINVAL && S_ISLNK(fi.cpt_i_mode)) {
++			/* One special case: inotify on symlink */
++			struct nameidata nd;
++			__u8 *name = NULL;
++
++			if (fi.cpt_next > fi.cpt_hdrlen)
++				name = rst_get_name(*pos + sizeof(fi), ctx);
++			if (!name) {
++				eprintk_ctx("can't get name for file\n");
++				return -EINVAL;
++			}
++			if ((err = path_lookup(name, 0, &nd)) != 0) {
++				eprintk_ctx("path_lookup %s: %d\n", name, err);
++				rst_put_name(name, ctx);
++				return -EINVAL;
++			}
++			*dp = nd.dentry;
++			*mp = nd.mnt;
++			*pos += fi.cpt_next;
++			rst_put_name(name, ctx);
++			return 0;
++		}
+ 		return PTR_ERR(file);
++	}
+ 
+ 	*dp = dget(file->f_dentry);
+ 	*mp = mntget(file->f_vfsmnt);
+-- 
+1.5.4.3
+

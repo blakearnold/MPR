@@ -1,0 +1,131 @@
+From 67bf484b3dade2a0301e33a91d4469cd17979700 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:48 +0400
+Subject: [PATCH 084/103] CPT net open requests
+
+Open requests were saved and restored sometimes incorrectly:
+
+1. Family of open request was not saved (commented out)
+2. Restore was broken, would crash because rsk_ops was cleared by memset.
+3. And finally, all the coded restoring open requests was skipped.
+
+Tested with http_load.
+
+Bug #95113
+http://bugzilla.openvz.org/show_bug.cgi?id=784
+---
+ include/net/tcp.h          |    1 +
+ kernel/cpt/cpt_socket_in.c |    2 +-
+ kernel/cpt/rst_socket_in.c |   21 ++++++++++++++++++---
+ net/ipv6/tcp_ipv6.c        |    3 ++-
+ 4 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 7de5423..9d39f90 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1359,6 +1359,7 @@ extern int tcp_proc_register(struct net *net, struct tcp_seq_afinfo *afinfo);
+ extern void tcp_proc_unregister(struct net *net, struct tcp_seq_afinfo *afinfo);
+ 
+ extern struct request_sock_ops tcp_request_sock_ops;
++extern struct request_sock_ops tcp6_request_sock_ops;
+ 
+ extern int tcp_v4_destroy_sock(struct sock *sk);
+ 
+diff --git a/kernel/cpt/cpt_socket_in.c b/kernel/cpt/cpt_socket_in.c
+index ac2ec62..e25c387 100644
+--- a/kernel/cpt/cpt_socket_in.c
++++ b/kernel/cpt/cpt_socket_in.c
+@@ -313,7 +313,7 @@ static int dump_openreq(struct request_sock *req, struct sock *sk, int index,
+ 	v->cpt_snt_isn = tcp_rsk(req)->snt_isn;
+ 	v->cpt_rmt_port = inet_rsk(req)->rmt_port;
+ 	v->cpt_mss = req->mss;
+-	// // v->cpt_family = (req->class == &or_ipv4 ? AF_INET : AF_INET6);
++	v->cpt_family = req->rsk_ops->family;
+ 	v->cpt_retrans = req->retrans;
+ 	v->cpt_snd_wscale = inet_rsk(req)->snd_wscale;
+ 	v->cpt_rcv_wscale = inet_rsk(req)->rcv_wscale;
+diff --git a/kernel/cpt/rst_socket_in.c b/kernel/cpt/rst_socket_in.c
+index 4e9ffa5..471a44e 100644
+--- a/kernel/cpt/rst_socket_in.c
++++ b/kernel/cpt/rst_socket_in.c
+@@ -400,7 +400,7 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+ 			      loff_t pos, struct cpt_context *ctx)
+ {
+ 	int err;
+-	loff_t end = si->cpt_next;
++	loff_t end = pos + si->cpt_next;
+ 
+ 	pos += si->cpt_hdrlen;
+ 	while (pos < end) {
+@@ -415,11 +415,21 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+ 		}
+ 
+ 		if (oi.cpt_object == CPT_OBJ_OPENREQ) {
+-			struct request_sock *req = reqsk_alloc(&tcp_request_sock_ops);
++			struct request_sock *req;
++
++			if (oi.cpt_family == AF_INET6) {
++#if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
++				req = reqsk_alloc(&tcp6_request_sock_ops);
++#else
++				return -EINVAL;
++#endif
++			} else {
++				req = reqsk_alloc(&tcp_request_sock_ops);
++			}
++
+ 			if (req == NULL)
+ 				return -ENOMEM;
+ 
+-			memset(req, 0, sizeof(*req));
+ 			tcp_rsk(req)->rcv_isn = oi.cpt_rcv_isn;
+ 			tcp_rsk(req)->snt_isn = oi.cpt_snt_isn;
+ 			inet_rsk(req)->rmt_port = oi.cpt_rmt_port;
+@@ -432,10 +442,14 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+ 			inet_rsk(req)->wscale_ok = oi.cpt_wscale_ok;
+ 			inet_rsk(req)->ecn_ok = oi.cpt_ecn_ok;
+ 			inet_rsk(req)->acked = oi.cpt_acked;
++			inet_rsk(req)->opt = NULL;
+ 			req->window_clamp = oi.cpt_window_clamp;
+ 			req->rcv_wnd = oi.cpt_rcv_wnd;
+ 			req->ts_recent = oi.cpt_ts_recent;
+ 			req->expires = jiffies_import(oi.cpt_expires);
++			req->sk = NULL;
++			req->secid = 0;
++			req->peer_secid = 0;
+ 
+ 			if (oi.cpt_family == AF_INET) {
+ 				memcpy(&inet_rsk(req)->loc_addr, oi.cpt_loc_addr, 4);
+@@ -443,6 +457,7 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+ 				inet_csk_reqsk_queue_hash_add(sk, req, TCP_TIMEOUT_INIT);
+ 			} else {
+ #if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
++				inet6_rsk(req)->pktopts = NULL;
+ 				memcpy(&inet6_rsk(req)->loc_addr, oi.cpt_loc_addr, 16);
+ 				memcpy(&inet6_rsk(req)->rmt_addr, oi.cpt_rmt_addr, 16);
+ 				inet6_rsk(req)->iif = oi.cpt_iif;
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index d2cf1f0..2a37362 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -925,7 +925,7 @@ done_opts:
+ }
+ #endif
+ 
+-static struct request_sock_ops tcp6_request_sock_ops __read_mostly = {
++struct request_sock_ops tcp6_request_sock_ops __read_mostly = {
+ 	.family		=	AF_INET6,
+ 	.obj_size	=	sizeof(struct tcp6_request_sock),
+ 	.rtx_syn_ack	=	tcp_v6_send_synack,
+@@ -933,6 +933,7 @@ static struct request_sock_ops tcp6_request_sock_ops __read_mostly = {
+ 	.destructor	=	tcp_v6_reqsk_destructor,
+ 	.send_reset	=	tcp_v6_send_reset
+ };
++EXPORT_SYMBOL(tcp6_request_sock_ops);
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+ static struct tcp_request_sock_ops tcp_request_sock_ipv6_ops = {
+-- 
+1.5.4.3
+

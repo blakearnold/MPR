@@ -1,0 +1,47 @@
+From aa4f5ce52d18acda1bbe9a30855e044a529f2924 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 088/103] CPT udp sockets restore
+
+Some applications (like ntpd) set on udp sockets sk_reuse to 1. So any other
+applications can bind to the same port. During restore we must skip this
+check and restore and bind all sockets. On IPv6 we must also force DAD
+(Duplicate Address Detection) procedure to be sure that IFA_F_TENTATIVE flag
+will be cleared on IPv6 address and socket can be binded to it.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=784
+---
+ net/ipv4/udp.c      |    2 +-
+ net/ipv6/addrconf.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 959ea53..84fd76d 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -206,7 +206,7 @@ gotit:
+ 		sk_for_each(sk2, node, head)
+ 			if (sk2->sk_hash == snum                             &&
+ 			    sk2 != sk                                        &&
+-			    (!sk2->sk_reuse        || !sk->sk_reuse)         &&
++			    (sk->sk_reuse != 2 && (!sk2->sk_reuse || !sk->sk_reuse))         &&
+ 			    ve_accessible_strict(sk2->owner_env, ve)	     &&
+ 			    (!sk2->sk_bound_dev_if || !sk->sk_bound_dev_if
+ 			     || sk2->sk_bound_dev_if == sk->sk_bound_dev_if) &&
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 19ac1e8..85ec6c6 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2637,7 +2637,8 @@ static void addrconf_dad_start(struct inet6_ifaddr *ifp, u32 flags)
+ 
+ 	if (dev->flags&(IFF_NOARP|IFF_LOOPBACK) ||
+ 	    !(ifp->flags&IFA_F_TENTATIVE) ||
+-	    ifp->flags & IFA_F_NODAD) {
++	    ifp->flags & IFA_F_NODAD ||
++	    dev->owner_env->disable_net) {
+ 		ifp->flags &= ~(IFA_F_TENTATIVE|IFA_F_OPTIMISTIC);
+ 		spin_unlock_bh(&ifp->lock);
+ 		read_unlock_bh(&idev->lock);
+-- 
+1.5.4.3
+

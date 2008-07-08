@@ -1,0 +1,26 @@
+From d3c692ac7aede5577fd951ef95a35449330d4001 Mon Sep 17 00:00:00 2001
+From: Vitaliy Gusev <vgusev@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 089/103] UBC check net skb on repeated charging
+
+This is a (useful) debug patch to find charge memory leak.
+---
+ kernel/bc/net.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/bc/net.c b/kernel/bc/net.c
+index 422d687..4db1f9b 100644
+--- a/kernel/bc/net.c
++++ b/kernel/bc/net.c
+@@ -330,6 +330,8 @@ void ub_sock_sndqueuedel(struct sock *sk)
+ static inline void __ub_skb_set_charge(struct sk_buff *skb, struct sock *sk,
+ 		       unsigned long size, int resource)
+ {
++	WARN_ON_ONCE(skb_bc(skb)->ub != NULL);
++
+ 	skb_bc(skb)->ub = sock_bc(sk)->ub;
+ 	skb_bc(skb)->charged = size;
+ 	skb_bc(skb)->resource = resource;
+-- 
+1.5.4.3
+

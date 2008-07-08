@@ -1,0 +1,128 @@
+From 4d7043260ff770c44716d035d1f220211e5a3694 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:48 +0400
+Subject: [PATCH 081/103] CPT kernel thread owner ve
+
+In current implementation master process which performs checkpointing has
+owner_env set to VE0 and exec_env set to VE. All auxiliary kernel threads
+are created with exec_env set to VE and owner_env set to VE0, so after the
+do_fork_pid() we have the follwing:
+
+ * new thread has owner_env == ve0, exec env == ve
+ * its pid belongs to ve (pid->veid != 0)
+
+That is why if ve_enter() in thread fails, then we hit BUG_ON in
+ release_task -> detach_pid -> free_pid
+sequence, since task owner env != pid's veid.
+
+When enter succeeds the task's owner env becomes ve and this BUG_ON
+is not triggered.
+
+To solve this problem exec_env is switched to VE before kernel thread
+creation and switched back after. Veid is passed to kernel via args. All
+kernel threads are created with CLONE_VFORK to be sure that parent
+process will not exit before doing exec() in thread.
+
+Bug #97124
+---
+ kernel/cpt/cpt_files.c |    7 ++++++-
+ kernel/cpt/cpt_net.c   |   20 +++++++++++++++++---
+ 2 files changed, 23 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/cpt/cpt_files.c b/kernel/cpt/cpt_files.c
+index fbba10b..adbd43b 100644
+--- a/kernel/cpt/cpt_files.c
++++ b/kernel/cpt/cpt_files.c
+@@ -1330,6 +1330,7 @@ struct args_t
+ {
+ 	int* pfd;
+ 	char* path;
++	envid_t veid;
+ };
+ 
+ static int dumptmpfs(void *arg)
+@@ -1341,7 +1342,7 @@ static int dumptmpfs(void *arg)
+ 	char *path = args->path;
+ 	char *argv[] = { "tar", "-c", "-S", "--numeric-owner", path, NULL };
+ 
+-	i = real_env_create(VEID(get_exec_env()), VE_ENTER|VE_SKIPLOCK, 2, NULL, 0);
++	i = real_env_create(args->veid, VE_ENTER|VE_SKIPLOCK, 2, NULL, 0);
+ 	if (i < 0) {
+ 		eprintk("cannot enter ve to dump tmpfs\n");
+ 		module_put(THIS_MODULE);
+@@ -1388,16 +1389,20 @@ static int cpt_dump_tmpfs(char *path, struct cpt_context *ctx)
+ 	int status;
+ 	mm_segment_t oldfs;
+ 	sigset_t ignore, blocked;
++	struct ve_struct *oldenv;
+ 	
+ 	err = sc_pipe(pfd);
+ 	if (err < 0)
+ 		return err;
+ 	args.pfd = pfd;
+ 	args.path = path;
++	args.veid = VEID(get_exec_env());
+ 	ignore.sig[0] = CPT_SIG_IGNORE_MASK;
+ 	sigprocmask(SIG_BLOCK, &ignore, &blocked);
++	oldenv = set_exec_env(get_ve0());
+ 	err = pid = local_kernel_thread(dumptmpfs, (void*)&args,
+ 			SIGCHLD | CLONE_VFORK, 0);
++	set_exec_env(oldenv);
+ 	if (err < 0) {
+ 		eprintk_ctx("tmpfs local_kernel_thread: %d\n", err);
+ 		goto out;
+diff --git a/kernel/cpt/cpt_net.c b/kernel/cpt/cpt_net.c
+index 2926d24..1944654 100644
+--- a/kernel/cpt/cpt_net.c
++++ b/kernel/cpt/cpt_net.c
+@@ -460,13 +460,20 @@ out_sock:
+ 	return err;
+ }
+ 
++struct args_t
++{
++	int* pfd;
++	envid_t veid;
++};
++
+ static int dumpfn(void *arg)
+ {
+ 	int i;
+-	int *pfd = arg;
++	struct args_t *args = arg;
++	int *pfd = args->pfd;
+ 	char *argv[] = { "iptables-save", "-c", NULL };
+ 
+-	i = real_env_create(VEID(get_exec_env()), VE_ENTER|VE_SKIPLOCK, 2, NULL, 0);
++	i = real_env_create(args->veid, VE_ENTER|VE_SKIPLOCK, 2, NULL, 0);
+ 	if (i < 0) {
+ 		eprintk("cannot enter ve to dump iptables\n");
+ 		module_put(THIS_MODULE);
+@@ -506,6 +513,8 @@ static int cpt_dump_iptables(struct cpt_context * ctx)
+ 	int status;
+ 	mm_segment_t oldfs;
+ 	sigset_t ignore, blocked;
++	struct args_t args;
++	struct ve_struct *oldenv;
+ 
+ 	if (!(get_exec_env()->_iptables_modules & VE_IP_IPTABLES_MOD))
+ 		return 0;
+@@ -515,9 +524,14 @@ static int cpt_dump_iptables(struct cpt_context * ctx)
+ 		eprintk_ctx("sc_pipe: %d\n", err);
+ 		return err;
+ 	}
++	args.pfd = pfd;
++	args.veid = VEID(get_exec_env());
+ 	ignore.sig[0] = CPT_SIG_IGNORE_MASK;
+ 	sigprocmask(SIG_BLOCK, &ignore, &blocked);
+-	err = pid = local_kernel_thread(dumpfn, (void*)pfd, SIGCHLD, 0);
++	oldenv = set_exec_env(get_ve0());
++	err = pid = local_kernel_thread(dumpfn, (void*)&args,
++			SIGCHLD | CLONE_VFORK, 0);
++	set_exec_env(oldenv);
+ 	if (err < 0) {
+ 		eprintk_ctx("local_kernel_thread: %d\n", err);
+ 		goto out;
+-- 
+1.5.4.3
+

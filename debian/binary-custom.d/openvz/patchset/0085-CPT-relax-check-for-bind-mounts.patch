@@ -1,0 +1,137 @@
+From 9bdf25b67ea0a67dc09960bf9ed917bff35a420e Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:48 +0400
+Subject: [PATCH 085/103] CPT relax check for bind mounts
+
+Relax check for special bind mounts which mounted several times on the same
+mount point. We need to check only dentry, mount check can be skipped in this
+case.
+We can't remove completely mount check as there are exist cases when we need
+to check mnt too. E.g. /dev is mounted with NODEV over /dev and some file is
+opened from underlying mount. If mount check is removed, then we will be able
+to checkpoint such state, but we will not be able to restore it.
+
+Correct sollution will be to dump/restore whole mount tree with overmounts.
+But we can't implement this right now for number of reasons.
+
+Bug #84310
+---
+ kernel/cpt/cpt_files.c  |   18 +++++++++---------
+ kernel/cpt/cpt_files.h  |    2 +-
+ kernel/cpt/cpt_socket.c |    2 +-
+ 3 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/cpt/cpt_files.c b/kernel/cpt/cpt_files.c
+index adbd43b..e728b64 100644
+--- a/kernel/cpt/cpt_files.c
++++ b/kernel/cpt/cpt_files.c
+@@ -58,7 +58,7 @@ void cpt_printk_dentry(struct dentry *d, struct vfsmount *mnt)
+ }
+ 
+ int cpt_verify_overmount(char *path, struct dentry *d, struct vfsmount *mnt,
+-			 cpt_context_t *ctx)
++			 int verify, cpt_context_t *ctx)
+ {
+ 	if (path[0] == '/' && !(!IS_ROOT(d) && d_unhashed(d))) {
+ 		struct nameidata nd;
+@@ -66,7 +66,7 @@ int cpt_verify_overmount(char *path, struct dentry *d, struct vfsmount *mnt,
+ 			eprintk_ctx("d_path cannot be looked up %s\n", path);
+ 			return -EINVAL;
+ 		}
+-		if (nd.dentry != d || nd.mnt != mnt) {
++		if (nd.dentry != d || (verify && nd.mnt != mnt)) {
+ 			eprintk_ctx("d_path is invisible %s\n", path);
+ 			path_release(&nd);
+ 			return -EINVAL;
+@@ -125,7 +125,7 @@ cpt_replaced(struct dentry * de, struct vfsmount *mnt, cpt_context_t * ctx)
+ }
+ 
+ static int cpt_dump_dentry(struct dentry *d, struct vfsmount *mnt,
+-			   int replaced, cpt_context_t *ctx)
++			   int replaced, int verify, cpt_context_t *ctx)
+ {
+ 	int len;
+ 	char *path;
+@@ -187,7 +187,7 @@ static int cpt_dump_dentry(struct dentry *d, struct vfsmount *mnt,
+ 		o.cpt_content = CPT_CONTENT_NAME;
+ 		path[len] = 0;
+ 
+-		if (cpt_verify_overmount(path, d, mnt, ctx)) {
++		if (cpt_verify_overmount(path, d, mnt, verify, ctx)) {
+ 			__cpt_release_buf(ctx);
+ 			return -EINVAL;
+ 		}
+@@ -226,7 +226,7 @@ int cpt_dump_string(const char *s, struct cpt_context *ctx)
+ static int
+ cpt_dump_filename(struct file *file, int replaced, cpt_context_t *ctx)
+ {
+-	return cpt_dump_dentry(file->f_dentry, file->f_vfsmnt, replaced, ctx);
++	return cpt_dump_dentry(file->f_dentry, file->f_vfsmnt, replaced, 1, ctx);
+ }
+ 
+ int cpt_dump_inode(struct dentry *d, struct vfsmount *mnt, struct cpt_context *ctx)
+@@ -881,7 +881,7 @@ static int find_linked_dentry(struct dentry *d, struct vfsmount *mnt,
+ 	}
+ 	spin_unlock(&dcache_lock);
+ 	if (found) {
+-		err = cpt_dump_dentry(found, mnt, 0, ctx);
++		err = cpt_dump_dentry(found, mnt, 0, 1, ctx);
+ 		dput(found);
+ 		if (!err) {
+ 			dprintk_ctx("dentry found in aliases\n");
+@@ -920,7 +920,7 @@ static int find_linked_dentry(struct dentry *d, struct vfsmount *mnt,
+ 
+ 	dprintk_ctx("dentry found in dir\n");
+ 	__cpt_release_buf(ctx);
+-	err = cpt_dump_dentry(found, mnt, 0, ctx);
++	err = cpt_dump_dentry(found, mnt, 0, 1, ctx);
+ 
+ err_lookup:
+ 	dput(found);
+@@ -1484,7 +1484,7 @@ static int cpt_dump_bind_mnt(struct vfsmount * mnt, cpt_context_t * ctx)
+ 
+ 	/* One special case: mount --bind /a /a */
+ 	if (mnt->mnt_root == mnt->mnt_mountpoint)
+-		return cpt_dump_dentry(mnt->mnt_root, mnt, 0, ctx);
++		return cpt_dump_dentry(mnt->mnt_root, mnt, 0, 0, ctx);
+ 
+ 	list_for_each_prev(p, &mnt->mnt_list) {
+ 		struct vfsmount * m;
+@@ -1497,7 +1497,7 @@ static int cpt_dump_bind_mnt(struct vfsmount * mnt, cpt_context_t * ctx)
+ 		if (m->mnt_sb != mnt->mnt_sb)
+ 			continue;
+ 
+-		err = cpt_dump_dentry(mnt->mnt_root, m, 0, ctx);
++		err = cpt_dump_dentry(mnt->mnt_root, m, 0, 1, ctx);
+ 		if (err == 0)
+ 			break;
+ 	}
+diff --git a/kernel/cpt/cpt_files.h b/kernel/cpt/cpt_files.h
+index 7770ab2..7f4afab 100644
+--- a/kernel/cpt/cpt_files.h
++++ b/kernel/cpt/cpt_files.h
+@@ -57,7 +57,7 @@ struct file *rst_open_inotify(struct cpt_file_image *fi,
+ 
+ 
+ int cpt_verify_overmount(char *path, struct dentry *d, struct vfsmount *mnt,
+-			 cpt_context_t *ctx);
++			 int verify, cpt_context_t *ctx);
+ 
+ #define check_one_vfsmount(mnt) \
+ 	(strcmp(mnt->mnt_sb->s_type->name, "rootfs") != 0 && \
+diff --git a/kernel/cpt/cpt_socket.c b/kernel/cpt/cpt_socket.c
+index 10fdd3f..9f7af89 100644
+--- a/kernel/cpt/cpt_socket.c
++++ b/kernel/cpt/cpt_socket.c
+@@ -509,7 +509,7 @@ int cpt_dump_socket(cpt_object_t *obj, struct sock *sk, int index, int parent, s
+ 					} else {
+ 						wprintk_ctx("af_unix path is too long: %s (%s)\n", path, ((char*)v->cpt_laddr)+2);
+ 					}
+-					err = cpt_verify_overmount(path, d, unix_sk(sk)->mnt, ctx);
++					err = cpt_verify_overmount(path, d, unix_sk(sk)->mnt, 1, ctx);
+ 				} else {
+ 					eprintk_ctx("cannot get path of an af_unix socket\n");
+ 					err = PTR_ERR(path);
+-- 
+1.5.4.3
+
