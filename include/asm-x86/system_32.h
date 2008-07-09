@@ -5,6 +5,7 @@
 #include <asm/segment.h>
 #include <asm/cpufeature.h>
 #include <asm/cmpxchg.h>
+#include <asm/nops.h>
 
 #ifdef __KERNEL__
 #define AT_VECTOR_SIZE_ARCH 2 /* entries in ARCH_DLINFO */
@@ -298,6 +299,19 @@ static inline unsigned long get_limit(unsigned long segment)
 #define smp_read_barrier_depends()	do { } while(0)
 #define set_mb(var, value) do { var = value; barrier(); } while (0)
 #endif
+
+/*
+ * Stop RDTSC speculation. This is needed when you need to use RDTSC
+ * (or get_cycles or vread that possibly accesses the TSC) in a defined
+ * code region.
+ *
+ * (Could use an alternative three way for this if there was one.)
+ */
+static inline void rdtsc_barrier(void)
+{
+	alternative(ASM_NOP3, "mfence", X86_FEATURE_MFENCE_RDTSC);
+	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
+}
 
 #include <linux/irqflags.h>
 

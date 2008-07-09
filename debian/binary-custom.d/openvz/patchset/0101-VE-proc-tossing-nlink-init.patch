@@ -1,0 +1,45 @@
+From 8433ff061604f8d7d47d46882f6da59fe913737c Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 2 Jul 2008 19:55:20 +0400
+Subject: [PATCH 101/103] VE proc tossing nlink init
+
+Correct nlink counters at initial moving proc entries
+between local and global trees.
+---
+ kernel/ve/veowner.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/ve/veowner.c b/kernel/ve/veowner.c
+index abeb21d..b07bfb9 100644
+--- a/kernel/ve/veowner.c
++++ b/kernel/ve/veowner.c
+@@ -68,6 +68,10 @@ static void proc_move(struct proc_dir_entry *ddir,
+ 	q->parent = ddir;
+ 	q->next = ddir->subdir;
+ 	ddir->subdir = q;
++	if (S_ISDIR(q->mode)) {
++		sdir->nlink--;
++		ddir->nlink++;
++	}
+ }
+ static void prepare_proc_misc(void)
+ {
+@@ -107,6 +111,7 @@ int prepare_proc(void)
+ 	ve_root = ve0.proc_root->subdir;
+ 	/* move the whole tree to be visible in VE0 only */
+ 	ve0.proc_root->subdir = proc_root.subdir;
++	ve0.proc_root->nlink += proc_root.nlink - 2;
+ 	for (de = ve0.proc_root->subdir; de->next != NULL; de = de->next)
+ 		de->parent = ve0.proc_root;
+ 	de->parent = ve0.proc_root;
+@@ -114,6 +119,7 @@ int prepare_proc(void)
+ 
+ 	/* move back into the global scope some specific entries */
+ 	proc_root.subdir = NULL;
++	proc_root.nlink = 2;
+ 	prepare_proc_misc();
+ 	proc_mkdir("vz", NULL);
+ #ifdef CONFIG_SYSVIPC
+-- 
+1.5.4.3
+

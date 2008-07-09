@@ -1,0 +1,34 @@
+From 3bd8ea9e606a6c35fbf1873060e67f9a71df6977 Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 094/103] UBC tcpsndbuf uncharging too much
+
+It is not allowed to go to the label wait_for_memory with chargesize != 0
+when this space is already placed to the skb.
+---
+ net/ipv4/tcp.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 2cdad17..c83979e 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -568,6 +568,7 @@ new_segment:
+ 			if (!skb)
+ 				goto wait_for_memory;
+ 			ub_skb_set_charge(skb, sk, chargesize, UB_TCPSNDBUF);
++			chargesize = 0;
+ 
+ 			skb_entail(sk, skb);
+ 			copy = size_goal;
+@@ -760,6 +761,7 @@ new_segment:
+ 					goto wait_for_memory;
+ 				ub_skb_set_charge(skb, sk, chargesize,
+ 						UB_TCPSNDBUF);
++				chargesize = 0;
+ 
+ 				/*
+ 				 * Check whether we can use HW checksum.
+-- 
+1.5.4.3
+
