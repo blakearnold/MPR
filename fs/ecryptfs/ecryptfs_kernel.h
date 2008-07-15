@@ -629,6 +629,8 @@ int ecryptfs_get_tfm_and_mutex_for_cipher_name(struct crypto_blkcipher **tfm,
 int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
 				      struct ecryptfs_auth_tok **auth_tok,
 				      char *sig);
+int ecryptfs_write_zeros(struct file *file, pgoff_t index, int start,
+			 int num_zeros);
 void ecryptfs_lower_offset_for_extent(loff_t *offset, loff_t extent_num,
 				      struct ecryptfs_crypt_stat *crypt_stat);
 int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
