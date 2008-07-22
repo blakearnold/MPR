@@ -788,6 +788,7 @@ int usbhid_modify_dquirk(const u16 idVendor, const u16 idProduct,
 
 	return 0;
 }
+EXPORT_SYMBOL(usbhid_modify_dquirk);
 
 /**
  * usbhid_remove_all_dquirks: remove all runtime HID quirks from memory
