@@ -548,6 +548,7 @@ static const struct pci_device_id agp_via_pci_table[] = {
 	ID(PCI_DEVICE_ID_VIA_VT3324),
 	ID(PCI_DEVICE_ID_VIA_VT3336),
 	ID(PCI_DEVICE_ID_VIA_P4M890),
+	ID(PCI_DEVICE_ID_VIA_VT3364),
 	{ }
 };
 
