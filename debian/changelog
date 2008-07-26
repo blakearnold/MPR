@@ -1,3 +1,40 @@
+linux (2.6.24-20.38) hardy-proposed; urgency=low
+
+  [Tim Gardner]
+
+  * SAUCE: Export usbhid_modify_dquirk for LBM module bcm5974
+    - LP: #250838
+  * Enable TULIP ethernet support in virtual appliance flavour
+    - LP: #250857
+  * VIA AGP VT3364 is not detected
+    - LP: #251854
+  * VIA - Add VIA DRM Chrome9 3D engine
+    - LP: #251862
+
+  [Upstream Kernel Changes]
+
+  * net/usb: add support for Apple USB Ethernet Adapter
+    - LP: #232200
+  * acpi: fix "buggy BIOS check" when CPUs are hot removed
+    - LP: #248509
+  * x86: fix paranoia about using BIOS quickboot mechanism.
+    - LP: #248905
+  * flush kacpi_notify_wq before removing notify handler
+    - LP: #248509
+  * fix a deadlock issue when poking "eject" file
+    - LP: #248509
+  * force offline the processor during hot-removal
+    - LP: #248509
+  * create sysfs link from acpi device to sysdev for cpu
+    - LP: #248509
+  * x86: fix bootup crash in native_read_tsc() (aka use XMM2)
+    - LP: #249135
+  * x86: lfence fix - LFENCE is available on XMM2 or higher
+    Intel CPUs - not XMM or higher...
+    - LP: #249135
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Fri, 25 Jul 2008 22:12:46 -0600
+
 linux (2.6.24-20.37) hardy-proposed; urgency=low
 
   [Colin Ian King]
