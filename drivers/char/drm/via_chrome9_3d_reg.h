@@ -27,6 +27,12 @@
 
 #ifndef VIA_CHROME9_3D_REG_H
 #define VIA_CHROME9_3D_REG_H
+
+#ifndef TRUE
+#define TRUE 1
+#define FALSE 0
+#endif
+
 #define GetMMIORegister(base, offset)      \
 	(*(volatile unsigned int *)(void *)(((unsigned char *)(base)) + \
 	(offset)))
