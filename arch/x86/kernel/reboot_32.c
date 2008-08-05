@@ -78,6 +78,20 @@ __setup("reboot=", reboot_setup);
  */
 
 /*
+ * Some machines require the "reboot=a"  commandline option, this quirk makes
+ * that automatic.
+ */
+static int __init set_acpi_reboot(const struct dmi_system_id *d)
+{
+	if (!reboot_thru_bios) {
+		printk(KERN_INFO "%s detected. Using ACPI for reboots.\n",
+			d->ident);
+		reboot_thru_bios = 2;
+	}
+	return 0;
+}
+
+/*
  * Some machines require the "reboot=b"  commandline option, this quirk makes that automatic.
  */
 static int __init set_bios_reboot(const struct dmi_system_id *d)
@@ -137,6 +151,15 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq"),
+		},
+	},
+	{	/* Handle problems with rebooting classmate PC after suspend */
+		.callback = set_acpi_reboot,
+		.ident = "Intel powered classmate PC",
+		.matches = {
+			DMI_MATCH(DMI_PRODUCT_NAME,
+					"Intel powered classmate PC"),
+			DMI_MATCH(DMI_PRODUCT_VERSION, "Gen 1.5"),
 		},
 	},
 	{ }
