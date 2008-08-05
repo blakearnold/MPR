@@ -9,6 +9,7 @@
 #include <linux/ctype.h>
 #include <linux/pm.h>
 #include <linux/reboot.h>
+#include <acpi/reboot.h>
 #include <asm/uaccess.h>
 #include <asm/apic.h>
 #include <asm/hpet.h>
@@ -38,6 +39,9 @@ static int __init reboot_setup(char *str)
 			break;
 		case 'c': /* "cold" reboot (with memory testing etc) */
 			reboot_mode = 0x0;
+			break;
+		case 'a': /* reboot through ACPI BIOS. */
+			reboot_thru_bios = 2;
 			break;
 		case 'b': /* "bios" reboot by jumping through the BIOS */
 			reboot_thru_bios = 1;
@@ -356,6 +360,9 @@ static void native_machine_emergency_restart(void)
 	}
 	if (efi_enabled)
 		efi.reset_system(EFI_RESET_WARM, EFI_SUCCESS, 0, NULL);
+
+	if (reboot_thru_bios == 2)
+		acpi_reboot();
 
 	machine_real_restart(jump_to_bios, sizeof(jump_to_bios));
 }
