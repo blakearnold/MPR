@@ -622,7 +622,7 @@ static int __cpuinit acpi_processor_start(struct acpi_device *device)
 	int result = 0;
 	acpi_status status = AE_OK;
 	struct acpi_processor *pr;
-
+	struct sys_device *sysdev;
 
 	pr = acpi_driver_data(device);
 
@@ -652,6 +652,10 @@ static int __cpuinit acpi_processor_start(struct acpi_device *device)
 	result = acpi_processor_add_fs(device);
 	if (result)
 		goto end;
+
+	sysdev = get_cpu_sysdev(pr->id);
+	if (sysfs_create_link(&device->dev.kobj, &sysdev->kobj, "sysdev"))
+		return -EFAULT;
 
 	status = acpi_install_notify_handler(pr->handle, ACPI_DEVICE_NOTIFY,
 					     acpi_processor_notify, pr);
@@ -789,10 +793,12 @@ static int acpi_processor_remove(struct acpi_device *device, int type)
 	status = acpi_remove_notify_handler(pr->handle, ACPI_DEVICE_NOTIFY,
 					    acpi_processor_notify);
 
+	sysfs_remove_link(&device->dev.kobj, "sysdev");
+
 	acpi_processor_remove_fs(device);
 
 	processors[pr->id] = NULL;
-
+	processor_device_array[pr->id] = NULL;
 	kfree(pr);
 
 	return 0;
@@ -978,9 +984,9 @@ static acpi_status acpi_processor_hotadd_init(acpi_handle handle, int *p_cpu)
 
 static int acpi_processor_handle_eject(struct acpi_processor *pr)
 {
-	if (cpu_online(pr->id)) {
-		return (-EINVAL);
-	}
+	if (cpu_online(pr->id))
+		cpu_down(pr->id);
+
 	arch_unregister_cpu(pr->id);
 	acpi_unmap_lsapic(pr->id);
 	return (0);

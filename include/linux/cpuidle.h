@@ -79,6 +79,7 @@ struct cpuidle_state_kobj {
 };
 
 struct cpuidle_device {
+	unsigned int		registered:1;
 	int			enabled:1;
 	unsigned int		cpu;
 

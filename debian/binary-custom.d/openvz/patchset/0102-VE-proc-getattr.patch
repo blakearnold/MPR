@@ -1,0 +1,63 @@
+From 564a2db2f8d14dfff620ac89cc702b9c84742bbd Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 2 Jul 2008 19:55:20 +0400
+Subject: [PATCH 102/103] VE proc getattr
+
+Move nlink correction from proc_lookup to proc_getattr
+and change it in stat result insted of inode nlink.
+
+Bug #114644
+---
+ fs/proc/generic.c |   25 ++++++++++++++-----------
+ 1 files changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index 2260a20..a5a6f1f 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -268,10 +268,21 @@ static int proc_getattr(struct vfsmount *mnt, struct dentry *dentry,
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	struct proc_dir_entry *de = PROC_I(inode)->pde;
+-	if (de && de->nlink)
+-		inode->i_nlink = de->nlink;
++	struct proc_dir_entry *gde = GPDE(inode);
+ 
+ 	generic_fillattr(inode, stat);
++
++	if (de && de->nlink)
++		stat->nlink = de->nlink;
++	/* if dentry is found in both trees and it is a directory
++	 * then inode's nlink count must be altered, because local
++	 * and global subtrees may differ.
++	 * on the other hand, they may intersect, so actual nlink
++	 * value is difficult to calculate - upper estimate is used
++	 * instead of it.
++	 */
++	if (de && gde && de != gde && gde->nlink > 1)
++		stat->nlink += gde->nlink - 2;
+ 	return 0;
+ }
+ 
+@@ -503,17 +514,9 @@ struct dentry *proc_lookup(struct inode * dir, struct dentry *dentry, struct nam
+ 	if (gde)
+ 		__module_get(gde->owner);
+ 
+-	/* if dentry is found in both trees and it is a directory
+-	 * then inode's nlink count must be altered, because local
+-	 * and global subtrees may differ.
+-	 * on the other hand, they may intersect, so actual nlink
+-	 * value is difficult to calculate - upper estimate is used
+-	 * instead of it.
+-	 * dentry found in global tree only must not be writable
++	/* dentry found in global tree only must not be writable
+ 	 * in non-super ve.
+ 	 */
+-	if (lde && gde && lde != gde && gde->nlink > 1)
+-		inode->i_nlink += gde->nlink - 2;
+ 	if (lde == NULL && !ve_is_super(dir->i_sb->s_type->owner_env))
+ 		inode->i_mode &= ~S_IWUGO;
+ #endif
+-- 
+1.5.4.3
+

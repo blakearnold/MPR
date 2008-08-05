@@ -1,0 +1,98 @@
+From 80f10d7cf91bc9aa477262f7fb3aeaf4ec8a9e1e Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 090/103] UBC bc counter
+
+Add ubc and sub-ubc account.
+Changing all values protected with ub_hash_lock.
+---
+ include/bc/beancounter.h |    3 +++
+ kernel/bc/beancounter.c  |   23 +++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/include/bc/beancounter.h b/include/bc/beancounter.h
+index 7327bcb..89fcf20 100644
+--- a/include/bc/beancounter.h
++++ b/include/bc/beancounter.h
+@@ -225,6 +225,7 @@ struct user_beancounter
+ 	struct ub_iopriv	iopriv;
+ 
+ 	struct user_beancounter *parent;
++	int			ub_childs;
+ 	void			*private_data;
+ 	unsigned long		ub_aflags;
+ 
+@@ -250,6 +251,8 @@ struct user_beancounter
+ #endif
+ };
+ 
++extern int ub_count;
++
+ enum ub_severity { UB_HARD, UB_SOFT, UB_FORCE };
+ 
+ #define UB_AFLAG_NOTIF_PAGEIN	0
+diff --git a/kernel/bc/beancounter.c b/kernel/bc/beancounter.c
+index 48fa1cc..00b6469 100644
+--- a/kernel/bc/beancounter.c
++++ b/kernel/bc/beancounter.c
+@@ -127,6 +127,25 @@ static inline struct user_beancounter *bc_lookup_hash(struct hlist_head *hash,
+ 	return NULL;
+ }
+ 
++int ub_count;
++
++/* next two must be called under ub_hash_lock */
++static inline void ub_count_inc(struct user_beancounter *ub)
++{
++	if (ub->parent)
++		ub->parent->ub_childs++;
++	else
++		ub_count++;
++}
++
++static inline void ub_count_dec(struct user_beancounter *ub)
++{
++	if (ub->parent)
++		ub->parent->ub_childs--;
++	else
++		ub_count--;
++}
++
+ struct user_beancounter *get_beancounter_byuid(uid_t uid, int create)
+ {
+ 	struct user_beancounter *new_ub, *ub;
+@@ -155,6 +174,7 @@ retry:
+ 	if (new_ub != NULL) {
+ 		list_add_rcu(&new_ub->ub_list, &ub_list_head);
+ 		hlist_add_head(&new_ub->ub_hash, hash);
++		ub_count_inc(new_ub);
+ 		spin_unlock_irqrestore(&ub_hash_lock, flags);
+ 		return new_ub;
+ 	}
+@@ -212,6 +232,7 @@ retry:
+ 	if (new_ub != NULL) {
+ 		list_add_rcu(&new_ub->ub_list, &ub_list_head);
+ 		hlist_add_head(&new_ub->ub_hash, hash);
++		ub_count_inc(new_ub);
+ 		spin_unlock_irqrestore(&ub_hash_lock, flags);
+ 		return new_ub;
+ 	}
+@@ -307,6 +328,7 @@ again:
+ 
+ 	hlist_del(&ub->ub_hash);
+ 	list_del_rcu(&ub->ub_list);
++	ub_count_dec(ub);
+ 	spin_unlock_irqrestore(&ub_hash_lock, flags);
+ 
+ 	bc_verify_held(ub);
+@@ -657,6 +679,7 @@ void __init ub_init_early(void)
+ 
+ 	hlist_add_head(&ub->ub_hash, &ub_hash[ub->ub_uid]);
+ 	list_add(&ub->ub_list, &ub_list_head);
++	ub_count_inc(ub);
+ }
+ 
+ void __init ub_init_late(void)
+-- 
+1.5.4.3
+

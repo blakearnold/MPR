@@ -1005,17 +1005,19 @@ e1000_probe(struct pci_dev *pdev,
 		goto err_eeprom;
 	}
 
-	/* before reading the EEPROM, reset the controller to
-	 * put the device in a known good starting state */
-
-	e1000_reset_hw(&adapter->hw);
-
-	/* make sure the EEPROM is good */
-
 	if (e1000_validate_eeprom_checksum(&adapter->hw) < 0) {
-		DPRINTK(PROBE, ERR, "The EEPROM Checksum Is Not Valid\n");
-		if (!eeprom_bad_csum_allow)
-			goto err_eeprom;
+		/* before reading the EEPROM, reset the controller to
+	 	* put the device in a known good starting state */
+
+		e1000_reset_hw(&adapter->hw);
+
+		/* make sure the EEPROM is good */
+
+		if (e1000_validate_eeprom_checksum(&adapter->hw) < 0) {
+			DPRINTK(PROBE, ERR, "The EEPROM Checksum Is Not Valid\n");
+			if (!eeprom_bad_csum_allow)
+				goto err_eeprom;
+		}
 	}
 
 	/* copy the MAC address out of the EEPROM */

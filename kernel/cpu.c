@@ -219,6 +219,7 @@ int cpu_down(unsigned int cpu)
 	mutex_unlock(&cpu_add_remove_lock);
 	return err;
 }
+EXPORT_SYMBOL(cpu_down);
 #endif /*CONFIG_HOTPLUG_CPU*/
 
 /* Requires cpu_add_remove_lock to be held */

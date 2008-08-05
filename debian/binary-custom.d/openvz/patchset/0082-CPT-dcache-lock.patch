@@ -1,0 +1,61 @@
+From df46b61362d3c5b1f0454a7a093da85f02c9a778 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:48 +0400
+Subject: [PATCH 082/103] CPT dcache lock
+
+Protect __d_path() call with dcache_lock spinlock.
+Protect other checks with env->op_sem semaphore.
+
+Bug #98833
+---
+ kernel/cpt/cpt_dump.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cpt/cpt_dump.c b/kernel/cpt/cpt_dump.c
+index ea84dcb..72b7712 100644
+--- a/kernel/cpt/cpt_dump.c
++++ b/kernel/cpt/cpt_dump.c
+@@ -1154,9 +1154,11 @@ static void check_unsupported_mounts(struct cpt_context *ctx, __u32 *caps,
+ 	list_for_each(p, &n->list) {
+ 		struct vfsmount *mnt = list_entry(p, struct vfsmount, mnt_list);
+ 
++		spin_lock(&dcache_lock);
+ 		path = __d_path(mnt->mnt_root, mnt,
+ 				env->fs_root, env->fs_rootmnt,
+ 				path_buf, PAGE_SIZE);
++		spin_unlock(&dcache_lock);
+ 		if (IS_ERR(path))
+ 			continue;
+ 
+@@ -1186,6 +1188,19 @@ int cpt_vps_caps(struct cpt_context *ctx, __u32 *caps)
+ 	if (env == NULL)
+ 		return -ESRCH;
+ 
++	down_read(&env->op_sem);
++	err = -ESRCH;
++	if (!env->is_running) {
++		eprintk_ctx("CT is not running\n");
++		goto out_noenv;
++	}
++
++	err = -EBUSY;
++	if (env->is_locked) {
++		eprintk_ctx("CT is locked\n");
++		goto out_noenv;
++	}
++
+ 	*caps = flags & (1<<CPT_CPU_X86_CMOV);
+ 
+ 	old_env = set_exec_env(env);
+@@ -1238,6 +1253,8 @@ out_root:
+ out:
+ 	current->nsproxy = old_ns;
+ 	set_exec_env(old_env);
++out_noenv:
++	up_read(&env->op_sem);
+ 	put_ve(env);
+ 
+ 	return err;
+-- 
+1.5.4.3
+
