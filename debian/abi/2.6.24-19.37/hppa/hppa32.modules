@@ -352,7 +352,6 @@ mac80211
 macvlan
 marvell
 matrox_w1
-mbcache
 md4
 mdio-bitbang
 md-mod
