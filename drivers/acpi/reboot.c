@@ -3,6 +3,29 @@
 #include <acpi/reboot.h>
 #include <linux/dmi.h>
 
+/*
+ * Some systems the have been proved to be able to reboot this way (even if
+ * some fail to claim this in the FADT).
+ */
+static struct dmi_system_id reboot_dmi_whitelist[] = {
+	{
+		.ident = "ASUS M6NE",
+		.matches =  {
+			DMI_MATCH(DMI_BIOS_VERSION,"0208"),
+			DMI_MATCH(DMI_PRODUCT_NAME,"M6Ne"),
+		},
+	},
+	{
+		.ident = "Intel powered classmate PC",
+		.matches = {
+			DMI_MATCH(DMI_PRODUCT_NAME,
+				  "Intel powered classmate PC"),
+			DMI_MATCH(DMI_PRODUCT_VERSION, "Gen 1.5"),
+		},
+	},
+	{}
+};
+
 void acpi_reboot(void)
 {
 	struct acpi_generic_address *rr;
@@ -15,10 +38,18 @@ void acpi_reboot(void)
 
 	rr = &acpi_gbl_FADT.reset_register;
 
-	/* Is the reset register supported? */
-	if (!(acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER) ||
-	    rr->bit_width != 8 || rr->bit_offset != 0)
-		return;
+	/*
+	 * For those systems that have not been whitelisted, check the ACPI
+	 * flags and the register layout.
+	 */
+	if (!dmi_check_system(reboot_dmi_whitelist)) {
+		/* Is the reset register supported? */
+		if (!(acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER))
+			return;
+		/* Is the width and ofset as specified? */
+		if (rr->bit_width != 8 || rr->bit_offset != 0)
+			return;
+	}
 
 	reset_value = acpi_gbl_FADT.reset_value;
 
