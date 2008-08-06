@@ -150,7 +150,7 @@ void machine_emergency_restart(void)
 			reboot_type = BOOT_KBD;
 			break;
 		case BOOT_ACPI:
-			reboot_acpi();
+			acpi_reboot();
 			reboot_type = BOOT_KBD;
 			break;
 		}
