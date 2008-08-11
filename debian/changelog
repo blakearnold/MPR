@@ -1,8 +1,8 @@
-linux (2.6.24-20.40) hardy-proposed; urgency=low
+linux (2.6.24-21.40) hardy-proposed; urgency=low
 
   [Tim Gardner]
 
-  * Respin ABI to fix previous upload FTBS.
+  * Bump ABI for WiMax 'enum rfkill_type' additions.
 
   [Upstream Kernel Changes]
 
