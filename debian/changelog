@@ -1,3 +1,16 @@
+linux (2.6.24-20.40) hardy-proposed; urgency=low
+
+  [Tim Gardner]
+
+  * Respin ABI to fix previous upload FTBS.
+
+  [Upstream Kernel Changes]
+
+  * b43: Add more btcoexist workarounds
+    - LP: #257020
+
+ -- Tim Gardner <tim.gardner@canonical.com>  Mon, 11 Aug 2008 13:13:46 -0600
+
 linux (2.6.24-20.39) hardy-proposed; urgency=low
 
   [Amit Kucheria]
@@ -33,17 +46,6 @@ linux (2.6.24-20.39) hardy-proposed; urgency=low
     - LP: #230315
 
  -- Stefan Bader <stefan.bader@canonical.com>  Fri, 08 Aug 2008 11:39:18 -0400
-
-linux (2.6.24-19.37) hardy-security; urgency=low
-
-  [Upstream Kernel Changes]
-    
-  * (CVE-2008-2812) TTY: fix for tty operations bugs
-  * (CVE-2008-3272) sound: ensure device number is valid in
-    snd_seq_oss_synth_make_info
-  * (CVE-2008-3275) vfs: fix lookup on deleted directory
-
- -- Ben Collins <ben.collins@canonical.com>  Tue, 05 Aug 2008 22:28:53 +0000
 
 linux (2.6.24-20.38) hardy-proposed; urgency=low
 
@@ -81,6 +83,7 @@ linux (2.6.24-20.38) hardy-proposed; urgency=low
     - LP: #249135
 
  -- Tim Gardner <tim.gardner@canonical.com>  Fri, 25 Jul 2008 22:12:46 -0600
+
 linux (2.6.24-20.37) hardy-proposed; urgency=low
 
   [Colin Ian King]
@@ -167,6 +170,17 @@ linux (2.6.24-20.37) hardy-proposed; urgency=low
     - LP: #239666
 
  -- Tim Gardner <tim.gardner@canonical.com>  Wed, 09 Jul 2008 14:55:14 -0600
+
+linux (2.6.24-19.37) hardy-security; urgency=low
+
+  [Upstream Kernel Changes]
+    
+  * (CVE-2008-2812) TTY: fix for tty operations bugs
+  * (CVE-2008-3272) sound: ensure device number is valid in
+    snd_seq_oss_synth_make_info
+  * (CVE-2008-3275) vfs: fix lookup on deleted directory
+
+ -- Ben Collins <ben.collins@canonical.com>  Tue, 05 Aug 2008 22:28:53 +0000
 
 linux (2.6.24-19.36) hardy-security; urgency=low
 
