@@ -91,6 +91,7 @@ int acpi_enable_wakeup_device_power(struct acpi_device *dev);
 int acpi_disable_wakeup_device_power(struct acpi_device *dev);
 int acpi_power_get_inferred_state(struct acpi_device *device);
 int acpi_power_transition(struct acpi_device *device, int state);
+extern int acpi_power_nocheck;
 #endif
 
 /* --------------------------------------------------------------------------
