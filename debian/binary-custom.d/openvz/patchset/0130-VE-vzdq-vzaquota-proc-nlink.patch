@@ -1,0 +1,67 @@
+From abb3f592cc62d01f96ca4fdeb8fdd6affaf95633 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:58 +0400
+Subject: [PATCH 130/131] VE vzdq vzaquota proc nlink
+
+Produce correct nlink count for /proc/vz/vzaquota
+
+Use count mounpoints accessible from VE as upper estimate for
+count subdirectories inside /proc/vz/vzaquot.
+Concept stolen from vzdq_aquotd_readdir.
+
+Disable enumation in VE0 for performance reason (like in _readdir and _lookup)
+
+Bug #115343
+---
+ fs/vzdq_file.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+
+diff --git a/fs/vzdq_file.c b/fs/vzdq_file.c
+index 5b4133a..f63689a 100644
+--- a/fs/vzdq_file.c
++++ b/fs/vzdq_file.c
+@@ -851,6 +851,33 @@ out:
+ 	return ERR_PTR(-ENOENT);
+ }
+ 
++static int vzdq_aquotd_getattr(struct vfsmount *mnt, struct dentry *dentry,
++		struct kstat *stat)
++{
++	struct ve_struct *ve, *old_ve;
++	struct list_head mntlist, *pos;
++
++	generic_fillattr(dentry->d_inode, stat);
++	ve = dentry->d_sb->s_type->owner_env;
++#ifdef CONFIG_VE
++	/*
++	 * The only reason of disabling getattr for the host system is that
++	 * this getattr can be slow and CPU consuming with large number of VPSs
++	 * (or just mount points).
++	 */
++	if (ve_is_super(ve))
++		return 0;
++#endif
++	INIT_LIST_HEAD(&mntlist);
++	old_ve = set_exec_env(ve);
++	if (!vzdq_aquot_buildmntlist(ve, &mntlist))
++		list_for_each(pos, &mntlist)
++			stat->nlink++;
++	vzdq_aquot_releasemntlist(ve, &mntlist);
++	(void)set_exec_env(old_ve);
++	return 0;
++}
++
+ static struct file_operations vzdq_aquotd_file_operations = {
+ 	.read		= &generic_read_dir,
+ 	.readdir	= &vzdq_aquotd_readdir,
+@@ -858,6 +885,7 @@ static struct file_operations vzdq_aquotd_file_operations = {
+ 
+ static struct inode_operations vzdq_aquotd_inode_operations = {
+ 	.lookup		= &vzdq_aquotd_lookup,
++	.getattr	= &vzdq_aquotd_getattr,
+ };
+ 
+ 
+-- 
+1.5.4.3
+

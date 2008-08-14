@@ -1,0 +1,164 @@
+From 21745854d0113d1ecec3a939015366c2bd5cb9a4 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:57 +0400
+Subject: [PATCH 128/131] VE veinfo to vzmon
+
+Since some people wish to run openvz w/o venet device, but
+vzlist tool relies on /proc/vz/veinfo file presence, vzmon
+module is a better place for this file.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=394
+---
+ include/linux/ve_proto.h |    5 ++
+ kernel/ve/vecalls.c      |  105 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 110 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/ve_proto.h b/include/linux/ve_proto.h
+index 6093fbb..630263c 100644
+--- a/include/linux/ve_proto.h
++++ b/include/linux/ve_proto.h
+@@ -14,6 +14,11 @@
+ #ifdef CONFIG_VE
+ 
+ struct ve_struct;
++struct seq_file;
++
++typedef void (*ve_seq_print_t)(struct seq_file *, struct ve_struct *);
++void vzmon_register_veaddr_print_cb(ve_seq_print_t);
++void vzmon_unregister_veaddr_print_cb(ve_seq_print_t);
+ 
+ #ifdef CONFIG_INET
+ void ip_fragment_cleanup(struct ve_struct *envid);
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index 616cf0b..c05685a 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -2441,6 +2441,103 @@ static struct vnotifier_block meminfo_notifier_block = {
+ 	.notifier_call = meminfo_call
+ };
+ 
++/* /proc/vz/veinfo */
++
++static ve_seq_print_t veaddr_seq_print_cb;
++
++void vzmon_register_veaddr_print_cb(ve_seq_print_t cb)
++{
++	rcu_assign_pointer(veaddr_seq_print_cb, cb);
++}
++EXPORT_SYMBOL(vzmon_register_veaddr_print_cb);
++
++void vzmon_unregister_veaddr_print_cb(ve_seq_print_t cb)
++{
++	rcu_assign_pointer(veaddr_seq_print_cb, NULL);
++	synchronize_rcu();
++}
++EXPORT_SYMBOL(vzmon_unregister_veaddr_print_cb);
++
++static int veinfo_seq_show(struct seq_file *m, void *v)
++{
++	struct ve_struct *ve;
++	ve_seq_print_t veaddr_seq_print;
++
++	ve = list_entry((struct list_head *)v, struct ve_struct, ve_list);
++
++	seq_printf(m, "%10u %5u %5u", ve->veid,
++			ve->class_id, atomic_read(&ve->pcounter));
++
++	veaddr_seq_print = m->private;
++	if (veaddr_seq_print)
++		veaddr_seq_print(m, ve);
++
++	seq_putc(m, '\n');
++	return 0;
++}
++
++static void *veinfo_seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct ve_struct *curve;
++	struct list_head *entry;
++	loff_t l;
++
++	rcu_read_lock();
++	m->private = rcu_dereference(veaddr_seq_print_cb);
++	curve = get_exec_env();
++	read_lock(&ve_list_lock);
++	if (!ve_is_super(curve)) {
++		if (*pos != 0)
++			return NULL;
++		return curve;
++	}
++
++	l = *pos;
++	list_for_each(entry, &ve_list_head) {
++		if (l == 0)
++			return entry;
++		l--;
++	}
++	return NULL;
++}
++
++static void *veinfo_seq_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	struct list_head *entry;
++
++	entry = (struct list_head *)v;
++	if (!ve_is_super(get_exec_env()))
++		return NULL;
++	(*pos)++;
++	return entry->next == &ve_list_head ? NULL : entry->next;
++}
++
++static void veinfo_seq_stop(struct seq_file *m, void *v)
++{
++	read_unlock(&ve_list_lock);
++	rcu_read_unlock();
++}
++
++
++static struct seq_operations veinfo_seq_op = {
++	.start	= veinfo_seq_start,
++	.next	=  veinfo_seq_next,
++	.stop	=  veinfo_seq_stop,
++	.show	=  veinfo_seq_show,
++};
++
++static int veinfo_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &veinfo_seq_op);
++}
++
++static struct file_operations proc_veinfo_operations = {
++	.open		= veinfo_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
++
+ static int __init init_vecalls_proc(void)
+ {
+ 	struct proc_dir_entry *de;
+@@ -2477,6 +2574,13 @@ static int __init init_vecalls_proc(void)
+ 		printk(KERN_WARNING
+ 				"VZMON: can't make version proc entry\n");
+ 
++	de = create_proc_glob_entry_mod("vz/veinfo", S_IFREG | S_IRUSR, NULL,
++				THIS_MODULE);
++	if (de)
++		de->proc_fops = &proc_veinfo_operations;
++	else
++		printk(KERN_WARNING "VZMON: can't make veinfo proc entry\n");
++
+ 	virtinfo_notifier_register(VITYPE_GENERAL, &meminfo_notifier_block);
+ 
+ 	return 0;
+@@ -2487,6 +2591,7 @@ static void fini_vecalls_proc(void)
+ 	remove_proc_entry("vz/version", NULL);
+ 	remove_proc_entry("vz/devperms", NULL);
+ 	remove_proc_entry("vz/vestat", NULL);
++	remove_proc_entry("vz/veinfo", NULL);
+ 	virtinfo_notifier_unregister(VITYPE_GENERAL, &meminfo_notifier_block);
+ }
+ #else
+-- 
+1.5.4.3
+

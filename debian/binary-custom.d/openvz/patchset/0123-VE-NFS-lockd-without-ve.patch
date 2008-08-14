@@ -1,0 +1,28 @@
+From f0601527973500793e52950c3091a542adafd9a5 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:52 +0400
+Subject: [PATCH 123/131] VE NFS lockd without ve
+
+fix macro in ve_nfs.h when CONFIG_VE=n
+---
+ include/linux/ve_nfs.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/ve_nfs.h b/include/linux/ve_nfs.h
+index 9f2b4f1..74ba0cd 100644
+--- a/include/linux/ve_nfs.h
++++ b/include/linux/ve_nfs.h
+@@ -20,8 +20,8 @@
+ #define nlmsvc_users		NFS_CTX_FIELD(nlmsvc_users)
+ #define nlmsvc_pid		NFS_CTX_FIELD(nlmsvc_pid)
+ #else
+-#define nlmsvc_grace_period	_nlmsvc_timeout
+-#define nlmsvc_timeout		_nlmsvc_grace_period
++#define nlmsvc_grace_period	_nlmsvc_grace_period
++#define nlmsvc_users		_nlmsvc_users
+ #define nlmsvc_pid		_nlmsvc_pid
+ #define nlmsvc_timeout		_nlmsvc_timeout
+ #endif
+-- 
+1.5.4.3
+

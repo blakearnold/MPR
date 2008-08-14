@@ -1,0 +1,62 @@
+From 12a4a44de439ee8a91806c8aefef61059b26eb31 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 14:46:33 +0400
+Subject: [PATCH 104/131] VE ipv6 ifdown fix
+
+Correct ipv6 ifdown at network namespace destroy.
+---
+ net/ipv6/addrconf.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index c0ef49f..ba5b3e3 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -4315,6 +4315,25 @@ int unregister_inet6addr_notifier(struct notifier_block *nb)
+ 
+ EXPORT_SYMBOL(unregister_inet6addr_notifier);
+ 
++static void addrconf_net_exit(struct net *net)
++{
++	struct net_device *dev;
++
++	rtnl_lock();
++	/* clean dev list */
++	for_each_netdev(net, dev) {
++		if (__in6_dev_get(dev) == NULL)
++			continue;
++		addrconf_ifdown(dev, 1);
++	}
++	addrconf_ifdown(net->loopback_dev, 2);
++	rtnl_unlock();
++}
++
++static struct pernet_operations addrconf_net_ops = {
++	.exit = addrconf_net_exit,
++};
++
+ /*
+  *	Init / cleanup code
+  */
+@@ -4362,6 +4381,10 @@ int __init addrconf_init(void)
+ 	ip6_blk_hole_entry.rt6i_idev = in6_dev_get(init_net.loopback_dev);
+ #endif
+ 
++	err = register_pernet_device(&addrconf_net_ops);
++	if (err)
++		return err;
++
+ 	register_netdevice_notifier(&ipv6_dev_notf);
+ 
+ 	addrconf_verify(0);
+@@ -4397,6 +4420,7 @@ void __exit addrconf_cleanup(void)
+ 	int i;
+ 
+ 	unregister_netdevice_notifier(&ipv6_dev_notf);
++	unregister_pernet_device(&addrconf_net_ops);
+ 
+ #ifdef CONFIG_SYSCTL
+ 	addrconf_sysctl_unregister(&global_ipv6_devconf_dflt);
+-- 
+1.5.4.3
+

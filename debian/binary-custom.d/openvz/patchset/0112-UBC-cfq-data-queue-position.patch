@@ -1,0 +1,67 @@
+From d888beb1029e24f62c33424f8192bb0be3fde442 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:45 +0400
+Subject: [PATCH 112/131] UBC cfq data queue position
+
+This patch eliminate BC IO overdose/underdose
+after bc start, wakeup or iotime overlap.
+
+Queue position (cfq_bc_position) is a upper edge of previous active BC iotime.
+Position updated at BC switch if it before new active BC iotime.
+
+BC enqueued according it's current iotime,
+if it hit in interval position -/+ maximum slice,
+otherwise iotime changed to queue position.
+---
+ include/linux/cfq-iosched.h |    1 +
+ kernel/bc/io_prio.c         |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cfq-iosched.h b/include/linux/cfq-iosched.h
+index 7f773a2..69c8943 100644
+--- a/include/linux/cfq-iosched.h
++++ b/include/linux/cfq-iosched.h
+@@ -101,6 +101,7 @@ struct cfq_data {
+ 	unsigned int cfq_ub_slice;
+ 	unsigned long slice_begin;
+ 	unsigned long slice_end;
++	unsigned long cfq_bc_position;
+ 	int virt_mode;
+ 	int write_virt_mode;
+ };
+diff --git a/kernel/bc/io_prio.c b/kernel/bc/io_prio.c
+index 9813a18..ef6982d 100644
+--- a/kernel/bc/io_prio.c
++++ b/kernel/bc/io_prio.c
+@@ -220,6 +220,17 @@ static void bc_remove(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
+ 
+ static void bc_enqueue(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
+ {
++	unsigned long iotime, slice, position;
++
++	iotime = cfq_bc->cfq_bc_iotime;
++	slice = cfqd->cfq_ub_slice * 2;
++	position = cfqd->cfq_bc_position;
++
++	/* adjust iotime to hit in interval position +/- maximum slice */
++	if (bc_iotime_after(position, iotime + slice)
++			|| bc_iotime_after(iotime, position + slice))
++		cfq_bc->cfq_bc_iotime = position;
++
+ 	bc_insert(cfqd, cfq_bc);
+ }
+ 
+@@ -261,6 +272,10 @@ static inline void bc_set_active(struct cfq_data *cfqd)
+ 	cfq_bc = rb_entry(rb_first(&cfqd->cfq_bc_queue),
+ 			struct cfq_bc_data, cfq_bc_node);
+ 
++	/* adjust queue active position */
++	if (bc_iotime_after(cfq_bc->cfq_bc_iotime, cfqd->cfq_bc_position))
++		cfqd->cfq_bc_position = cfq_bc->cfq_bc_iotime;
++
+ 	cfqd->active_cfq_bc = cfq_bc;
+ 	cfqd->slice_begin = now;
+ 	cfqd->slice_end = now +
+-- 
+1.5.4.3
+

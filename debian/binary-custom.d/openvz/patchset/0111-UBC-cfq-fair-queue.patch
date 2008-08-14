@@ -1,0 +1,215 @@
+From 79c9f8358982d12f1c3b22947aa368c6a21d758f Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:44 +0400
+Subject: [PATCH 111/131] UBC cfq fair queue
+
+replace round-robin scheduling in CFQ BC level with
+fair queuing scheme based on used io time accounting.
+
+replace list per cfq bc data storage with rb-tree based priority queue
+ordered by total used io time (cfq_bc_iotime).
+
+iotime is a monotonic rising counter of bc total used io time.
+
+on bc switch queue update iotime of previous active bc according it used time
+and activate bc with smallest iotime.
+---
+ block/cfq-iosched.c         |   14 ++++---
+ include/linux/cfq-iosched.h |   10 +++--
+ kernel/bc/io_prio.c         |   85 ++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 89 insertions(+), 20 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 223dd18..8999df2 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1093,17 +1093,19 @@ static int __cfq_forced_dispatch(struct cfq_bc_data *cfq_bc)
+ 
+ static int cfq_forced_dispatch(struct cfq_data *cfqd)
+ {
++	struct rb_node *node;
+ 	struct cfq_bc_data *cfq_bc;
+-	struct cfq_bc_data *cfq_bc_tmp;
+ 	int dispatched;
+ 
+ 	dispatched = 0;
+ 	/*
+ 	 * We use here _safe iterating, because
+-	 * __cfq_forced_dispatch() produces list_del() implicitly
+- 	 */
+-	list_for_each_entry_safe(cfq_bc, cfq_bc_tmp,
+-		&cfqd->act_cfq_bc_head, act_cfq_bc_list) {
++	 * __cfq_forced_dispatch() remove bc from tree implicitly
++	 */
++	node = rb_first(&cfqd->cfq_bc_queue);
++	while (node) {
++		cfq_bc = rb_entry(node, struct cfq_bc_data, cfq_bc_node);
++		node = rb_next(node);
+ 		dispatched += __cfq_forced_dispatch(cfq_bc);
+ 	}
+ 
+@@ -2154,7 +2156,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	if (!cfqd)
+ 		return NULL;
+ 
+-	INIT_LIST_HEAD(&cfqd->act_cfq_bc_head);
++	cfqd->cfq_bc_queue = RB_ROOT;
+ #ifndef CONFIG_BC_IO_SCHED
+ 	cfq_init_cfq_bc(&cfqd->cfq_bc);
+ 	/*
+diff --git a/include/linux/cfq-iosched.h b/include/linux/cfq-iosched.h
+index 62a5697..7f773a2 100644
+--- a/include/linux/cfq-iosched.h
++++ b/include/linux/cfq-iosched.h
+@@ -27,8 +27,8 @@ struct cfq_rb_root {
+ struct cfq_bc_data {
+ 	/* for ub.iopriv->cfq_bc_head */
+ 	struct list_head	cfq_bc_list;
+-	/* for cfqd->act_cfq_bc_head */
+-	struct list_head	act_cfq_bc_list;
++	/* for cfqd->cfq_bc_queue */
++	struct rb_node		cfq_bc_node;
+ 
+ 	struct cfq_data		*cfqd;
+ 	struct ub_iopriv	*ub_iopriv;
+@@ -43,6 +43,7 @@ struct cfq_bc_data {
+ 
+ 	unsigned long		rqnum;
+ 	unsigned long		on_dispatch;
++	unsigned long		cfq_bc_iotime;
+ 
+ 	/*
+ 	 * async queue for each priority case
+@@ -93,11 +94,12 @@ struct cfq_data {
+ 
+ 	struct list_head cic_list;
+ 
+-	/* list of ub that have requests */
+-	struct list_head act_cfq_bc_head;
++	/* bc priority queue */
++	struct rb_root cfq_bc_queue;
+ 	/* ub that owns a timeslice at the moment */
+ 	struct cfq_bc_data *active_cfq_bc;
+ 	unsigned int cfq_ub_slice;
++	unsigned long slice_begin;
+ 	unsigned long slice_end;
+ 	int virt_mode;
+ 	int write_virt_mode;
+diff --git a/kernel/bc/io_prio.c b/kernel/bc/io_prio.c
+index 5dcb9bb..9813a18 100644
+--- a/kernel/bc/io_prio.c
++++ b/kernel/bc/io_prio.c
+@@ -186,18 +186,84 @@ static inline unsigned long bc_time_slice_by_ioprio(unsigned int ioprio,
+  		/ (UB_IOPRIO_MAX - UB_IOPRIO_MIN - 1);
+ }
+  
++/* return true if a iotime after b, like time_after */
++static int bc_iotime_after(unsigned long a, unsigned long b)
++{
++	return (long)a - (long)b > 0;
++}
++
++/* cfq bc queue rb_tree helper function */
++static void bc_insert(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
++{
++	struct rb_node **p = &cfqd->cfq_bc_queue.rb_node;
++	struct rb_node *parent = NULL;
++	struct cfq_bc_data *__cfq_bc;
++
++	while (*p) {
++		parent = *p;
++		__cfq_bc = rb_entry(parent, struct cfq_bc_data, cfq_bc_node);
++		/* important: if equal push right */
++		if (bc_iotime_after(__cfq_bc->cfq_bc_iotime,
++					cfq_bc->cfq_bc_iotime))
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&cfq_bc->cfq_bc_node, parent, p);
++	rb_insert_color(&cfq_bc->cfq_bc_node, &cfqd->cfq_bc_queue);
++}
++
++static void bc_remove(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
++{
++	rb_erase(&cfq_bc->cfq_bc_node, &cfqd->cfq_bc_queue);
++}
++
++static void bc_enqueue(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
++{
++	bc_insert(cfqd, cfq_bc);
++}
++
++static void bc_dequeue(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
++{
++	bc_remove(cfqd, cfq_bc);
++}
++
++/* update bc iotime */
++static void bc_update(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc,
++		unsigned long delta)
++{
++	cfq_bc->cfq_bc_iotime += delta;
++
++	if (!cfq_bc->rqnum)
++		return;
++
++	bc_remove(cfqd, cfq_bc);
++	bc_insert(cfqd, cfq_bc);
++}
++
+ static inline void bc_set_active(struct cfq_data *cfqd)
+ {
+-	if (list_empty(&cfqd->act_cfq_bc_head)) {
+-		cfqd->active_cfq_bc = NULL;
++	struct cfq_bc_data *cfq_bc;
++	unsigned long now = jiffies;
++
++	/* update iotime of last active bc according to used time */
++	cfq_bc = cfqd->active_cfq_bc;
++	if (cfq_bc && cfqd->slice_begin)
++		bc_update(cfqd, cfq_bc, now - cfqd->slice_begin);
++
++	/* if no active BCs then keep this as an active one */
++	if (RB_EMPTY_ROOT(&cfqd->cfq_bc_queue)) {
++		cfqd->slice_begin = 0;
+ 		return;
+ 	}
+ 
+-	cfqd->active_cfq_bc = list_first_entry(&cfqd->act_cfq_bc_head,
+-					struct cfq_bc_data, act_cfq_bc_list);
+-	list_move_tail(&cfqd->active_cfq_bc->act_cfq_bc_list,
+-						&cfqd->act_cfq_bc_head);
+-	cfqd->slice_end = jiffies +
++	/* peek first bc from queue */
++	cfq_bc = rb_entry(rb_first(&cfqd->cfq_bc_queue),
++			struct cfq_bc_data, cfq_bc_node);
++
++	cfqd->active_cfq_bc = cfq_bc;
++	cfqd->slice_begin = now;
++	cfqd->slice_end = now +
+ 		bc_time_slice_by_ioprio(cfqd->active_cfq_bc->ub_iopriv->ioprio,
+ 							cfqd->cfq_ub_slice);
+ }
+@@ -216,8 +282,7 @@ void bc_inc_rqnum(struct cfq_queue *cfqq)
+ 	cfq_bc = cfqq->cfq_bc;
+ 
+ 	if (!cfq_bc->rqnum)
+-		list_add_tail(&cfq_bc->act_cfq_bc_list,
+-				&cfqq->cfqd->act_cfq_bc_head);
++		bc_enqueue(cfq_bc->cfqd, cfq_bc);
+ 
+ 	cfq_bc->rqnum++;
+ }
+@@ -231,7 +296,7 @@ void bc_dec_rqnum(struct cfq_queue *cfqq)
+ 	cfq_bc->rqnum--;
+ 
+ 	if (!cfq_bc->rqnum)
+-		list_del(&cfq_bc->act_cfq_bc_list);
++		bc_dequeue(cfq_bc->cfqd, cfq_bc);
+ }
+ 
+ unsigned long bc_set_ioprio(int ubid, int ioprio)
+-- 
+1.5.4.3
+

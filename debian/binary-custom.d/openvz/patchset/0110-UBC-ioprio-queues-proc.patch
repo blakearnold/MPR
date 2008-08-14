@@ -1,0 +1,77 @@
+From fef55b01df3e94fc42d42ebf5c93d50a1b9246fb Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:43 +0400
+Subject: [PATCH 110/131] UBC ioprio queues proc
+
+Show BC IO scheduler activity in proc
+
+Things, that may be interested for a beancounter are:
+
+        * the number of requests on the BC
+        * whether or not this BC is during a request dispatch
+        * whether or not this BC is active
+
+(all above is per-queue).
+
+Add the /proc/bc/<id>/ioprio_queues file with the information
+described above.
+
+        sda            1 DA
+        hda            0
+        sda            2
+---
+ kernel/bc/io_prio.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/bc/io_prio.c b/kernel/bc/io_prio.c
+index 1a10af4..5dcb9bb 100644
+--- a/kernel/bc/io_prio.c
++++ b/kernel/bc/io_prio.c
+@@ -292,9 +292,44 @@ static struct bc_proc_entry bc_ioprio_entry = {
+ 	.u.show = bc_ioprio_show,
+ };
+ 
++static int bc_ioprio_queue_show(struct seq_file *f, void *v)
++{
++	struct user_beancounter *bc;
++	struct cfq_bc_data *cfq_bc;
++
++	bc = seq_beancounter(f);
++
++	read_lock_irq(&bc->iopriv.cfq_bc_list_lock);
++	list_for_each_entry(cfq_bc, &bc->iopriv.cfq_bc_head, cfq_bc_list) {
++		struct cfq_data *cfqd;
++
++		cfqd = cfq_bc->cfqd;
++		seq_printf(f, "\t%-10s%6lu %c%c\n",
++				/*
++				 * this per-bc -> queue-data -> queue -> device
++				 * access is safe w/o additional locks, since
++				 * all the stuff above dies in the order shown
++				 * and we're holding the first element
++				 */
++				kobject_name(cfqd->queue->kobj.parent),
++				cfq_bc->rqnum,
++				cfq_bc->on_dispatch ? 'D' : ' ',
++				cfqd->active_cfq_bc == cfq_bc ? 'A' : ' ');
++	}
++	read_unlock_irq(&bc->iopriv.cfq_bc_list_lock);
++
++	return 0;
++}
++
++static struct bc_proc_entry bc_ioprio_queues_entry = {
++	.name = "ioprio_queues",
++	.u.show = bc_ioprio_queue_show,
++};
++
+ static int __init bc_ioprio_init(void)
+ {
+ 	bc_register_proc_entry(&bc_ioprio_entry);
++	bc_register_proc_entry(&bc_ioprio_queues_entry);
+ 	return 0;
+ }
+ 
+-- 
+1.5.4.3
+

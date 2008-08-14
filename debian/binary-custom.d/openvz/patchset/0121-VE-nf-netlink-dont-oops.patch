@@ -1,0 +1,102 @@
+From 561bc6b6de71418dd0be8d872b1272c031cba6cc Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:51 +0400
+Subject: [PATCH 121/131] VE nf netlink dont oops
+
+Fix oops in netlink conntrack module
+If we load conntrack modules after ve start one pointer on
+ve_struct is NULL and accessing it causes an oops.
+
+This is handled in most of the places, but the netlink
+interface. Fix this one as well.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=788
+---
+ include/net/netfilter/nf_conntrack_core.h |    2 ++
+ net/netfilter/nf_conntrack_netlink.c      |   18 ++++++++++++++++++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
+
+diff --git a/include/net/netfilter/nf_conntrack_core.h b/include/net/netfilter/nf_conntrack_core.h
+index cab835c..3e4ce33 100644
+--- a/include/net/netfilter/nf_conntrack_core.h
++++ b/include/net/netfilter/nf_conntrack_core.h
+@@ -64,10 +64,12 @@ extern int __nf_conntrack_confirm(struct sk_buff *skb);
+ 
+ #if defined(CONFIG_VE_IPTABLES)
+ #include <linux/sched.h>
++#define ve_nf_conntrack_initialized()	(get_exec_env()->_nf_conntrack != NULL)
+ #define ve_nf_conntrack_hash	(get_exec_env()->_nf_conntrack->_nf_conntrack_hash)
+ #define ve_nf_conntrack_vmalloc	(get_exec_env()->_nf_conntrack->_nf_conntrack_vmalloc)
+ #define ve_unconfirmed		(get_exec_env()->_nf_conntrack->_unconfirmed)
+ #else
++#define ve_nf_conntrack_initialized()	1
+ #define ve_nf_conntrack_hash		nf_conntrack_hash
+ #define ve_nf_conntrack_vmalloc		nf_conntrack_vmalloc
+ #define ve_unconfirmed			unconfirmed
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index 41b16c6..044f838 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -705,6 +705,9 @@ ctnetlink_del_conntrack(struct sock *ctnl, struct sk_buff *skb,
+ 	u_int8_t u3 = nfmsg->nfgen_family;
+ 	int err = 0;
+ 
++	if (!ve_nf_conntrack_initialized())
++		return -ENOPROTOOPT;
++
+ 	if (cda[CTA_TUPLE_ORIG])
+ 		err = ctnetlink_parse_tuple(cda, &tuple, CTA_TUPLE_ORIG, u3);
+ 	else if (cda[CTA_TUPLE_REPLY])
+@@ -751,6 +754,9 @@ ctnetlink_get_conntrack(struct sock *ctnl, struct sk_buff *skb,
+ 	u_int8_t u3 = nfmsg->nfgen_family;
+ 	int err = 0;
+ 
++	if (!ve_nf_conntrack_initialized())
++		return -ENOPROTOOPT;
++
+ 	if (nlh->nlmsg_flags & NLM_F_DUMP) {
+ #ifndef CONFIG_NF_CT_ACCT
+ 		if (NFNL_MSG_TYPE(nlh->nlmsg_type) == IPCTNL_MSG_CT_GET_CTRZERO)
+@@ -1056,6 +1062,9 @@ ctnetlink_new_conntrack(struct sock *ctnl, struct sk_buff *skb,
+ 	u_int8_t u3 = nfmsg->nfgen_family;
+ 	int err = 0;
+ 
++	if (!ve_nf_conntrack_initialized())
++		return -ENOPROTOOPT;
++
+ 	if (cda[CTA_TUPLE_ORIG]) {
+ 		err = ctnetlink_parse_tuple(cda, &otuple, CTA_TUPLE_ORIG, u3);
+ 		if (err < 0)
+@@ -1377,6 +1386,9 @@ ctnetlink_get_expect(struct sock *ctnl, struct sk_buff *skb,
+ 	u_int8_t u3 = nfmsg->nfgen_family;
+ 	int err = 0;
+ 
++	if (!ve_nf_conntrack_initialized())
++		return -ENOPROTOOPT;
++
+ 	if (nlh->nlmsg_flags & NLM_F_DUMP) {
+ 		return netlink_dump_start(ctnl, skb, nlh,
+ 					  ctnetlink_exp_dump_table,
+@@ -1438,6 +1450,9 @@ ctnetlink_del_expect(struct sock *ctnl, struct sk_buff *skb,
+ 	unsigned int i;
+ 	int err;
+ 
++	if (!ve_nf_conntrack_initialized())
++		return -ENOPROTOOPT;
++
+ 	if (cda[CTA_EXPECT_TUPLE]) {
+ 		/* delete a single expect by tuple */
+ 		err = ctnetlink_parse_tuple(cda, &tuple, CTA_EXPECT_TUPLE, u3);
+@@ -1576,6 +1591,9 @@ ctnetlink_new_expect(struct sock *ctnl, struct sk_buff *skb,
+ 	u_int8_t u3 = nfmsg->nfgen_family;
+ 	int err = 0;
+ 
++	if (!ve_nf_conntrack_initialized())
++		return -ENOPROTOOPT;
++
+ 	if (!cda[CTA_EXPECT_TUPLE]
+ 	    || !cda[CTA_EXPECT_MASK]
+ 	    || !cda[CTA_EXPECT_MASTER])
+-- 
+1.5.4.3
+

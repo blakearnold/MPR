@@ -1,0 +1,57 @@
+From c8ae69f583b6939f86ca75dba8bfb67b518ab0e5 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:39 +0400
+Subject: [PATCH 106/131] CPT restore conntrack timer fix
+
+One more fix of restore conntrack procedure.
+Following code:
+
+        if (ct->helper->timeout && !del_timer(&exp->timeout)) {
+                ...
+        }
+
+can lead to oops, as exp->timeout is not initialized at this point.
+
+Actually this optimization is not needed at all.
+If expectation is dying, then we will let it die by its own death.
+
+Also in ip_conntrack_expect_insert() there is an initialization of
+exp->timeout. And we can't just do add_timer() after that (as in add_timer()
+we have BUG_ON(timer_pending(timer))), we must do mod_timer() instead.
+
+Bug #114209
+---
+ kernel/cpt/rst_conntrack.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/cpt/rst_conntrack.c b/kernel/cpt/rst_conntrack.c
+index 1f48945..bfa6ef2 100644
+--- a/kernel/cpt/rst_conntrack.c
++++ b/kernel/cpt/rst_conntrack.c
+@@ -121,13 +121,6 @@ static int undump_expect_list(struct ip_conntrack *ct,
+ 			return -ENOMEM;
+ 		}
+ 
+-		if (ct->helper->timeout && !del_timer(&exp->timeout)) {
+-			/* Dying already. We can do nothing. */
+-			write_unlock_bh(&ip_conntrack_lock);
+-			dprintk_ctx("conntrack expectation is dying\n");
+-			continue;
+-		}
+-
+ 		decode_tuple(&v.cpt_tuple, &exp->tuple, 0);
+ 		decode_tuple(&v.cpt_mask, &exp->mask, 0);
+ 
+@@ -144,8 +137,7 @@ static int undump_expect_list(struct ip_conntrack *ct,
+ 		} else
+ #endif
+ 		if (ct->helper->timeout) {
+-			exp->timeout.expires = jiffies + v.cpt_timeout;
+-			add_timer(&exp->timeout);
++			mod_timer(&exp->timeout, jiffies + v.cpt_timeout);
+ 		}
+ 		write_unlock_bh(&ip_conntrack_lock);
+ 
+-- 
+1.5.4.3
+
