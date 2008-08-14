@@ -1,0 +1,118 @@
+From 9de272e0bbf4a41408db8a7ef54acf5e5ff7be51 Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:42 +0400
+Subject: [PATCH 108/131] UBC account for rss pages
+
+UBC: show how much page beancounters each UB has
+
+Essentially, this is the per-UB rss value calculated
+(unline physpages and privvmpages) w/o taking sharing
+into account.
+
+With this statistics (shown via /proc/bc/XXX/vmaux:rss)
+we can evaluate the portion of pages, that are shared
+accross beancounters (i.e. CTs) like this:
+
+(\sum (bc.rss + bc.tmpfs_respages) - \sum (bc.physpages)) /
+	(\sum (bc.rss + bc.tmpfs_respages))
+
+Bug #114660
+---
+ include/bc/beancounter.h |    3 ++-
+ include/bc/debug.h       |    6 ------
+ kernel/bc/rss_pages.c    |   16 ++++++++++++++++
+ kernel/bc/vm_pages.c     |    1 +
+ 4 files changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/include/bc/beancounter.h b/include/bc/beancounter.h
+index 89fcf20..0b621dc 100644
+--- a/include/bc/beancounter.h
++++ b/include/bc/beancounter.h
+@@ -142,6 +142,7 @@ struct page_private {
+ 	unsigned long		ubp_unused_privvmpages;
+ 	unsigned long		ubp_tmpfs_respages;
+ 	unsigned long		ubp_swap_pages;
++	unsigned long		ubp_pbcs;
+ 	unsigned long long	ubp_held_pages;
+ };
+ 
+@@ -170,7 +171,6 @@ struct ub_percpu_struct {
+ #ifdef CONFIG_BC_DEBUG_KMEM
+ 	long	pages_charged;
+ 	long	vmalloc_charged;
+-	long	pbcs;
+ #endif
+ 	unsigned long	sync;
+ 	unsigned long	sync_done;
+@@ -213,6 +213,7 @@ struct user_beancounter
+ #define ub_tmpfs_respages	ppriv.ubp_tmpfs_respages
+ #define ub_swap_pages		ppriv.ubp_swap_pages
+ #define ub_held_pages		ppriv.ubp_held_pages
++#define ub_pbcs			ppriv.ubp_pbcs
+ 	struct sock_private	spriv;
+ #define ub_rmem_thres		spriv.ubp_rmem_thres
+ #define ub_maxadvmss		spriv.ubp_maxadvmss
+diff --git a/include/bc/debug.h b/include/bc/debug.h
+index 7b1feb6..58c64f3 100644
+--- a/include/bc/debug.h
++++ b/include/bc/debug.h
+@@ -91,17 +91,11 @@ struct vm_struct;
+ 			ub_percpu_sub(ub, vmalloc_charged,		\
+ 					vm->nr_pages);			\
+ 	} while (0)
+-
+-#define inc_pbc_count(ub)	ub_percpu_inc(ub, pbcs)
+-#define dec_pbc_count(ub)	ub_percpu_dec(ub, pbcs)
+ #else
+ #define init_cache_counters()		do { } while (0)
+ #define inc_vmalloc_charged(vm, f)	do { } while (0)
+ #define dec_vmalloc_charged(vm)		do { } while (0)
+ 
+-#define inc_pbc_count(ub)		do { } while (0)
+-#define dec_pbc_count(ub)		do { } while (0)
+-
+ #define ub_free_counters(ub)		do { } while (0)
+ #define ub_kmemcache_free(cachep)	do { } while (0)
+ #endif
+diff --git a/kernel/bc/rss_pages.c b/kernel/bc/rss_pages.c
+index 391585e..84c4c6d 100644
+--- a/kernel/bc/rss_pages.c
++++ b/kernel/bc/rss_pages.c
+@@ -85,6 +85,22 @@ static void inc_held_pages(struct user_beancounter *ub, int value)
+ }
+ 
+ /*
++ * ++ and -- beyond are protected with pb_lock
++ */
++
++static inline void inc_pbc_count(struct user_beancounter *ub)
++{
++	for (; ub != NULL; ub = ub->parent)
++		ub->ub_pbcs++;
++}
++
++static inline void dec_pbc_count(struct user_beancounter *ub)
++{
++	for (; ub != NULL; ub = ub->parent)
++		ub->ub_pbcs--;
++}
++
++/*
+  * Alloc - free
+  */
+ 
+diff --git a/kernel/bc/vm_pages.c b/kernel/bc/vm_pages.c
+index d48f327..124ebf7 100644
+--- a/kernel/bc/vm_pages.c
++++ b/kernel/bc/vm_pages.c
+@@ -529,6 +529,7 @@ static int bc_vmaux_show(struct seq_file *f, void *v)
+ 			ub->ub_tmpfs_respages);
+ 	seq_printf(f, bc_proc_lu_fmt, ub_rnames[UB_SWAPPAGES],
+ 			ub->ub_swap_pages);
++	seq_printf(f, bc_proc_lu_fmt, "rss", ub->ub_pbcs);
+ 
+ 	seq_printf(f, bc_proc_lu_fmt, "swapin", swap);
+ 	seq_printf(f, bc_proc_lu_fmt, "unmap", unmap);
+-- 
+1.5.4.3
+

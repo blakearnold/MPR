@@ -1,0 +1,32 @@
+From 44e3cef221021d6ad1834575abbb89e7609489f9 Mon Sep 17 00:00:00 2001
+From: Denis V. Lunev <den@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:56 +0400
+Subject: [PATCH 126/131] VE simfs statfs on root
+ simfs: do not use s_root dentry of underlying for statfs
+
+The real problem is that s_root on the NFS super block is a crap.
+Unfortunately, the original dentry (which is asked to be statfs-ed)
+is not available at this point. The only visible solution for this
+is to use the dentry to which simfs is point to.
+
+Bug #115232
+---
+ fs/simfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/simfs.c b/fs/simfs.c
+index e5d6bae..b89320c 100644
+--- a/fs/simfs.c
++++ b/fs/simfs.c
+@@ -131,7 +131,7 @@ static int sim_statfs(struct super_block *sb, struct kstatfs *buf)
+ 
+ 	err = -ENOSYS;
+ 	if (lsb && lsb->s_op && lsb->s_op->statfs)
+-		err = lsb->s_op->statfs(lsb->s_root, &statbuf);
++		err = lsb->s_op->statfs(sb->s_root, &statbuf);
+ 	if (err)
+ 		return err;
+ 
+-- 
+1.5.4.3
+

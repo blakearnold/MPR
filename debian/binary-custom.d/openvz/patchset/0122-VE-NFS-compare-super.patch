@@ -1,0 +1,28 @@
+From 3f71b17bd0dcd9ed2fb3472beef576f8e3c26224 Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:51 +0400
+Subject: [PATCH 122/131] VE NFS compare super
+
+NFS super blocks in different VEs should be different
+Teach nfs_compare_super to this.
+---
+ fs/nfs/super.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 290bb86..fcab4a3 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1387,6 +1387,9 @@ static int nfs_compare_super(struct super_block *sb, void *data)
+ 	struct nfs_server *server = sb_mntdata->server, *old = NFS_SB(sb);
+ 	int mntflags = sb_mntdata->mntflags;
+ 
++	if (!ve_accessible_strict(old->client->cl_xprt->owner_env,
++				  get_exec_env()))
++		return 0;
+ 	if (memcmp(&old->nfs_client->cl_addr,
+ 				&server->nfs_client->cl_addr,
+ 				sizeof(old->nfs_client->cl_addr)) != 0)
+-- 
+1.5.4.3
+

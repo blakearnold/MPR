@@ -1,0 +1,36 @@
+From ee08765df7bc7994142c133a78e1cb817d53be86 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:49 +0400
+Subject: [PATCH 118/131] UBC pid charge size
+ add missign CHARGE_SIZE macro
+
+---
+ kernel/pid.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e26509f..56dd048 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -269,7 +269,8 @@ fastcall void free_pid(struct pid *pid)
+ 			hlist_del_rcu(&upid->pid_chain);
+ 	}
+ 	spin_unlock(&pidmap_lock);
+-	ub_kmemsize_uncharge(pid->ub, pid->numbers[pid->level].ns->pid_cachep->objuse);
++	ub_kmemsize_uncharge(pid->ub, CHARGE_SIZE(pid->numbers[pid->level].ns->
++				pid_cachep->objuse));
+ 	local_irq_restore(flags);
+ 
+ 	for (i = 0; i <= pid->level; i++)
+@@ -315,7 +316,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t vpid)
+ 	local_irq_disable();
+ #ifdef CONFIG_BEANCOUNTERS
+ 	ub = get_exec_ub();
+-	if (ub_kmemsize_charge(ub, ns->pid_cachep->objuse, UB_HARD))
++	if (ub_kmemsize_charge(ub, CHARGE_SIZE(ns->pid_cachep->objuse), UB_HARD))
+ 		goto out_enable;
+ 	pid->ub = get_beancounter(ub);
+ 	spin_lock(&pidmap_lock);
+-- 
+1.5.4.3
+

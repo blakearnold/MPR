@@ -1,0 +1,100 @@
+From a96cbb24e5e820a4457b6520e2590951348028e1 Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:48 +0400
+Subject: [PATCH 116/131] UBC net setcharge warning fix
+
+ub: ub_sock_tcp_chargesend warning if called via tcp_fragment
+
+BUG: warning at kernel/ub/ub_net.c:335/__ub_skb_set_charge() (Tainted:  P     )
+        [<c043b658>] ub_sock_tcp_chargesend+0x86/0x171
+        [<c05db289>] tcp_fragment+0xaf/0x452
+        [<c05d507a>] tcp_sacktag_write_queue+0x30f/0x71e
+        [<c05d568f>] tcp_ack+0x206/0x184c
+        [<c05dc61a>] __tcp_push_pending_frames+0x4ab/0x79e
+        [<c05d9f6f>] tcp_rcv_established+0x76b/0x884
+        [<c05df70b>] tcp_v4_do_rcv+0x40/0x329
+        [<fa087154>] ipt_hook+0x28/0x30 [iptable_filter]
+        [<c05c182c>] nf_iterate+0x30/0x61
+        [<c05e2020>] tcp_v4_rcv+0x981/0x9d5
+        [<c05c782b>] ip_local_deliver+0x1a6/0x26f
+        [<c05c7642>] ip_rcv+0x4fb/0x53e
+        [<c05aac62>] netif_receive_skb+0x306/0x3ac
+        [<f8c4d0aa>] e1000_clean_rx_irq+0x34a/0x41f [e1000]
+        [<f8c4c188>] e1000_clean+0x6b/0x222 [e1000]
+        [<c05ac0bb>] net_rx_action+0x92/0x175
+        [<c04271aa>] __do_softirq+0x84/0x109
+        [<c0427265>] do_softirq+0x36/0x3a
+        [<c0406573>] do_IRQ+0xad/0xb6
+        [<c060b0b6>] common_interrupt+0x1a/0x20
+        [<c0403d40>] mwait_idle+0x25/0x38
+        [<c0403d05>] cpu_idle+0x5e/0x74
+        =======================
+
+The warning occures when we try to charge skb that is already charged.
+This is correct for the case. The size of underlying skb is changed and
+we uncharge/charge to keep situation sane.
+
+ub_skb_uncharge is equivalent to
+        ub_sock_ret_wreserv
+        ub_skb_set_uncharge
+which is just correct for the case.
+
+Bug #115332
+---
+ include/bc/net.h      |    2 --
+ kernel/bc/net.c       |    8 --------
+ net/ipv4/tcp_output.c |    4 +---
+ 3 files changed, 1 insertions(+), 13 deletions(-)
+
+diff --git a/include/bc/net.h b/include/bc/net.h
+index 5f82aff..32f33b9 100644
+--- a/include/bc/net.h
++++ b/include/bc/net.h
+@@ -63,8 +63,6 @@ UB_DECLARE_VOID_FUNC(ub_sock_ret_wreserv(struct sock *sk, int bufid,
+ 			unsigned long size, unsigned long ressize))
+ UB_DECLARE_FUNC(int, ub_sock_tcp_chargesend(struct sock *sk,
+ 			struct sk_buff *skb, enum ub_severity strict))
+-UB_DECLARE_VOID_FUNC(ub_sock_tcp_unchargesend(struct sock *sk,
+-			unsigned long size))
+ UB_DECLARE_FUNC(int, ub_sock_tcp_chargepage(struct sock *sk))
+ UB_DECLARE_VOID_FUNC(ub_sock_tcp_detachpage(struct sock *sk))
+ 
+diff --git a/kernel/bc/net.c b/kernel/bc/net.c
+index ad88b86..8f7512f 100644
+--- a/kernel/bc/net.c
++++ b/kernel/bc/net.c
+@@ -1135,14 +1135,6 @@ int ub_sock_tcp_chargesend(struct sock *sk, struct sk_buff *skb,
+ }
+ EXPORT_SYMBOL(ub_sock_tcp_chargesend);
+ 
+-void ub_sock_tcp_unchargesend(struct sock *sk, unsigned long size)
+-{
+-	if (unlikely(!sock_has_ubc(sk)))
+-		return;
+-	/* see ub_tcpsndbuf_uncharge */
+-	ub_sock_ret_wreserv(sk, UB_TCPSNDBUF, size, sock_bc(sk)->poll_reserv);
+-}
+-
+ /*
+  * Initialization
+  */
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 3e0a33a..f414220 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -718,11 +718,9 @@ int tcp_fragment(struct sock *sk, struct sk_buff *skb, u32 len, unsigned int mss
+ 		nsize = 0;
+ 
+ 	if (skb_cloned(skb) && skb_is_nonlinear(skb)) {
+-		unsigned long chargesize;
+-		chargesize = skb_bc(skb)->charged;
+ 		if (pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
+ 			return -ENOMEM;
+-		ub_sock_tcp_unchargesend(sk, chargesize);
++		ub_skb_uncharge(skb);
+ 		ub_tcpsndbuf_charge_forced(sk, skb);
+ 	}
+ 
+-- 
+1.5.4.3
+

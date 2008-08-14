@@ -1,0 +1,59 @@
+From a859cfd55614c65d7c8bcc92bbba45ac0935a3ff Mon Sep 17 00:00:00 2001
+From: Denis V. Lunev <den@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:50 +0400
+Subject: [PATCH 119/131] UBC dcache sleep in dput
+
+dentry->dentry_bc.d_ub is unreliable after the sleep.
+
+d_kill can sleep inside. In this case dentry->dentry_bc.d_ub saved before
+is unreliable as we can have dcache accounting on event during sleep. In this
+case we'll have saved ub == NULL and OOPS/leak inside dcache_uncharge.
+
+Another problem here is that we should decrement inuse count on the
+dentry appropriately.
+
+Bug #116095
+---
+ fs/dcache.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 09fdd5e..17efdbb 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -181,9 +181,6 @@ static struct dentry *d_kill(struct dentry *dentry)
+ 
+ static void dput_recursive(struct dentry *dentry)
+ {
+-	struct user_beancounter *ub;
+-	unsigned long d_ubsize;
+-
+ repeat:
+ 	if (unlikely(ub_dentry_on)) {
+ 		spin_lock(&dcache_lock);
+@@ -234,15 +231,16 @@ kill_it:
+ 		list_del(&dentry->d_lru);
+ 		dentry_stat.nr_unused--;
+ 	}
+-
+-	ub = dentry->dentry_bc.d_ub;
+-	d_ubsize = dentry->dentry_bc.d_ubsize;
+-	dentry = d_kill(dentry);
+-	preempt_disable();
+ 	if (unlikely(ub_dentry_on)) {
+-		uncharge_dcache(ub, d_ubsize);
++		struct user_beancounter *ub;
++
++		ub = dentry->dentry_bc.d_ub;
++		BUG_ON(!ub_dput_testzero(dentry));
++		uncharge_dcache(ub, dentry->dentry_bc.d_ubsize);
+ 		put_beancounter(ub);
+ 	}
++	dentry = d_kill(dentry);
++	preempt_disable();
+ 	if (dentry) 
+ 		goto repeat;
+ 	preempt_enable();
+-- 
+1.5.4.3
+

@@ -1,0 +1,72 @@
+From 84612b3e5dc1e92cb0ae275d5cf36689b416a54d Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:56 +0400
+Subject: [PATCH 127/131] VE sysctl add dymmy to pin kernel
+
+Add kernel.dummy-pde to prevent invisible /proc/sys/kernel
+
+This is a mess.
+
+There are global and VE0-local sysctl trees.
+
+They are populated on-demand: creating creates necessary directories
+if needed, removing removes directories if they become empty.
+
+It can very well happen that VE0-local tree is empty before first module
+registers sysctl.
+
+Now, if someone instantiates /proc/sys/kernel inode while VE0-local sysctl tree
+doesn't contain /proc/sys/kernel, its LPDE will be NULL.
+
+Now module registers sysctl, proc entry is created in local list, but nobody
+cares. Inode is in memory, and lookup and readdir won't find new shiny sysctl,
+because they both see LPDE=NULL and thus won't iterate over local list.
+
+Net effect -- sysctl registered but invisible in /proc
+
+In case of BUG112482 they're kernel.vzprivrange and kernel.ve_allow_kthreads .
+
+One solution is to make sure that /proc/sys/kernel exists in both trees before
+first register. But we can't just add directory -- first "service vz stop" can
+remove it due to garbage-collecting nature of sysctl removal and situation will
+reappear.
+
+So, add dummy kernel/.dummy-pde which nobody removes.
+
+Bug #112482
+---
+ kernel/ve/veowner.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/ve/veowner.c b/kernel/ve/veowner.c
+index cee5765..172c9e5 100644
+--- a/kernel/ve/veowner.c
++++ b/kernel/ve/veowner.c
+@@ -186,11 +186,24 @@ static ctl_table vz_fs_table[] = {
+ 	},
+ 	{ 0 }
+ };
++static int dummy_pde_data = 0;
++static ctl_table dummy_kern_table[] = {
++	{
++		.ctl_name	= 23571113,
++		.procname	= ".dummy-pde",
++		.data		= &dummy_pde_data,
++		.maxlen		= sizeof(int),
++		.mode		= 0400,
++		.proc_handler	= proc_dointvec,
++	},
++	{}
++};
+ static ctl_table root_table2[] = {
+ #ifdef CONFIG_INET
+ 	{CTL_NET, "net", NULL, 0, 0555, vz_net_table},
+ #endif
+ 	{CTL_FS, "fs", NULL, 0, 0555, vz_fs_table},
++	{CTL_KERN, "kernel", NULL, 0, 0555, dummy_kern_table},
+ 	{ 0 }
+ };
+ int prepare_sysctl(void)
+-- 
+1.5.4.3
+

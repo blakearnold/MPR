@@ -1,0 +1,46 @@
+From 56f88e0d542d62ae5892a9a0e5538ac3e8304932 Mon Sep 17 00:00:00 2001
+From: Vitaliy Gusev <vgusev@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:54 +0400
+Subject: [PATCH 125/131] VE proc task state
+
+Show envID fields in /proc/self/status in VE.
+Also show VPid, PNState, StopState, etc.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=936
+---
+ fs/proc/array.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 871badb..25f2d73 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -208,16 +208,15 @@ static inline char *task_state(struct task_struct *p, char *buffer)
+ 	buffer += sprintf(buffer, "\n");
+ 
+ #ifdef CONFIG_VE
+-	if (ve_is_super(get_exec_env()))
+-		buffer += sprintf(buffer,
+-				"envID:\t%d\n"
+-				"VPid:\t%d\n"
+-				"PNState:\t%u\n"
+-				"StopState:\t%u\n",
+-				p->ve_task_info.owner_env->veid,
+-				task_pid_vnr(p),
+-				p->pn_state,
+-				p->stopped_state);
++	buffer += sprintf(buffer,
++			  "envID:\t%d\n"
++			  "VPid:\t%d\n"
++			  "PNState:\t%u\n"
++			  "StopState:\t%u\n",
++			  p->ve_task_info.owner_env->veid,
++			  task_pid_vnr(p),
++			  p->pn_state,
++			  p->stopped_state);
+ #endif
+ 	return buffer;
+ }
+-- 
+1.5.4.3
+

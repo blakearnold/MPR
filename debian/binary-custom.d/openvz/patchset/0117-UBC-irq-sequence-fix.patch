@@ -1,0 +1,29 @@
+From ed9efe4cf895f9bc6b66de37830383207bd90302 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:49 +0400
+Subject: [PATCH 117/131] UBC irq sequence fix
+
+fix irq enable/disable sequence in case CONFIG_BEANCOUNTERS=n
+http://bugzilla.openvz.org/show_bug.cgi?id=433
+---
+ kernel/pid.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 225d221..e26509f 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -312,9 +312,9 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t vpid)
+ 	for (type = 0; type < PIDTYPE_MAX; ++type)
+ 		INIT_HLIST_HEAD(&pid->tasks[type]);
+ 
++	local_irq_disable();
+ #ifdef CONFIG_BEANCOUNTERS
+ 	ub = get_exec_ub();
+-	local_irq_disable();
+ 	if (ub_kmemsize_charge(ub, ns->pid_cachep->objuse, UB_HARD))
+ 		goto out_enable;
+ 	pid->ub = get_beancounter(ub);
+-- 
+1.5.4.3
+

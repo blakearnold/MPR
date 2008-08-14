@@ -1,0 +1,137 @@
+From 6f4e06fb71e31e07621390434472a1ce59d667ab Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Thu, 7 Aug 2008 20:54:20 +0400
+Subject: [PATCH 131/131] VE stats percpustat
+
+Decrease ve_struct size in case of huge NR_CPUS
+kstat_lat_pcpu_struct contains array of NR_CPUS elements.
+Replace it with alloc_percpu data which helps to keep ve_struct
+relatively small and prevents allocation fails of huge order.
+
+Mostly relevant to IA64, where NR_CPUS=1024
+
+Bug #97575
+---
+ include/linux/vzstat.h |    8 ++++----
+ kernel/sched.c         |    7 +++++++
+ kernel/ve/ve.c         |    5 ++++-
+ kernel/ve/vecalls.c    |   13 ++++++++++++-
+ 4 files changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/vzstat.h b/include/linux/vzstat.h
+index 5c23ea4..c7dfd1f 100644
+--- a/include/linux/vzstat.h
++++ b/include/linux/vzstat.h
+@@ -36,7 +36,7 @@ struct kstat_lat_struct {
+ 	cycles_t avg[3];
+ };
+ struct kstat_lat_pcpu_struct {
+-	struct kstat_lat_pcpu_snap_struct cur[NR_CPUS];
++	struct kstat_lat_pcpu_snap_struct *cur;
+ 	cycles_t max_snap;
+ 	struct kstat_lat_snap_struct last;
+ 	cycles_t avg[3];
+@@ -121,7 +121,7 @@ static inline void KSTAT_LAT_PCPU_ADD(struct kstat_lat_pcpu_struct *p, int cpu,
+ {
+ 	struct kstat_lat_pcpu_snap_struct *cur;
+ 
+-	cur = &p->cur[cpu];
++	cur = per_cpu_ptr(p->cur, cpu);
+ 	write_seqcount_begin(&cur->lock);
+ 	cur->count++;
+ 	if (cur->maxlat < dur)
+@@ -152,8 +152,8 @@ static inline void KSTAT_LAT_PCPU_UPDATE(struct kstat_lat_pcpu_struct *p)
+ 	cycles_t m;
+ 
+ 	memset(&p->last, 0, sizeof(p->last));
+-	for (cpu = 0; cpu < NR_CPUS; cpu++) {
+-		cur = &p->cur[cpu];
++	for_each_online_cpu(cpu) {
++		cur = per_cpu_ptr(p->cur, cpu);
+ 		do {
+ 			i = read_seqcount_begin(&cur->lock);
+ 			memcpy(&snap, cur, sizeof(snap));
+diff --git a/kernel/sched.c b/kernel/sched.c
+index a2f30a0..ffc01fe 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -385,7 +385,12 @@ static inline int cpu_of(struct rq *rq)
+ #endif
+ }
+ 
++#ifdef CONFIG_SMP
++static struct percpu_data kstat_lat_pcpu_stats;
++#endif
++static struct kstat_lat_pcpu_snap_struct kstat_lat_pcpu_stats_data[NR_CPUS];
+ struct kernel_stat_glob kstat_glob;
++
+ DEFINE_SPINLOCK(kstat_glb_lock);
+ EXPORT_SYMBOL(kstat_glob);
+ EXPORT_SYMBOL(kstat_glb_lock);
+@@ -7126,6 +7131,8 @@ void __init sched_init(void)
+ 	int highest_cpu = 0;
+ 	int i, j;
+ 
++	kstat_glob.sched_lat.cur = static_percpu_ptr(&kstat_lat_pcpu_stats,
++			kstat_lat_pcpu_stats_data);
+ 	for_each_possible_cpu(i) {
+ 		struct rt_prio_array *array;
+ 		struct rq *rq;
+diff --git a/kernel/ve/ve.c b/kernel/ve/ve.c
+index 04da442..2756622 100644
+--- a/kernel/ve/ve.c
++++ b/kernel/ve/ve.c
+@@ -120,9 +120,10 @@ EXPORT_SYMBOL(ve0);
+ #ifdef CONFIG_SMP
+ static struct {
+ 	void *ptrs[NR_CPUS];
+-} ve0_cpu_stats;
++} ve0_cpu_stats, ve0_lat_pcpu_stats;
+ #endif
+ static struct ve_cpu_stats ve0_cpu_stats_data[NR_CPUS];
++static struct kstat_lat_pcpu_snap_struct ve0_lat_pcpu_stats_data[NR_CPUS];
+ 
+ LIST_HEAD(ve_list_head);
+ rwlock_t ve_list_lock = RW_LOCK_UNLOCKED;
+@@ -147,6 +148,8 @@ void init_ve0(void)
+ 
+ 	ve->cpu_stats = static_percpu_ptr(&ve0_cpu_stats,
+ 			ve0_cpu_stats_data);
++	ve->sched_lat_ve.cur = static_percpu_ptr(&ve0_lat_pcpu_stats,
++			ve0_lat_pcpu_stats_data);
+ 
+ 	list_add(&ve->ve_list, &ve_list_head);
+ }
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index c05685a..07042bf 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -1374,13 +1374,24 @@ static inline void fini_ve_iptables(struct ve_struct *ve, __u64 init_mask)
+ static inline int init_ve_cpustats(struct ve_struct *ve)
+ {
+ 	ve->cpu_stats = alloc_percpu(struct ve_cpu_stats);
+-	return ve->cpu_stats == NULL ? -ENOMEM : 0;
++	if (ve->cpu_stats == NULL)
++		return -ENOMEM;
++	ve->sched_lat_ve.cur = alloc_percpu(struct kstat_lat_pcpu_snap_struct);
++	if (ve->sched_lat_ve.cur == NULL)
++		goto fail;
++	return 0;
++
++fail:
++	free_percpu(ve->cpu_stats);
++	return -ENOMEM;
+ }
+ 
+ static inline void free_ve_cpustats(struct ve_struct *ve)
+ {
+ 	free_percpu(ve->cpu_stats);
+ 	ve->cpu_stats = NULL;
++	free_percpu(ve->sched_lat_ve.cur);
++	ve->sched_lat_ve.cur = NULL;
+ }
+ 
+ static int alone_in_pgrp(struct task_struct *tsk)
+-- 
+1.5.4.3
+

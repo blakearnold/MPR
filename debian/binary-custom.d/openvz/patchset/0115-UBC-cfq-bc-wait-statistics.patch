@@ -1,0 +1,127 @@
+From b9784922c8bcc65457ce5c5dc0ced4f6d5654f39 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:47 +0400
+Subject: [PATCH 115/131] UBC cfq bc wait statistics
+ Summarize per (bc, device) pair delays between bc enqueue and activation.
+ show in /proc/bc/<bc>/ioprio_queues total wait time in milliseconds.
+
+---
+ include/linux/cfq-iosched.h |    6 ++++++
+ kernel/bc/io_prio.c         |   42 ++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/cfq-iosched.h b/include/linux/cfq-iosched.h
+index 69c8943..f43f5eb 100644
+--- a/include/linux/cfq-iosched.h
++++ b/include/linux/cfq-iosched.h
+@@ -50,6 +50,12 @@ struct cfq_bc_data {
+ 	 */
+ 	struct cfq_queue	*async_cfqq[2][CFQ_PRIO_LISTS];
+ 	struct cfq_queue	*async_idle_cfqq;
++
++	/* write under cfqd->queue->request_queue_lock */
++	seqcount_t		stat_lock;
++	/* summarize delays between enqueue and activation. */
++	unsigned long		wait_time;
++	unsigned long		wait_start;
+ };
+ 
+ /*
+diff --git a/kernel/bc/io_prio.c b/kernel/bc/io_prio.c
+index 74202fa..8c06a0d 100644
+--- a/kernel/bc/io_prio.c
++++ b/kernel/bc/io_prio.c
+@@ -183,6 +183,34 @@ static inline int bc_empty(struct cfq_bc_data *cfq_bc)
+ 	return 0;
+ }
+ 
++static void bc_wait_start(struct cfq_bc_data *cfq_bc, unsigned long now)
++{
++	write_seqcount_begin(&cfq_bc->stat_lock);
++	cfq_bc->wait_start = now;
++	write_seqcount_end(&cfq_bc->stat_lock);
++}
++
++static void bc_wait_stop(struct cfq_bc_data *cfq_bc, unsigned long now)
++{
++	write_seqcount_begin(&cfq_bc->stat_lock);
++	cfq_bc->wait_time += now - cfq_bc->wait_start;
++	cfq_bc->wait_start = 0;
++	write_seqcount_end(&cfq_bc->stat_lock);
++}
++
++static unsigned int bc_wait_time(struct cfq_bc_data *cfq_bc, unsigned long now)
++{
++	unsigned long res;
++	unsigned seq;
++
++	do {
++		seq = read_seqcount_begin(&cfq_bc->stat_lock);
++		res = cfq_bc->wait_time + now - (cfq_bc->wait_start ?: now);
++	} while (read_seqcount_retry(&cfq_bc->stat_lock, seq));
++
++	return jiffies_to_msecs(res);
++}
++
+ /* return true if a iotime after b, like time_after */
+ static int bc_iotime_after(unsigned long a, unsigned long b)
+ {
+@@ -229,6 +257,9 @@ static void bc_enqueue(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
+ 		cfq_bc->cfq_bc_iotime = position;
+ 
+ 	bc_insert(cfqd, cfq_bc);
++
++	if (cfq_bc != cfqd->active_cfq_bc)
++		bc_wait_start(cfq_bc, jiffies);
+ }
+ 
+ static void bc_dequeue(struct cfq_data *cfqd, struct cfq_bc_data *cfq_bc)
+@@ -269,6 +300,9 @@ static inline void bc_set_active(struct cfq_data *cfqd)
+ 		return;
+ 	}
+ 
++	if (cfq_bc && cfq_bc->rqnum)
++		bc_wait_start(cfq_bc, now);
++
+ 	/* peek first bc from queue */
+ 	cfq_bc = rb_entry(rb_first(&cfqd->cfq_bc_queue),
+ 			struct cfq_bc_data, cfq_bc_node);
+@@ -280,6 +314,8 @@ static inline void bc_set_active(struct cfq_data *cfqd)
+ 	cfqd->active_cfq_bc = cfq_bc;
+ 	cfqd->slice_begin = now;
+ 	cfqd->slice_end = now + cfqd->cfq_ub_slice;
++
++	bc_wait_stop(cfq_bc, now);
+ }
+ 
+ void bc_schedule_active(struct cfq_data *cfqd)
+@@ -375,6 +411,7 @@ static int bc_ioprio_queue_show(struct seq_file *f, void *v)
+ {
+ 	struct user_beancounter *bc;
+ 	struct cfq_bc_data *cfq_bc;
++	unsigned long now = jiffies;
+ 
+ 	bc = seq_beancounter(f);
+ 
+@@ -383,7 +420,7 @@ static int bc_ioprio_queue_show(struct seq_file *f, void *v)
+ 		struct cfq_data *cfqd;
+ 
+ 		cfqd = cfq_bc->cfqd;
+-		seq_printf(f, "\t%-10s%6lu %c%c\n",
++		seq_printf(f, "\t%-10s%6lu %c%c %10u\n",
+ 				/*
+ 				 * this per-bc -> queue-data -> queue -> device
+ 				 * access is safe w/o additional locks, since
+@@ -393,7 +430,8 @@ static int bc_ioprio_queue_show(struct seq_file *f, void *v)
+ 				kobject_name(cfqd->queue->kobj.parent),
+ 				cfq_bc->rqnum,
+ 				cfq_bc->on_dispatch ? 'D' : ' ',
+-				cfqd->active_cfq_bc == cfq_bc ? 'A' : ' ');
++				cfqd->active_cfq_bc == cfq_bc ? 'A' : ' ',
++				bc_wait_time(cfq_bc, now));
+ 	}
+ 	read_unlock_irq(&bc->iopriv.cfq_bc_list_lock);
+ 
+-- 
+1.5.4.3
+
