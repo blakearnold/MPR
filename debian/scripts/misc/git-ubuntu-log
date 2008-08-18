@@ -113,10 +113,11 @@ sub shortlog_output {
 					print "    - GIT-SHA " . $entry->{'commit'} .
 						"\n";
 				}
-				if (defined($entry->{'bugno'})) {
-					print "    - LP: #" .
-						$entry->{'bugno'} . "\n";
-				}
+			}
+			# Upstream cherry-picks can have a bug number as well.
+			if (defined($entry->{'bugno'})) {
+				print "    - LP: #" .
+					$entry->{'bugno'} . "\n";
 			}
 		}
 	}
@@ -180,6 +181,10 @@ sub changelog_input {
 			} else {
 				$author = $kernel_auth;
 				$ignore = 1 if $desc =~ /Merge /;
+				while (<STDIN>) {
+					$bug = $2 if /^ *Bug: *(#|)(.*)/;
+					last if /^commit /;
+				}
 			}
 
 			if (!$ignore) {
