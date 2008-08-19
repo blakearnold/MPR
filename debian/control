@@ -381,45 +381,6 @@ Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.24-19/debian.README.gz for details.
 
-Package: linux-image-2.6.24-19-powerpc-smp
-Architecture: powerpc
-Section: base
-Priority: optional
-Pre-Depends: dpkg (>= 1.10.24)
-Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
-Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
-Conflicts: hotplug (<< 0.0.20040105-1)
-Recommends: yaboot
-Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
-Description: Linux kernel image for version 2.6.24 on 32-bit PowerPC SMP
- This package contains the Linux kernel image for version 2.6.24 on
- 32-bit PowerPC SMP.
- .
- Also includes the corresponding System.map file, the modules built by the
- packager, and scripts that try to ensure that the system is not left in an
- unbootable state after an update.
- .
- Supports 32-bit PowerPC SMP processors.
- .
- Geared toward desktop or server systems.
- .
- You likely do not want to install this package directly. Instead, install
- the linux-powerpc-smp meta-package, which will ensure that upgrades work
- correctly, and that supporting packages are also installed.
-
-Package: linux-headers-2.6.24-19-powerpc-smp
-Architecture: powerpc
-Section: devel
-Priority: optional
-Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-19, gcc-4.1, ${shlibs:Depends}
-Provides: linux-headers, linux-headers-2.6
-Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC SMP
- This package provides kernel header files for version 2.6.24 on
- 32-bit PowerPC SMP.
- .
- This is for sites that want the latest kernel headers.  Please read
- /usr/share/doc/linux-headers-2.6.24-19/debian.README.gz for details.
-
 Package: linux-image-2.6.24-19-powerpc64-smp
 Architecture: powerpc
 Section: base
@@ -455,6 +416,45 @@ Provides: linux-headers, linux-headers-2.6
 Description: Linux kernel headers for version 2.6.24 on 64-bit PowerPC SMP
  This package provides kernel header files for version 2.6.24 on
  64-bit PowerPC SMP.
+ .
+ This is for sites that want the latest kernel headers.  Please read
+ /usr/share/doc/linux-headers-2.6.24-19/debian.README.gz for details.
+
+Package: linux-image-2.6.24-19-powerpc-smp
+Architecture: powerpc
+Section: base
+Priority: optional
+Pre-Depends: dpkg (>= 1.10.24)
+Provides: linux-image, linux-image-2.6, fuse-module, redhat-cluster-modules, ivtv-modules
+Depends: initramfs-tools (>= 0.36ubuntu6), coreutils | fileutils (>= 4.0), module-init-tools (>= 3.3-pre11-4ubuntu3)
+Conflicts: hotplug (<< 0.0.20040105-1)
+Recommends: yaboot
+Suggests: fdutils, linux-doc-2.6.24 | linux-source-2.6.24
+Description: Linux kernel image for version 2.6.24 on 32-bit PowerPC SMP
+ This package contains the Linux kernel image for version 2.6.24 on
+ 32-bit PowerPC SMP.
+ .
+ Also includes the corresponding System.map file, the modules built by the
+ packager, and scripts that try to ensure that the system is not left in an
+ unbootable state after an update.
+ .
+ Supports 32-bit PowerPC SMP processors.
+ .
+ Geared toward desktop or server systems.
+ .
+ You likely do not want to install this package directly. Instead, install
+ the linux-powerpc-smp meta-package, which will ensure that upgrades work
+ correctly, and that supporting packages are also installed.
+
+Package: linux-headers-2.6.24-19-powerpc-smp
+Architecture: powerpc
+Section: devel
+Priority: optional
+Depends: coreutils | fileutils (>= 4.0), linux-headers-2.6.24-19, gcc-4.1, ${shlibs:Depends}
+Provides: linux-headers, linux-headers-2.6
+Description: Linux kernel headers for version 2.6.24 on 32-bit PowerPC SMP
+ This package provides kernel header files for version 2.6.24 on
+ 32-bit PowerPC SMP.
  .
  This is for sites that want the latest kernel headers.  Please read
  /usr/share/doc/linux-headers-2.6.24-19/debian.README.gz for details.
