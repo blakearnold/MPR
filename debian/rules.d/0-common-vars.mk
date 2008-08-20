@@ -97,9 +97,9 @@ ifeq ($(CONCURRENCY_LEVEL),)
       CONCURRENCY_LEVEL := $(shell expr `getconf _NPROCESSORS_ONLN` \* 2)
     endif
   endif
-  # Oh hell, give 'em one
+  # Default to hogging them all (and then some)
   ifeq ($(CONCURRENCY_LEVEL),)
-    CONCURRENCY_LEVEL := 1
+    CONCURRENCY_LEVEL := $(shell expr `getconf _NPROCESSORS_ONLN` \* 2)
   endif
 endif
 

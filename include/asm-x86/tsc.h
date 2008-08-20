@@ -32,32 +32,17 @@ static inline cycles_t get_cycles(void)
 	return ret;
 }
 
-/* Like get_cycles, but make sure the CPU is synchronized. */
-static __always_inline cycles_t get_cycles_sync(void)
+static inline cycles_t vget_cycles(void)
 {
-	unsigned long long ret;
-	unsigned eax, edx;
-
 	/*
-  	 * Use RDTSCP if possible; it is guaranteed to be synchronous
- 	 * and doesn't cause a VMEXIT on Hypervisors
+	 * We only do VDSOs on TSC capable CPUs, so this shouldnt
+	 * access boot_cpu_data (which is not VDSO-safe):
 	 */
-	alternative_io(ASM_NOP3, ".byte 0x0f,0x01,0xf9", X86_FEATURE_RDTSCP,
-		       ASM_OUTPUT2("=a" (eax), "=d" (edx)),
-		       "a" (0U), "d" (0U) : "ecx", "memory");
-	ret = (((unsigned long long)edx) << 32) | ((unsigned long long)eax);
-	if (ret)
-		return ret;
-
-	/*
-	 * Don't do an additional sync on CPUs where we know
-	 * RDTSC is already synchronous:
-	 */
-	alternative_io("cpuid", ASM_NOP2, X86_FEATURE_SYNC_RDTSC,
-			  "=a" (eax), "0" (1) : "ebx","ecx","edx","memory");
-	rdtscll(ret);
-
-	return ret;
+#ifndef CONFIG_X86_TSC
+	if (!cpu_has_tsc)
+		return 0;
+#endif
+	return (cycles_t) native_read_tsc();
 }
 
 extern void tsc_init(void);

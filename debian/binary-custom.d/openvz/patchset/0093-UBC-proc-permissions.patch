@@ -1,0 +1,53 @@
+From ec5cfa5fba2635c2561837d10233120917968972 Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 093/103] UBC proc permissions
+
+Set correct permissions on beancounters' proc files
+
+All these files allow to read from them only for root,
+but the mode mask is r--r--r--, which sometimes confuses
+the user.
+
+Set the r-------- mask for all the bc proc files and the
+r-x------ for directories.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=782
+---
+ kernel/bc/proc.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/bc/proc.c b/kernel/bc/proc.c
+index caf4b1b..012bd48 100644
+--- a/kernel/bc/proc.c
++++ b/kernel/bc/proc.c
+@@ -421,7 +421,7 @@ static int bc_lookset(struct inode *ino, void *data)
+ 	ino->i_ino = bc_make_ino(ub);
+ 	ino->i_fop = &bc_entry_fops;
+ 	ino->i_op = &bc_entry_iops;
+-	ino->i_mode = S_IFDIR | S_IRUSR | S_IXUGO;
++	ino->i_mode = S_IFDIR | S_IRUSR | S_IXUSR;
+ 	/* subbeancounters are not included, but who cares? */
+ 	ino->i_nlink = num_entries + 2;
+ 	ino->i_gid = 0;
+@@ -680,7 +680,7 @@ static int __init ub_init_proc(void)
+ 	struct proc_dir_entry *entry;
+ 
+ 	bc_proc_root = create_proc_entry("bc",
+-			S_IFDIR | S_IRUGO | S_IXUGO, NULL);
++			S_IFDIR | S_IRUSR | S_IXUSR, NULL);
+ 	if (bc_proc_root == NULL)
+ 		panic("Can't create /proc/bc entry");
+ 
+@@ -693,7 +693,7 @@ static int __init ub_init_proc(void)
+ #endif
+ 	bc_register_proc_root_entry(&bc_all_resources_entry);
+ 
+-	entry = create_proc_glob_entry("user_beancounters", S_IRUGO, NULL);
++	entry = create_proc_glob_entry("user_beancounters", S_IRUSR, NULL);
+ 	entry->proc_fops = &ub_file_operations;
+ 	return 0;
+ }
+-- 
+1.5.4.3
+

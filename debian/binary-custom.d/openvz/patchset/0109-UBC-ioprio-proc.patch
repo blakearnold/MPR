@@ -1,0 +1,64 @@
+From 8fe6eaaa2a02ceeb2ddd84f6f1f7867f98ff1ad3 Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:43 +0400
+Subject: [PATCH 109/131] UBC ioprio proc
+
+Show BC current IO priority
+Surprisingly, but currently on the running system, there's no
+way to find out what IO priority a VE... sorry - CT has.
+
+Add the /proc/bc/<id>/ioprio file with (currently only) this
+information.
+
+prio: 4
+---
+ kernel/bc/io_prio.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/bc/io_prio.c b/kernel/bc/io_prio.c
+index 20aa133..1a10af4 100644
+--- a/kernel/bc/io_prio.c
++++ b/kernel/bc/io_prio.c
+@@ -16,6 +16,7 @@
+ #include <bc/beancounter.h>
+ #include <bc/hash.h>
+ #include <bc/io_acct.h>
++#include <bc/proc.h>
+ #include <linux/blkdev.h>
+ 
+ struct cfq_bc_data *__find_cfq_bc(struct ub_iopriv *iopriv,
+@@ -275,6 +276,31 @@ void bc_io_restore_context(struct user_beancounter *ub)
+ 	}
+ }
+ 
++#ifdef CONFIG_PROC_FS
++static int bc_ioprio_show(struct seq_file *f, void *v)
++{
++	struct user_beancounter *bc;
++
++	bc = seq_beancounter(f);
++	seq_printf(f, "prio: %u\n", bc->iopriv.ioprio);
++
++	return 0;
++}
++
++static struct bc_proc_entry bc_ioprio_entry = {
++	.name = "ioprio",
++	.u.show = bc_ioprio_show,
++};
++
++static int __init bc_ioprio_init(void)
++{
++	bc_register_proc_entry(&bc_ioprio_entry);
++	return 0;
++}
++
++late_initcall(bc_ioprio_init);
++#endif
++
+ EXPORT_SYMBOL(bc_io_switch_context);
+ EXPORT_SYMBOL(bc_io_restore_context);
+ EXPORT_SYMBOL(__find_cfq_bc);
+-- 
+1.5.4.3
+

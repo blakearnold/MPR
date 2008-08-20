@@ -1,0 +1,29 @@
+From f0a9304509c8acf12d5ff8b3a9233a09911c376a Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 2 Jul 2008 19:55:20 +0400
+Subject: [PATCH 100/103] VE proc boot time
+
+Make boot time relative to VE start time.
+Some proc process tools use it to calculate process times,
+but /proc/*/stat already related to VE start time.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=828
+---
+ fs/proc/proc_misc.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/fs/proc/proc_misc.c b/fs/proc/proc_misc.c
+index 2bb8529..27bfda9 100644
+--- a/fs/proc/proc_misc.c
++++ b/fs/proc/proc_misc.c
+@@ -649,6 +649,7 @@ int show_stat(struct seq_file *p, void *v)
+ 		show_stat_ve(p, env);
+ 		__nr_running = nr_running_ve(env);
+ 		__nr_iowait = nr_iowait_ve(env);
++		jif += env->start_timespec.tv_sec;
+ 	}
+ #endif
+ 
+-- 
+1.5.4.3
+

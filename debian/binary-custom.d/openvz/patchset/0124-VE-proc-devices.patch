@@ -1,0 +1,45 @@
+From dd0b4ed3b3484f5185b0b16ff3fbe4009362e178 Mon Sep 17 00:00:00 2001
+From: Vitaliy Gusev <vgusev@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:53 +0400
+Subject: [PATCH 124/131] VE proc devices
+
+Add empty /proc/devices to CT
+
+Some fancy tools are disappointed by its absence on the one hand,
+but do not care for its content on the other.
+
+Bug #114847
+---
+ fs/proc/proc_misc.c |    3 +++
+ kernel/ve/veowner.c |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/fs/proc/proc_misc.c b/fs/proc/proc_misc.c
+index 27bfda9..c69b817 100644
+--- a/fs/proc/proc_misc.c
++++ b/fs/proc/proc_misc.c
+@@ -349,6 +349,9 @@ static int devinfo_show(struct seq_file *f, void *v)
+ 
+ static void *devinfo_start(struct seq_file *f, loff_t *pos)
+ {
++	if (!ve_is_super(get_exec_env()))
++		return NULL;
++
+ 	if (*pos < (BLKDEV_MAJOR_HASH_SIZE + CHRDEV_MAJOR_HASH_SIZE))
+ 		return pos;
+ 	return NULL;
+diff --git a/kernel/ve/veowner.c b/kernel/ve/veowner.c
+index b07bfb9..cee5765 100644
+--- a/kernel/ve/veowner.c
++++ b/kernel/ve/veowner.c
+@@ -94,6 +94,7 @@ static void prepare_proc_misc(void)
+ 		"cmdline",
+ 		"vmstat",
+ 		"modules",
++		"devices",
+ 		NULL,
+ 	};
+ 	char **p;
+-- 
+1.5.4.3
+

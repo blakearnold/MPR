@@ -1,0 +1,31 @@
+From e01cb0998c6c084e1aa2a81e7837d434ba1ec9d8 Mon Sep 17 00:00:00 2001
+From: Denis Lunev <den@openvz.org>
+Date: Mon, 30 Jun 2008 13:48:49 +0400
+Subject: [PATCH 092/103] UBC release udp once
+
+The socket resided in UB space waiting queue could be released. In this
+case ub_snd_wakeup running on the another CPU could hold/release that
+socket effectively hitting 0 refcounter second time.
+
+Bug #112170
+---
+ net/socket.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/net/socket.c b/net/socket.c
+index 6625730..fbeafc6 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -513,6 +513,9 @@ const struct file_operations bad_sock_fops = {
+ 
+ void sock_release(struct socket *sock)
+ {
++	if (sock->sk)
++		ub_sock_sndqueuedel(sock->sk);
++
+ 	if (sock->ops) {
+ 		struct module *owner = sock->ops->owner;
+ 
+-- 
+1.5.4.3
+

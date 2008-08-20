@@ -9,6 +9,7 @@
 #include <linux/ctype.h>
 #include <linux/pm.h>
 #include <linux/reboot.h>
+#include <acpi/reboot.h>
 #include <asm/uaccess.h>
 #include <asm/apic.h>
 #include <asm/hpet.h>
@@ -38,6 +39,9 @@ static int __init reboot_setup(char *str)
 			break;
 		case 'c': /* "cold" reboot (with memory testing etc) */
 			reboot_mode = 0x0;
+			break;
+		case 'a': /* reboot through ACPI BIOS. */
+			reboot_thru_bios = 2;
 			break;
 		case 'b': /* "bios" reboot by jumping through the BIOS */
 			reboot_thru_bios = 1;
@@ -72,6 +76,20 @@ __setup("reboot=", reboot_setup);
  * Reboot options and system auto-detection code provided by
  * Dell Inc. so their systems "just work". :-)
  */
+
+/*
+ * Some machines require the "reboot=a"  commandline option, this quirk makes
+ * that automatic.
+ */
+static int __init set_acpi_reboot(const struct dmi_system_id *d)
+{
+	if (!reboot_thru_bios) {
+		printk(KERN_INFO "%s detected. Using ACPI for reboots.\n",
+			d->ident);
+		reboot_thru_bios = 2;
+	}
+	return 0;
+}
 
 /*
  * Some machines require the "reboot=b"  commandline option, this quirk makes that automatic.
@@ -133,6 +151,15 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq"),
+		},
+	},
+	{	/* Handle problems with rebooting classmate PC after suspend */
+		.callback = set_acpi_reboot,
+		.ident = "Intel powered classmate PC",
+		.matches = {
+			DMI_MATCH(DMI_PRODUCT_NAME,
+					"Intel powered classmate PC"),
+			DMI_MATCH(DMI_PRODUCT_VERSION, "Gen 1.5"),
 		},
 	},
 	{ }
@@ -356,6 +383,9 @@ static void native_machine_emergency_restart(void)
 	}
 	if (efi_enabled)
 		efi.reset_system(EFI_RESET_WARM, EFI_SUCCESS, 0, NULL);
+
+	if (reboot_thru_bios == 2)
+		acpi_reboot();
 
 	machine_real_restart(jump_to_bios, sizeof(jump_to_bios));
 }

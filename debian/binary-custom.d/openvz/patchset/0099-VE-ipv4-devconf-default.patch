@@ -1,0 +1,30 @@
+From 24ee0c8feb02c4a53309a1ee30acddd7b10688bc Mon Sep 17 00:00:00 2001
+From: Pavel Emelianov <xemul@openvz.org>
+Date: Wed, 2 Jul 2008 19:55:20 +0400
+Subject: [PATCH 099/103] VE ipv4 devconf default
+
+Use per-VE ipv4_devconf_dflt for new devices
+Otherwise, setting sys.ipv4.conf.default inside VE won't have
+any effect and will confuse userspace.
+
+http://bugzilla.openvz.org/show_bug.cgi?id=826
+---
+ net/ipv4/devinet.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index cbf3bee..8f1f229 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -165,7 +165,7 @@ struct in_device *inetdev_init(struct net_device *dev)
+ 	if (!in_dev)
+ 		goto out;
+ 	INIT_RCU_HEAD(&in_dev->rcu_head);
+-	memcpy(&in_dev->cnf, &ipv4_devconf_dflt, sizeof(in_dev->cnf));
++	memcpy(&in_dev->cnf, &ve_ipv4_devconf_dflt, sizeof(in_dev->cnf));
+ 	in_dev->cnf.sysctl = NULL;
+ 	in_dev->dev = dev;
+ 	if ((in_dev->arp_parms = neigh_parms_alloc(dev, &arp_tbl)) == NULL)
+-- 
+1.5.4.3
+

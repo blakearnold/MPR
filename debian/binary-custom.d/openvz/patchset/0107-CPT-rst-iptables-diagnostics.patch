@@ -1,0 +1,29 @@
+From 92cc26fffdab5dc6cc3ac8a0784f029391b4714d Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:40 +0400
+Subject: [PATCH 107/131] CPT rst iptables diagnostics
+
+Add diagnostics in case of iptables-restore fail.
+It is not clear right now what is wrong if iptables-restore fails.
+Add some diagnostics in case of error.
+
+Bug #95952
+---
+ kernel/cpt/rst_net.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index 4a0070e..aa79c8b 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -697,6 +697,7 @@ static int rst_restore_iptables(struct cpt_context * ctx)
+ 		err = (status & 0xff00) >> 8;
+ 		if (err != 0) {
+ 			eprintk_ctx("iptables-restore exited with %d\n", err);
++			eprintk_ctx("Most probably some iptables modules are not loaded\n");
+ 			err = -EINVAL;
+ 		}
+ 	} else {
+-- 
+1.5.4.3
+

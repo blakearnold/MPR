@@ -9,6 +9,7 @@
 #include <linux/pm.h>
 #include <linux/kdebug.h>
 #include <linux/sched.h>
+#include <acpi/reboot.h>
 #include <asm/io.h>
 #include <asm/delay.h>
 #include <asm/desc.h>
@@ -28,6 +29,7 @@ EXPORT_SYMBOL(pm_power_off);
 
 static long no_idt[3];
 static enum { 
+	BOOT_ACPI = 'a',
 	BOOT_TRIPLE = 't',
 	BOOT_KBD = 'k'
 } reboot_type = BOOT_KBD;
@@ -56,6 +58,7 @@ static int __init reboot_setup(char *str)
 		case 't':
 		case 'b':
 		case 'k':
+		case 'a':
 			reboot_type = *str;
 			break;
 		case 'f':
@@ -146,7 +149,11 @@ void machine_emergency_restart(void)
 
 			reboot_type = BOOT_KBD;
 			break;
-		}      
+		case BOOT_ACPI:
+			acpi_reboot();
+			reboot_type = BOOT_KBD;
+			break;
+		}
 	}      
 }
 

@@ -1,0 +1,138 @@
+From d4abc6686ac67aa51ff8a78ac3097667affa0c8f Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:57 +0400
+Subject: [PATCH 129/131] VE veinfo from venet
+ venet part of VE-veinfo-to-vzmon patch
+
+---
+ drivers/net/venet_core.c |   78 ++--------------------------------------------
+ 1 files changed, 3 insertions(+), 75 deletions(-)
+
+diff --git a/drivers/net/venet_core.c b/drivers/net/venet_core.c
+index 8355627..7c718d8 100644
+--- a/drivers/net/venet_core.c
++++ b/drivers/net/venet_core.c
+@@ -444,15 +444,10 @@ static void venet_setup(struct net_device *dev)
+ }
+ 
+ #ifdef CONFIG_PROC_FS
+-static int veinfo_seq_show(struct seq_file *m, void *v)
++static void veaddr_seq_print(struct seq_file *m, struct ve_struct *ve)
+ {
+-	struct ve_struct *ve;
+ 	struct ip_entry_struct *entry;
+ 
+-	ve = list_entry((struct list_head *)v, struct ve_struct, ve_list);
+-
+-	seq_printf(m, "%10u %5u %5u", ve->veid,
+-                                ve->class_id, atomic_read(&ve->pcounter));
+ 	read_lock(&veip_hash_lock);
+ 	if (ve->veip == NULL)
+ 		goto unlock;
+@@ -470,69 +465,8 @@ static int veinfo_seq_show(struct seq_file *m, void *v)
+ 	}
+ unlock:
+ 	read_unlock(&veip_hash_lock);
+-	seq_putc(m, '\n');
+-	return 0;
+ }
+ 
+-static void *ve_seq_start(struct seq_file *m, loff_t *pos)
+-{
+-	struct ve_struct *curve;
+-	struct list_head *entry;
+-	loff_t l;
+-
+-	curve = get_exec_env();
+-	read_lock(&ve_list_lock);
+-	if (!ve_is_super(curve)) {
+-		if (*pos != 0)
+-			return NULL;
+-		return curve;
+-	}
+-
+-	l = *pos;
+-	list_for_each(entry, &ve_list_head) {
+-		if (l == 0)
+-			return entry;
+-		l--;
+-	}
+-	return NULL;
+-}
+-
+-static void *ve_seq_next(struct seq_file *m, void *v, loff_t *pos)
+-{
+-	struct list_head *entry;
+-
+-	entry = (struct list_head *)v;
+-	if (!ve_is_super(get_exec_env()))
+-		return NULL;
+-	(*pos)++;
+-	return entry->next == &ve_list_head ? NULL : entry->next;
+-}
+-
+-static void ve_seq_stop(struct seq_file *m, void *v)
+-{
+-	read_unlock(&ve_list_lock);
+-}
+-
+-
+-static struct seq_operations veinfo_seq_op = {
+-	.start	= ve_seq_start,
+-	.next	=  ve_seq_next,
+-	.stop	=  ve_seq_stop,
+-	.show	=  veinfo_seq_show,
+-};
+-
+-static int veinfo_open(struct inode *inode, struct file *file)
+-{
+-        return seq_open(file, &veinfo_seq_op);
+-}
+-
+-static struct file_operations proc_veinfo_operations = {
+-	.open		= veinfo_open,
+-	.read		= seq_read,
+-	.llseek		= seq_lseek,
+-	.release	= seq_release,
+-};
+-
+ static void *veip_seq_start(struct seq_file *m, loff_t *pos)
+ {
+ 	loff_t l;
+@@ -775,13 +709,6 @@ __init int venet_init(void)
+ 		return err;
+ 
+ #ifdef CONFIG_PROC_FS
+-	de = create_proc_glob_entry_mod("vz/veinfo",
+-			S_IFREG|S_IRUSR, NULL, THIS_MODULE);
+-	if (de)
+-		de->proc_fops = &proc_veinfo_operations;
+-	else
+-		printk(KERN_WARNING "venet: can't make veinfo proc entry\n");
+-
+ 	de = create_proc_entry_mod("vz/veip", 
+ 			S_IFREG|S_IRUSR, NULL, THIS_MODULE);
+ 	if (de)
+@@ -792,17 +719,18 @@ __init int venet_init(void)
+ 
+ 	ve_hook_register(VE_SS_CHAIN, &venet_ve_hook);
+ 	vzioctl_register(&venetcalls);
++	vzmon_register_veaddr_print_cb(veaddr_seq_print);
+ 	return 0;
+ }
+ 
+ __exit void venet_exit(void)
+ {
++	vzmon_unregister_veaddr_print_cb(veaddr_seq_print);
+ 	vzioctl_unregister(&venetcalls);
+ 	ve_hook_unregister(&venet_ve_hook);
+ 
+ #ifdef CONFIG_PROC_FS
+ 	remove_proc_entry("vz/veip", NULL);
+-	remove_proc_entry("vz/veinfo", NULL);
+ #endif
+ 	venet_stop(get_ve0());
+ 	veip_cleanup();
+-- 
+1.5.4.3
+

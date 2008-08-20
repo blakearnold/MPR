@@ -1,0 +1,42 @@
+From 0b3117a59bc498ad0c58d5bd2a717350c7ff8ada Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 2 Jul 2008 19:55:20 +0400
+Subject: [PATCH 103/103] VE proc root nlink
+
+Correct nlink counter at proc root entry
+* add entries from local tree, similar as in proc_getattr.
+* inside ve add threads count instead of node total processes count.
+  it not fully correct, but that's good upper estimate
+  and ve threads counter already exists.
+---
+ fs/proc/root.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index e73fca0..7fc4ba5 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -148,8 +148,19 @@ void __init proc_root_init(void)
+ static int proc_root_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat
+ )
+ {
++	struct ve_struct *ve = get_exec_env();
++
+ 	generic_fillattr(dentry->d_inode, stat);
+-	stat->nlink = proc_root.nlink + nr_processes();
++	stat->nlink = proc_root.nlink;
++	if (ve_is_super(ve))
++		stat->nlink += nr_processes();
++#ifdef CONFIG_VE
++	else
++		/* not really processes count, it's not right, but it's ok */
++		stat->nlink += atomic_read(&ve->pcounter);
++	/* the same logic as in the proc_getattr */
++	stat->nlink += ve->proc_root->nlink - 2;
++#endif
+ 	return 0;
+ }
+ 
+-- 
+1.5.4.3
+

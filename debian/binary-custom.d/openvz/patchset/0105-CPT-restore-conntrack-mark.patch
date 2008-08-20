@@ -1,0 +1,30 @@
+From ebc6433b39e27052d66c0498b355e2bfee302ba9 Mon Sep 17 00:00:00 2001
+From: Andrey Mirkin <major@openvz.org>
+Date: Fri, 18 Jul 2008 15:25:38 +0400
+Subject: [PATCH 105/131] CPT restore conntrack mark
+
+Restore mark value in conntracks as it is needed for connmark module.
+
+Bug #114207
+---
+ kernel/cpt/rst_conntrack.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cpt/rst_conntrack.c b/kernel/cpt/rst_conntrack.c
+index 4c31f32..1f48945 100644
+--- a/kernel/cpt/rst_conntrack.c
++++ b/kernel/cpt/rst_conntrack.c
+@@ -188,6 +188,10 @@ static int undump_one_ct(struct cpt_ip_conntrack_image *ci, loff_t pos,
+ 	memcpy(&conntrack->proto, ci->cpt_proto_data, sizeof(conntrack->proto));
+ 	memcpy(&conntrack->help, ci->cpt_help_data, sizeof(conntrack->help));
+ 
++#if defined(CONFIG_IP_NF_CONNTRACK_MARK)
++	conntrack->mark = ci->cpt_mark;
++#endif
++
+ #ifdef CONFIG_IP_NF_NAT_NEEDED
+ #if defined(CONFIG_IP_NF_TARGET_MASQUERADE) || \
+ 	defined(CONFIG_IP_NF_TARGET_MASQUERADE_MODULE)
+-- 
+1.5.4.3
+
