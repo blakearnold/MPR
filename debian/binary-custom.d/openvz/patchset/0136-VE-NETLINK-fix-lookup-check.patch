@@ -1,0 +1,36 @@
+From b0ae571e4859bd84e292e957d5e91762c918a647 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 6 Jun 2008 19:01:31 +0400
+Subject: [PATCH] VE NETLINK fix lookup check
+
+netlink_unicast() is done in init_net context because
+a) rtnl socket is bound to init_net,
+b) kernel-space socket is successfully looked up by any VE,
+c) rtnl is kernel-spase socket.
+which is b-r-o-k-e-n, because e.g. just about any manipulation with
+netdevices via netlink will be projected onto VE0.
+
+Fix (after per-netns rtnl socket patches)
+http://bugzilla.openvz.org/show_bug.cgi?id=905
+---
+ net/netlink/af_netlink.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index ad02fab..4cb562d 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -210,9 +210,7 @@ static __inline__ struct sock *netlink_lookup(struct net *net, int protocol, u32
+ 	read_lock(&nl_table_lock);
+ 	head = nl_pid_hashfn(hash, pid);
+ 	sk_for_each(sk, node, head) {
+-		/* VEs should find sockets, created by kernel */
+-		if (nlk_sk(sk)->pid == pid && (netlink_is_kernel(sk) ||
+-		    ve_accessible_strict(sk->owner_env, get_exec_env()))) {
++		if (nlk_sk(sk)->pid == pid && sk->sk_net == net) {
+ 			sock_hold(sk);
+ 			goto found;
+ 		}
+-- 
+1.5.4.3
+
