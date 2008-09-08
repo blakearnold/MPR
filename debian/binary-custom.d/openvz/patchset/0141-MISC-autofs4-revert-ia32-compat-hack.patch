@@ -1,0 +1,286 @@
+From 6e9bc37f6990e4c5fd8f9afc491f2ecc717eda16 Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 8 Sep 2008 14:15:06 +0400
+Subject: [PATCH] MISC autofs4 revert ia32 compat hack
+
+Next patch fix it in a less-intrusive manner.
+---
+ fs/autofs4/autofs_i.h    |    5 --
+ fs/autofs4/inode.c       |    7 ---
+ fs/autofs4/waitq.c       |  107 ++++++++++++++-------------------------------
+ include/linux/auto_fs.h  |   16 -------
+ include/linux/auto_fs4.h |   26 -----------
+ 5 files changed, 33 insertions(+), 128 deletions(-)
+
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index 32d1ddb..2d4ae40 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -94,10 +94,6 @@ struct autofs_wait_queue {
+ #define AUTOFS_TYPE_DIRECT       0x0002
+ #define AUTOFS_TYPE_OFFSET       0x0004
+ 
+-/* flags for userspace automount daemon */
+-#define AUTOFS_DEAMON_32BIT 0		/* automount is a 32bit process */
+-#define _AUTOFS_DEAMON_32BIT		(1 << AUTOFS_DEAMON_32BIT)
+-
+ struct autofs_sb_info {
+ 	u32 magic;
+ 	int pipefd;
+@@ -118,7 +114,6 @@ struct autofs_sb_info {
+ 	struct autofs_wait_queue *queues; /* Wait queue pointer */
+ 	spinlock_t rehash_lock;
+ 	struct list_head rehash_list;
+-	u32 flags; /* flags for userspace automount daemon */
+ };
+ 
+ static inline struct autofs_sb_info *autofs4_sbi(struct super_block *sb)
+diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
+index 2737f29..7f05d6c 100644
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -311,7 +311,6 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 	int pipefd;
+ 	struct autofs_sb_info *sbi;
+ 	struct autofs_info *ino;
+-	struct task_struct *tsk = current;
+ 
+ 	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+ 	if (!sbi)
+@@ -331,12 +330,6 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 	sbi->type = 0;
+ 	sbi->min_proto = 0;
+ 	sbi->max_proto = 0;
+-#ifdef __x86_64__
+-	if (task_thread_info(tsk)->flags & _TIF_IA32) {
+-		/* mark that automount daemon is 32 bit */
+-		sbi->flags |= _AUTOFS_DEAMON_32BIT;
+-	}
+-#endif
+ 	mutex_init(&sbi->wq_mutex);
+ 	spin_lock_init(&sbi->fs_lock);
+ 	sbi->queues = NULL;
+diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
+index 98552fd..1fe28e4 100644
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -102,50 +102,27 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 	/* Kernel protocol v4 missing and expire packets */
+ 	case autofs_ptype_missing:
+ 	{
+-		if (sbi->flags & _AUTOFS_DEAMON_32BIT) {
+-			struct autofs_packet_missing_32bit *mp = &pkt.v4_pkt.missing_32bit;
+-
+-			pktsz = sizeof(*mp);
+-			mp->wait_queue_token = wq->wait_queue_token;
+-			mp->len = wq->len;
+-			memcpy(mp->name, wq->name, wq->len);
+-			mp->name[wq->len] = '\0';
+-			break;
+-		} else {
+-			struct autofs_packet_missing *mp = &pkt.v4_pkt.missing;
++		struct autofs_packet_missing *mp = &pkt.v4_pkt.missing;
+ 
+-			pktsz = sizeof(*mp);
++		pktsz = sizeof(*mp);
+ 
+-			mp->wait_queue_token = wq->wait_queue_token;
+-			mp->len = wq->len;
+-			memcpy(mp->name, wq->name, wq->len);
+-			mp->name[wq->len] = '\0';
+-			break;
+-		}
++		mp->wait_queue_token = wq->wait_queue_token;
++		mp->len = wq->len;
++		memcpy(mp->name, wq->name, wq->len);
++		mp->name[wq->len] = '\0';
++		break;
+ 	}
+ 	case autofs_ptype_expire_multi:
+ 	{
+-		if (sbi->flags & _AUTOFS_DEAMON_32BIT) {
+-			struct autofs_packet_expire_multi_32bit *ep = &pkt.v4_pkt.expire_multi_32bit;
+-
+-			pktsz = sizeof(*ep);
+-
+-			ep->wait_queue_token = wq->wait_queue_token;
+-			ep->len = wq->len;
+-			memcpy(ep->name, wq->name, wq->len);
+-			ep->name[wq->len] = '\0';
+-			break;
+-		} else {
+-			struct autofs_packet_expire_multi *ep = &pkt.v4_pkt.expire_multi;
++		struct autofs_packet_expire_multi *ep = &pkt.v4_pkt.expire_multi;
+ 
+-			pktsz = sizeof(*ep);
++		pktsz = sizeof(*ep);
+ 
+-			ep->wait_queue_token = wq->wait_queue_token;
+-			ep->len = wq->len;
+-			memcpy(ep->name, wq->name, wq->len);
+-			ep->name[wq->len] = '\0';
+-			break;
+-		}
++		ep->wait_queue_token = wq->wait_queue_token;
++		ep->len = wq->len;
++		memcpy(ep->name, wq->name, wq->len);
++		ep->name[wq->len] = '\0';
++		break;
+ 	}
+ 	/*
+ 	 * Kernel protocol v5 packet for handling indirect and direct
+@@ -156,39 +133,21 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 	case autofs_ptype_missing_direct:
+ 	case autofs_ptype_expire_direct:
+ 	{
+-		if (sbi->flags & _AUTOFS_DEAMON_32BIT) {
+-			struct autofs_v5_packet_32bit *packet = &pkt.v5_pkt.v5_packet_32bit;
+-
+-			pktsz = sizeof(*packet);
+-
+-			packet->wait_queue_token = wq->wait_queue_token;
+-			packet->len = wq->len;
+-			memcpy(packet->name, wq->name, wq->len);
+-			packet->name[wq->len] = '\0';
+-			packet->dev = wq->dev;
+-			packet->ino = wq->ino;
+-			packet->uid = wq->uid;
+-			packet->gid = wq->gid;
+-			packet->pid = wq->pid;
+-			packet->tgid = wq->tgid;
+-			break;
+-		} else {
+-			struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
+-
+-			pktsz = sizeof(*packet);
+-
+-			packet->wait_queue_token = wq->wait_queue_token;
+-			packet->len = wq->len;
+-			memcpy(packet->name, wq->name, wq->len);
+-			packet->name[wq->len] = '\0';
+-			packet->dev = wq->dev;
+-			packet->ino = wq->ino;
+-			packet->uid = wq->uid;
+-			packet->gid = wq->gid;
+-			packet->pid = wq->pid;
+-			packet->tgid = wq->tgid;
+-			break;
+-		}
++		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
++
++		pktsz = sizeof(*packet);
++
++		packet->wait_queue_token = wq->wait_queue_token;
++		packet->len = wq->len;
++		memcpy(packet->name, wq->name, wq->len);
++		packet->name[wq->len] = '\0';
++		packet->dev = wq->dev;
++		packet->ino = wq->ino;
++		packet->uid = wq->uid;
++		packet->gid = wq->gid;
++		packet->pid = wq->pid;
++		packet->tgid = wq->tgid;
++		break;
+ 	}
+ 	default:
+ 		printk("autofs4_notify_daemon: bad type %d!\n", type);
+diff --git a/include/linux/auto_fs.h b/include/linux/auto_fs.h
+index 559a0af..c21e597 100644
+--- a/include/linux/auto_fs.h
++++ b/include/linux/auto_fs.h
+@@ -51,8 +51,6 @@ typedef unsigned int autofs_wqt_t;
+ typedef unsigned long autofs_wqt_t;
+ #endif
+ 
+-typedef __u32 autofs_wqt_t_32bit;
+-
+ /* Packet types */
+ #define autofs_ptype_missing	0	/* Missing entry (mount request) */
+ #define autofs_ptype_expire	1	/* Expire entry (umount request) */
+@@ -69,13 +67,6 @@ struct autofs_packet_missing {
+ 	char name[NAME_MAX+1];
+ };	
+ 
+-struct autofs_packet_missing_32bit {
+-	struct autofs_packet_hdr hdr;
+-	autofs_wqt_t_32bit wait_queue_token;
+-	int len;
+-	char name[NAME_MAX+1];
+-} __attribute__ ((__packed__));
+-
+ /* v3 expire (via ioctl) */
+ struct autofs_packet_expire {
+ 	struct autofs_packet_hdr hdr;
+@@ -83,13 +74,6 @@ struct autofs_packet_expire {
+ 	char name[NAME_MAX+1];
+ };
+ 
+-/* v3 expire (via ioctl) for 32 bit userspace daemon and x68_64 kernel */
+-struct autofs_packet_expire_32bit {
+-	struct autofs_packet_hdr hdr;
+-	int len;
+-	char name[NAME_MAX+1];
+-} __attribute__ ((__packed__));
+-
+ #define AUTOFS_IOC_READY      _IO(0x93,0x60)
+ #define AUTOFS_IOC_FAIL       _IO(0x93,0x61)
+ #define AUTOFS_IOC_CATATONIC  _IO(0x93,0x62)
+diff --git a/include/linux/auto_fs4.h b/include/linux/auto_fs4.h
+index 16a80d3..31a2954 100644
+--- a/include/linux/auto_fs4.h
++++ b/include/linux/auto_fs4.h
+@@ -59,22 +59,11 @@ struct autofs_packet_expire_multi {
+ 	char name[NAME_MAX+1];
+ };
+ 
+-/* v4 multi expire (via pipe) for 32 bit userspace daemon and x68_64 kernel */
+-struct autofs_packet_expire_multi_32bit {
+-	struct autofs_packet_hdr hdr;
+-	autofs_wqt_t_32bit wait_queue_token;
+-	int len;
+-	char name[NAME_MAX+1];
+-} __attribute__ ((__packed__));
+-
+ union autofs_packet_union {
+ 	struct autofs_packet_hdr hdr;
+ 	struct autofs_packet_missing missing;
+-	struct autofs_packet_missing_32bit missing_32bit;
+ 	struct autofs_packet_expire expire;
+-	struct autofs_packet_expire_32bit expire_32bit;
+ 	struct autofs_packet_expire_multi expire_multi;
+-	struct autofs_packet_expire_multi_32bit expire_multi_32bit;
+ };
+ 
+ /* autofs v5 common packet struct */
+@@ -91,20 +80,6 @@ struct autofs_v5_packet {
+ 	char name[NAME_MAX+1];
+ };
+ 
+-/* autofs v5 packet struct for 32 bit userspace daemon and x68_64 kernel*/
+-struct autofs_v5_packet_32bit {
+-	struct autofs_packet_hdr hdr;
+-	autofs_wqt_t_32bit wait_queue_token;
+-	__u32 dev;
+-	__u64 ino;
+-	__u32 uid;
+-	__u32 gid;
+-	__u32 pid;
+-	__u32 tgid;
+-	__u32 len;
+-	char name[NAME_MAX+1];
+-} __attribute__ ((__packed__));
+-
+ typedef struct autofs_v5_packet autofs_packet_missing_indirect_t;
+ typedef struct autofs_v5_packet autofs_packet_expire_indirect_t;
+ typedef struct autofs_v5_packet autofs_packet_missing_direct_t;
+@@ -113,7 +88,6 @@ typedef struct autofs_v5_packet autofs_packet_expire_direct_t;
+ union autofs_v5_packet_union {
+ 	struct autofs_packet_hdr hdr;
+ 	struct autofs_v5_packet v5_packet;
+-	struct autofs_v5_packet_32bit v5_packet_32bit;
+ 	autofs_packet_missing_indirect_t missing_indirect;
+ 	autofs_packet_expire_indirect_t expire_indirect;
+ 	autofs_packet_missing_direct_t missing_direct;
+-- 
+1.5.4.3
+
