@@ -1,0 +1,31 @@
+From 9f911a8444d69b0fe3d2927b66c4aaf1c1c6f5bb Mon Sep 17 00:00:00 2001
+From: David S. Miller <davem@davemloft.net>
+Date: Fri, 29 Feb 2008 11:33:19 -0800
+Subject: [PATCH] MS NETNS sk_release_kernel needs to be exported to modules
+
+mainsteam commit 45af1754bc09926b5e062bda24f789d7b320939f
+
+Fixes:
+
+ERROR: "sk_release_kernel" [net/ipv6/ipv6.ko] undefined!
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/core/sock.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/net/core/sock.c b/net/core/sock.c
+index df11bc7..01e6d56 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -995,6 +995,7 @@ void sk_release_kernel(struct sock *sk)
+ 	sk->sk_net = get_net(&init_net);
+ 	sock_put(sk);
+ }
++EXPORT_SYMBOL(sk_release_kernel);
+ 
+ struct sock *sk_clone(const struct sock *sk, const gfp_t priority)
+ {
+-- 
+1.5.4.3
+

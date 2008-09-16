@@ -1,0 +1,25 @@
+From bce432d13a89bfed1d183084ef69a9e763e26262 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 9 Jun 2008 17:08:16 +0400
+Subject: [PATCH] CPT assign ->net_ns of restored tun/tap device
+
+otherwise init_net is used and device becomes invisible in CT.
+---
+ kernel/cpt/rst_net.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index 7575dd8..179655e 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -336,6 +336,7 @@ static int rst_restore_tuntap(loff_t start, struct cpt_netdev_image *di,
+ 	dev = alloc_netdev(sizeof(struct tun_struct), di->cpt_name, tun_setup);
+ 	if (!dev)
+ 		goto out;
++	dev->nd_net = get_exec_env()->ve_netns;
+ 
+ 	tun = netdev_priv(dev);
+ 
+-- 
+1.5.4.3
+
