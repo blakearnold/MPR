@@ -397,6 +397,7 @@ dl2k
 dlci
 dlm
 dm9601
+dmascc
 dm-crypt
 dme1737
 dm-emc
@@ -586,6 +587,7 @@ garmin_gps
 gdth
 generic_serial
 gen_probe
+genrtc
 geode-aes
 geode-rng
 g_ether
@@ -656,6 +658,7 @@ hpt366
 hptiop
 ht6560b
 hwmon-vid
+hysdn
 i2c-algo-bit
 i2c-algo-pca
 i2c-algo-pcf
@@ -667,6 +670,7 @@ i2c-amd756-s4882
 i2c-amd8111
 i2c-core
 i2c-dev
+i2c-elektor
 i2c-i801
 i2c-i810
 i2c-matroxfb
@@ -769,6 +773,8 @@ ioc4
 io_edgeport
 io_ti
 iowarrior
+ip2
+ip2main
 ip6_queue
 ip6table_filter
 ip6table_mangle
@@ -778,8 +784,8 @@ ip6t_ah
 ip6t_eui64
 ip6t_frag
 ip6t_hbh
-ip6t_hl
 ip6t_HL
+ip6t_hl
 ip6t_ipv6header
 ip6t_LOG
 ip6t_mh
@@ -811,8 +817,8 @@ ip_tables
 ipt_addrtype
 ipt_ah
 ipt_CLUSTERIP
-ipt_ecn
 ipt_ECN
+ipt_ecn
 ipt_iprange
 ipt_LOG
 ipt_MASQUERADE
@@ -822,10 +828,10 @@ ipt_recent
 ipt_REDIRECT
 ipt_REJECT
 ipt_SAME
-ipt_tos
 ipt_TOS
-ipt_ttl
+ipt_tos
 ipt_TTL
+ipt_ttl
 ipt_ULOG
 ipv6
 ip_vs
@@ -852,14 +858,17 @@ irda-usb
 ir-kbd-i2c
 irlan
 irnet
+irport
 irtty-sir
 iscsi_tcp
 isdn
 isdn_bsdcomp
 isdnhdlc
+isdnloop
 isl6421
 isofs
 isp116x-hcd
+istallion
 it87
 it8712f_wdt
 iTCO_vendor_support
@@ -994,6 +1003,7 @@ max1619
 max6650
 max6875
 mbcache
+mca_53c9x
 mcp2120-sir
 mcs7780
 mcs7830
@@ -1023,6 +1033,7 @@ mmc_block
 mmc_core
 mos7720
 mos7840
+moxa
 mpoa
 mptbase
 mptctl
@@ -1065,6 +1076,7 @@ navman
 nbd
 ncpfs
 NCR53c406a
+NCR53C9x
 NCR_D700
 NCR_Q720_mod
 ne
@@ -1114,6 +1126,7 @@ nfs_acl
 nfsd
 nftl
 n_hdlc
+ni5010
 ni52
 ni65
 nicstar
@@ -1375,7 +1388,9 @@ rfd_ftl
 rfkill
 rfkill-input
 ricoh_mmc
+rio
 rio500
+riscom8
 rivafb
 rndis_host
 rocket
@@ -1393,6 +1408,7 @@ rt2x00pci
 rt2x00usb
 rt61pci
 rt73usb
+rtc
 rtc-core
 rtc-ds1307
 rtc-ds1374
@@ -1580,13 +1596,13 @@ speedstep-smi
 speedtch
 spi_bitbang
 spi_butterfly
-spidev
 spi_lm70llp
 sr_mod
 ssb
 ssfdc
 sstfb
 st
+stallion
 starfire
 stex
 stinger
@@ -1856,6 +1872,7 @@ xfrm_user
 xfs
 xirc2ps_cs
 xircom_cb
+xircom_tulip_cb
 xor
 xpad
 xprtrdma
@@ -1864,13 +1881,13 @@ xt_CLASSIFY
 xt_comment
 xt_connbytes
 xt_connlimit
-xt_connmark
 xt_CONNMARK
+xt_connmark
 xt_CONNSECMARK
 xt_conntrack
 xt_dccp
-xt_dscp
 xt_DSCP
+xt_dscp
 xt_esp
 xt_hashlimit
 xt_helper
@@ -1878,8 +1895,8 @@ xtkbd
 xt_length
 xt_limit
 xt_mac
-xt_mark
 xt_MARK
+xt_mark
 xt_multiport
 xt_NFLOG
 xt_NFQUEUE
@@ -1895,15 +1912,14 @@ xt_SECMARK
 xt_state
 xt_statistic
 xt_string
-xt_tcpmss
 xt_TCPMSS
+xt_tcpmss
 xt_tcpudp
 xt_time
 xt_TRACE
 xt_u32
 xusbatm
 yam
-yealink
 yellowfin
 yenta_socket
 z85230
