@@ -59,8 +59,8 @@ sub add_entry($) {
         }
 }
 
-sub shortlog_entry($$$$) {
-	my ($name, $desc, $bug, $commit) = @_;
+sub shortlog_entry($$$$$) {
+	my ($name, $desc, $bug, $cve, $commit) = @_;
 	my $entry;
 
 	$desc =~ s#/pub/scm/linux/kernel/git/#/.../#g;
@@ -71,6 +71,7 @@ sub shortlog_entry($$$$) {
 
 	$entry->{'desc'} = $desc;
 	$entry->{'bugno'} = $bug;
+	$entry->{'cve'} = $cve;
 	$entry->{'commit'} = $commit;
 	$entry->{'author'} = $name;
 
@@ -119,12 +120,15 @@ sub shortlog_output {
 				print "    - LP: #" .
 					$entry->{'bugno'} . "\n";
 			}
+			if (defined($entry->{'cve'})) {
+				print "    - " . $entry->{'cve'} . "\n";
+			}
 		}
 	}
 }
 
 sub changelog_input {
-	my ($author, $desc, $commit, $entry);
+	my ($author, $desc, $commit, $entry, $cve);
 
 	while (<STDIN>) {
 		# get commit
@@ -145,6 +149,7 @@ sub changelog_input {
 			$author = $1;
 			$email = $2;
 			$desc = undef;
+			$cve = undef;
 
 			# cset author fixups
 			if (!$author) {
@@ -176,6 +181,7 @@ sub changelog_input {
 				while (<STDIN>) {
 					$ignore = 1 if /^ *Ignore: yes/i;
 					$bug = $2 if /^ *Bug: *(#|)(.*)/;
+					$cve = $1 if /^ *(CVE-.*)/;
 					last if /^commit /;
 				}
 			} else {
@@ -183,13 +189,14 @@ sub changelog_input {
 				$ignore = 1 if $desc =~ /Merge /;
 				while (<STDIN>) {
 					$bug = $2 if /^ *Bug: *(#|)(.*)/;
+					$cve = $1 if /^ *(CVE-.*)/;
 					last if /^commit /;
 				}
 			}
 
 			if (!$ignore) {
 				&shortlog_entry($author, $desc, $bug,
-						$commit, 0);
+						$cve, $commit, 0);
 			}
 
 			$pstate = 1;
