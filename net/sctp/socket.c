@@ -2959,6 +2959,9 @@ static int sctp_setsockopt_auth_chunk(struct sock *sk,
 {
 	struct sctp_authchunk val;
 
+	if (!sctp_auth_enable)
+		return -EACCES;
+
 	if (optlen != sizeof(struct sctp_authchunk))
 		return -EINVAL;
 	if (copy_from_user(&val, optval, optlen))
@@ -2987,7 +2990,11 @@ static int sctp_setsockopt_hmac_ident(struct sock *sk,
 				    int optlen)
 {
 	struct sctp_hmacalgo *hmacs;
+	u32 idents;
 	int err;
+
+	if (!sctp_auth_enable)
+		return -EACCES;
 
 	if (optlen < sizeof(struct sctp_hmacalgo))
 		return -EINVAL;
@@ -3001,8 +3008,9 @@ static int sctp_setsockopt_hmac_ident(struct sock *sk,
 		goto out;
 	}
 
-	if (hmacs->shmac_num_idents == 0 ||
-	    hmacs->shmac_num_idents > SCTP_AUTH_NUM_HMACS) {
+	idents = hmacs->shmac_num_idents;
+	if (idents == 0 || idents > SCTP_AUTH_NUM_HMACS ||
+	    (idents * sizeof(u16)) > (optlen - sizeof(struct sctp_hmacalgo))) {
 		err = -EINVAL;
 		goto out;
 	}
@@ -3027,6 +3035,9 @@ static int sctp_setsockopt_auth_key(struct sock *sk,
 	struct sctp_association *asoc;
 	int ret;
 
+	if (!sctp_auth_enable)
+		return -EACCES;
+
 	if (optlen <= sizeof(struct sctp_authkey))
 		return -EINVAL;
 
@@ -3036,6 +3047,11 @@ static int sctp_setsockopt_auth_key(struct sock *sk,
 
 	if (copy_from_user(authkey, optval, optlen)) {
 		ret = -EFAULT;
+		goto out;
+	}
+
+	if (authkey->sca_keylen > optlen) {
+		ret = -EINVAL;
 		goto out;
 	}
 
@@ -3064,6 +3080,9 @@ static int sctp_setsockopt_active_key(struct sock *sk,
 	struct sctp_authkeyid val;
 	struct sctp_association *asoc;
 
+	if (!sctp_auth_enable)
+		return -EACCES;
+
 	if (optlen != sizeof(struct sctp_authkeyid))
 		return -EINVAL;
 	if (copy_from_user(&val, optval, optlen))
@@ -3088,6 +3107,9 @@ static int sctp_setsockopt_del_key(struct sock *sk,
 {
 	struct sctp_authkeyid val;
 	struct sctp_association *asoc;
+
+	if (!sctp_auth_enable)
+		return -EACCES;
 
 	if (optlen != sizeof(struct sctp_authkeyid))
 		return -EINVAL;
@@ -5018,19 +5040,29 @@ static int sctp_getsockopt_maxburst(struct sock *sk, int len,
 static int sctp_getsockopt_hmac_ident(struct sock *sk, int len,
 				    char __user *optval, int __user *optlen)
 {
+	struct sctp_hmacalgo  __user *p = (void __user *)optval;
 	struct sctp_hmac_algo_param *hmacs;
-	__u16 param_len;
+	__u16 data_len = 0;
+	u32 num_idents;
+
+	if (!sctp_auth_enable)
+		return -EACCES;
 
 	hmacs = sctp_sk(sk)->ep->auth_hmacs_list;
-	param_len = ntohs(hmacs->param_hdr.length);
+	data_len = ntohs(hmacs->param_hdr.length) - sizeof(sctp_paramhdr_t);
 
-	if (len < param_len)
+	if (len < sizeof(struct sctp_hmacalgo) + data_len)
 		return -EINVAL;
+
+	len = sizeof(struct sctp_hmacalgo) + data_len;
+	num_idents = data_len / sizeof(u16);
+
 	if (put_user(len, optlen))
 		return -EFAULT;
-	if (copy_to_user(optval, hmacs->hmac_ids, len))
+	if (put_user(num_idents, &p->shmac_num_idents))
 		return -EFAULT;
-
+	if (copy_to_user(p->shmac_idents, hmacs->hmac_ids, data_len))
+		return -EFAULT;
 	return 0;
 }
 
@@ -5039,6 +5071,9 @@ static int sctp_getsockopt_active_key(struct sock *sk, int len,
 {
 	struct sctp_authkeyid val;
 	struct sctp_association *asoc;
+
+	if (!sctp_auth_enable)
+		return -EACCES;
 
 	if (len < sizeof(struct sctp_authkeyid))
 		return -EINVAL;
@@ -5054,6 +5089,12 @@ static int sctp_getsockopt_active_key(struct sock *sk, int len,
 	else
 		val.scact_keynumber = sctp_sk(sk)->ep->active_key_id;
 
+	len = sizeof(struct sctp_authkeyid);
+	if (put_user(len, optlen))
+		return -EFAULT;
+	if (copy_to_user(optval, &val, len))
+		return -EFAULT;
+
 	return 0;
 }
 
@@ -5064,12 +5105,16 @@ static int sctp_getsockopt_peer_auth_chunks(struct sock *sk, int len,
 	struct sctp_authchunks val;
 	struct sctp_association *asoc;
 	struct sctp_chunks_param *ch;
+	u32    num_chunks = 0;
 	char __user *to;
 
-	if (len <= sizeof(struct sctp_authchunks))
+	if (!sctp_auth_enable)
+		return -EACCES;
+
+	if (len < sizeof(struct sctp_authchunks))
 		return -EINVAL;
 
-	if (copy_from_user(&val, p, sizeof(struct sctp_authchunks)))
+	if (copy_from_user(&val, optval, sizeof(struct sctp_authchunks)))
 		return -EFAULT;
 
 	to = p->gauth_chunks;
@@ -5078,16 +5123,19 @@ static int sctp_getsockopt_peer_auth_chunks(struct sock *sk, int len,
 		return -EINVAL;
 
 	ch = asoc->peer.peer_chunks;
+	if (!ch)
+		goto num;
 
 	/* See if the user provided enough room for all the data */
-	if (len < ntohs(ch->param_hdr.length))
+	num_chunks = ntohs(ch->param_hdr.length) - sizeof(sctp_paramhdr_t);
+	if (len < num_chunks)
 		return -EINVAL;
 
-	len = ntohs(ch->param_hdr.length);
-	if (put_user(len, optlen))
+	if (copy_to_user(to, ch->chunks, num_chunks))
 		return -EFAULT;
-	if (copy_to_user(to, ch->chunks, len))
-		return -EFAULT;
+num:
+	len = sizeof(struct sctp_authchunks) + num_chunks;
+	if (put_user(len, optlen)) return -EFAULT;
 
 	return 0;
 }
@@ -5099,12 +5147,16 @@ static int sctp_getsockopt_local_auth_chunks(struct sock *sk, int len,
 	struct sctp_authchunks val;
 	struct sctp_association *asoc;
 	struct sctp_chunks_param *ch;
+	u32    num_chunks = 0;
 	char __user *to;
 
-	if (len <= sizeof(struct sctp_authchunks))
+	if (!sctp_auth_enable)
+		return -EACCES;
+
+	if (len < sizeof(struct sctp_authchunks))
 		return -EINVAL;
 
-	if (copy_from_user(&val, p, sizeof(struct sctp_authchunks)))
+	if (copy_from_user(&val, optval, sizeof(struct sctp_authchunks)))
 		return -EFAULT;
 
 	to = p->gauth_chunks;
@@ -5117,13 +5169,18 @@ static int sctp_getsockopt_local_auth_chunks(struct sock *sk, int len,
 	else
 		ch = sctp_sk(sk)->ep->auth_chunk_list;
 
-	if (len < ntohs(ch->param_hdr.length))
+	if (!ch)
+		goto num;
+
+	num_chunks = ntohs(ch->param_hdr.length) - sizeof(sctp_paramhdr_t);
+	if (len < sizeof(struct sctp_authchunks) + num_chunks)
 		return -EINVAL;
 
-	len = ntohs(ch->param_hdr.length);
-	if (put_user(len, optlen))
+	if (copy_to_user(to, ch->chunks, num_chunks))
 		return -EFAULT;
-	if (copy_to_user(to, ch->chunks, len))
+num:
+	len = sizeof(struct sctp_authchunks) + num_chunks;
+	if (put_user(len, optlen))
 		return -EFAULT;
 
 	return 0;
