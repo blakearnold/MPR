@@ -1022,8 +1022,8 @@ static int libertas_process_bss(struct bss_descriptor * bss,
 
 		switch (elem->id) {
 		case MFIE_TYPE_SSID:
-			bss->ssid_len = elem->len;
-			memcpy(bss->ssid, elem->data, elem->len);
+			bss->ssid_len = min_t(int, 32, elem->len);
+			memcpy(bss->ssid, elem->data, bss->ssid_len);
 			lbs_deb_scan("ssid '%s', ssid length %u\n",
 			             escape_essid(bss->ssid, bss->ssid_len),
 			             bss->ssid_len);
