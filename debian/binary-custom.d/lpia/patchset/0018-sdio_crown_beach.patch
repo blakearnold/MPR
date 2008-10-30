@@ -28,6 +28,23 @@ index d5e51b1..962b8be 100644
  	}
  
  	return 0;
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index 87a50f4..ba2a699 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -332,6 +332,12 @@ int mmc_attach_sdio(struct mmc_host *host, u32 ocr)
+ 	if (err)
+ 		goto remove;
+ 
++	/* add a workaround for Marvell SDIO dev */
++	if (card->cis.vendor == 0x2df) {
++		if (card->cis.max_dtr >= 25000000)
++			card->cis.max_dtr = 25000000;
++	}
++
+ 	/*
+ 	 * No support for high-speed yet, so just set
+ 	 * the card's maximum speed.
 diff --git a/drivers/mmc/core/sdio_io.c b/drivers/mmc/core/sdio_io.c
 index 625b92c..f4c62c0 100644
 --- a/drivers/mmc/core/sdio_io.c

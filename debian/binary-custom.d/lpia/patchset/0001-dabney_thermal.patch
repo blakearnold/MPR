@@ -253,7 +253,7 @@ index 0000000..f627016
 +	|-----cur_state:		0
 +
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index f4076d9..5b6c5c1 100644
+index 3f8a231..d127a9a 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
 @@ -58,6 +58,8 @@ source "drivers/power/Kconfig"
@@ -266,10 +266,10 @@ index f4076d9..5b6c5c1 100644
  
  source "drivers/ssb/Kconfig"
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 8cb37e3..5a3450e 100644
+index a5cfc61..e0013ee 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -65,6 +65,7 @@ obj-y				+= i2c/
+@@ -64,6 +64,7 @@ obj-y				+= i2c/
  obj-$(CONFIG_W1)		+= w1/
  obj-$(CONFIG_POWER_SUPPLY)	+= power/
  obj-$(CONFIG_HWMON)		+= hwmon/
@@ -278,7 +278,7 @@ index 8cb37e3..5a3450e 100644
  obj-$(CONFIG_PHONE)		+= telephony/
  obj-$(CONFIG_MD)		+= md/
 diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index ccf6ea9..5583729 100644
+index aa608a2..03bdbf9 100644
 --- a/drivers/acpi/Kconfig
 +++ b/drivers/acpi/Kconfig
 @@ -186,6 +186,7 @@ config ACPI_HOTPLUG_CPU
@@ -475,10 +475,10 @@ index a6e149d..f6e8165 100644
  	return 0;
  }
 diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index e48ee4f..5668c5e 100644
+index c703eab..146b67d 100644
 --- a/drivers/acpi/processor_core.c
 +++ b/drivers/acpi/processor_core.c
-@@ -668,6 +668,24 @@ static int __cpuinit acpi_processor_start(struct acpi_device *device)
+@@ -672,6 +672,24 @@ static int __cpuinit acpi_processor_start(struct acpi_device *device)
  
  	acpi_processor_power_init(pr, device);
  
@@ -503,7 +503,7 @@ index e48ee4f..5668c5e 100644
  	if (pr->flags.throttling) {
  		printk(KERN_INFO PREFIX "%s [%s] (supports",
  		       acpi_device_name(device), acpi_device_bid(device));
-@@ -791,6 +809,11 @@ static int acpi_processor_remove(struct acpi_device *device, int type)
+@@ -797,6 +815,11 @@ static int acpi_processor_remove(struct acpi_device *device, int type)
  
  	acpi_processor_remove_fs(device);
  
@@ -513,7 +513,7 @@ index e48ee4f..5668c5e 100644
 +	pr->cdev = NULL;
 +
  	processors[pr->id] = NULL;
- 
+ 	processor_device_array[pr->id] = NULL;
  	kfree(pr);
 diff --git a/drivers/acpi/processor_thermal.c b/drivers/acpi/processor_thermal.c
 index 06e6f3f..9cb43f5 100644
@@ -1488,7 +1488,7 @@ index 5f79b44..73f276b 100644
  	kfree(tz);
  	return 0;
 diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index bd77e81..eab9c42 100644
+index 826a52f..c83b76c 100644
 --- a/drivers/acpi/video.c
 +++ b/drivers/acpi/video.c
 @@ -34,6 +34,7 @@
@@ -1499,7 +1499,7 @@ index bd77e81..eab9c42 100644
  #include <linux/video_output.h>
  #include <asm/uaccess.h>
  
-@@ -179,6 +180,7 @@ struct acpi_video_device {
+@@ -183,6 +184,7 @@ struct acpi_video_device {
  	struct acpi_device *dev;
  	struct acpi_video_device_brightness *brightness;
  	struct backlight_device *backlight;
@@ -1507,7 +1507,7 @@ index bd77e81..eab9c42 100644
  	struct output_device *output_dev;
  };
  
-@@ -334,6 +336,54 @@ static struct output_properties acpi_output_properties = {
+@@ -346,6 +348,54 @@ static struct output_properties acpi_output_properties = {
  	.set_state = acpi_video_output_set,
  	.get_status = acpi_video_output_get,
  };
@@ -1562,9 +1562,17 @@ index bd77e81..eab9c42 100644
  /* --------------------------------------------------------------------------
                                 Video Management
     -------------------------------------------------------------------------- */
-@@ -666,8 +717,25 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
- 		device->backlight->props.max_brightness = max_level;
- 		device->backlight->props.brightness = (int)tmp;
+@@ -664,6 +714,7 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
+ 	kfree(obj);
+ 
+ 	if (device->cap._BCL && device->cap._BCM && device->cap._BQC && max_level > 0){
++		int result;
+ 		static int count = 0;
+ 		char *name;
+ 		name = kzalloc(MAX_NAME_LEN, GFP_KERNEL);
+@@ -676,8 +727,25 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
+ 		device->backlight->props.max_brightness = device->brightness->count-3;
+ 		device->backlight->props.brightness = acpi_video_get_brightness(device->backlight);
  		backlight_update_status(device->backlight);
 -
  		kfree(name);
@@ -1575,7 +1583,7 @@ index bd77e81..eab9c42 100644
 +			printk(KERN_INFO PREFIX
 +				"%s is registered as cooling_device%d\n",
 +				device->dev->dev.bus_id, device->cdev->id);
-+			int result = sysfs_create_link(&device->dev->dev.kobj,
++			result = sysfs_create_link(&device->dev->dev.kobj,
 +					  &device->cdev->device.kobj,
 +					  "thermal_cooling");
 +			if (result)
@@ -1589,7 +1597,7 @@ index bd77e81..eab9c42 100644
  	}
  	if (device->cap._DCS && device->cap._DSS){
  		static int count = 0;
-@@ -1729,6 +1797,14 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
+@@ -1739,6 +1807,14 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
  					    ACPI_DEVICE_NOTIFY,
  					    acpi_video_device_notify);
  	backlight_device_unregister(device->backlight);
@@ -3063,3 +3071,6 @@ index 0000000..bba7712
 +void thermal_cooling_device_unregister(struct thermal_cooling_device *);
 +
 +#endif				/* __THERMAL_H__ */
+-- 
+1.5.6.3
+
