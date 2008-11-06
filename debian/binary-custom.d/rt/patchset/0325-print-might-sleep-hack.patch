@@ -23,7 +23,7 @@ Index: ubuntu-hardy/include/linux/sched.h
 ===================================================================
 --- ubuntu-hardy.orig/include/linux/sched.h	2008-02-27 11:46:55.000000000 +0100
 +++ ubuntu-hardy/include/linux/sched.h	2008-02-27 11:47:41.000000000 +0100
-@@ -1292,12 +1292,25 @@
+@@ -1296,6 +1296,13 @@ struct task_struct {
  	int make_it_fail;
  #endif
  	struct prop_local_single dirties;
@@ -37,7 +37,8 @@ Index: ubuntu-hardy/include/linux/sched.h
  #ifdef CONFIG_LATENCYTOP
  	int latency_record_count;
  	struct latency_record latency_record[LT_SAVECOUNT];
- #endif
+@@ -1303,6 +1310,12 @@ struct task_struct {
+ 	struct list_head	*scm_work_list;
  };
  
 +#ifdef CONFIG_PREEMPT_RT
