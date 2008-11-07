@@ -212,7 +212,7 @@ sub changelog_input {
 	}
 
 	foreach $entry (@reverts) {
-		print "Adding revert entry '" . $entry->{'desc'} . "'\n";
+		print STDERR "Adding revert entry '" . $entry->{'desc'} . "'\n";
 		add_entry($entry);
 	}	
 }
