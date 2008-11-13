@@ -88,6 +88,7 @@ typedef enum {
 	BCM5709,
 	BCM5709S,
 	BCM5716,
+	BCM5716S,
 } board_t;
 
 /* indexed by board_t, above */
@@ -104,6 +105,7 @@ static const struct {
 	{ "Broadcom NetXtreme II BCM5709 1000Base-T" },
 	{ "Broadcom NetXtreme II BCM5709 1000Base-SX" },
 	{ "Broadcom NetXtreme II BCM5716 1000Base-T" },
+	{ "Broadcom NetXtreme II BCM5716 1000Base-SX" },
 	};
 
 static DEFINE_PCI_DEVICE_TABLE(bnx2_pci_tbl) = {
@@ -126,6 +128,8 @@ static DEFINE_PCI_DEVICE_TABLE(bnx2_pci_tbl) = {
 	{ PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_NX2_5709S,
 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, BCM5709S },
 	{ PCI_VENDOR_ID_BROADCOM, 0x163b,
+	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, BCM5716 },
+	{ PCI_VENDOR_ID_BROADCOM, 0x163c,
 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, BCM5716 },
 	{ 0, }
 };
