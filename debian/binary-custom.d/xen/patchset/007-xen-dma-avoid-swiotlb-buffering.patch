@@ -1,0 +1,61 @@
+diff -Nurp custom-source-xen/arch/x86/kernel/pci-dma_32-xen.c custom-source-xen.new/arch/x86/kernel/pci-dma_32-xen.c
+--- custom-source-xen/arch/x86/kernel/pci-dma_32-xen.c	2008-11-14 14:29:02.000000000 +0000
++++ custom-source-xen.new/arch/x86/kernel/pci-dma_32-xen.c	2008-11-14 14:23:09.000000000 +0000
+@@ -77,6 +77,39 @@ do {							\
+ 	}						\
+ } while (0)
+ 
++static int check_pages_physically_contiguous(unsigned long pfn,
++					     unsigned int offset,
++					     size_t length)
++{
++	unsigned long next_mfn;
++	int i;
++	int nr_pages;
++
++	next_mfn = pfn_to_mfn(pfn);
++	nr_pages = (offset + length + PAGE_SIZE-1) >> PAGE_SHIFT;
++
++	for (i = 1; i < nr_pages; i++) {
++		if (pfn_to_mfn(++pfn) != ++next_mfn)
++		return 0;
++	}
++	return 1;
++}
++
++int range_straddles_page_boundary(paddr_t p, size_t size)
++{
++	extern unsigned long *contiguous_bitmap;
++	unsigned long pfn = p >> PAGE_SHIFT;
++	unsigned int offset = p & ~PAGE_MASK;
++
++	if (offset + size <= PAGE_SIZE)
++		return 0;
++	if (test_bit(pfn, contiguous_bitmap))
++		return 0;
++	if (check_pages_physically_contiguous(pfn, offset, size))
++		return 0;
++	return 1;
++}
++
+ int
+ dma_map_sg(struct device *hwdev, struct scatterlist *sgl, int nents,
+ 	   enum dma_data_direction direction)
+diff -Nurp custom-source-xen/include/asm-x86/mach-xen/asm/dma-mapping_32.h custom-source-xen.new/include/asm-x86/mach-xen/asm/dma-mapping_32.h
+--- custom-source-xen/include/asm-x86/mach-xen/asm/dma-mapping_32.h	2008-11-14 14:29:02.000000000 +0000
++++ custom-source-xen.new/include/asm-x86/mach-xen/asm/dma-mapping_32.h	2008-11-14 14:25:33.000000000 +0000
+@@ -22,13 +22,7 @@ address_needs_mapping(struct device *hwd
+ 	return (addr & ~mask) != 0;
+ }
+ 
+-static inline int
+-range_straddles_page_boundary(paddr_t p, size_t size)
+-{
+-	extern unsigned long *contiguous_bitmap;
+-	return ((((p & ~PAGE_MASK) + size) > PAGE_SIZE) &&
+-		!test_bit(p >> PAGE_SHIFT, contiguous_bitmap));
+-}
++extern int range_straddles_page_boundary(paddr_t p, size_t size);
+ 
+ #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
+ #define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
