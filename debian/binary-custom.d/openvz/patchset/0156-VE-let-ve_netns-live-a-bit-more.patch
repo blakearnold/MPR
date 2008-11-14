@@ -1,0 +1,69 @@
+From e4645288a01f65d02382bcf0d10148965c2038ac Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 9 Jun 2008 15:53:08 +0400
+Subject: [PATCH] VE let ->ve_netns live a bit more
+
+1. netns shutdown is done asynchronously
+2. nsproxy free is done synchronously
+which means we can't use "get_exec_env()->ve_ns->net_ns" construct
+anywhere in netns teardown codepath. ->ve_ns will be NULL (fixable) or
+will point to freed memory (hardly fixable).
+
+The solution it to pin netns one more time, and use get_exec_env()->ve_netns .
+get_exec_env() is always valid. It's ->ve_netns will also be valid during
+shutdown. As for ->ve_ns, we don't care from now.
+---
+ kernel/ve/vecalls.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index ee5d600..96e856f 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -970,10 +970,8 @@ static inline void fini_ve_namespaces(struct ve_struct *ve,
+ 		tmp = ve->ve_ns;
+ 		ve->ve_ns = get_nsproxy(old);
+ 		put_nsproxy(tmp);
+-	} else {
++	} else
+ 		put_nsproxy(ve->ve_ns);
+-		ve->ve_ns = NULL;
+-	}
+ }
+ 
+ static int init_ve_netns(struct ve_struct *ve, struct nsproxy **old)
+@@ -991,7 +989,7 @@ static int init_ve_netns(struct ve_struct *ve, struct nsproxy **old)
+ 
+ 	put_nsproxy(ve->ve_ns);
+ 	ve->ve_ns = get_nsproxy(tsk->nsproxy);
+-	ve->ve_netns = ve->ve_ns->net_ns;
++	ve->ve_netns = get_net(ve->ve_ns->net_ns);
+ 	*old = cur;
+ 	return 0;
+ }
+@@ -1580,9 +1578,10 @@ err_devpts:
+ err_shmem:
+ 	fini_ve_tty_drivers(ve);
+ err_tty:
+-	ve->ve_ns->net_ns->sysfs_completion = &sysfs_completion;
+ 	fini_ve_namespaces(ve, old_ns_net);
+ 	put_nsproxy(old_ns_net);
++	ve->ve_netns->sysfs_completion = &sysfs_completion;
++	put_net(ve->ve_netns);
+ 	wait_for_completion(&sysfs_completion);
+ err_netns:
+ 	fini_ve_route6(ve);
+@@ -1792,8 +1791,9 @@ static void env_cleanup(struct ve_struct *ve)
+ 	unregister_ve_tty_drivers(ve);
+ 	fini_ve_meminfo(ve);
+ 
+-	ve->ve_ns->net_ns->sysfs_completion = &sysfs_completion;
+ 	fini_ve_namespaces(ve, NULL);
++	ve->ve_netns->sysfs_completion = &sysfs_completion;
++	put_net(ve->ve_netns);
+ 	wait_for_completion(&sysfs_completion);
+ 	fini_ve_route(ve);
+ 	fini_ve_route6(ve);
+-- 
+1.5.4.3
+

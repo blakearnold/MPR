@@ -1,0 +1,34 @@
+From 115ea893b03ae5eab8a9186f83cbc06ae9e74efe Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 6 Jun 2008 20:20:58 +0400
+Subject: [PATCH] VE IPv6 give owner_ve to fib_table and fib6_local_table
+
+otherwise eventually fib6_clean_all will execute code in NULL context
+which is no-no.
+---
+ net/ipv6/ip6_fib.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
+index b367550..0f9e611 100644
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -177,6 +177,7 @@ static struct fib6_table fib6_main_tbl = {
+ #ifdef CONFIG_VE
+ static inline void prepare_fib6_table(void)
+ {
++	fib6_main_tbl.owner_env = get_ve0();
+ 	get_ve0()->_fib6_table = &fib6_main_tbl;
+ }
+ 
+@@ -233,6 +234,7 @@ static struct fib6_table fib6_local_tbl = {
+ #ifdef CONFIG_VE
+ static inline void prepare_fib6_local_table(void)
+ {
++	fib6_local_tbl.owner_env = get_ve0();
+ 	get_ve0()->_fib6_local_table = &fib6_local_tbl;
+ }
+ #define fib6_local_tbl	(*(get_exec_env())->_fib6_local_table)
+-- 
+1.5.4.3
+

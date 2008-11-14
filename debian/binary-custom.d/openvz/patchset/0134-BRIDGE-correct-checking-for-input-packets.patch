@@ -1,0 +1,41 @@
+From 7c163a9667783ebd9ae87941723e31810edf3121 Mon Sep 17 00:00:00 2001
+From: Vitaliy Gusev <vgusev@openvz.org>
+Date: Thu, 15 May 2008 18:45:50 +0400
+Subject: [PATCH] BRIDGE correct checking for input packets
+
+When via_phys_dev flag is set then bridge doesn't have any ip address.
+Therefore ip-traffic HW->VE passes only if brigge has the same MAC-address as
+real ethernet interface.
+
+Bug #92737
+---
+ net/bridge/br_input.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
+index 3377788..ac27655 100644
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -154,6 +154,8 @@ struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
+ 	}
+ 
+ 	switch (p->state) {
++		struct net_device *out;
++
+ 	case BR_STATE_FORWARDING:
+ 		rhook = rcu_dereference(br_should_route_hook);
+ 		if (rhook != NULL) {
+@@ -166,7 +168,9 @@ struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
+ 		if (skb->brmark == BR_ALREADY_SEEN)
+ 			return 0;
+ 
+-		if (!compare_ether_addr(p->br->dev->dev_addr, dest))
++		out = p->br->via_phys_dev ? p->br->master_dev : p->br->dev;
++
++		if (out && !compare_ether_addr(p->br->dev->dev_addr, dest))
+ 			skb->pkt_type = PACKET_HOST;
+ 
+ 		NF_HOOK(PF_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
+-- 
+1.5.4.3
+

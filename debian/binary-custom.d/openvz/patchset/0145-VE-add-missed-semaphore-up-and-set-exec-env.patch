@@ -1,0 +1,26 @@
+From 2e272c2b5966c134d7b70cfb555867c6d8623a5f Mon Sep 17 00:00:00 2001
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 9 Sep 2008 13:42:31 +0400
+Subject: [PATCH] VE add missed semaphore up and set exec env
+
+NFS connect over TCP-IPv4 block VE stop process.
+---
+ net/sunrpc/xprtsock.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index f58f1ac..f6f3db8 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1642,6 +1642,8 @@ out:
+ 	xprt_wake_pending_tasks(xprt, status);
+ out_clear:
+ 	xprt_clear_connecting(xprt);
++	up_read(&xprt->owner_env->op_sem);
++	(void)set_exec_env(ve);
+ }
+ 
+ /**
+-- 
+1.5.4.3
+
