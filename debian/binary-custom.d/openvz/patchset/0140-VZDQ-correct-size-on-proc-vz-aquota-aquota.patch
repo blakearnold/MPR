@@ -1,0 +1,50 @@
+From bcba535278b993cc23e1abb7ecd4ef9d1a611967 Mon Sep 17 00:00:00 2001
+From: Vasily Tarasov <vtaras@openvz.org>
+Date: Thu, 15 May 2008 18:52:00 +0400
+Subject: [PATCH] VZDQ correct size on /proc/vz/aquota/*/aquota.*
+
+Bug #59920
+
+Signed-off-by: Vasily Tarasov <vtaras@openvz.org>
+Signed-off-by: Denis Lunev <den@openvz.org>
+---
+ fs/vzdq_file.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
+
+diff --git a/fs/vzdq_file.c b/fs/vzdq_file.c
+index f63689a..ac3aeb0 100644
+--- a/fs/vzdq_file.c
++++ b/fs/vzdq_file.c
+@@ -520,6 +520,8 @@ static int vzdq_aquotq_looktest(struct inode *inode, void *data)
+ static int vzdq_aquotq_lookset(struct inode *inode, void *data)
+ {
+ 	struct vzdq_aquotq_lookdata *d;
++	struct super_block *sb;
++	struct quotatree_data qtd;
+ 	struct quotatree_tree *tree;
+ 
+ 	d = data;
+@@ -535,7 +537,19 @@ static int vzdq_aquotq_lookset(struct inode *inode, void *data)
+ 	vzdq_aquot_setidev(inode, d->dev);
+ 
+ 	/* Setting size */
+-	tree = QUGID_TREE(d->qmblk, PROC_I(inode)->fd - 1);
++	sb = user_get_super(d->dev);
++	if (sb == NULL)
++		return -ENODEV;
++	qtd.qmblk = vzquota_find_qmblk(sb);
++	drop_super(sb);
++
++	if (qtd.qmblk == NULL)
++		return -ESRCH;
++	if (qtd.qmblk == VZ_QUOTA_BAD)
++		return -EIO;
++
++	qtd.type = PROC_I(inode)->fd - 1;
++	tree = QUGID_TREE(qtd.qmblk, qtd.type);
+ 	inode->i_size = get_block_num(tree) * 1024;
+ 	return 0;
+ }
+-- 
+1.5.4.3
+

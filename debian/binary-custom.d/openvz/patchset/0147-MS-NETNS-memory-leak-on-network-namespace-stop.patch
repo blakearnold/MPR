@@ -1,0 +1,34 @@
+From 36b7ca98361288413004d525891f9a821a2b8709 Mon Sep 17 00:00:00 2001
+From: Denis V. Lunev <den@openvz.org>
+Date: Fri, 6 Jun 2008 21:10:14 +0400
+Subject: [PATCH] MS NETNS memory leak on network namespace stop
+
+mainline commit 4f84d82f7a623f8641af2574425c329431ff158f
+
+Network namespace allocates 2 kernel netlink sockets, fibnl &
+rtnl. These sockets should be disposed properly, i.e. by
+sock_release. Plain sock_put is not enough.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+Tested-by: Alexey Dobriyan <adobriyan@openvz.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/core/rtnetlink.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 9cb91f5..e025b0c 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1386,7 +1386,7 @@ static void rtnetlink_net_exit(struct net *net)
+ 		 * free.
+ 		 */
+ 		sk->sk_net = get_net(&init_net);
+-		sock_put(sk);
++		sock_release(net->rtnl->sk_socket);
+ 		net->rtnl = NULL;
+ 	}
+ }
+-- 
+1.5.4.3
+

@@ -1,0 +1,33 @@
+From 87490ee50be2cae1d07bc5e8d2c15cbff58a0d3f Mon Sep 17 00:00:00 2001
+From: Alexey Kuznetsov <alexey@openvz.org>
+Date: Thu, 15 May 2008 18:54:23 +0400
+Subject: [PATCH] CPT SMP race in detecting state of ptraced processes
+
+When suspending VE, we test state of processes while they are
+still running. It is not a bug: we have to verify for invalid state
+before checkpointing, real state is saved after processes are scheduled
+out.
+
+The impact is that we can see process in a bad state, f.e. stopped
+without any reasons. It is also not a bug, but this rersults in random
+failures of checkpointing. The only way to fix this is to order updates
+of state variables. The order is correct almost everywhere.
+---
+ kernel/signal.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 10d8886..a2ea3a7 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1822,6 +1822,7 @@ static int handle_group_stop(void)
+ 		 */
+ 		return 0;
+ 
++	clear_pn_state(current);
+ 	/*
+ 	 * There is a group stop in progress.  We stop
+ 	 * without any associated signal being in our queue.
+-- 
+1.5.4.3
+

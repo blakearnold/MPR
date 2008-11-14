@@ -1,0 +1,36 @@
+From 7bec95432b9a8d45de49033a246913bddea45c55 Mon Sep 17 00:00:00 2001
+From: Vasily Averin <vvs@openvz.org>
+Date: Fri, 16 May 2008 14:07:37 +0400
+Subject: [PATCH] VE SYSCTL cleanup cap bset
+ kernel.cap-bound sysctl cleanup
+  - proc entry is global and therefore it is ReadOnly-accessible from inside VE
+
+http://bugzilla.openvz.org/show_bug.cgi?id=524
+---
+ kernel/sysctl.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index d5c7b1d..88c5f76 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2155,15 +2155,8 @@ int proc_dointvec_bset(struct ctl_table *table, int write, struct file *filp,
+ {
+ 	int op;
+ 
+-	struct ve_struct *ve;
+-
+-	ve = get_exec_env();
+-
+-	/* For VE's root writing to VE's cap-bound is prohibited */
+-	if ((ve_is_super(ve) && write && !capable(CAP_SYS_MODULE)) ||
+-	    (!ve_is_super(ve) && (!capable(CAP_VE_ADMIN) || write))) {
++	if (write && !capable(CAP_SYS_MODULE))
+ 		return -EPERM;
+-	}
+ 
+ 	op = is_global_init(current) ? OP_SET : OP_AND;
+ 	return __do_proc_dointvec(&cap_bset, table, write, filp,
+-- 
+1.5.4.3
+

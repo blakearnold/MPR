@@ -1,0 +1,42 @@
+From 7d7f1709db01ef933d1f711914f12998a7bdcc41 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Fri, 16 May 2008 17:39:02 +0400
+Subject: [PATCH] VE NETFILTER make ip_conntrack_disable_ve0 option do something
+
+---
+ net/netfilter/nf_conntrack_standalone.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+index 55161c5..3b2df53 100644
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -511,6 +511,9 @@ int nf_conntrack_init_ve(void)
+ 	if (err)
+ 		goto out;
+ 
++	if (ve_is_super(ve) && ip_conntrack_disable_ve0)
++		return 0;
++
+ 	ve_nf_conntrack_checksum = nf_conntrack_checksum;
+ 
+ 	err = nf_conntrack_init_ve_sysctl(ve);
+@@ -533,8 +536,13 @@ out:
+ 
+ void nf_conntrack_cleanup_ve(void)
+ {
+-	nf_conntrack_fini_ve_proc(get_exec_env());
+-	nf_conntrack_fini_ve_sysctl(get_exec_env());
++	struct ve_struct *ve = get_exec_env();
++
++	if (ve_is_super(ve) && ip_conntrack_disable_ve0)
++		goto cleanup;
++	nf_conntrack_fini_ve_proc(ve);
++	nf_conntrack_fini_ve_sysctl(ve);
++cleanup:
+ 	nf_conntrack_cleanup();
+ }
+ EXPORT_SYMBOL(nf_conntrack_cleanup_ve);
+-- 
+1.5.4.3
+

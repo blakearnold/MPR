@@ -1,0 +1,1123 @@
+From dbf8e04245347b6f4c984aefdc99cd57c0abf065 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 9 Jun 2008 15:46:39 +0400
+Subject: [PATCH] VE introduce ->ve_netns
+
+Preparations for fixing "NULL ->ve_ns" oops in inet6_rt_notify().
+---
+ drivers/net/tun.c                                  |    2 +-
+ drivers/net/venet_core.c                           |    4 +-
+ drivers/net/vzethdev.c                             |    2 +-
+ include/linux/ve.h                                 |    1 +
+ kernel/cpt/cpt_dump.c                              |    2 +-
+ kernel/cpt/cpt_net.c                               |    4 +-
+ kernel/cpt/rst_net.c                               |    6 ++--
+ kernel/ve/ve.c                                     |    1 +
+ kernel/ve/vecalls.c                                |    7 +++--
+ net/8021q/vlan.c                                   |    2 +-
+ net/8021q/vlanproc.c                               |    4 +-
+ net/bridge/br_netlink.c                            |    2 +-
+ net/core/fib_rules.c                               |    2 +-
+ net/ipv4/arp.c                                     |    4 +-
+ net/ipv4/devinet.c                                 |   16 +++++++-------
+ net/ipv4/fib_frontend.c                            |    2 +-
+ net/ipv4/fib_semantics.c                           |    6 ++--
+ net/ipv4/icmp.c                                    |    2 +-
+ net/ipv4/igmp.c                                    |    4 +-
+ net/ipv4/ip_fragment.c                             |    2 +-
+ net/ipv4/ip_gre.c                                  |    4 +-
+ net/ipv4/ip_sockglue.c                             |    2 +-
+ net/ipv4/ipconfig.c                                |    2 +-
+ net/ipv4/ipip.c                                    |    4 +-
+ net/ipv4/ipmr.c                                    |    2 +-
+ net/ipv4/ipvs/ip_vs_sync.c                         |    8 +++---
+ net/ipv4/netfilter/ipt_CLUSTERIP.c                 |    2 +-
+ net/ipv4/netfilter/ipt_recent.c                    |    4 +-
+ .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   |    4 +-
+ net/ipv4/route.c                                   |   10 ++++----
+ net/ipv6/addrconf.c                                |   22 ++++++++++----------
+ net/ipv6/af_inet6.c                                |    2 +-
+ net/ipv6/anycast.c                                 |   12 +++++-----
+ net/ipv6/datagram.c                                |    2 +-
+ net/ipv6/ipv6_sockglue.c                           |    2 +-
+ net/ipv6/mcast.c                                   |   12 +++++-----
+ net/ipv6/raw.c                                     |    2 +-
+ net/ipv6/reassembly.c                              |    2 +-
+ net/ipv6/route.c                                   |   10 ++++----
+ net/ipv6/sit.c                                     |    8 +++---
+ net/netfilter/nf_conntrack_standalone.c            |    4 +-
+ net/netfilter/xt_hashlimit.c                       |    4 +-
+ 42 files changed, 101 insertions(+), 98 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 2fcf253..07531b7 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -495,7 +495,7 @@ static struct tun_struct *tun_get_by_name(const char *name)
+ 
+ static int tun_set_iff(struct file *file, struct ifreq *ifr)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct tun_struct *tun;
+ 	struct net_device *dev;
+ 	int err;
+diff --git a/drivers/net/venet_core.c b/drivers/net/venet_core.c
+index 7c718d8..ea7db31 100644
+--- a/drivers/net/venet_core.c
++++ b/drivers/net/venet_core.c
+@@ -374,7 +374,7 @@ venet_set_op(struct net_device *dev, u32 data,
+ 
+ 		ve_old = set_exec_env(ve);
+ 		read_lock(&dev_base_lock);
+-		for_each_netdev(ve->ve_ns->net_ns, dev) {
++		for_each_netdev(ve->ve_netns, dev) {
+ 			if (dev->hard_start_xmit == venet_xmit)
+ 				ret = fop(dev, data);
+ 		}
+@@ -630,7 +630,7 @@ int venet_dev_start(struct ve_struct *ve)
+ 	dev_venet = alloc_netdev(0, "venet%d", venet_setup);
+ 	if (!dev_venet)
+ 		return -ENOMEM;
+-	dev_venet->nd_net = ve->ve_ns->net_ns;
++	dev_venet->nd_net = ve->ve_netns;
+ 	err = dev_alloc_name(dev_venet, dev_venet->name);
+ 	if (err<0)
+ 		goto err;
+diff --git a/drivers/net/vzethdev.c b/drivers/net/vzethdev.c
+index 2c52593..041e3e8 100644
+--- a/drivers/net/vzethdev.c
++++ b/drivers/net/vzethdev.c
+@@ -609,7 +609,7 @@ struct net_device * veth_dev_start(char *dev_addr, char *name)
+ 	dev = alloc_netdev(sizeof(struct veth_struct), name, veth_setup);
+ 	if (!dev)
+ 		return ERR_PTR(-ENOMEM);
+-	dev->nd_net = get_exec_env()->ve_ns->net_ns;
++	dev->nd_net = get_exec_env()->ve_netns;
+ 	if (strchr(dev->name, '%')) {
+ 		err = dev_alloc_name(dev, dev->name);
+ 		if (err < 0)
+diff --git a/include/linux/ve.h b/include/linux/ve.h
+index 88ecd3b..544e579 100644
+--- a/include/linux/ve.h
++++ b/include/linux/ve.h
+@@ -342,6 +342,7 @@ struct ve_struct {
+ #endif
+ 
+ 	struct nsproxy		*ve_ns;
++	struct net		*ve_netns;
+ #ifdef CONFIG_GRKERNSEC
+ 	struct {
+ 		int		lock;
+diff --git a/kernel/cpt/cpt_dump.c b/kernel/cpt/cpt_dump.c
+index 72b7712..8f2be51 100644
+--- a/kernel/cpt/cpt_dump.c
++++ b/kernel/cpt/cpt_dump.c
+@@ -1035,7 +1035,7 @@ out_wake:
+ 
+ static void check_unsupported_netdevices(struct cpt_context *ctx, __u32 *caps)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device *dev;
+ 
+ 	read_lock(&dev_base_lock);
+diff --git a/kernel/cpt/cpt_net.c b/kernel/cpt/cpt_net.c
+index 1944654..46671b1 100644
+--- a/kernel/cpt/cpt_net.c
++++ b/kernel/cpt/cpt_net.c
+@@ -153,7 +153,7 @@ static void cpt_dump_tuntap(struct net_device *dev, struct cpt_context * ctx)
+ 
+ int cpt_dump_link(struct cpt_context * ctx)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device *dev;
+ 
+ 	cpt_open_section(ctx, CPT_SECT_NET_DEVICE);
+@@ -237,7 +237,7 @@ int cpt_resume_network(struct cpt_context *ctx)
+ 
+ int cpt_dump_ifaddr(struct cpt_context * ctx)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device *dev;
+ 
+ 	cpt_open_section(ctx, CPT_SECT_NET_IFADDR);
+diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
+index aa79c8b..7575dd8 100644
+--- a/kernel/cpt/rst_net.c
++++ b/kernel/cpt/rst_net.c
+@@ -48,7 +48,7 @@ extern struct in_device *inetdev_init(struct net_device *dev);
+ 
+ int rst_restore_ifaddr(struct cpt_context *ctx)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	int err;
+ 	loff_t sec = ctx->sections[CPT_SECT_NET_IFADDR];
+ 	loff_t endsec;
+@@ -408,7 +408,7 @@ static int rst_restore_netstats(loff_t pos, struct net_device *dev,
+ {
+ 	struct cpt_netstats_image *n;
+ 	struct net_device_stats *stats = NULL;
+-	struct net_device *lo = get_exec_env()->ve_ns->net_ns->loopback_dev;
++	struct net_device *lo = get_exec_env()->ve_netns->loopback_dev;
+ 	int err;
+ 
+ 	if (!dev->get_stats)
+@@ -472,7 +472,7 @@ out:
+ 
+ int rst_restore_netdev(struct cpt_context *ctx)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	int err;
+ 	loff_t sec = ctx->sections[CPT_SECT_NET_DEVICE];
+ 	loff_t endsec;
+diff --git a/kernel/ve/ve.c b/kernel/ve/ve.c
+index 2756622..e61e647 100644
+--- a/kernel/ve/ve.c
++++ b/kernel/ve/ve.c
+@@ -111,6 +111,7 @@ struct ve_struct ve0 = {
+ 	.devpts_config		= &devpts_config,
+ #endif
+ 	.ve_ns			= &init_nsproxy,
++	.ve_netns		= &init_net,
+ 	.is_running		= 1,
+ 	.op_sem			= __RWSEM_INITIALIZER(ve0.op_sem),
+ };
+diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
+index 07042bf..ee5d600 100644
+--- a/kernel/ve/vecalls.c
++++ b/kernel/ve/vecalls.c
+@@ -991,6 +991,7 @@ static int init_ve_netns(struct ve_struct *ve, struct nsproxy **old)
+ 
+ 	put_nsproxy(ve->ve_ns);
+ 	ve->ve_ns = get_nsproxy(tsk->nsproxy);
++	ve->ve_netns = ve->ve_ns->net_ns;
+ 	*old = cur;
+ 	return 0;
+ }
+@@ -2156,7 +2157,7 @@ static int ve_dev_add(envid_t veid, char *dev_name)
+ 	if (dst_ve == NULL)
+ 		goto out;
+ 
+-	dst_net = dst_ve->ve_ns->net_ns;
++	dst_net = dst_ve->ve_netns;
+ 
+ 	rtnl_lock();
+ 	read_lock(&dev_base_lock);
+@@ -2189,7 +2190,7 @@ static int ve_dev_del(envid_t veid, char *dev_name)
+ 	if (src_ve == NULL)
+ 		goto out;
+ 
+-	src_net = src_ve->ve_ns->net_ns;
++	src_net = src_ve->ve_netns;
+ 
+ 	rtnl_lock();
+ 
+@@ -2228,7 +2229,7 @@ int real_ve_dev_map(envid_t veid, int op, char *dev_name)
+ 
+ static void ve_mapped_devs_cleanup(struct ve_struct *ve)
+ {
+-	struct net *net = ve->ve_ns->net_ns;
++	struct net *net = ve->ve_netns;
+ 	struct net_device *dev, *next;
+ 	int rv;
+ 
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 5c53f2e..1baa715 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -604,7 +604,7 @@ static int register_vlan_device(struct net_device *real_dev,
+ 	if (new_dev == NULL)
+ 		return -ENOBUFS;
+ 
+-	new_dev->nd_net = get_exec_env()->ve_ns->net_ns;
++	new_dev->nd_net = get_exec_env()->ve_netns;
+ 	/* need 4 bytes for extra VLAN header info,
+ 	 * hope the underlying device can handle it.
+ 	 */
+diff --git a/net/8021q/vlanproc.c b/net/8021q/vlanproc.c
+index 1207c21..1070214 100644
+--- a/net/8021q/vlanproc.c
++++ b/net/8021q/vlanproc.c
+@@ -166,7 +166,7 @@ static const char *vlan_name_type_str[VLAN_NAME_TYPE_HIGHEST] = {
+ 
+ void vlan_proc_cleanup(void)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 
+ 	if (proc_vlan_conf)
+ 		remove_proc_entry(name_conf, proc_vlan_dir);
+@@ -185,7 +185,7 @@ void vlan_proc_cleanup(void)
+ 
+ int vlan_proc_init(void)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 
+ 	proc_vlan_dir = proc_mkdir(name_root, net->proc_net);
+ 	if (proc_vlan_dir) {
+diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
+index af51000..30eacc0 100644
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -82,7 +82,7 @@ nla_put_failure:
+  */
+ void br_ifinfo_notify(int event, struct net_bridge_port *port)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct sk_buff *skb;
+ 	int err = -ENOBUFS;
+ 
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index 39f8645..c70b8b8 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -575,7 +575,7 @@ static void notify_rule_change(int event, struct fib_rule *rule,
+ 			       struct fib_rules_ops *ops, struct nlmsghdr *nlh,
+ 			       u32 pid)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct sk_buff *skb;
+ 	int err = -ENOBUFS;
+ 
+diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
+index a3e5ca7..e0fcfaf 100644
+--- a/net/ipv4/arp.c
++++ b/net/ipv4/arp.c
+@@ -961,7 +961,7 @@ static int arp_req_set(struct arpreq *r, struct net_device * dev)
+ 		if (mask && mask != htonl(0xFFFFFFFF))
+ 			return -EINVAL;
+ 		if (!dev && (r->arp_flags & ATF_COM)) {
+-			dev = dev_getbyhwaddr(get_exec_env()->ve_ns->net_ns, r->arp_ha.sa_family, r->arp_ha.sa_data);
++			dev = dev_getbyhwaddr(get_exec_env()->ve_netns, r->arp_ha.sa_family, r->arp_ha.sa_data);
+ 			if (!dev)
+ 				return -ENODEV;
+ 		}
+@@ -1150,7 +1150,7 @@ int arp_ioctl(unsigned int cmd, void __user *arg)
+ 	rtnl_lock();
+ 	if (r.arp_dev[0]) {
+ 		err = -ENODEV;
+-		if ((dev = __dev_get_by_name(get_exec_env()->ve_ns->net_ns, r.arp_dev)) == NULL)
++		if ((dev = __dev_get_by_name(get_exec_env()->ve_netns, r.arp_dev)) == NULL)
+ 			goto out;
+ 
+ 		/* Mmmm... It is wrong... ARPHRD_NETROM==0 */
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index d26e56c..536abd6 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -427,7 +427,7 @@ struct in_device *inetdev_by_index(int ifindex)
+ 	struct net_device *dev;
+ 	struct in_device *in_dev = NULL;
+ 	read_lock(&dev_base_lock);
+-	dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifindex);
++	dev = __dev_get_by_index(get_exec_env()->ve_netns, ifindex);
+ 	if (dev)
+ 		in_dev = in_dev_get(dev);
+ 	read_unlock(&dev_base_lock);
+@@ -514,7 +514,7 @@ static struct in_ifaddr *rtm_to_ifaddr(struct nlmsghdr *nlh)
+ 		goto errout;
+ 	}
+ 
+-	dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifm->ifa_index);
++	dev = __dev_get_by_index(get_exec_env()->ve_netns, ifm->ifa_index);
+ 	if (dev == NULL) {
+ 		err = -ENODEV;
+ 		goto errout;
+@@ -618,7 +618,7 @@ int devinet_ioctl(unsigned int cmd, void __user *arg)
+ 	char *colon;
+ 	int ret = -EFAULT;
+ 	int tryaddrmatch = 0;
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 
+ 	/*
+ 	 *	Fetch the caller's info block into kernel space
+@@ -917,7 +917,7 @@ no_in_dev:
+ 	 */
+ 	read_lock(&dev_base_lock);
+ 	rcu_read_lock();
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		if ((in_dev = __in_dev_get_rcu(dev)) == NULL)
+ 			continue;
+ 
+@@ -996,7 +996,7 @@ __be32 inet_confirm_addr(const struct net_device *dev, __be32 dst, __be32 local,
+ 
+ 	read_lock(&dev_base_lock);
+ 	rcu_read_lock();
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		if ((in_dev = __in_dev_get_rcu(dev))) {
+ 			addr = confirm_addr_indev(in_dev, dst, local, scope);
+ 			if (addr)
+@@ -1190,7 +1190,7 @@ static int inet_dump_ifaddr(struct sk_buff *skb, struct netlink_callback *cb)
+ 
+ 	s_ip_idx = ip_idx = cb->args[1];
+ 	idx = 0;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		if (idx < s_idx)
+ 			goto cont;
+ 		if (idx > s_idx)
+@@ -1250,7 +1250,7 @@ static void devinet_copy_dflt_conf(int i)
+ 	struct net_device *dev;
+ 
+ 	read_lock(&dev_base_lock);
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		struct in_device *in_dev;
+ 		rcu_read_lock();
+ 		in_dev = __in_dev_get_rcu(dev);
+@@ -1338,7 +1338,7 @@ void inet_forward_change(void)
+ 	IPV4_DEVCONF_DFLT(FORWARDING) = on;
+ 
+ 	read_lock(&dev_base_lock);
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		struct in_device *in_dev;
+ 		rcu_read_lock();
+ 		in_dev = __in_dev_get_rcu(dev);
+diff --git a/net/ipv4/fib_frontend.c b/net/ipv4/fib_frontend.c
+index 8c4b457..2da93aa 100644
+--- a/net/ipv4/fib_frontend.c
++++ b/net/ipv4/fib_frontend.c
+@@ -352,7 +352,7 @@ static int rtentry_to_fib_config(int cmd, struct rtentry *rt,
+ 		colon = strchr(devname, ':');
+ 		if (colon)
+ 			*colon = 0;
+-		dev = __dev_get_by_name(get_exec_env()->ve_ns->net_ns, devname);
++		dev = __dev_get_by_name(get_exec_env()->ve_netns, devname);
+ 		if (!dev)
+ 			return -ENODEV;
+ 		cfg->fc_oif = dev->ifindex;
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index de7a06f..f93a5e5 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -325,7 +325,7 @@ void rtmsg_fib(int event, __be32 key, struct fib_alias *fa,
+ 	       int dst_len, u32 tb_id, struct nl_info *info,
+ 	       unsigned int nlm_flags)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct sk_buff *skb;
+ 	u32 seq = info->nlh ? info->nlh->nlmsg_seq : 0;
+ 	int err = -ENOBUFS;
+@@ -556,7 +556,7 @@ static int fib_check_nh(struct fib_config *cfg, struct fib_info *fi,
+ 				return -EINVAL;
+ 			if (inet_addr_type(nh->nh_gw) != RTN_UNICAST)
+ 				return -EINVAL;
+-			if ((dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, nh->nh_oif)) == NULL)
++			if ((dev = __dev_get_by_index(get_exec_env()->ve_netns, nh->nh_oif)) == NULL)
+ 				return -ENODEV;
+ 			if (!(dev->flags&IFF_UP))
+ 				return -ENETDOWN;
+@@ -822,7 +822,7 @@ struct fib_info *fib_create_info(struct fib_config *cfg)
+ 		if (nhs != 1 || nh->nh_gw)
+ 			goto err_inval;
+ 		nh->nh_scope = RT_SCOPE_NOWHERE;
+-		nh->nh_dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, fi->fib_nh->nh_oif);
++		nh->nh_dev = dev_get_by_index(get_exec_env()->ve_netns, fi->fib_nh->nh_oif);
+ 		err = -ENODEV;
+ 		if (nh->nh_dev == NULL)
+ 			goto failure;
+diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
+index 15a989d..66f149e 100644
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -514,7 +514,7 @@ void icmp_send(struct sk_buff *skb_in, int type, int code, __be32 info)
+ 		struct net_device *dev = NULL;
+ 
+ 		if (rt->fl.iif && sysctl_icmp_errors_use_inbound_ifaddr)
+-			dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, rt->fl.iif);
++			dev = dev_get_by_index(get_exec_env()->ve_netns, rt->fl.iif);
+ 
+ 		if (dev) {
+ 			saddr = inet_select_addr(dev, 0, RT_SCOPE_LINK);
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 5bfd510..d94038f 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -2301,7 +2301,7 @@ static inline struct ip_mc_list *igmp_mc_get_first(struct seq_file *seq)
+ 	struct igmp_mc_iter_state *state = igmp_mc_seq_private(seq);
+ 
+ 	state->in_dev = NULL;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, state->dev) {
++	for_each_netdev(get_exec_env()->ve_netns, state->dev) {
+ 		struct in_device *in_dev;
+ 
+ 		in_dev = in_dev_get(state->dev);
+@@ -2449,7 +2449,7 @@ static inline struct ip_sf_list *igmp_mcf_get_first(struct seq_file *seq)
+ 
+ 	state->idev = NULL;
+ 	state->im = NULL;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, state->dev) {
++	for_each_netdev(get_exec_env()->ve_netns, state->dev) {
+ 		struct in_device *idev;
+ 
+ 		idev = in_dev_get(state->dev);
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index eac0f0e..bcfd004 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -228,7 +228,7 @@ static void ip_expire(unsigned long arg)
+ 	if ((qp->q.last_in&FIRST_IN) && qp->q.fragments != NULL) {
+ 		struct sk_buff *head = qp->q.fragments;
+ 		/* Send an ICMP "Fragment Reassembly Timeout" message. */
+-		if ((head->dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, qp->iif)) != NULL) {
++		if ((head->dev = dev_get_by_index(get_exec_env()->ve_netns, qp->iif)) != NULL) {
+ 			icmp_send(head, ICMP_TIME_EXCEEDED, ICMP_EXC_FRAGTIME, 0);
+ 			dev_put(head->dev);
+ 		}
+diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+index 3550870..6025bdb 100644
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -263,7 +263,7 @@ static struct ip_tunnel * ipgre_tunnel_locate(struct ip_tunnel_parm *parms, int
+ 		int i;
+ 		for (i=1; i<100; i++) {
+ 			sprintf(name, "gre%d", i);
+-			if (__dev_get_by_name(get_exec_env()->ve_ns->net_ns, name) == NULL)
++			if (__dev_get_by_name(get_exec_env()->ve_netns, name) == NULL)
+ 				break;
+ 		}
+ 		if (i==100)
+@@ -1211,7 +1211,7 @@ static int ipgre_tunnel_init(struct net_device *dev)
+ 	}
+ 
+ 	if (!tdev && tunnel->parms.link)
+-		tdev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, tunnel->parms.link);
++		tdev = __dev_get_by_index(get_exec_env()->ve_netns, tunnel->parms.link);
+ 
+ 	if (tdev) {
+ 		hlen = tdev->hard_header_len;
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index 44ed1f0..27e5d12 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -602,7 +602,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 				dev_put(dev);
+ 			}
+ 		} else
+-			dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, mreq.imr_ifindex);
++			dev = __dev_get_by_index(get_exec_env()->ve_netns, mreq.imr_ifindex);
+ 
+ 
+ 		err = -EADDRNOTAVAIL;
+diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
+index e69f45c..4d3231d 100644
+--- a/net/ipv4/ipconfig.c
++++ b/net/ipv4/ipconfig.c
+@@ -185,7 +185,7 @@ static int __init ic_open_devs(void)
+ 	struct ic_device *d, **last;
+ 	struct net_device *dev;
+ 	unsigned short oflags;
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 
+ 	last = &ic_first_dev;
+ 	rtnl_lock();
+diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
+index 09ddf1c..9dd4d8e 100644
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -226,7 +226,7 @@ static struct ip_tunnel * ipip_tunnel_locate(struct ip_tunnel_parm *parms, int c
+ 		int i;
+ 		for (i=1; i<100; i++) {
+ 			sprintf(name, "tunl%d", i);
+-			if (__dev_get_by_name(get_exec_env()->ve_ns->net_ns, name) == NULL)
++			if (__dev_get_by_name(get_exec_env()->ve_netns, name) == NULL)
+ 				break;
+ 		}
+ 		if (i==100)
+@@ -821,7 +821,7 @@ static int ipip_tunnel_init(struct net_device *dev)
+ 	}
+ 
+ 	if (!tdev && tunnel->parms.link)
+-		tdev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, tunnel->parms.link);
++		tdev = __dev_get_by_index(get_exec_env()->ve_netns, tunnel->parms.link);
+ 
+ 	if (tdev) {
+ 		dev->hard_header_len = tdev->hard_header_len + sizeof(struct iphdr);
+diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
+index 1cb6670..6f0e69d 100644
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -124,7 +124,7 @@ static struct timer_list ipmr_expire_timer;
+ static
+ struct net_device *ipmr_new_tunnel(struct vifctl *v)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device  *dev;
+ 
+ 	dev = __dev_get_by_name(net, "tunl0");
+diff --git a/net/ipv4/ipvs/ip_vs_sync.c b/net/ipv4/ipvs/ip_vs_sync.c
+index a0eda7b..0995e90 100644
+--- a/net/ipv4/ipvs/ip_vs_sync.c
++++ b/net/ipv4/ipvs/ip_vs_sync.c
+@@ -405,7 +405,7 @@ static int set_mcast_if(struct sock *sk, char *ifname)
+ 	struct net_device *dev;
+ 	struct inet_sock *inet = inet_sk(sk);
+ 
+-	if ((dev = __dev_get_by_name(get_exec_env()->ve_ns->net_ns, ifname)) == NULL)
++	if ((dev = __dev_get_by_name(get_exec_env()->ve_netns, ifname)) == NULL)
+ 		return -ENODEV;
+ 
+ 	if (sk->sk_bound_dev_if && dev->ifindex != sk->sk_bound_dev_if)
+@@ -426,7 +426,7 @@ static int set_mcast_if(struct sock *sk, char *ifname)
+  */
+ static int set_sync_mesg_maxlen(int sync_state)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device *dev;
+ 	int num;
+ 
+@@ -470,7 +470,7 @@ join_mcast_group(struct sock *sk, struct in_addr *addr, char *ifname)
+ 	memset(&mreq, 0, sizeof(mreq));
+ 	memcpy(&mreq.imr_multiaddr, addr, sizeof(struct in_addr));
+ 
+-	if ((dev = __dev_get_by_name(get_exec_env()->ve_ns->net_ns, ifname)) == NULL)
++	if ((dev = __dev_get_by_name(get_exec_env()->ve_netns, ifname)) == NULL)
+ 		return -ENODEV;
+ 	if (sk->sk_bound_dev_if && dev->ifindex != sk->sk_bound_dev_if)
+ 		return -EINVAL;
+@@ -491,7 +491,7 @@ static int bind_mcastif_addr(struct socket *sock, char *ifname)
+ 	__be32 addr;
+ 	struct sockaddr_in sin;
+ 
+-	if ((dev = __dev_get_by_name(get_exec_env()->ve_ns->net_ns, ifname)) == NULL)
++	if ((dev = __dev_get_by_name(get_exec_env()->ve_netns, ifname)) == NULL)
+ 		return -ENODEV;
+ 
+ 	addr = inet_select_addr(dev, 0, RT_SCOPE_UNIVERSE);
+diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+index 7f35e31..13b7d17 100644
+--- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
++++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+@@ -402,7 +402,7 @@ checkentry(const char *tablename,
+ 				return false;
+ 			}
+ 
+-			dev = dev_get_by_name(get_exec_env()->ve_ns->net_ns, e->ip.iniface);
++			dev = dev_get_by_name(get_exec_env()->ve_netns, e->ip.iniface);
+ 			if (!dev) {
+ 				printk(KERN_WARNING "CLUSTERIP: no such interface %s\n", e->ip.iniface);
+ 				return false;
+diff --git a/net/ipv4/netfilter/ipt_recent.c b/net/ipv4/netfilter/ipt_recent.c
+index a6e4080..6556adb 100644
+--- a/net/ipv4/netfilter/ipt_recent.c
++++ b/net/ipv4/netfilter/ipt_recent.c
+@@ -508,7 +508,7 @@ static int init_ipt_recent(struct ve_struct *ve)
+ #ifdef CONFIG_PROC_FS
+ 	if (err)
+ 		return err;
+-	proc_dir = proc_mkdir("ipt_recent", ve->ve_ns->net_ns->proc_net);
++	proc_dir = proc_mkdir("ipt_recent", ve->ve_netns->proc_net);
+ 	if (proc_dir == NULL) {
+ 		err = -ENOMEM;
+ 		goto out_mem;
+@@ -525,7 +525,7 @@ out_mem:
+ 
+ static void fini_ipt_recent(struct ve_struct *ve)
+ {
+-	remove_proc_entry("ipt_recent", ve->ve_ns->net_ns->proc_net);
++	remove_proc_entry("ipt_recent", ve->ve_netns->proc_net);
+ #ifdef CONFIG_VE_IPTABLES
+ 	kfree(ve->_ipt_recent);
+ 	ve->_ipt_recent = NULL;
+diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+index 7418e5d..e5c18f0 100644
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+@@ -422,7 +422,7 @@ static ctl_table ip_ct_net_table[] = {
+ 
+ int nf_conntrack_ipv4_compat_init(void)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct proc_dir_entry *proc, *proc_exp, *proc_stat;
+ 
+ 	proc = proc_net_fops_create(net, "ip_conntrack", 0440, &ct_file_ops);
+@@ -471,7 +471,7 @@ err1:
+ 
+ void nf_conntrack_ipv4_compat_fini(void)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 
+ 	unregister_sysctl_table(ve_ip_ct_sysctl_header);
+ 	if (!ve_is_super(get_exec_env()))
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index b924a30..0cc11c5 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1684,7 +1684,7 @@ static int ip_route_input_mc(struct sk_buff *skb, __be32 daddr, __be32 saddr,
+ #endif
+ 	rth->rt_iif	=
+ 	rth->fl.iif	= dev->ifindex;
+-	rth->u.dst.dev	= get_exec_env()->ve_ns->net_ns->loopback_dev;
++	rth->u.dst.dev	= get_exec_env()->ve_netns->loopback_dev;
+ 	dev_hold(rth->u.dst.dev);
+ 	rth->idev	= in_dev_get(rth->u.dst.dev);
+ 	rth->fl.oif	= 0;
+@@ -1944,7 +1944,7 @@ static int ip_route_input_slow(struct sk_buff *skb, __be32 daddr, __be32 saddr,
+ 	if (res.type == RTN_LOCAL) {
+ 		int result;
+ 		result = fib_validate_source(saddr, daddr, tos,
+-			get_exec_env()->ve_ns->net_ns->loopback_dev->ifindex,
++			get_exec_env()->ve_netns->loopback_dev->ifindex,
+ 					     dev, &spec_dst, &itag);
+ 		if (result < 0)
+ 			goto martian_source;
+@@ -2006,7 +2006,7 @@ local_input:
+ #endif
+ 	rth->rt_iif	=
+ 	rth->fl.iif	= dev->ifindex;
+-	rth->u.dst.dev	= get_exec_env()->ve_ns->net_ns->loopback_dev;
++	rth->u.dst.dev	= get_exec_env()->ve_netns->loopback_dev;
+ 	dev_hold(rth->u.dst.dev);
+ 	rth->idev	= in_dev_get(rth->u.dst.dev);
+ 	rth->rt_gateway	= daddr;
+@@ -2275,7 +2275,7 @@ static inline int ip_mkroute_output(struct rtable **rp,
+ 
+ static int ip_route_output_slow(struct rtable **rp, const struct flowi *oldflp)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device * loopback_dev = net->loopback_dev;
+ 	u32 tos	= RT_FL_TOS(oldflp);
+ 	struct flowi fl = { .nl_u = { .ip4_u =
+@@ -2736,7 +2736,7 @@ static int inet_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr* nlh, void
+ 	if (iif) {
+ 		struct net_device *dev;
+ 
+-		dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, iif);
++		dev = __dev_get_by_index(get_exec_env()->ve_netns, iif);
+ 		if (dev == NULL) {
+ 			err = -ENODEV;
+ 			goto errout_free;
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index f2b65ec..d2119c4 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -463,7 +463,7 @@ static void addrconf_forward_change(void)
+ 	struct inet6_dev *idev;
+ 
+ 	read_lock(&dev_base_lock);
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		rcu_read_lock();
+ 		idev = __in6_dev_get(dev);
+ 		if (idev) {
+@@ -941,7 +941,7 @@ int ipv6_dev_get_saddr(struct net_device *daddr_dev,
+ 	read_lock(&dev_base_lock);
+ 	rcu_read_lock();
+ 
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		struct inet6_dev *idev;
+ 		struct inet6_ifaddr *ifa;
+ 
+@@ -1884,7 +1884,7 @@ ok:
+  */
+ int addrconf_set_dstaddr(void __user *arg)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct in6_ifreq ireq;
+ 	struct net_device *dev;
+ 	int err = -EINVAL;
+@@ -1956,7 +1956,7 @@ int inet6_addr_add(int ifindex, struct in6_addr *pfx, int plen,
+ 	if (!valid_lft || prefered_lft > valid_lft)
+ 		return -EINVAL;
+ 
+-	if ((dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifindex)) == NULL)
++	if ((dev = __dev_get_by_index(get_exec_env()->ve_netns, ifindex)) == NULL)
+ 		return -ENODEV;
+ 
+ 	if ((idev = addrconf_add_dev(dev)) == NULL)
+@@ -2008,7 +2008,7 @@ static int inet6_addr_del(int ifindex, struct in6_addr *pfx, int plen)
+ 	struct inet6_dev *idev;
+ 	struct net_device *dev;
+ 
+-	if ((dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifindex)) == NULL)
++	if ((dev = __dev_get_by_index(get_exec_env()->ve_netns, ifindex)) == NULL)
+ 		return -ENODEV;
+ 
+ 	if ((idev = __in6_dev_get(dev)) == NULL)
+@@ -2103,7 +2103,7 @@ static void sit_add_v4_addrs(struct inet6_dev *idev)
+ 		return;
+ 	}
+ 
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		struct in_device * in_dev = __in_dev_get_rtnl(dev);
+ 		if (in_dev && (dev->flags & IFF_UP)) {
+ 			struct in_ifaddr * ifa;
+@@ -2255,7 +2255,7 @@ ipv6_inherit_linklocal(struct inet6_dev *idev, struct net_device *link_dev)
+ 
+ static void ip6_tnl_add_linklocal(struct inet6_dev *idev)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct net_device *link_dev;
+ 
+ 	/* first try to inherit the link-local address from the link device */
+@@ -3152,7 +3152,7 @@ inet6_rtm_newaddr(struct sk_buff *skb, struct nlmsghdr *nlh, void *arg)
+ 		valid_lft = INFINITY_LIFE_TIME;
+ 	}
+ 
+-	dev =  __dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifm->ifa_index);
++	dev =  __dev_get_by_index(get_exec_env()->ve_netns, ifm->ifa_index);
+ 	if (dev == NULL)
+ 		return -ENODEV;
+ 
+@@ -3336,7 +3336,7 @@ static int inet6_dump_addr(struct sk_buff *skb, struct netlink_callback *cb,
+ 	s_ip_idx = ip_idx = cb->args[1];
+ 
+ 	idx = 0;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		if (idx < s_idx)
+ 			goto cont;
+ 		if (idx > s_idx)
+@@ -3446,7 +3446,7 @@ static int inet6_rtm_getaddr(struct sk_buff *in_skb, struct nlmsghdr* nlh,
+ 
+ 	ifm = nlmsg_data(nlh);
+ 	if (ifm->ifa_index)
+-		dev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifm->ifa_index);
++		dev = __dev_get_by_index(get_exec_env()->ve_netns, ifm->ifa_index);
+ 
+ 	if ((ifa = ipv6_get_ifaddr(addr, dev, 1)) == NULL) {
+ 		err = -EADDRNOTAVAIL;
+@@ -3659,7 +3659,7 @@ static int inet6_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 
+ 	read_lock(&dev_base_lock);
+ 	idx = 0;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev) {
++	for_each_netdev(get_exec_env()->ve_netns, dev) {
+ 		if (idx < s_idx)
+ 			goto cont;
+ 		if ((idev = in6_dev_get(dev)) == NULL)
+diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
+index 4e35199..0325938 100644
+--- a/net/ipv6/af_inet6.c
++++ b/net/ipv6/af_inet6.c
+@@ -318,7 +318,7 @@ int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 					err = -EINVAL;
+ 					goto out;
+ 				}
+-				dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, sk->sk_bound_dev_if);
++				dev = dev_get_by_index(get_exec_env()->ve_netns, sk->sk_bound_dev_if);
+ 				if (!dev) {
+ 					err = -ENODEV;
+ 					goto out;
+diff --git a/net/ipv6/anycast.c b/net/ipv6/anycast.c
+index 9ad48f1..0ba79c0 100644
+--- a/net/ipv6/anycast.c
++++ b/net/ipv6/anycast.c
+@@ -114,10 +114,10 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, struct in6_addr *addr)
+ 		} else {
+ 			/* router, no matching interface: just pick one */
+ 
+-			dev = dev_get_by_flags(get_exec_env()->ve_ns->net_ns, IFF_UP, IFF_UP|IFF_LOOPBACK);
++			dev = dev_get_by_flags(get_exec_env()->ve_netns, IFF_UP, IFF_UP|IFF_LOOPBACK);
+ 		}
+ 	} else
+-		dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifindex);
++		dev = dev_get_by_index(get_exec_env()->ve_netns, ifindex);
+ 
+ 	if (dev == NULL) {
+ 		err = -ENODEV;
+@@ -198,7 +198,7 @@ int ipv6_sock_ac_drop(struct sock *sk, int ifindex, struct in6_addr *addr)
+ 
+ 	write_unlock_bh(&ipv6_sk_ac_lock);
+ 
+-	dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, pac->acl_ifindex);
++	dev = dev_get_by_index(get_exec_env()->ve_netns, pac->acl_ifindex);
+ 	if (dev) {
+ 		ipv6_dev_ac_dec(dev, &pac->acl_addr);
+ 		dev_put(dev);
+@@ -226,7 +226,7 @@ void ipv6_sock_ac_close(struct sock *sk)
+ 		if (pac->acl_ifindex != prev_index) {
+ 			if (dev)
+ 				dev_put(dev);
+-			dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, pac->acl_ifindex);
++			dev = dev_get_by_index(get_exec_env()->ve_netns, pac->acl_ifindex);
+ 			prev_index = pac->acl_ifindex;
+ 		}
+ 		if (dev)
+@@ -431,7 +431,7 @@ int ipv6_chk_acast_addr(struct net_device *dev, struct in6_addr *addr)
+ 	if (dev)
+ 		return ipv6_chk_acast_dev(dev, addr);
+ 	read_lock(&dev_base_lock);
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, dev)
++	for_each_netdev(get_exec_env()->ve_netns, dev)
+ 		if (ipv6_chk_acast_dev(dev, addr)) {
+ 			found = 1;
+ 			break;
+@@ -455,7 +455,7 @@ static inline struct ifacaddr6 *ac6_get_first(struct seq_file *seq)
+ 	struct ac6_iter_state *state = ac6_seq_private(seq);
+ 
+ 	state->idev = NULL;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, state->dev) {
++	for_each_netdev(get_exec_env()->ve_netns, state->dev) {
+ 		struct inet6_dev *idev;
+ 
+ 		idev = in6_dev_get(state->dev);
+diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
+index b858db7..dce504f 100644
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -545,7 +545,7 @@ int datagram_send_ctl(struct msghdr *msg, struct flowi *fl,
+ 				if (!src_info->ipi6_ifindex)
+ 					return -EINVAL;
+ 				else {
+-					dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, src_info->ipi6_ifindex);
++					dev = dev_get_by_index(get_exec_env()->ve_netns, src_info->ipi6_ifindex);
+ 					if (!dev)
+ 						return -ENODEV;
+ 				}
+diff --git a/net/ipv6/ipv6_sockglue.c b/net/ipv6/ipv6_sockglue.c
+index 376e364..33c582c 100644
+--- a/net/ipv6/ipv6_sockglue.c
++++ b/net/ipv6/ipv6_sockglue.c
+@@ -545,7 +545,7 @@ done:
+ 			if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != val)
+ 				goto e_inval;
+ 
+-			if (__dev_get_by_index(get_exec_env()->ve_ns->net_ns, val) == NULL) {
++			if (__dev_get_by_index(get_exec_env()->ve_netns, val) == NULL) {
+ 				retv = -ENODEV;
+ 				break;
+ 			}
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index 17055a9..191c3c2 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -216,7 +216,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, struct in6_addr *addr)
+ 			dst_release(&rt->u.dst);
+ 		}
+ 	} else
+-		dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifindex);
++		dev = dev_get_by_index(get_exec_env()->ve_netns, ifindex);
+ 
+ 	if (dev == NULL) {
+ 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
+@@ -268,7 +268,7 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, struct in6_addr *addr)
+ 			*lnk = mc_lst->next;
+ 			write_unlock_bh(&ipv6_sk_mc_lock);
+ 
+-			if ((dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, mc_lst->ifindex)) != NULL) {
++			if ((dev = dev_get_by_index(get_exec_env()->ve_netns, mc_lst->ifindex)) != NULL) {
+ 				struct inet6_dev *idev = in6_dev_get(dev);
+ 
+ 				(void) ip6_mc_leave_src(sk, mc_lst, idev);
+@@ -303,7 +303,7 @@ static struct inet6_dev *ip6_mc_find_dev(struct in6_addr *group, int ifindex)
+ 			dst_release(&rt->u.dst);
+ 		}
+ 	} else
+-		dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, ifindex);
++		dev = dev_get_by_index(get_exec_env()->ve_netns, ifindex);
+ 
+ 	if (!dev)
+ 		return NULL;
+@@ -334,7 +334,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+ 		np->ipv6_mc_list = mc_lst->next;
+ 		write_unlock_bh(&ipv6_sk_mc_lock);
+ 
+-		dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, mc_lst->ifindex);
++		dev = dev_get_by_index(get_exec_env()->ve_netns, mc_lst->ifindex);
+ 		if (dev) {
+ 			struct inet6_dev *idev = in6_dev_get(dev);
+ 
+@@ -2334,7 +2334,7 @@ static inline struct ifmcaddr6 *igmp6_mc_get_first(struct seq_file *seq)
+ 	struct igmp6_mc_iter_state *state = igmp6_mc_seq_private(seq);
+ 
+ 	state->idev = NULL;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, state->dev) {
++	for_each_netdev(get_exec_env()->ve_netns, state->dev) {
+ 		struct inet6_dev *idev;
+ 
+ 		idev = in6_dev_get(state->dev);
+@@ -2463,7 +2463,7 @@ static inline struct ip6_sf_list *igmp6_mcf_get_first(struct seq_file *seq)
+ 
+ 	state->idev = NULL;
+ 	state->im = NULL;
+-	for_each_netdev(get_exec_env()->ve_ns->net_ns, state->dev) {
++	for_each_netdev(get_exec_env()->ve_netns, state->dev) {
+ 		struct inet6_dev *idev;
+ 
+ 		idev = in6_dev_get(state->dev);
+diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
+index 1cc3e0f..d2431bb 100644
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -288,7 +288,7 @@ static int rawv6_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 			if (!sk->sk_bound_dev_if)
+ 				goto out;
+ 
+-			dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, sk->sk_bound_dev_if);
++			dev = dev_get_by_index(get_exec_env()->ve_netns, sk->sk_bound_dev_if);
+ 			if (!dev) {
+ 				err = -ENODEV;
+ 				goto out;
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index 2cc9769..07110a4 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -217,7 +217,7 @@ static void ip6_frag_expire(unsigned long data)
+ 
+ 	fq_kill(fq);
+ 
+-	dev = dev_get_by_index(get_exec_env()->ve_ns->net_ns, fq->iif);
++	dev = dev_get_by_index(get_exec_env()->ve_netns, fq->iif);
+ 	if (!dev)
+ 		goto out;
+ 
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index ada957e..f744ba0 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1052,7 +1052,7 @@ int ipv6_get_hoplimit(struct net_device *dev)
+ 
+ int ip6_route_add(struct fib6_config *cfg)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	int err;
+ 	struct rt6_info *rt = NULL;
+ 	struct net_device *dev = NULL;
+@@ -1125,7 +1125,7 @@ int ip6_route_add(struct fib6_config *cfg)
+ 	 */
+ 	if ((cfg->fc_flags & RTF_REJECT) ||
+ 	    (dev && (dev->flags&IFF_LOOPBACK) && !(addr_type&IPV6_ADDR_LOOPBACK))) {
+-		struct net *net = get_exec_env()->ve_ns->net_ns;
++		struct net *net = get_exec_env()->ve_netns;
+ 
+ 		/* hold loopback dev/idev if we haven't done so. */
+ 		if (dev != net->loopback_dev) {
+@@ -1832,7 +1832,7 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
+ 				    const struct in6_addr *addr,
+ 				    int anycast)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct rt6_info *rt = ip6_dst_alloc();
+ 
+ 	if (rt == NULL)
+@@ -2140,7 +2140,7 @@ static int rt6_fill_node(struct sk_buff *skb, struct rt6_info *rt,
+ 	if (rt->u.dst.dev) {
+ 		struct net_device *odev = rt->rt6i_dev;
+ 		if (rt == &ip6_null_entry)
+-			odev = get_exec_env()->ve_ns->net_ns->loopback_dev;
++			odev = get_exec_env()->ve_netns->loopback_dev;
+ 		NLA_PUT_U32(skb, RTA_OIF, odev->ifindex);
+ 	}
+ 
+@@ -2250,7 +2250,7 @@ errout:
+ 
+ void inet6_rt_notify(int event, struct rt6_info *rt, struct nl_info *info)
+ {
+-	struct net *net = get_exec_env()->ve_ns->net_ns;
++	struct net *net = get_exec_env()->ve_netns;
+ 	struct sk_buff *skb;
+ 	u32 pid = 0, seq = 0;
+ 	struct nlmsghdr *nlh = NULL;
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 12827ea..d4b4d45 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -191,7 +191,7 @@ static struct ip_tunnel * ipip6_tunnel_locate(struct ip_tunnel_parm *parms, int
+ 		int i;
+ 		for (i=1; i<100; i++) {
+ 			sprintf(name, "sit%d", i);
+-			if (__dev_get_by_name(get_exec_env()->ve_ns->net_ns, name) == NULL)
++			if (__dev_get_by_name(get_exec_env()->ve_netns, name) == NULL)
+ 				break;
+ 		}
+ 		if (i==100)
+@@ -201,7 +201,7 @@ static struct ip_tunnel * ipip6_tunnel_locate(struct ip_tunnel_parm *parms, int
+ 	dev = alloc_netdev(sizeof(*t), name, ipip6_tunnel_setup);
+ 	if (dev == NULL)
+ 		return NULL;
+-	dev->nd_net = get_exec_env()->ve_ns->net_ns;
++	dev->nd_net = get_exec_env()->ve_netns;
+ 	nt = netdev_priv(dev);
+ 	dev->init = ipip6_tunnel_init;
+ 	nt->parms = *parms;
+@@ -794,7 +794,7 @@ static int ipip6_tunnel_init(struct net_device *dev)
+ 	}
+ 
+ 	if (!tdev && tunnel->parms.link)
+-		tdev = __dev_get_by_index(get_exec_env()->ve_ns->net_ns, tunnel->parms.link);
++		tdev = __dev_get_by_index(get_exec_env()->ve_netns, tunnel->parms.link);
+ 
+ 	if (tdev) {
+ 		dev->hard_header_len = tdev->hard_header_len + sizeof(struct iphdr);
+@@ -876,7 +876,7 @@ static int sit_ve_start(void *data)
+ 		err = -ENOMEM;
+ 		goto free_tunnel;
+ 	}
+-	st->_ipip6_fb_tunnel_dev->nd_net = get_exec_env()->ve_ns->net_ns;
++	st->_ipip6_fb_tunnel_dev->nd_net = get_exec_env()->ve_netns;
+ 	st->_ipip6_fb_tunnel_dev->init = ipip6_fb_tunnel_init;
+ 	err = register_netdev(st->_ipip6_fb_tunnel_dev);
+ 	if (err < 0)
+diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+index 3b2df53..faee956 100644
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -303,7 +303,7 @@ static const struct file_operations ct_cpu_seq_fops = {
+ 
+ static int nf_conntrack_init_ve_proc(struct ve_struct *ve)
+ {
+-	struct net *net = ve->ve_ns->net_ns;
++	struct net *net = ve->ve_netns;
+ 	struct proc_dir_entry *proc, *proc_stat;
+ 	int create_proc_net_stat_nf_conntrack = 1;
+ 
+@@ -330,7 +330,7 @@ out:
+ 
+ static void nf_conntrack_fini_ve_proc(struct ve_struct *ve)
+ {
+-	struct net *net = ve->ve_ns->net_ns;
++	struct net *net = ve->ve_netns;
+ 	int remove_proc_net_stat_nf_conntrack = 1;
+ 
+ #ifdef CONFIG_VE_IPTABLES
+diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
+index d76b279..520c19a 100644
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -748,7 +748,7 @@ static const struct file_operations dl_file_ops = {
+ 
+ static int init_xt_hashlimit(struct ve_struct *ve)
+ {
+-	struct proc_dir_entry *proc_net = ve->ve_ns->net_ns->proc_net;
++	struct proc_dir_entry *proc_net = ve->ve_netns->proc_net;
+ 
+ #if defined(CONFIG_VE_IPTABLES)
+ 	if (ve->_xt_hashlimit)
+@@ -788,7 +788,7 @@ err1:
+ 
+ static void fini_xt_hashlimit(struct ve_struct *ve)
+ {
+-	struct proc_dir_entry *proc_net = ve->ve_ns->net_ns->proc_net;
++	struct proc_dir_entry *proc_net = ve->ve_netns->proc_net;
+ 
+ 	remove_proc_entry("ip6t_hashlimit", proc_net);
+ 	remove_proc_entry("ipt_hashlimit", proc_net);
+-- 
+1.5.4.3
+

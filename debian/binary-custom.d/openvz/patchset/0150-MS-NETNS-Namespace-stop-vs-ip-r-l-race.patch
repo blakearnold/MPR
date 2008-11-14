@@ -1,0 +1,98 @@
+From e8cde2114d19cad865298b0e5dbb4912a137cc30 Mon Sep 17 00:00:00 2001
+From: Denis V. Lunev <den@openvz.org>
+Date: Fri, 18 Jan 2008 23:55:19 -0800
+Subject: [PATCH] MS NETNS Namespace stop vs 'ip r l' race
+
+mainstream commit  775516bfa2bd7993620c9039191a0c30b8d8a496
+
+During network namespace stop process kernel side netlink sockets
+belonging to a namespace should be closed. They should not prevent
+namespace to stop, so they do not increment namespace usage
+counter. Though this counter will be put during last sock_put.
+
+The raplacement of the correct netns for init_ns solves the problem
+only partial as socket to be stoped until proper stop is a valid
+netlink kernel socket and can be looked up by the user processes. This
+is not a problem until it resides in initial namespace (no processes
+inside this net), but this is not true for init_net.
+
+So, hold the referrence for a socket, remove it from lookup tables and
+only after that change namespace and perform a last put.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+Tested-by: Alexey Dobriyan <adobriyan@openvz.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/core/rtnetlink.c     |   15 ++-------------
+ net/netlink/af_netlink.c |   15 +++++++++++++++
+ 2 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 6ed7e74..68675f1 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1370,25 +1370,14 @@ static int rtnetlink_net_init(struct net *net)
+ 				   rtnetlink_rcv, &rtnl_mutex, THIS_MODULE);
+ 	if (!sk)
+ 		return -ENOMEM;
+-
+-	/* Don't hold an extra reference on the namespace */
+-	put_net(sk->sk_net);
+ 	net->rtnl = sk;
+ 	return 0;
+ }
+ 
+ static void rtnetlink_net_exit(struct net *net)
+ {
+-	struct sock *sk = net->rtnl;
+-	if (sk) {
+-		/* At the last minute lie and say this is a socket for the
+-		 * initial network namespace.  So the socket will be safe to
+-		 * free.
+-		 */
+-		sk->sk_net = get_net(&init_net);
+-		netlink_kernel_release(net->rtnl);
+-		net->rtnl = NULL;
+-	}
++	netlink_kernel_release(net->rtnl);
++	net->rtnl = NULL;
+ }
+ 
+ static struct pernet_operations rtnetlink_net_ops = {
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index cf31346..716c31d 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1400,6 +1400,9 @@ netlink_kernel_create(struct net *net, int unit, unsigned int groups,
+ 	}
+ 	netlink_table_ungrab();
+ 
++	/* Do not hold an extra referrence to a namespace as this socket is
++	 * internal to a namespace and does not prevent it to stop. */
++	put_net(net);
+ 	return sk;
+ 
+ out_sock_release:
+@@ -1414,7 +1417,19 @@ netlink_kernel_release(struct sock *sk)
+ {
+ 	if (sk == NULL || sk->sk_socket == NULL)
+ 		return;
++
++	/*
++	 * Last sock_put should drop referrence to sk->sk_net. It has already
++	 * been dropped in netlink_kernel_create. Taking referrence to stopping
++	 * namespace is not an option.
++	 * Take referrence to a socket to remove it from netlink lookup table
++	 * _alive_ and after that destroy it in the context of init_net.
++	 */
++	sock_hold(sk);
+ 	sock_release(sk->sk_socket);
++
++	sk->sk_net = get_net(&init_net);
++	sock_put(sk);
+ }
+ EXPORT_SYMBOL(netlink_kernel_release);
+ 
+-- 
+1.5.4.3
+

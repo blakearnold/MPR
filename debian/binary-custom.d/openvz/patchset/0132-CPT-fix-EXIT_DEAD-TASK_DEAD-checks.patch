@@ -1,0 +1,41 @@
+From cdd141cddb559d5d7c235a0336da62194a5f429c Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@openvz.org>
+Date: Mon, 9 Jun 2008 20:06:27 +0400
+Subject: [PATCH] CPT fix EXIT_DEAD TASK_DEAD checks
+
+For one thing EXIT_DEAD was moved to ->exit_state only.
+For another, this task state is called TASK_DEAD now and lives in ->state;
+---
+ kernel/cpt/cpt_process.c |    2 +-
+ kernel/cpt/rst_process.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cpt/cpt_process.c b/kernel/cpt/cpt_process.c
+index 12e9bf1..0837fdf 100644
+--- a/kernel/cpt/cpt_process.c
++++ b/kernel/cpt/cpt_process.c
+@@ -777,7 +777,7 @@ static int dump_one_process(cpt_object_t *obj, struct cpt_context *ctx)
+ 	}
+ 	if (tsk->exit_state) {
+ 		v->cpt_state = tsk->exit_state;
+-		if (tsk->state != EXIT_DEAD) {
++		if (tsk->state != TASK_DEAD) {
+ 			eprintk_ctx("invalid tsk->state %ld/%d on" CPT_FID "\n",
+ 				tsk->state, tsk->exit_state, CPT_TID(tsk));
+ 			cpt_release_buf(ctx);
+diff --git a/kernel/cpt/rst_process.c b/kernel/cpt/rst_process.c
+index 2630538..5a893f5 100644
+--- a/kernel/cpt/rst_process.c
++++ b/kernel/cpt/rst_process.c
+@@ -1630,7 +1630,7 @@ int rst_restore_process(struct cpt_context *ctx)
+ 		else if (ti->cpt_state & (EXIT_ZOMBIE|EXIT_DEAD)) {
+ 			tsk->signal->it_virt_expires = 0;
+ 			tsk->signal->it_prof_expires = 0;
+-			if (tsk->state != EXIT_DEAD)
++			if (tsk->state != TASK_DEAD)
+ 				eprintk_ctx("oops, schedule() did not make us dead\n");
+ 		}
+ 
+-- 
+1.5.4.3
+
