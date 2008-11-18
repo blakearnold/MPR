@@ -6227,6 +6227,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x091c824a	machine_power_off
 EXPORT_SYMBOL_GPL vmlinux 0x091eb9b4	round_jiffies
 EXPORT_SYMBOL_GPL vmlinux 0x0956fca7	platform_device_register_simple
 EXPORT_SYMBOL_GPL vmlinux 0x098d78ff	crypto_mod_get
+EXPORT_SYMBOL_GPL vmlinux 0x09eb602a	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x0a51ae5b	virq_to_hw
 EXPORT_SYMBOL_GPL vmlinux 0x0b28041c	pci_cleanup_aer_uncorrect_error_status
 EXPORT_SYMBOL_GPL vmlinux 0x0bc31a53	securityfs_remove

@@ -6065,6 +6065,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x56f145ac	queue_delayed_work
 EXPORT_SYMBOL_GPL vmlinux 0x56ffbbdf	lookup_create
 EXPORT_SYMBOL_GPL vmlinux 0x579e0bf5	rtnl_unregister_all
 EXPORT_SYMBOL_GPL vmlinux 0x58e87fc6	__ip_route_output_key
+EXPORT_SYMBOL_GPL vmlinux 0x590bee26	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x5935ce17	sal_pcibr_slot_enable
 EXPORT_SYMBOL_GPL vmlinux 0x59a80178	platform_device_alloc
 EXPORT_SYMBOL_GPL vmlinux 0x5a60cac3	user_instantiate

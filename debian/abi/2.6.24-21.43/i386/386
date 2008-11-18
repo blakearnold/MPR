@@ -6547,6 +6547,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x9009602a	acpi_bus_get_ejd
 EXPORT_SYMBOL_GPL vmlinux 0x905922d5	lookup_create
 EXPORT_SYMBOL_GPL vmlinux 0x90916864	pci_bus_max_busnr
 EXPORT_SYMBOL_GPL vmlinux 0x90a1004a	crypto_has_alg
+EXPORT_SYMBOL_GPL vmlinux 0x9100bc56	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x911c130b	device_find_child
 EXPORT_SYMBOL_GPL vmlinux 0x9159b9d6	profile_event_register
 EXPORT_SYMBOL_GPL vmlinux 0x9202c3c7	inotify_remove_watch_locked

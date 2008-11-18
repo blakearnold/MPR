@@ -6658,6 +6658,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x5f58c896	pmac_low_i2c_lock
 EXPORT_SYMBOL_GPL vmlinux 0x5f5e5722	sysdev_register
 EXPORT_SYMBOL_GPL vmlinux 0x5fb2cb0e	crypto_alg_mod_lookup
 EXPORT_SYMBOL_GPL vmlinux 0x5ff4dd32	pmf_unregister_driver
+EXPORT_SYMBOL_GPL vmlinux 0x60818d2a	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x6091797f	synchronize_rcu
 EXPORT_SYMBOL_GPL vmlinux 0x60a13e90	rcu_barrier
 EXPORT_SYMBOL_GPL vmlinux 0x60a32ea9	pm_power_off

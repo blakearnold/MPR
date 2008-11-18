@@ -4873,6 +4873,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x83e920ce	xfrm_audit_state_delete
 EXPORT_SYMBOL_GPL vmlinux 0x8487da71	ide_device_add
 EXPORT_SYMBOL_GPL vmlinux 0x84cac4ba	blocking_notifier_chain_unregister
 EXPORT_SYMBOL_GPL vmlinux 0x850a8e21	vfs_test_lock
+EXPORT_SYMBOL_GPL vmlinux 0x85485644	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x857ca1c5	inotify_init
 EXPORT_SYMBOL_GPL vmlinux 0x85c10896	rcu_batches_completed_bh
 EXPORT_SYMBOL_GPL vmlinux 0x85e5a3db	ktime_get_ts

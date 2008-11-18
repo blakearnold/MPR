@@ -6350,6 +6350,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x20bc3470	orderly_poweroff
 EXPORT_SYMBOL_GPL vmlinux 0x20f1386d	debugfs_rename
 EXPORT_SYMBOL_GPL vmlinux 0x2135b127	stop_machine_run
 EXPORT_SYMBOL_GPL vmlinux 0x21885966	flush_workqueue
+EXPORT_SYMBOL_GPL vmlinux 0x21fefb6d	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x2213cbbf	klist_iter_init_node
 EXPORT_SYMBOL_GPL vmlinux 0x2288abde	inet6_lookup_listener
 EXPORT_SYMBOL_GPL vmlinux 0x228d75be	user_read

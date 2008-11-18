@@ -6654,6 +6654,7 @@ EXPORT_SYMBOL_GPL vmlinux 0xac06f9cd	unregister_jprobe
 EXPORT_SYMBOL_GPL vmlinux 0xac3c85e0	skb_cow_data
 EXPORT_SYMBOL_GPL vmlinux 0xac7c53af	crypto_dequeue_request
 EXPORT_SYMBOL_GPL vmlinux 0xace4cb79	input_ff_destroy
+EXPORT_SYMBOL_GPL vmlinux 0xadd5f916	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0xadeb50c2	crypto_alg_mod_lookup
 EXPORT_SYMBOL_GPL vmlinux 0xadfb17ae	inet_csk_search_req
 EXPORT_SYMBOL_GPL vmlinux 0xae12879b	led_trigger_show

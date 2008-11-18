@@ -6598,6 +6598,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x947c5bb8	led_trigger_set
 EXPORT_SYMBOL_GPL vmlinux 0x95466f40	preempt_notifier_unregister
 EXPORT_SYMBOL_GPL vmlinux 0x955de0cc	xfrm_calg_get_byname
 EXPORT_SYMBOL_GPL vmlinux 0x961a8cd3	unlock_policy_rwsem_read
+EXPORT_SYMBOL_GPL vmlinux 0x96245c79	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x96767b58	fsstack_copy_inode_size
 EXPORT_SYMBOL_GPL vmlinux 0x97d9c66a	nf_net_netfilter_sysctl_path
 EXPORT_SYMBOL_GPL vmlinux 0x9940fed8	rtnl_put_cacheinfo

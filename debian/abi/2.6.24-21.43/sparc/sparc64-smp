@@ -5640,6 +5640,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x71ba5542	class_destroy
 EXPORT_SYMBOL_GPL vmlinux 0x71ca681d	pci_claim_resource
 EXPORT_SYMBOL_GPL vmlinux 0x71df50fd	debugfs_create_symlink
 EXPORT_SYMBOL_GPL vmlinux 0x71dfb96a	inet_csk_ctl_sock_create
+EXPORT_SYMBOL_GPL vmlinux 0x71e9b949	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x71f36488	kobject_uevent_env
 EXPORT_SYMBOL_GPL vmlinux 0x7240b991	usb_mon_register
 EXPORT_SYMBOL_GPL vmlinux 0x7278d328	all_vm_events

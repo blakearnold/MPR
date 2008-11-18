@@ -5615,6 +5615,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x8adcd136	device_rename
 EXPORT_SYMBOL_GPL vmlinux 0x8b3e5c94	dnotify_parent
 EXPORT_SYMBOL_GPL vmlinux 0x8b5b419f	usb_anchor_urb
 EXPORT_SYMBOL_GPL vmlinux 0x8b668dd3	lookup_create
+EXPORT_SYMBOL_GPL vmlinux 0x8ba7d6c5	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x8be41b3e	bus_remove_file
 EXPORT_SYMBOL_GPL vmlinux 0x8c0b8531	shrink_submounts
 EXPORT_SYMBOL_GPL vmlinux 0x8c5c6014	ktime_get

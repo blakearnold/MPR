@@ -6731,6 +6731,7 @@ EXPORT_SYMBOL_GPL vmlinux 0xbc2bc733	class_device_register
 EXPORT_SYMBOL_GPL vmlinux 0xbc52388d	class_interface_unregister
 EXPORT_SYMBOL_GPL vmlinux 0xbc803797	relay_open
 EXPORT_SYMBOL_GPL vmlinux 0xbc956083	transport_class_register
+EXPORT_SYMBOL_GPL vmlinux 0xbc9d2803	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0xbdd59617	__ip_route_output_key
 EXPORT_SYMBOL_GPL vmlinux 0xbe0b0b2b	inet_csk_listen_stop
 EXPORT_SYMBOL_GPL vmlinux 0xc06ef85d	tty_ldisc_flush

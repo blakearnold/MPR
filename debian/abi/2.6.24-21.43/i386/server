@@ -6922,6 +6922,7 @@ EXPORT_SYMBOL_GPL vmlinux 0xf184d189	kernel_power_off
 EXPORT_SYMBOL_GPL vmlinux 0xf1a78060	relay_buf_full
 EXPORT_SYMBOL_GPL vmlinux 0xf1c0db30	crypto_register_alg
 EXPORT_SYMBOL_GPL vmlinux 0xf2151c27	spi_write_then_read
+EXPORT_SYMBOL_GPL vmlinux 0xf2fcf010	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0xf47f6b06	class_device_create_bin_file
 EXPORT_SYMBOL_GPL vmlinux 0xf4aebdc3	xenbus_suspend
 EXPORT_SYMBOL_GPL vmlinux 0xf4d0bc28	tcp_twsk_unique
