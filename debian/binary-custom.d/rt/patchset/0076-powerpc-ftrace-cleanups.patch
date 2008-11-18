@@ -1,0 +1,122 @@
+---
+ arch/powerpc/kernel/entry_32.S  |   11 ++---------
+ arch/powerpc/kernel/ftrace.c    |    8 +++++++-
+ arch/powerpc/kernel/ppc_ksyms.c |    5 +++++
+ arch/powerpc/kernel/setup_32.c  |    5 -----
+ arch/powerpc/kernel/setup_64.c  |    5 -----
+ include/asm-powerpc/ftrace.h    |    6 ++++++
+ 6 files changed, 20 insertions(+), 20 deletions(-)
+
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/entry_32.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/entry_32.S	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/entry_32.S	2008-10-08 22:23:10.000000000 -0400
+@@ -1116,18 +1116,11 @@ _GLOBAL(_mcount)
+ 	stw	r5, 8(r1)
+ 
+ 	LOAD_REG_ADDR(r5, ftrace_trace_function)
+-#if 0
+-	mtctr	r3
+-	mr	r1, r5
+-	bctrl
+-#endif
+ 	lwz	r5,0(r5)
+-#if 1
++
+ 	mtctr	r5
+ 	bctrl
+-#else
+-	bl	ftrace_stub
+-#endif
++
+ 	nop
+ 
+ 	lwz	r6, 8(r1)
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/ftrace.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/ftrace.c	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/ftrace.c	2008-10-08 22:23:10.000000000 -0400
+@@ -51,10 +51,16 @@ notrace unsigned char *ftrace_call_repla
+ {
+ 	static unsigned int op;
+ 
++	/*
++	 * It would be nice to just use create_function_call, but that will
++	 * update the code itself. Here we need to just return the
++	 * instruction that is going to be modified, without modifying the
++	 * code.
++	 */
+ 	addr = GET_ADDR(addr);
+ 
+ 	/* Set to "bl addr" */
+-	op = 0x48000001 | (ftrace_calc_offset(ip, addr) & 0x03fffffe);
++	op = 0x48000001 | (ftrace_calc_offset(ip, addr) & 0x03fffffc);
+ 
+ 	/*
+ 	 * No locking needed, this must be called via kstop_machine
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/ppc_ksyms.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/ppc_ksyms.c	2008-10-08 22:22:43.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/ppc_ksyms.c	2008-10-08 22:23:10.000000000 -0400
+@@ -44,6 +44,7 @@
+ #include <asm/div64.h>
+ #include <asm/signal.h>
+ #include <asm/dcr.h>
++#include <asm/ftrace.h>
+ 
+ #ifdef CONFIG_PPC64
+ EXPORT_SYMBOL(local_irq_restore);
+@@ -72,6 +73,10 @@ EXPORT_SYMBOL(single_step_exception);
+ EXPORT_SYMBOL(sys_sigreturn);
+ #endif
+ 
++#ifdef CONFIG_FTRACE
++EXPORT_SYMBOL(_mcount);
++#endif
++
+ EXPORT_SYMBOL(strcpy);
+ EXPORT_SYMBOL(strncpy);
+ EXPORT_SYMBOL(strcat);
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/setup_32.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/setup_32.c	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/setup_32.c	2008-10-08 22:23:10.000000000 -0400
+@@ -49,11 +49,6 @@
+ #include <asm/kgdb.h>
+ #endif
+ 
+-#ifdef CONFIG_FTRACE
+-extern void _mcount(void);
+-EXPORT_SYMBOL(_mcount);
+-#endif
+-
+ extern void bootx_init(unsigned long r4, unsigned long phys);
+ 
+ #if defined(CONFIG_BLK_DEV_IDE) || defined(CONFIG_BLK_DEV_IDE_MODULE)
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/setup_64.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/setup_64.c	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/setup_64.c	2008-10-08 22:23:10.000000000 -0400
+@@ -84,11 +84,6 @@ struct ppc64_caches ppc64_caches = {
+ };
+ EXPORT_SYMBOL_GPL(ppc64_caches);
+ 
+-#ifdef CONFIG_FTRACE
+-extern void _mcount(void);
+-EXPORT_SYMBOL(_mcount);
+-#endif
+-
+ /*
+  * These are used in binfmt_elf.c to put aux entries on the stack
+  * for each elf executable being started.
+Index: linux-2.6.24.7-rt21/include/asm-powerpc/ftrace.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-2.6.24.7-rt21/include/asm-powerpc/ftrace.h	2008-10-08 22:23:10.000000000 -0400
+@@ -0,0 +1,6 @@
++#ifndef _ASM_POWERPC_FTRACE
++#define _ASM_POWERPC_FTRACE
++
++extern void _mcount(void);
++
++#endif

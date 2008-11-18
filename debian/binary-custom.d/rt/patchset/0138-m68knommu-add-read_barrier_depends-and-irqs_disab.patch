@@ -1,0 +1,37 @@
+From 0d8027d99d3e76601b45885253b2412c4d47ee4f Mon Sep 17 00:00:00 2001
+From: Sebastian Siewior <bigeasy@linutronix.de>
+Date: Fri, 18 Apr 2008 17:02:29 +0200
+Subject: [PATCH] m68knommu: add read_barrier_depends() and irqs_disabled_flags()
+
+Signed-off-by: Sebastian Siewior <bigeasy@linutronix.de>
+---
+ include/asm-m68knommu/system.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+Index: linux-2.6.24.7-rt21/include/asm-m68knommu/system.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/asm-m68knommu/system.h	2008-10-08 22:23:29.000000000 -0400
++++ linux-2.6.24.7-rt21/include/asm-m68knommu/system.h	2008-10-08 22:23:30.000000000 -0400
+@@ -119,6 +119,8 @@ asmlinkage void resume(void);
+ #define smp_read_barrier_depends()	do { } while(0)
+ #endif
+ 
++#define read_barrier_depends()  ((void)0)
++
+ #define xchg(ptr,x) ((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
+ 
+ struct __xchg_dummy { unsigned long a[100]; };
+@@ -350,4 +352,13 @@ __cmpxchg(volatile void *ptr, unsigned l
+ #endif
+ #define arch_align_stack(x) (x)
+ 
++
++static inline int irqs_disabled_flags(unsigned long flags)
++{
++	if (flags & 0x0700)
++		return 0;
++	else
++		return 1;
++}
++
+ #endif /* _M68KNOMMU_SYSTEM_H */

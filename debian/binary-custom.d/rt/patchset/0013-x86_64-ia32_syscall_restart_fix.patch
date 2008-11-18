@@ -1,0 +1,134 @@
+Bugzilla:
+
+From: Clark Williams <williams@redhat.com>
+
+https://bugzilla.redhat.com/show_bug.cgi?id=434998
+
+Description:
+The code to restart syscalls after signals depends on checking for a
+negative orig_rax, and for particular negative -ERESTART* values in rax.
+These fields are 64 bits and for a 32-bit task they get zero-extended,
+therefore they are never negative and syscall restart behavior is lost.
+
+Solution:
+Doing sign-extension where it matters.
+
+For orig_rax, the only time the value should be -1 but winds up as
+0x0ffffffff is via a 32-bit ptrace call. So the patch changes ptrace to
+sign-extend the 32-bit orig_eax value when it's stored; it doesn't
+change the checks on orig_rax, though it uses the new current_syscall()
+inline to better document the subtle importance of the used of
+signedness there.
+
+The rax value is stored a lot of ways and it seems hard to get them all
+sign-extended at their origins. So for that, we use the
+current_syscall_ret() to sign-extend it only for 32-bit tasks at the
+time of the -ERESTART* comparisons.
+
+Upstream status:
+commit 40f0933d51f4cba26a5c009a26bb230f4514c1b6
+
+Test status:
+Built on all arch and tested on x86_64 using the reproducer provided in
+bugzilla.
+
+Brew build:
+http://brewweb.devel.redhat.com/brew/taskinfo?taskID=1365391
+
+Regards,
+Jerome
+---
+
+ arch/x86/ia32/ptrace32.c    |   10 +++++++++-
+ arch/x86/kernel/signal_64.c |   38 +++++++++++++++++++++++++++++++++-----
+ 2 files changed, 42 insertions(+), 6 deletions(-)
+
+Index: linux-2.6.24.7-rt21/arch/x86/ia32/ptrace32.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/ia32/ptrace32.c	2008-10-08 22:22:49.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/ia32/ptrace32.c	2008-10-08 22:22:54.000000000 -0400
+@@ -75,10 +75,18 @@ static int putreg32(struct task_struct *
+ 	R32(esi, rsi);
+ 	R32(ebp, rbp);
+ 	R32(eax, rax);
+-	R32(orig_eax, orig_rax);
+ 	R32(eip, rip);
+ 	R32(esp, rsp);
+ 
++	case offsetof(struct user_regs_struct32, orig_eax): {
++		/*
++		 * Sign-extend the value so that orig_eax = -1
++		 * causes (long)orig_rax < 0 tests to fire correctly.
++		 */
++		stack[offsetof(struct pt_regs, orig_rax)/8] = (long) (s32) val;
++		break;
++	}
++
+ 	case offsetof(struct user32, regs.eflags): {
+ 		__u64 *flags = &stack[offsetof(struct pt_regs, eflags)/8];
+ 		val &= FLAG_MASK;
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/signal_64.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/signal_64.c	2008-10-08 22:22:49.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/signal_64.c	2008-10-08 22:22:54.000000000 -0400
+@@ -311,6 +311,35 @@ give_sigsegv:
+ }
+ 
+ /*
++ * Return -1L or the syscall number that @regs is executing.
++ */
++static long current_syscall(struct pt_regs *regs)
++{
++	/*
++	 * We always sign-extend a -1 value being set here,
++	 * so this is always either -1L or a syscall number.
++	 */
++	return regs->orig_rax;
++}
++
++/*
++ * Return a value that is -EFOO if the system call in @regs->orig_rax
++ * returned an error.  This only works for @regs from @current.
++ */
++static long current_syscall_ret(struct pt_regs *regs)
++{
++#ifdef CONFIG_IA32_EMULATION
++	if (test_thread_flag(TIF_IA32))
++		/*
++		 * Sign-extend the value so (int)-EFOO becomes (long)-EFOO
++		 * and will match correctly in comparisons.
++		 */
++		return (int) regs->rax;
++#endif
++	return regs->rax;
++}
++
++/*
+  * OK, we're invoking a handler
+  */	
+ 
+@@ -327,9 +356,9 @@ handle_signal(unsigned long sig, siginfo
+ #endif
+ 
+ 	/* Are we from a system call? */
+-	if ((long)regs->orig_rax >= 0) {
++	if (current_syscall(regs) >= 0) {
+ 		/* If so, check system call restarting.. */
+-		switch (regs->rax) {
++		switch (current_syscall_ret(regs)) {
+ 		        case -ERESTART_RESTARTBLOCK:
+ 			case -ERESTARTNOHAND:
+ 				regs->rax = -EINTR;
+@@ -430,10 +459,9 @@ static void do_signal(struct pt_regs *re
+ 	}
+ 
+ 	/* Did we come from a system call? */
+-	if ((long)regs->orig_rax >= 0) {
++	if (current_syscall(regs) >= 0) {
+ 		/* Restart the system call - no handlers present */
+-		long res = regs->rax;
+-		switch (res) {
++		switch (current_syscall_ret(regs)) {
+ 		case -ERESTARTNOHAND:
+ 		case -ERESTARTSYS:
+ 		case -ERESTARTNOINTR:

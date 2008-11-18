@@ -17,11 +17,11 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  kernel/sched.c |   20 ++++++++++++++++++++
  1 file changed, 20 insertions(+)
 
-Index: linux-2.6.24.3-rt3/kernel/sched.c
+Index: linux-2.6.24.7-rt21/kernel/sched.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/kernel/sched.c	2008-02-26 23:30:43.000000000 -0500
-+++ linux-2.6.24.3-rt3/kernel/sched.c	2008-02-26 23:30:44.000000000 -0500
-@@ -4299,6 +4299,25 @@ void rt_mutex_setprio(struct task_struct
+--- linux-2.6.24.7-rt21.orig/kernel/sched.c	2008-10-08 22:23:58.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/sched.c	2008-10-08 22:23:58.000000000 -0400
+@@ -4343,6 +4343,25 @@ void rt_mutex_setprio(struct task_struct
  	BUG_ON(prio < 0 || prio > MAX_PRIO);
  
  	rq = task_rq_lock(p, &flags);
@@ -47,7 +47,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	update_rq_clock(rq);
  
  	oldprio = p->prio;
-@@ -4330,6 +4349,7 @@ void rt_mutex_setprio(struct task_struct
+@@ -4371,6 +4390,7 @@ void rt_mutex_setprio(struct task_struct
  	}
  //	trace_special(prev_resched, _need_resched(), 0);
  

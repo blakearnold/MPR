@@ -1,0 +1,76 @@
+From d837c2879fb47dcca714acca57e0b677a3756372 Mon Sep 17 00:00:00 2001
+From: Sebastian Siewior <bigeasy@linutronix.de>
+Date: Fri, 18 Apr 2008 17:02:26 +0200
+Subject: [PATCH] m68knommu: consider TIF_NEED_RESCHED_DELAYED on resched
+
+Signed-off-by: Sebastian Siewior <bigeasy@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/m68knommu/kernel/process.c          |    4 ++--
+ arch/m68knommu/platform/coldfire/entry.S |    4 ++--
+ include/asm-m68knommu/thread_info.h      |    8 ++++++++
+ 3 files changed, 12 insertions(+), 4 deletions(-)
+
+Index: linux-2.6.24.7-rt21/arch/m68knommu/kernel/process.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/m68knommu/kernel/process.c	2008-10-08 22:23:35.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/m68knommu/kernel/process.c	2008-10-08 22:23:41.000000000 -0400
+@@ -54,9 +54,9 @@ EXPORT_SYMBOL(pm_power_off);
+ static void default_idle(void)
+ {
+ 	local_irq_disable();
+- 	while (!need_resched()) {
++	while (!need_resched() && !need_resched_delayed()) {
+ 		/* This stop will re-enable interrupts */
+- 		__asm__("stop #0x2000" : : : "cc");
++		__asm__("stop #0x2000" : : : "cc");
+ 		local_irq_disable();
+ 	}
+ 	local_irq_enable();
+Index: linux-2.6.24.7-rt21/arch/m68knommu/platform/coldfire/entry.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/m68knommu/platform/coldfire/entry.S	2008-10-08 22:23:11.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/m68knommu/platform/coldfire/entry.S	2008-10-08 22:23:41.000000000 -0400
+@@ -145,7 +145,7 @@ ret_from_exception:
+ 	andl	#-THREAD_SIZE,%d1	/* at base of kernel stack */
+ 	movel	%d1,%a0
+ 	movel	%a0@(TI_FLAGS),%d1	/* get thread_info->flags */
+-	andl	#_TIF_NEED_RESCHED,%d1
++	andl	#_TIF_RESCHED_MASK,%d1
+ 	jeq	Lkernel_return
+ 
+ 	movel	%a0@(TI_PREEMPTCOUNT),%d1
+@@ -191,7 +191,7 @@ Lreturn:
+ Lwork_to_do:
+ 	movel	%a0@(TI_FLAGS),%d1	/* get thread_info->flags */
+ 	move    #0x2000,%sr             /* enable intrs again */
+-	btst	#TIF_NEED_RESCHED,%d1
++	andl	#_TIF_RESCHED_MASK, %d1
+ 	jne	reschedule
+ 
+ 	/* GERG: do we need something here for TRACEing?? */
+Index: linux-2.6.24.7-rt21/include/asm-m68knommu/thread_info.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/asm-m68knommu/thread_info.h	2008-10-08 22:22:35.000000000 -0400
++++ linux-2.6.24.7-rt21/include/asm-m68knommu/thread_info.h	2008-10-08 22:23:41.000000000 -0400
+@@ -88,12 +88,20 @@ static inline struct thread_info *curren
+ #define TIF_POLLING_NRFLAG	3	/* true if poll_idle() is polling
+ 					   TIF_NEED_RESCHED */
+ #define TIF_MEMDIE		4
++#define TIF_NEED_RESCHED_DELAYED	6	/* reschedule on return to userspace */
+ 
+ /* as above, but as bit values */
+ #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
+ #define _TIF_SIGPENDING		(1<<TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1<<TIF_NEED_RESCHED)
+ #define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
++#define _TIF_NEED_RESCHED_DELAYED	(1<<TIF_NEED_RESCHED_DELAYED)
++
++/*
++ * the compiler does not accept
++ * #define _TIF_RESCHED_MASK	(_TIF_NEED_RESCHED | _TIF_NEED_RESCHED_DELAYED)
++ */
++#define _TIF_RESCHED_MASK	(0x44)
+ 
+ #define _TIF_WORK_MASK		0x0000FFFE	/* work to do on interrupt/exception return */
+ 

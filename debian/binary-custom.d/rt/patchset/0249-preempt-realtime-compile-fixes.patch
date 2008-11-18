@@ -2,10 +2,10 @@
  drivers/block/paride/pseudo.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.24.3-rt3/drivers/block/paride/pseudo.h
+Index: linux-2.6.24.7-rt21/drivers/block/paride/pseudo.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/drivers/block/paride/pseudo.h	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/drivers/block/paride/pseudo.h	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/drivers/block/paride/pseudo.h	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/drivers/block/paride/pseudo.h	2008-10-08 22:24:01.000000000 -0400
 @@ -43,7 +43,7 @@ static unsigned long ps_timeout;
  static int ps_tq_active = 0;
  static int ps_nice = 0;

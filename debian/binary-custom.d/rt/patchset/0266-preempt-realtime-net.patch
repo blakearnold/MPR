@@ -1,21 +1,21 @@
 ---
- include/linux/netdevice.h       |    6 ++--
- include/net/dn_dev.h            |    6 ++--
- net/core/dev.c                  |   39 +++++++++++++++++++++++---
- net/core/netpoll.c              |   58 +++++++++++++++++++++++++---------------
+ include/linux/netdevice.h       |    6 +--
+ include/net/dn_dev.h            |    6 +--
+ net/core/dev.c                  |   39 +++++++++++++++++++++----
+ net/core/netpoll.c              |   62 +++++++++++++++++++++++++---------------
  net/core/sock.c                 |    2 -
- net/decnet/dn_dev.c             |   44 +++++++++++++++---------------
+ net/decnet/dn_dev.c             |   44 ++++++++++++++--------------
  net/ipv4/icmp.c                 |    5 ++-
  net/ipv4/route.c                |    4 +-
  net/ipv6/netfilter/ip6_tables.c |    4 +-
- net/sched/sch_generic.c         |   12 ++++++--
+ net/sched/sch_generic.c         |   12 +++++--
  net/unix/af_unix.c              |    1 
- 11 files changed, 118 insertions(+), 63 deletions(-)
+ 11 files changed, 120 insertions(+), 65 deletions(-)
 
-Index: linux-2.6.24.3-rt3/include/linux/netdevice.h
+Index: linux-2.6.24.7-rt21/include/linux/netdevice.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/include/linux/netdevice.h	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/include/linux/netdevice.h	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/include/linux/netdevice.h	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/netdevice.h	2008-10-08 22:24:07.000000000 -0400
 @@ -1349,20 +1349,20 @@ static inline void __netif_tx_lock(struc
  
  static inline void netif_tx_lock(struct net_device *dev)
@@ -40,10 +40,10 @@ Index: linux-2.6.24.3-rt3/include/linux/netdevice.h
  	return ok;
  }
  
-Index: linux-2.6.24.3-rt3/include/net/dn_dev.h
+Index: linux-2.6.24.7-rt21/include/net/dn_dev.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/include/net/dn_dev.h	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/include/net/dn_dev.h	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/include/net/dn_dev.h	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/include/net/dn_dev.h	2008-10-08 22:24:07.000000000 -0400
 @@ -76,9 +76,9 @@ struct dn_dev_parms {
  	int priority;             /* Priority to be a router            */
  	char *name;               /* Name for sysctl                    */
@@ -57,10 +57,10 @@ Index: linux-2.6.24.3-rt3/include/net/dn_dev.h
  	void *sysctl;
  };
  
-Index: linux-2.6.24.3-rt3/net/core/dev.c
+Index: linux-2.6.24.7-rt21/net/core/dev.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/core/dev.c	2008-02-26 23:30:30.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/core/dev.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/core/dev.c	2008-10-08 22:23:43.000000000 -0400
++++ linux-2.6.24.7-rt21/net/core/dev.c	2008-10-08 22:24:07.000000000 -0400
 @@ -1692,9 +1692,16 @@ gso:
  	   Either shot noqueue qdisc, it is even simpler 8)
  	 */
@@ -159,10 +159,10 @@ Index: linux-2.6.24.3-rt3/net/core/dev.c
  	local_irq_restore(flags);
  }
  EXPORT_SYMBOL(__napi_schedule);
-Index: linux-2.6.24.3-rt3/net/core/netpoll.c
+Index: linux-2.6.24.7-rt21/net/core/netpoll.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/core/netpoll.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/core/netpoll.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/core/netpoll.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/core/netpoll.c	2008-10-08 22:24:07.000000000 -0400
 @@ -64,20 +64,20 @@ static void queue_process(struct work_st
  			continue;
  		}
@@ -196,7 +196,7 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
  		    spin_trylock(&napi->poll_lock)) {
  			budget = poll_one_napi(npinfo, napi, budget);
  			spin_unlock(&napi->poll_lock);
-@@ -205,28 +205,31 @@ static void refill_skbs(void)
+@@ -205,30 +205,33 @@ static void refill_skbs(void)
  
  static void zap_completion_queue(void)
  {
@@ -216,10 +216,12 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
 -		while (clist != NULL) {
 -			struct sk_buff *skb = clist;
 -			clist = clist->next;
--			if (skb->destructor)
+-			if (skb->destructor) {
+-				atomic_inc(&skb->users);
 -				dev_kfree_skb_any(skb); /* put this one back */
--			else
+-			} else {
 -				__kfree_skb(skb);
+-			}
 -		}
  	}
  
@@ -232,15 +234,17 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
 +	while (clist != NULL) {
 +		struct sk_buff *skb = clist;
 +		clist = clist->next;
-+		if (skb->destructor)
++		if (skb->destructor) {
++			atomic_inc(&skb->users);
 +			dev_kfree_skb_any(skb); /* put this one back */
-+		else
++		} else {
 +			__kfree_skb(skb);
++		}
 +	}
  }
  
  static struct sk_buff *find_skb(struct netpoll *np, int len, int reserve)
-@@ -234,13 +237,26 @@ static struct sk_buff *find_skb(struct n
+@@ -236,13 +239,26 @@ static struct sk_buff *find_skb(struct n
  	int count = 0;
  	struct sk_buff *skb;
  
@@ -268,7 +272,7 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
  
  	if (!skb) {
  		if (++count < 10) {
-@@ -260,7 +276,7 @@ static int netpoll_owner_active(struct n
+@@ -262,7 +278,7 @@ static int netpoll_owner_active(struct n
  	struct napi_struct *napi;
  
  	list_for_each_entry(napi, &dev->napi_list, dev_list) {
@@ -277,7 +281,7 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
  			return 1;
  	}
  	return 0;
-@@ -282,7 +298,7 @@ static void netpoll_send_skb(struct netp
+@@ -284,7 +300,7 @@ static void netpoll_send_skb(struct netp
  	if (skb_queue_len(&npinfo->txq) == 0 && !netpoll_owner_active(dev)) {
  		unsigned long flags;
  
@@ -286,7 +290,7 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
  		/* try until next clock tick */
  		for (tries = jiffies_to_usecs(1)/USEC_PER_POLL;
  		     tries > 0; --tries) {
-@@ -302,7 +318,7 @@ static void netpoll_send_skb(struct netp
+@@ -304,7 +320,7 @@ static void netpoll_send_skb(struct netp
  
  			udelay(USEC_PER_POLL);
  		}
@@ -295,7 +299,7 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
  	}
  
  	if (status != NETDEV_TX_OK) {
-@@ -725,7 +741,7 @@ int netpoll_setup(struct netpoll *np)
+@@ -727,7 +743,7 @@ int netpoll_setup(struct netpoll *np)
  				       np->name);
  				break;
  			}
@@ -304,10 +308,10 @@ Index: linux-2.6.24.3-rt3/net/core/netpoll.c
  		}
  
  		/* If carrier appears to come up instantly, we don't
-Index: linux-2.6.24.3-rt3/net/core/sock.c
+Index: linux-2.6.24.7-rt21/net/core/sock.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/core/sock.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/core/sock.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/core/sock.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/core/sock.c	2008-10-08 22:24:07.000000000 -0400
 @@ -1504,7 +1504,7 @@ static void sock_def_readable(struct soc
  {
  	read_lock(&sk->sk_callback_lock);
@@ -317,10 +321,10 @@ Index: linux-2.6.24.3-rt3/net/core/sock.c
  	sk_wake_async(sk,1,POLL_IN);
  	read_unlock(&sk->sk_callback_lock);
  }
-Index: linux-2.6.24.3-rt3/net/decnet/dn_dev.c
+Index: linux-2.6.24.7-rt21/net/decnet/dn_dev.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/decnet/dn_dev.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/decnet/dn_dev.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/decnet/dn_dev.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/decnet/dn_dev.c	2008-10-08 22:24:07.000000000 -0400
 @@ -90,9 +90,9 @@ static struct dn_dev_parms dn_dev_list[]
  	.t3 =		10,
  	.name =		"ethernet",
@@ -446,10 +450,10 @@ Index: linux-2.6.24.3-rt3/net/decnet/dn_dev.c
  
  	dev->dn_ptr = NULL;
  
-Index: linux-2.6.24.3-rt3/net/ipv4/icmp.c
+Index: linux-2.6.24.7-rt21/net/ipv4/icmp.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/ipv4/icmp.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/ipv4/icmp.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/ipv4/icmp.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/ipv4/icmp.c	2008-10-08 22:24:07.000000000 -0400
 @@ -229,7 +229,10 @@ static const struct icmp_control icmp_po
   *	On SMP we have one ICMP socket per-cpu.
   */
@@ -462,10 +466,10 @@ Index: linux-2.6.24.3-rt3/net/ipv4/icmp.c
  
  static __inline__ int icmp_xmit_lock(void)
  {
-Index: linux-2.6.24.3-rt3/net/ipv4/route.c
+Index: linux-2.6.24.7-rt21/net/ipv4/route.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/ipv4/route.c	2008-02-26 23:30:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/ipv4/route.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/ipv4/route.c	2008-10-08 22:23:37.000000000 -0400
++++ linux-2.6.24.7-rt21/net/ipv4/route.c	2008-10-08 22:24:07.000000000 -0400
 @@ -208,13 +208,13 @@ struct rt_hash_bucket {
  	struct rtable	*chain;
  };
@@ -482,10 +486,10 @@ Index: linux-2.6.24.3-rt3/net/ipv4/route.c
  # define RT_HASH_LOCK_SZ	256
  #else
  # if NR_CPUS >= 32
-Index: linux-2.6.24.3-rt3/net/ipv6/netfilter/ip6_tables.c
+Index: linux-2.6.24.7-rt21/net/ipv6/netfilter/ip6_tables.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/ipv6/netfilter/ip6_tables.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/ipv6/netfilter/ip6_tables.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/ipv6/netfilter/ip6_tables.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/ipv6/netfilter/ip6_tables.c	2008-10-08 22:24:07.000000000 -0400
 @@ -380,7 +380,7 @@ ip6t_do_table(struct sk_buff *skb,
  	read_lock_bh(&table->lock);
  	private = table->private;
@@ -504,10 +508,10 @@ Index: linux-2.6.24.3-rt3/net/ipv6/netfilter/ip6_tables.c
  	IP6T_ENTRY_ITERATE(loc_cpu_entry,
  			  private->size,
  			  add_counter_to_entry,
-Index: linux-2.6.24.3-rt3/net/sched/sch_generic.c
+Index: linux-2.6.24.7-rt21/net/sched/sch_generic.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/sched/sch_generic.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/sched/sch_generic.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/sched/sch_generic.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/sched/sch_generic.c	2008-10-08 22:24:07.000000000 -0400
 @@ -12,6 +12,7 @@
   */
  
@@ -542,7 +546,7 @@ Index: linux-2.6.24.3-rt3/net/sched/sch_generic.c
  	if (!netif_subqueue_stopped(dev, skb))
  		ret = dev_hard_start_xmit(skb, dev);
  	HARD_TX_UNLOCK(dev);
-@@ -578,8 +580,12 @@ void dev_deactivate(struct net_device *d
+@@ -590,8 +592,12 @@ void dev_deactivate(struct net_device *d
  
  	/* Wait for outstanding qdisc_run calls. */
  	do {
@@ -556,10 +560,10 @@ Index: linux-2.6.24.3-rt3/net/sched/sch_generic.c
  
  		/*
  		 * Double-check inside queue lock to ensure that all effects
-Index: linux-2.6.24.3-rt3/net/unix/af_unix.c
+Index: linux-2.6.24.7-rt21/net/unix/af_unix.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/net/unix/af_unix.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/net/unix/af_unix.c	2008-02-26 23:30:51.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/net/unix/af_unix.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/net/unix/af_unix.c	2008-10-08 22:24:07.000000000 -0400
 @@ -338,6 +338,7 @@ static void unix_write_space(struct sock
  		sk_wake_async(sk, 2, POLL_OUT);
  	}

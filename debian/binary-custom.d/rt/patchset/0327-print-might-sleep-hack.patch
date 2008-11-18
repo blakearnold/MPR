@@ -1,0 +1,79 @@
+Temporary HACK!!!!
+
+PREEMPT_RT suffers from the on going problem of running
+printk in atomic operations.  It is very advantageous to do so
+but with PREEMPT_RT making spin_locks sleep, it can also be
+devastating.
+
+This patch does not solve the problem of printk sleeping in
+an atomic operation. This patch just makes printk not report
+that it is. Of course if printk does report that it's sleeping
+in an atomic operation, then that printing of the report will
+also print a report, and you go into recursive hell.
+
+We need to really sit down and solve the real issue here.
+
+---
+ include/linux/sched.h |   13 +++++++++++++
+ kernel/printk.c       |    5 ++++-
+ kernel/rtmutex.c      |    4 +++-
+ 3 files changed, 20 insertions(+), 2 deletions(-)
+
+Index: hardy/include/linux/sched.h
+===================================================================
+--- hardy.orig/include/linux/sched.h	2008-11-21 17:13:33.000000000 +0100
++++ hardy/include/linux/sched.h	2008-11-21 17:14:13.000000000 +0100
+@@ -1300,8 +1300,21 @@
+ 	struct latency_record latency_record[LT_SAVECOUNT];
+ #endif
+ 	struct list_head	*scm_work_list;
++#ifdef CONFIG_PREEMPT_RT
++	/*
++	 * Temporary hack, until we find a solution to
++	 * handle printk in atomic operations.
++	 */
++	int in_printk;
++#endif
+ };
+ 
++#ifdef CONFIG_PREEMPT_RT
++# define set_printk_might_sleep(x) do { current->in_printk = x; } while(0)
++#else
++# define set_printk_might_sleep(x) do { } while(0)
++#endif
++
+ /*
+  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
+  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
+Index: hardy/kernel/printk.c
+===================================================================
+--- hardy.orig/kernel/printk.c	2008-11-21 17:13:31.000000000 +0100
++++ hardy/kernel/printk.c	2008-11-21 17:13:37.000000000 +0100
+@@ -436,8 +436,11 @@
+ 	for (con = console_drivers; con; con = con->next) {
+ 		if ((con->flags & CON_ENABLED) && con->write &&
+ 				(cpu_online(raw_smp_processor_id()) ||
+-				(con->flags & CON_ANYTIME)))
++				 (con->flags & CON_ANYTIME))) {
++			set_printk_might_sleep(1);
+ 			con->write(con, &LOG_BUF(start), end - start);
++			set_printk_might_sleep(0);
++		}
+ 	}
+ }
+ 
+Index: hardy/kernel/rtmutex.c
+===================================================================
+--- hardy.orig/kernel/rtmutex.c	2008-11-21 17:13:28.000000000 +0100
++++ hardy/kernel/rtmutex.c	2008-11-21 17:13:37.000000000 +0100
+@@ -631,7 +631,9 @@
+ rt_spin_lock_fastlock(struct rt_mutex *lock,
+ 		void fastcall (*slowfn)(struct rt_mutex *lock))
+ {
+-	might_sleep();
++	/* Temporary HACK! */
++	if (!current->in_printk)
++		might_sleep();
+ 
+ 	if (likely(rt_mutex_cmpxchg(lock, NULL, current)))
+ 		rt_mutex_deadlock_account_lock(lock, current);

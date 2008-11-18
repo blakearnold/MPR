@@ -1,0 +1,912 @@
+From: Steven Rostedt <srostedt@redhat.com>
+Subject: ftrace: backport mcount record to 2.6.24.7-rt
+
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+---
+ arch/x86/Kconfig                  |    1 
+ arch/x86/kernel/entry_32.S        |   13 -
+ arch/x86/kernel/entry_64.S        |   25 ---
+ arch/x86/kernel/ftrace.c          |   43 +----
+ arch/x86/kernel/vmlinux_32.lds.S  |    5 
+ arch/x86/kernel/vmlinux_64.lds.S  |    5 
+ include/asm-generic/vmlinux.lds.h |    8 +
+ include/linux/ftrace.h            |   26 +++
+ include/linux/kernel.h            |    5 
+ init/main.c                       |    7 
+ kernel/module.c                   |   11 +
+ kernel/trace/Kconfig              |    8 +
+ kernel/trace/ftrace.c             |  160 ++++++++++++++-------
+ scripts/Makefile.build            |    6 
+ scripts/recordmcount.pl           |  280 ++++++++++++++++++++++++++++++++++++++
+ 15 files changed, 477 insertions(+), 126 deletions(-)
+
+Index: linux-2.6.24.7-rt21/include/asm-generic/vmlinux.lds.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/asm-generic/vmlinux.lds.h	2008-10-08 22:22:55.000000000 -0400
++++ linux-2.6.24.7-rt21/include/asm-generic/vmlinux.lds.h	2008-10-08 22:25:18.000000000 -0400
+@@ -13,6 +13,14 @@
+ /* Align . to a 8 byte boundary equals to maximum function alignment. */
+ #define ALIGN_FUNCTION()  . = ALIGN(8)
+ 
++#ifdef CONFIG_FTRACE_MCOUNT_RECORD
++#define MCOUNT_REC()	VMLINUX_SYMBOL(__start_mcount_loc) = .; \
++			*(__mcount_loc)				\
++			VMLINUX_SYMBOL(__stop_mcount_loc) = .;
++#else
++#define MCOUNT_REC()
++#endif
++
+ /* .data section */
+ #define DATA_DATA							\
+ 	*(.data)							\
+Index: linux-2.6.24.7-rt21/scripts/Makefile.build
+===================================================================
+--- linux-2.6.24.7-rt21.orig/scripts/Makefile.build	2008-10-08 22:22:07.000000000 -0400
++++ linux-2.6.24.7-rt21/scripts/Makefile.build	2008-10-08 22:25:18.000000000 -0400
+@@ -192,10 +192,16 @@ cmd_modversions =							\
+ 	fi;
+ endif
+ 
++ifdef CONFIG_FTRACE_MCOUNT_RECORD
++cmd_record_mcount = perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
++	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC)" "$(LD)" "$(NM)" "$(RM)" "$(MV)" "$(@)";
++endif
++
+ define rule_cc_o_c
+ 	$(call echo-cmd,checksrc) $(cmd_checksrc)			  \
+ 	$(call echo-cmd,cc_o_c) $(cmd_cc_o_c);				  \
+ 	$(cmd_modversions)						  \
++	$(cmd_record_mcount)						  \
+ 	scripts/basic/fixdep $(depfile) $@ '$(call make-cmd,cc_o_c)' >    \
+ 	                                              $(dot-target).tmp;  \
+ 	rm -f $(depfile);						  \
+Index: linux-2.6.24.7-rt21/scripts/recordmcount.pl
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-2.6.24.7-rt21/scripts/recordmcount.pl	2008-10-08 22:25:18.000000000 -0400
+@@ -0,0 +1,280 @@
++#!/usr/bin/perl -w
++# (c) 2008, Steven Rostedt <srostedt@redhat.com>
++# Licensed under the terms of the GNU GPL License version 2
++#
++# recordmcount.pl - makes a section called __mcount_loc that holds
++#                   all the offsets to the calls to mcount.
++#
++#
++# What we want to end up with is a section in vmlinux called
++# __mcount_loc that contains a list of pointers to all the
++# call sites in the kernel that call mcount. Later on boot up, the kernel
++# will read this list, save the locations and turn them into nops.
++# When tracing or profiling is later enabled, these locations will then
++# be converted back to pointers to some function.
++#
++# This is no easy feat. This script is called just after the original
++# object is compiled and before it is linked.
++#
++# The references to the call sites are offsets from the section of text
++# that the call site is in. Hence, all functions in a section that
++# has a call site to mcount, will have the offset from the beginning of
++# the section and not the beginning of the function.
++#
++# The trick is to find a way to record the beginning of the section.
++# The way we do this is to look at the first function in the section
++# which will also be the location of that section after final link.
++# e.g.
++#
++#  .section ".text.sched"
++#  .globl my_func
++#  my_func:
++#        [...]
++#        call mcount  (offset: 0x5)
++#        [...]
++#        ret
++#  other_func:
++#        [...]
++#        call mcount (offset: 0x1b)
++#        [...]
++#
++# Both relocation offsets for the mcounts in the above example will be
++# offset from .text.sched. If we make another file called tmp.s with:
++#
++#  .section __mcount_loc
++#  .quad  my_func + 0x5
++#  .quad  my_func + 0x1b
++#
++# We can then compile this tmp.s into tmp.o, and link it to the original
++# object.
++#
++# But this gets hard if my_func is not globl (a static function).
++# In such a case we have:
++#
++#  .section ".text.sched"
++#  my_func:
++#        [...]
++#        call mcount  (offset: 0x5)
++#        [...]
++#        ret
++#  .globl my_func
++#  other_func:
++#        [...]
++#        call mcount (offset: 0x1b)
++#        [...]
++#
++# If we make the tmp.s the same as above, when we link together with
++# the original object, we will end up with two symbols for my_func:
++# one local, one global.  After final compile, we will end up with
++# an undefined reference to my_func.
++#
++# Since local objects can reference local variables, we need to find
++# a way to make tmp.o reference the local objects of the original object
++# file after it is linked together. To do this, we convert the my_func
++# into a global symbol before linking tmp.o. Then after we link tmp.o
++# we will only have a single symbol for my_func that is global.
++# We can convert my_func back into a local symbol and we are done.
++#
++# Here are the steps we take:
++#
++# 1) Record all the local symbols by using 'nm'
++# 2) Use objdump to find all the call site offsets and sections for
++#    mcount.
++# 3) Compile the list into its own object.
++# 4) Do we have to deal with local functions? If not, go to step 8.
++# 5) Make an object that converts these local functions to global symbols
++#    with objcopy.
++# 6) Link together this new object with the list object.
++# 7) Convert the local functions back to local symbols and rename
++#    the result as the original object.
++#    End.
++# 8) Link the object with the list object.
++# 9) Move the result back to the original object.
++#    End.
++#
++
++use strict;
++
++my $P = $0;
++$P =~ s@.*/@@g;
++
++my $V = '0.1';
++
++if ($#ARGV < 6) {
++	print "usage: $P arch objdump objcopy cc ld nm rm mv inputfile\n";
++	print "version: $V\n";
++	exit(1);
++}
++
++my ($arch, $objdump, $objcopy, $cc, $ld, $nm, $rm, $mv, $inputfile) = @ARGV;
++
++$objdump = "objdump" if ((length $objdump) == 0);
++$objcopy = "objcopy" if ((length $objcopy) == 0);
++$cc = "gcc" if ((length $cc) == 0);
++$ld = "ld" if ((length $ld) == 0);
++$nm = "nm" if ((length $nm) == 0);
++$rm = "rm" if ((length $rm) == 0);
++$mv = "mv" if ((length $mv) == 0);
++
++#print STDERR "running: $P '$arch' '$objdump' '$objcopy' '$cc' '$ld' " .
++#    "'$nm' '$rm' '$mv' '$inputfile'\n";
++
++my %locals;
++my %convert;
++
++my $type;
++my $section_regex;	# Find the start of a section
++my $function_regex;	# Find the name of a function (return func name)
++my $mcount_regex;	# Find the call site to mcount (return offset)
++
++if ($arch eq "x86_64") {
++    $section_regex = "Disassembly of section";
++    $function_regex = "<(.*?)>:";
++    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount([+-]0x[0-9a-zA-Z]+)?\$";
++    $type = ".quad";
++} elsif ($arch eq "i386") {
++    $section_regex = "Disassembly of section";
++    $function_regex = "<(.*?)>:";
++    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount\$";
++    $type = ".long";
++} else {
++    die "Arch $arch is not supported with CONFIG_FTRACE_MCOUNT_RECORD";
++}
++
++my $text_found = 0;
++my $read_function = 0;
++my $opened = 0;
++my $text = "";
++my $mcount_section = "__mcount_loc";
++
++my $dirname;
++my $filename;
++my $prefix;
++my $ext;
++
++if ($inputfile =~ m,^(.*)/([^/]*)$,) {
++    $dirname = $1;
++    $filename = $2;
++} else {
++    $dirname = ".";
++    $filename = $inputfile;
++}
++
++if ($filename =~ m,^(.*)(\.\S),) {
++    $prefix = $1;
++    $ext = $2;
++} else {
++    $prefix = $filename;
++    $ext = "";
++}
++
++my $mcount_s = $dirname . "/.tmp_mc_" . $prefix . ".s";
++my $mcount_o = $dirname . "/.tmp_mc_" . $prefix . ".o";
++
++#
++# Step 1: find all the local symbols (static functions).
++#
++open (IN, "$nm $inputfile|") || die "error running $nm";
++while (<IN>) {
++    if (/^[0-9a-fA-F]+\s+t\s+(\S+)/) {
++	$locals{$1} = 1;
++    }
++}
++close(IN);
++
++#
++# Step 2: find the sections and mcount call sites
++#
++open(IN, "$objdump -dr $inputfile|") || die "error running $objdump";
++
++while (<IN>) {
++    # is it a section?
++    if (/$section_regex/) {
++	$read_function = 1;
++	$text_found = 0;
++    # section found, now is this a start of a function?
++    } elsif ($read_function && /$function_regex/) {
++	$read_function = 0;
++	$text_found = 1;
++	$text = $1;
++	# is this function static? If so, note this fact.
++	if (defined $locals{$text}) {
++	    $convert{$text} = 1;
++	}
++    # is this a call site to mcount? If so, print the offset from the section
++    } elsif ($text_found && /$mcount_regex/) {
++	if (!$opened) {
++	    open(FILE, ">$mcount_s") || die "can't create $mcount_s\n";
++	    $opened = 1;
++	    print FILE "\t.section $mcount_section,\"a\",\@progbits\n";
++	}
++	print FILE "\t$type $text + 0x$1\n";
++    }
++}
++
++# If we did not find any mcount callers, we are done (do nothing).
++if (!$opened) {
++    exit(0);
++}
++
++close(FILE);
++
++#
++# Step 3: Compile the file that holds the list of call sites to mcount.
++#
++`$cc -o $mcount_o -c $mcount_s`;
++
++my @converts = keys %convert;
++
++#
++# Step 4: Do we have sections that started with local functions?
++#
++if ($#converts >= 0) {
++    my $globallist = "";
++    my $locallist = "";
++
++    foreach my $con (@converts) {
++	$globallist .= " --globalize-symbol $con";
++	$locallist .= " --localize-symbol $con";
++    }
++
++    my $globalobj = $dirname . "/.tmp_gl_" . $filename;
++    my $globalmix = $dirname . "/.tmp_mx_" . $filename;
++
++    #
++    # Step 5: set up each local function as a global
++    #
++    `$objcopy $globallist $inputfile $globalobj`;
++
++    #
++    # Step 6: Link the global version to our list.
++    #
++    `$ld -r $globalobj $mcount_o -o $globalmix`;
++
++    #
++    # Step 7: Convert the local functions back into local symbols
++    #
++    `$objcopy $locallist $globalmix $inputfile`;
++
++    # Remove the temp files
++    `$rm $globalobj $globalmix`;
++
++} else {
++
++    my $mix = $dirname . "/.tmp_mx_" . $filename;
++
++    #
++    # Step 8: Link the object with our list of call sites object.
++    #
++    `$ld -r $inputfile $mcount_o -o $mix`;
++
++    #
++    # Step 9: Move the result back to the original object.
++    #
++    `$mv $mix $inputfile`;
++}
++
++# Clean up the temp files
++`$rm $mcount_o $mcount_s`;
++
++exit(0);
+Index: linux-2.6.24.7-rt21/kernel/trace/Kconfig
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/trace/Kconfig	2008-10-08 22:24:49.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/trace/Kconfig	2008-10-08 22:25:18.000000000 -0400
+@@ -7,6 +7,9 @@ config HAVE_FTRACE
+ config HAVE_DYNAMIC_FTRACE
+ 	bool
+ 
++config HAVE_FTRACE_MCOUNT_RECORD
++	bool
++
+ config TRACER_MAX_TRACE
+ 	bool
+ 
+@@ -122,6 +125,11 @@ config DYNAMIC_FTRACE
+ 	 were made. If so, it runs stop_machine (stops all CPUS)
+ 	 and modifies the code to jump over the call to ftrace.
+ 
++config FTRACE_MCOUNT_RECORD
++	def_bool y
++	depends on DYNAMIC_FTRACE
++	depends on HAVE_FTRACE_MCOUNT_RECORD
++
+ config FTRACE_SELFTEST
+ 	bool
+ 
+Index: linux-2.6.24.7-rt21/include/linux/ftrace.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/linux/ftrace.h	2008-10-08 22:25:06.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/ftrace.h	2008-10-08 22:25:18.000000000 -0400
+@@ -203,4 +203,30 @@ static inline void ftrace_event_program_
+ # define ftrace_event_program_event(p, d)	do { } while (0)
+ #endif /* CONFIG_TRACE_EVENTS */
+ 
++#ifdef CONFIG_FTRACE_MCOUNT_RECORD
++extern void ftrace_init(void);
++extern void ftrace_init_module(unsigned long *start, unsigned long *end);
++#else
++static inline void ftrace_init(void) { }
++static inline void
++ftrace_init_module(unsigned long *start, unsigned long *end) { }
++#endif
++
++/* Upstream has include/asm-x86/ftrace.h, but we'll hack this for now */
++#ifdef CONFIG_X86
++static inline unsigned long ftrace_call_adjust(unsigned long addr)
++{
++	/*
++	 * call mcount is "e8 <4 byte offset>"
++	 * The addr points to the 4 byte offset and the caller of this
++	 * function wants the pointer to e8. Simply subtract one.
++	 */
++	return addr - 1;
++}
++#else
++static inline unsigned long ftrace_call_adjust(unsigned long addr)
++{
++	return addr;
++}
++#endif
+ #endif /* _LINUX_FTRACE_H */
+Index: linux-2.6.24.7-rt21/init/main.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/init/main.c	2008-10-08 22:24:59.000000000 -0400
++++ linux-2.6.24.7-rt21/init/main.c	2008-10-08 22:25:18.000000000 -0400
+@@ -60,6 +60,7 @@
+ #include <linux/kthread.h>
+ #include <linux/sched.h>
+ #include <linux/ftrace.h>
++#include <linux/ftrace.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -658,6 +659,8 @@ asmlinkage void __init start_kernel(void
+ 
+ 	acpi_early_init(); /* before LAPIC and SMP init */
+ 
++	ftrace_init();
++
+ #ifdef CONFIG_PREEMPT_RT
+ 	WARN_ON(irqs_disabled());
+ #endif
+@@ -878,7 +881,7 @@ static int __init kernel_init(void * unu
+ 	WARN_ON(irqs_disabled());
+ #endif
+ 
+-#define DEBUG_COUNT (defined(CONFIG_DEBUG_RT_MUTEXES) + defined(CONFIG_IRQSOFF_TRACER) + defined(CONFIG_PREEMPT_TRACER) + defined(CONFIG_FTRACE) + defined(CONFIG_WAKEUP_LATENCY_HIST) + defined(CONFIG_DEBUG_SLAB) + defined(CONFIG_DEBUG_PAGEALLOC) + defined(CONFIG_LOCKDEP))
++#define DEBUG_COUNT (defined(CONFIG_DEBUG_RT_MUTEXES) + defined(CONFIG_IRQSOFF_TRACER) + defined(CONFIG_PREEMPT_TRACER) + (defined(CONFIG_FTRACE) - defined(CONFIG_FTRACE_MCOUNT_RECORD)) + defined(CONFIG_WAKEUP_LATENCY_HIST) + defined(CONFIG_DEBUG_SLAB) + defined(CONFIG_DEBUG_PAGEALLOC) + defined(CONFIG_LOCKDEP))
+ 
+ #if DEBUG_COUNT > 0
+ 	printk(KERN_ERR "*****************************************************************************\n");
+@@ -898,7 +901,7 @@ static int __init kernel_init(void * unu
+ #ifdef CONFIG_PREEMPT_TRACER
+ 	printk(KERN_ERR "*        CONFIG_PREEMPT_TRACER                                              *\n");
+ #endif
+-#ifdef CONFIG_FTRACE
++#if defined(CONFIG_FTRACE) - defined(CONFIG_FTRACE_MCOUNT_RECORD)
+ 	printk(KERN_ERR "*        CONFIG_FTRACE                                                      *\n");
+ #endif
+ #ifdef CONFIG_WAKEUP_LATENCY_HIST
+Index: linux-2.6.24.7-rt21/kernel/trace/ftrace.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/trace/ftrace.c	2008-10-08 22:25:06.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/trace/ftrace.c	2008-10-08 22:25:18.000000000 -0400
+@@ -324,13 +324,6 @@ ftrace_record_ip(unsigned long ip)
+ 	if (ftrace_ip_in_hash(ip, key))
+ 		goto out_unlock;
+ 
+-	/*
+-	 * There's a slight race that the ftraced will update the
+-	 * hash and reset here. If it is already converted, skip it.
+-	 */
+-	if (ftrace_ip_converted(ip))
+-		goto out_unlock;
+-
+ 	node = ftrace_alloc_dyn_node(ip);
+ 	if (!node)
+ 		goto out_unlock;
+@@ -697,47 +690,7 @@ static int ftrace_update_code(void)
+ 	return 1;
+ }
+ 
+-static int ftraced(void *ignore)
+-{
+-	unsigned long usecs;
+-
+-	while (!kthread_should_stop()) {
+-
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+-		/* check once a second */
+-		schedule_timeout(HZ);
+-
+-		if (unlikely(ftrace_disabled))
+-			continue;
+-
+-		mutex_lock(&ftrace_sysctl_lock);
+-		mutex_lock(&ftraced_lock);
+-		if (!ftraced_suspend && !ftraced_stop &&
+-		    ftrace_update_code()) {
+-			usecs = nsecs_to_usecs(ftrace_update_time);
+-			if (ftrace_update_tot_cnt > 100000) {
+-				ftrace_update_tot_cnt = 0;
+-				pr_info("hm, dftrace overflow: %lu change%s"
+-					" (%lu total) in %lu usec%s\n",
+-					ftrace_update_cnt,
+-					ftrace_update_cnt != 1 ? "s" : "",
+-					ftrace_update_tot_cnt,
+-					usecs, usecs != 1 ? "s" : "");
+-				ftrace_disabled = 1;
+-				WARN_ON_ONCE(1);
+-			}
+-		}
+-		mutex_unlock(&ftraced_lock);
+-		mutex_unlock(&ftrace_sysctl_lock);
+-
+-		ftrace_shutdown_replenish();
+-	}
+-	__set_current_state(TASK_RUNNING);
+-	return 0;
+-}
+-
+-static int __init ftrace_dyn_table_alloc(void)
++static int __init ftrace_dyn_table_alloc(unsigned long num_to_init)
+ {
+ 	struct ftrace_page *pg;
+ 	int cnt;
+@@ -764,7 +717,9 @@ static int __init ftrace_dyn_table_alloc
+ 
+ 	pg = ftrace_pages = ftrace_pages_start;
+ 
+-	cnt = NR_TO_INIT / ENTRIES_PER_PAGE;
++	cnt = num_to_init / ENTRIES_PER_PAGE;
++	pr_info("ftrace: allocating %ld hash entries in %d pages\n",
++		num_to_init, cnt);
+ 
+ 	for (i = 0; i < cnt; i++) {
+ 		pg->next = (void *)get_zeroed_page(GFP_KERNEL);
+@@ -1423,6 +1378,109 @@ static __init int ftrace_init_debugfs(vo
+ 
+ fs_initcall(ftrace_init_debugfs);
+ 
++#ifdef CONFIG_FTRACE_MCOUNT_RECORD
++static int ftrace_convert_nops(unsigned long *start,
++			       unsigned long *end)
++{
++	unsigned long *p;
++	unsigned long addr;
++	unsigned long flags;
++
++	p = start;
++	while (p < end) {
++		addr = ftrace_call_adjust(*p++);
++		ftrace_record_ip(addr);
++		ftrace_shutdown_replenish();
++	}
++
++	/* p is ignored */
++	local_irq_save(flags);
++	__ftrace_update_code(p);
++	local_irq_restore(flags);
++
++	return 0;
++}
++
++void ftrace_init_module(unsigned long *start, unsigned long *end)
++{
++	ftrace_convert_nops(start, end);
++}
++
++extern unsigned long __start_mcount_loc[];
++extern unsigned long __stop_mcount_loc[];
++
++void __init ftrace_init(void)
++{
++	unsigned long count, addr, flags;
++	int ret;
++
++	/* Keep the ftrace pointer to the stub */
++	addr = (unsigned long)ftrace_stub;
++
++	local_irq_save(flags);
++	ftrace_dyn_arch_init(&addr);
++	local_irq_restore(flags);
++
++	/* ftrace_dyn_arch_init places the return code in addr */
++	if (addr)
++		goto failed;
++
++	count = __stop_mcount_loc - __start_mcount_loc;
++
++	ret = ftrace_dyn_table_alloc(count);
++	if (ret)
++		goto failed;
++
++	last_ftrace_enabled = ftrace_enabled = 1;
++
++	ret = ftrace_convert_nops(__start_mcount_loc,
++				  __stop_mcount_loc);
++
++	return;
++ failed:
++	ftrace_disabled = 1;
++}
++#else /* CONFIG_FTRACE_MCOUNT_RECORD */
++static int ftraced(void *ignore)
++{
++	unsigned long usecs;
++
++	while (!kthread_should_stop()) {
++
++		set_current_state(TASK_INTERRUPTIBLE);
++
++		/* check once a second */
++		schedule_timeout(HZ);
++
++		if (unlikely(ftrace_disabled))
++			continue;
++
++		mutex_lock(&ftrace_sysctl_lock);
++		mutex_lock(&ftraced_lock);
++		if (!ftraced_suspend && !ftraced_stop &&
++		    ftrace_update_code()) {
++			usecs = nsecs_to_usecs(ftrace_update_time);
++			if (ftrace_update_tot_cnt > 100000) {
++				ftrace_update_tot_cnt = 0;
++				pr_info("hm, dftrace overflow: %lu change%s"
++					" (%lu total) in %lu usec%s\n",
++					ftrace_update_cnt,
++					ftrace_update_cnt != 1 ? "s" : "",
++					ftrace_update_tot_cnt,
++					usecs, usecs != 1 ? "s" : "");
++				ftrace_disabled = 1;
++				WARN_ON_ONCE(1);
++			}
++		}
++		mutex_unlock(&ftraced_lock);
++		mutex_unlock(&ftrace_sysctl_lock);
++
++		ftrace_shutdown_replenish();
++	}
++	__set_current_state(TASK_RUNNING);
++	return 0;
++}
++
+ static int __init ftrace_dynamic_init(void)
+ {
+ 	struct task_struct *p;
+@@ -1439,7 +1497,7 @@ static int __init ftrace_dynamic_init(vo
+ 		goto failed;
+ 	}
+ 
+-	ret = ftrace_dyn_table_alloc();
++	ret = ftrace_dyn_table_alloc(NR_TO_INIT);
+ 	if (ret)
+ 		goto failed;
+ 
+@@ -1460,6 +1518,8 @@ static int __init ftrace_dynamic_init(vo
+ }
+ 
+ core_initcall(ftrace_dynamic_init);
++#endif /* CONFIG_FTRACE_MCOUNT_RECORD */
++
+ #else
+ # define ftrace_startup()		do { } while (0)
+ # define ftrace_shutdown()		do { } while (0)
+Index: linux-2.6.24.7-rt21/kernel/module.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/module.c	2008-10-08 22:23:05.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/module.c	2008-10-08 22:25:18.000000000 -0400
+@@ -49,6 +49,7 @@
+ #include <linux/license.h>
+ #include <asm/sections.h>
+ #include <linux/marker.h>
++#include <linux/ftrace.h>
+ 
+ extern int module_sysfs_initialized;
+ 
+@@ -1682,6 +1683,7 @@ static struct module *load_module(void _
+ 	unsigned int immediatecondendindex;
+ 	unsigned int markersindex;
+ 	unsigned int markersstringsindex;
++	unsigned int mcountindex;
+ 	struct module *mod;
+ 	long err = 0;
+ 	void *percpu = NULL, *ptr = NULL; /* Stops spurious gcc warning */
+@@ -1965,6 +1967,9 @@ static struct module *load_module(void _
+  	markersstringsindex = find_sec(hdr, sechdrs, secstrings,
+ 					"__markers_strings");
+ 
++	mcountindex = find_sec(hdr, sechdrs, secstrings,
++			       "__mcount_loc");
++
+ 	/* Now do relocations. */
+ 	for (i = 1; i < hdr->e_shnum; i++) {
+ 		const char *strtab = (char *)sechdrs[strindex].sh_addr;
+@@ -2020,6 +2025,12 @@ static struct module *load_module(void _
+ 			mod->immediate + mod->num_immediate);
+ #endif
+ 	}
++
++	if (mcountindex) {
++		void *mseg = (void *)sechdrs[mcountindex].sh_addr;
++		ftrace_init_module(mseg, mseg + sechdrs[mcountindex].sh_size);
++	}
++
+ 	err = module_finalize(hdr, sechdrs, mod);
+ 	if (err < 0)
+ 		goto cleanup;
+Index: linux-2.6.24.7-rt21/include/linux/kernel.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/linux/kernel.h	2008-10-08 22:24:19.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/kernel.h	2008-10-08 22:25:18.000000000 -0400
+@@ -432,4 +432,9 @@ struct sysinfo {
+ #define NUMA_BUILD 0
+ #endif
+ 
++/* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
++#ifdef CONFIG_FTRACE_MCOUNT_RECORD
++# define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
++#endif
++
+ #endif
+Index: linux-2.6.24.7-rt21/arch/x86/Kconfig
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/Kconfig	2008-10-08 22:24:25.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/Kconfig	2008-10-08 22:25:18.000000000 -0400
+@@ -19,6 +19,7 @@ config X86_64
+ config X86
+ 	bool
+ 	default y
++	select HAVE_FTRACE_MCOUNT_RECORD
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FTRACE
+ 
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/ftrace.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/ftrace.c	2008-10-08 22:23:06.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/ftrace.c	2008-10-08 22:25:18.000000000 -0400
+@@ -17,6 +17,7 @@
+ #include <linux/list.h>
+ 
+ #include <asm/alternative.h>
++#include <asm/processor.h>
+ #include <asm/asm.h>
+ 
+ #define CALL_BACK		5
+@@ -32,16 +33,6 @@ union ftrace_code_union {
+ 	} __attribute__((packed));
+ };
+ 
+-notrace int ftrace_ip_converted(unsigned long ip)
+-{
+-	unsigned long save;
+-
+-	ip -= CALL_BACK;
+-	save = *(long *)ip;
+-
+-	return save == *ftrace_nop;
+-}
+-
+ static int notrace ftrace_calc_offset(long ip, long addr)
+ {
+ 	return (int)(addr - ip);
+@@ -57,7 +48,7 @@ notrace unsigned char *ftrace_call_repla
+ 	static union ftrace_code_union calc;
+ 
+ 	calc.e8		= 0xe8;
+-	calc.offset	= ftrace_calc_offset(ip, addr);
++	calc.offset	= ftrace_calc_offset(ip + CALL_BACK, addr);
+ 
+ 	/*
+ 	 * No locking needed, this must be called via kstop_machine
+@@ -76,9 +67,6 @@ ftrace_modify_code(unsigned long ip, uns
+ 	unsigned char newch = new_code[4];
+ 	int faulted = 0;
+ 
+-	/* move the IP back to the start of the call */
+-	ip -= CALL_BACK;
+-
+ 	/*
+ 	 * Note: Due to modules and __init, code can
+ 	 *  disappear and change, we need to protect against faulting
+@@ -116,8 +104,6 @@ notrace int ftrace_update_ftrace_func(ft
+ 	unsigned char old[5], *new;
+ 	int ret;
+ 
+-	ip += CALL_BACK;
+-
+ 	memcpy(old, &ftrace_call, 5);
+ 	new = ftrace_call_replace(ip, (unsigned long)func);
+ 	ret = ftrace_modify_code(ip, old, new);
+@@ -127,33 +113,22 @@ notrace int ftrace_update_ftrace_func(ft
+ 
+ notrace int ftrace_mcount_set(unsigned long *data)
+ {
+-	unsigned long ip = (long)(&mcount_call);
+-	unsigned long *addr = data;
+-	unsigned char old[5], *new;
+-
+-	/* ip is at the location, but modify code will subtact this */
+-	ip += CALL_BACK;
+-
+-	/*
+-	 * Replace the mcount stub with a pointer to the
+-	 * ip recorder function.
+-	 */
+-	memcpy(old, &mcount_call, 5);
+-	new = ftrace_call_replace(ip, *addr);
+-	*addr = ftrace_modify_code(ip, old, new);
+-
++	*data = 0;
+ 	return 0;
+ }
+ 
++asm("\t.section .rodata, \"a\"\nftrace_nop5: "
++    P6_NOP5
++    "\t.previous");
++extern const unsigned char ftrace_nop5[];
++
+ int __init ftrace_dyn_arch_init(void *data)
+ {
+-	const unsigned char *const *noptable = find_nop_table();
+-
+ 	/* This is running in kstop_machine */
+ 
+ 	ftrace_mcount_set(data);
+ 
+-	ftrace_nop = (unsigned long *)noptable[CALL_BACK];
++	ftrace_nop = (unsigned long *)ftrace_nop5;
+ 
+ 	return 0;
+ }
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/vmlinux_32.lds.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/vmlinux_32.lds.S	2008-10-08 22:22:07.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/vmlinux_32.lds.S	2008-10-08 22:25:18.000000000 -0400
+@@ -134,7 +134,10 @@ SECTIONS
+ 	*(.init.text)
+ 	_einittext = .;
+   }
+-  .init.data : AT(ADDR(.init.data) - LOAD_OFFSET) { *(.init.data) }
++  .init.data : AT(ADDR(.init.data) - LOAD_OFFSET) {
++	*(.init.data)
++	MCOUNT_REC()
++ }
+   . = ALIGN(16);
+   .init.setup : AT(ADDR(.init.setup) - LOAD_OFFSET) {
+   	__setup_start = .;
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/vmlinux_64.lds.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/vmlinux_64.lds.S	2008-10-08 22:22:07.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/vmlinux_64.lds.S	2008-10-08 22:25:18.000000000 -0400
+@@ -159,7 +159,10 @@ SECTIONS
+ 	_einittext = .;
+   }
+   __initdata_begin = .;
+-  .init.data : AT(ADDR(.init.data) - LOAD_OFFSET) { *(.init.data) }
++  .init.data : AT(ADDR(.init.data) - LOAD_OFFSET) {
++	*(.init.data)
++	MCOUNT_REC()
++    }
+   __initdata_end = .;
+   . = ALIGN(16);
+   __setup_start = .;
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/entry_32.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/entry_32.S	2008-10-08 22:23:58.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/entry_32.S	2008-10-08 22:25:18.000000000 -0400
+@@ -1132,19 +1132,6 @@ ENDPROC(xen_failsafe_callback)
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 
+ ENTRY(mcount)
+-	pushl %eax
+-	pushl %ecx
+-	pushl %edx
+-	movl 0xc(%esp), %eax
+-
+-.globl mcount_call
+-mcount_call:
+-	call ftrace_stub
+-
+-	popl %edx
+-	popl %ecx
+-	popl %eax
+-
+ 	ret
+ END(mcount)
+ 
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/entry_64.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/entry_64.S	2008-10-08 22:23:40.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/entry_64.S	2008-10-08 22:25:18.000000000 -0400
+@@ -56,31 +56,6 @@
+ #ifdef CONFIG_FTRACE
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ ENTRY(mcount)
+-
+-	subq $0x38, %rsp
+-	movq %rax, (%rsp)
+-	movq %rcx, 8(%rsp)
+-	movq %rdx, 16(%rsp)
+-	movq %rsi, 24(%rsp)
+-	movq %rdi, 32(%rsp)
+-	movq %r8, 40(%rsp)
+-	movq %r9, 48(%rsp)
+-
+-	movq 0x38(%rsp), %rdi
+-
+-.globl mcount_call
+-mcount_call:
+-	call ftrace_stub
+-
+-	movq 48(%rsp), %r9
+-	movq 40(%rsp), %r8
+-	movq 32(%rsp), %rdi
+-	movq 24(%rsp), %rsi
+-	movq 16(%rsp), %rdx
+-	movq 8(%rsp), %rcx
+-	movq (%rsp), %rax
+-	addq $0x38, %rsp
+-
+ 	retq
+ END(mcount)
+ 

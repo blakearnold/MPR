@@ -8,10 +8,10 @@
  mm/vmstat.c             |   38 ++++++++++++++++++++++++++++++++------
  7 files changed, 70 insertions(+), 15 deletions(-)
 
-Index: linux-2.6.24.3-rt3/include/linux/pagevec.h
+Index: linux-2.6.24.7-rt21/include/linux/pagevec.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/include/linux/pagevec.h	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/include/linux/pagevec.h	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/include/linux/pagevec.h	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/pagevec.h	2008-10-08 22:24:01.000000000 -0400
 @@ -9,7 +9,7 @@
  #define _LINUX_PAGEVEC_H
  
@@ -21,10 +21,10 @@ Index: linux-2.6.24.3-rt3/include/linux/pagevec.h
  
  struct page;
  struct address_space;
-Index: linux-2.6.24.3-rt3/include/linux/vmstat.h
+Index: linux-2.6.24.7-rt21/include/linux/vmstat.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/include/linux/vmstat.h	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/include/linux/vmstat.h	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/include/linux/vmstat.h	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/vmstat.h	2008-10-08 22:24:01.000000000 -0400
 @@ -59,7 +59,12 @@ DECLARE_PER_CPU(struct vm_event_state, v
  
  static inline void __count_vm_event(enum vm_event_item item)
@@ -51,10 +51,10 @@ Index: linux-2.6.24.3-rt3/include/linux/vmstat.h
  }
  
  static inline void count_vm_events(enum vm_event_item item, long delta)
-Index: linux-2.6.24.3-rt3/mm/bounce.c
+Index: linux-2.6.24.7-rt21/mm/bounce.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/mm/bounce.c	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/mm/bounce.c	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/mm/bounce.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/mm/bounce.c	2008-10-08 22:24:01.000000000 -0400
 @@ -48,11 +48,11 @@ static void bounce_copy_vec(struct bio_v
  	unsigned long flags;
  	unsigned char *vto;
@@ -69,10 +69,10 @@ Index: linux-2.6.24.3-rt3/mm/bounce.c
  }
  
  #else /* CONFIG_HIGHMEM */
-Index: linux-2.6.24.3-rt3/mm/memory.c
+Index: linux-2.6.24.7-rt21/mm/memory.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/mm/memory.c	2008-02-26 23:30:08.000000000 -0500
-+++ linux-2.6.24.3-rt3/mm/memory.c	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/mm/memory.c	2008-10-08 22:23:20.000000000 -0400
++++ linux-2.6.24.7-rt21/mm/memory.c	2008-10-08 22:24:01.000000000 -0400
 @@ -278,7 +278,9 @@ void free_pgtables(struct mmu_gather **t
  
  	if (!vma)	/* Sometimes when exiting after an oops */
@@ -109,10 +109,10 @@ Index: linux-2.6.24.3-rt3/mm/memory.c
  # define ZAP_BLOCK_SIZE	(1024 * PAGE_SIZE)
  #endif
  
-Index: linux-2.6.24.3-rt3/mm/mmap.c
+Index: linux-2.6.24.7-rt21/mm/mmap.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/mm/mmap.c	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/mm/mmap.c	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/mm/mmap.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/mm/mmap.c	2008-10-08 22:24:01.000000000 -0400
 @@ -1910,10 +1910,16 @@ asmlinkage long sys_munmap(unsigned long
  static inline void verify_mm_writelocked(struct mm_struct *mm)
  {
@@ -132,10 +132,10 @@ Index: linux-2.6.24.3-rt3/mm/mmap.c
  #endif
  }
  
-Index: linux-2.6.24.3-rt3/mm/vmscan.c
+Index: linux-2.6.24.7-rt21/mm/vmscan.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/mm/vmscan.c	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/mm/vmscan.c	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/mm/vmscan.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/mm/vmscan.c	2008-10-08 22:24:01.000000000 -0400
 @@ -23,6 +23,7 @@
  #include <linux/file.h>
  #include <linux/writeback.h>
@@ -169,10 +169,10 @@ Index: linux-2.6.24.3-rt3/mm/vmscan.c
  	pagevec_release(&pvec);
  	return nr_reclaimed;
  }
-Index: linux-2.6.24.3-rt3/mm/vmstat.c
+Index: linux-2.6.24.7-rt21/mm/vmstat.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/mm/vmstat.c	2008-02-26 23:29:23.000000000 -0500
-+++ linux-2.6.24.3-rt3/mm/vmstat.c	2008-02-26 23:30:46.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/mm/vmstat.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/mm/vmstat.c	2008-10-08 22:24:01.000000000 -0400
 @@ -157,10 +157,14 @@ static void refresh_zone_stat_thresholds
  void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
  				int delta)

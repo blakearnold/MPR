@@ -1,0 +1,251 @@
+From 6d12160b217c3a274f638f844a100ecb9d365b06 Mon Sep 17 00:00:00 2001
+From: Sebastian Siewior <bigeasy@linutronix.de>
+Date: Fri, 18 Apr 2008 17:02:24 +0200
+Subject: [PATCH] m68knommu: add compat_semaphore
+
+basically a rename
+
+Signed-off-by: Sebastian Siewior <bigeasy@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/m68knommu/Kconfig                   |    4 ++
+ arch/m68knommu/kernel/Makefile           |    3 +
+ arch/m68knommu/kernel/semaphore.c        |    8 ++--
+ include/asm-m68knommu/semaphore-helper.h |    8 ++--
+ include/asm-m68knommu/semaphore.h        |   56 +++++++++++++++++--------------
+ 5 files changed, 46 insertions(+), 33 deletions(-)
+
+Index: linux-2.6.24.7-rt21/arch/m68knommu/Kconfig
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/m68knommu/Kconfig	2008-10-08 22:23:11.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/m68knommu/Kconfig	2008-10-08 22:23:40.000000000 -0400
+@@ -29,6 +29,10 @@ config RWSEM_XCHGADD_ALGORITHM
+ 	bool
+ 	default n
+ 
++config ASM_SEMAPHORES
++	bool
++	default y
++
+ config ARCH_HAS_ILOG2_U32
+ 	bool
+ 	default n
+Index: linux-2.6.24.7-rt21/arch/m68knommu/kernel/Makefile
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/m68knommu/kernel/Makefile	2008-10-08 22:23:12.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/m68knommu/kernel/Makefile	2008-10-08 22:23:40.000000000 -0400
+@@ -5,8 +5,9 @@
+ extra-y := vmlinux.lds
+ 
+ obj-y += dma.o entry.o init_task.o irq.o m68k_ksyms.o process.o ptrace.o \
+-	 semaphore.o setup.o signal.o syscalltable.o sys_m68k.o time.o traps.o
++	 setup.o signal.o syscalltable.o sys_m68k.o time.o traps.o
+ 
+ obj-$(CONFIG_MODULES)		+= module.o
+ obj-$(CONFIG_COMEMPCI)		+= comempci.o
+ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
++obj-$(CONFIG_ASM_SEMAPHORES)	+= semaphore.o
+Index: linux-2.6.24.7-rt21/arch/m68knommu/kernel/semaphore.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/m68knommu/kernel/semaphore.c	2008-10-08 22:22:35.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/m68knommu/kernel/semaphore.c	2008-10-08 22:23:40.000000000 -0400
+@@ -42,7 +42,7 @@ spinlock_t semaphore_wake_lock;
+  * critical part is the inline stuff in <asm/semaphore.h>
+  * where we want to avoid any extra jumps and calls.
+  */
+-void __up(struct semaphore *sem)
++void __compat_up(struct compat_semaphore *sem)
+ {
+ 	wake_one_more(sem);
+ 	wake_up(&sem->wait);
+@@ -96,7 +96,7 @@ void __up(struct semaphore *sem)
+ 	current->state = TASK_RUNNING;		\
+ 	remove_wait_queue(&sem->wait, &wait);
+ 
+-void __sched __down(struct semaphore * sem)
++void __sched __compat_down(struct compat_semaphore * sem)
+ {
+ 	DECLARE_WAITQUEUE(wait, current);
+ 
+@@ -107,7 +107,7 @@ void __sched __down(struct semaphore * s
+ 	DOWN_TAIL(TASK_UNINTERRUPTIBLE)
+ }
+ 
+-int __sched __down_interruptible(struct semaphore * sem)
++int __sched __compat_down_interruptible(struct compat_semaphore * sem)
+ {
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int ret = 0;
+@@ -127,7 +127,7 @@ int __sched __down_interruptible(struct 
+ 	return ret;
+ }
+ 
+-int __down_trylock(struct semaphore * sem)
++int __compat_down_trylock(struct compat_semaphore * sem)
+ {
+ 	return waking_non_zero_trylock(sem);
+ }
+Index: linux-2.6.24.7-rt21/include/asm-m68knommu/semaphore-helper.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/asm-m68knommu/semaphore-helper.h	2008-10-08 22:22:35.000000000 -0400
++++ linux-2.6.24.7-rt21/include/asm-m68knommu/semaphore-helper.h	2008-10-08 22:23:40.000000000 -0400
+@@ -13,12 +13,12 @@
+ /*
+  * These two _must_ execute atomically wrt each other.
+  */
+-static inline void wake_one_more(struct semaphore * sem)
++static inline void wake_one_more(struct compat_semaphore * sem)
+ {
+ 	atomic_inc(&sem->waking);
+ }
+ 
+-static inline int waking_non_zero(struct semaphore *sem)
++static inline int waking_non_zero(struct compat_semaphore *sem)
+ {
+ 	int ret;
+ 	unsigned long flags;
+@@ -39,7 +39,7 @@ static inline int waking_non_zero(struct
+  *	0	go to sleep
+  *	-EINTR	interrupted
+  */
+-static inline int waking_non_zero_interruptible(struct semaphore *sem,
++static inline int waking_non_zero_interruptible(struct compat_semaphore *sem,
+ 						struct task_struct *tsk)
+ {
+ 	int ret;
+@@ -63,7 +63,7 @@ static inline int waking_non_zero_interr
+  *	1	failed to lock
+  *	0	got the lock
+  */
+-static inline int waking_non_zero_trylock(struct semaphore *sem)
++static inline int waking_non_zero_trylock(struct compat_semaphore *sem)
+ {
+ 	int ret;
+ 	unsigned long flags;
+Index: linux-2.6.24.7-rt21/include/asm-m68knommu/semaphore.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/asm-m68knommu/semaphore.h	2008-10-08 22:22:35.000000000 -0400
++++ linux-2.6.24.7-rt21/include/asm-m68knommu/semaphore.h	2008-10-08 22:23:40.000000000 -0400
+@@ -21,49 +21,55 @@
+  * m68k version by Andreas Schwab
+  */
+ 
++#ifndef CONFIG_PREEMPT_RT
++# define compat_semaphore semaphore
++#endif
+ 
+-struct semaphore {
++struct compat_semaphore {
+ 	atomic_t count;
+ 	atomic_t waking;
+ 	wait_queue_head_t wait;
+ };
+ 
+-#define __SEMAPHORE_INITIALIZER(name, n)				\
++#define __COMPAT_SEMAPHORE_INITIALIZER(name, n)				\
+ {									\
+ 	.count		= ATOMIC_INIT(n),				\
+ 	.waking		= ATOMIC_INIT(0),				\
+ 	.wait		= __WAIT_QUEUE_HEAD_INITIALIZER((name).wait)	\
+ }
+ 
+-#define __DECLARE_SEMAPHORE_GENERIC(name,count) \
+-	struct semaphore name = __SEMAPHORE_INITIALIZER(name,count)
++#define __COMPAT_DECLARE_SEMAPHORE_GENERIC(name,count) \
++	struct compat_semaphore name = __COMPAT_SEMAPHORE_INITIALIZER(name,count)
+ 
+-#define DECLARE_MUTEX(name) __DECLARE_SEMAPHORE_GENERIC(name,1)
++#define COMPAT_DECLARE_MUTEX(name) __COMPAT_DECLARE_SEMAPHORE_GENERIC(name,1)
+ 
+-static inline void sema_init (struct semaphore *sem, int val)
++static inline void compat_sema_init (struct compat_semaphore *sem, int val)
+ {
+-	*sem = (struct semaphore)__SEMAPHORE_INITIALIZER(*sem, val);
++	*sem = (struct compat_semaphore)__COMPAT_SEMAPHORE_INITIALIZER(*sem, val);
+ }
+ 
+-static inline void init_MUTEX (struct semaphore *sem)
++static inline void compat_init_MUTEX (struct compat_semaphore *sem)
+ {
+-	sema_init(sem, 1);
++	compat_sema_init(sem, 1);
+ }
+ 
+-static inline void init_MUTEX_LOCKED (struct semaphore *sem)
++static inline void compat_init_MUTEX_LOCKED (struct compat_semaphore *sem)
+ {
+-	sema_init(sem, 0);
++	compat_sema_init(sem, 0);
+ }
+ 
+-asmlinkage void __down_failed(void /* special register calling convention */);
+-asmlinkage int  __down_failed_interruptible(void  /* params in registers */);
+-asmlinkage int  __down_failed_trylock(void  /* params in registers */);
+-asmlinkage void __up_wakeup(void /* special register calling convention */);
++asmlinkage void __compat_down_failed(void /* special register calling convention */);
++asmlinkage int  __compat_down_failed_interruptible(void  /* params in registers */);
++asmlinkage int  __compat_down_failed_trylock(void  /* params in registers */);
++asmlinkage void __compat_up_wakeup(void /* special register calling convention */);
++
++asmlinkage void __compat_down(struct compat_semaphore * sem);
++asmlinkage int  __compat_down_interruptible(struct compat_semaphore * sem);
++asmlinkage int  __compat_down_trylock(struct compat_semaphore * sem);
++asmlinkage void __compat_up(struct compat_semaphore * sem);
+ 
+-asmlinkage void __down(struct semaphore * sem);
+-asmlinkage int  __down_interruptible(struct semaphore * sem);
+-asmlinkage int  __down_trylock(struct semaphore * sem);
+-asmlinkage void __up(struct semaphore * sem);
++extern int compat_sem_is_locked(struct compat_semaphore *sem);
++#define compat_sema_count(sem) atomic_read(&(sem)->count)
+ 
+ extern spinlock_t semaphore_wake_lock;
+ 
+@@ -72,7 +78,7 @@ extern spinlock_t semaphore_wake_lock;
+  * "down_failed" is a special asm handler that calls the C
+  * routine that actually waits. See arch/m68k/lib/semaphore.S
+  */
+-static inline void down(struct semaphore * sem)
++static inline void compat_down(struct compat_semaphore * sem)
+ {
+ 	might_sleep();
+ 	__asm__ __volatile__(
+@@ -87,7 +93,7 @@ static inline void down(struct semaphore
+ 		: "cc", "%a0", "%a1", "memory");
+ }
+ 
+-static inline int down_interruptible(struct semaphore * sem)
++static inline int compat_down_interruptible(struct compat_semaphore * sem)
+ {
+ 	int ret;
+ 
+@@ -106,9 +112,9 @@ static inline int down_interruptible(str
+ 	return(ret);
+ }
+ 
+-static inline int down_trylock(struct semaphore * sem)
++static inline int compat_down_trylock(struct compat_semaphore * sem)
+ {
+-	register struct semaphore *sem1 __asm__ ("%a1") = sem;
++	register struct compat_semaphore *sem1 __asm__ ("%a1") = sem;
+ 	register int result __asm__ ("%d0");
+ 
+ 	__asm__ __volatile__(
+@@ -134,7 +140,7 @@ static inline int down_trylock(struct se
+  * The default case (no contention) will result in NO
+  * jumps for both down() and up().
+  */
+-static inline void up(struct semaphore * sem)
++static inline void compat_up(struct compat_semaphore * sem)
+ {
+ 	__asm__ __volatile__(
+ 		"| atomic up operation\n\t"
+@@ -148,6 +154,8 @@ static inline void up(struct semaphore *
+ 		: "cc", "%a0", "%a1", "memory");
+ }
+ 
++#include <linux/semaphore.h>
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif

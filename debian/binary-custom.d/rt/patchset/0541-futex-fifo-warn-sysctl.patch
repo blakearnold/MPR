@@ -1,0 +1,65 @@
+---
+ include/linux/futex.h |    1 +
+ kernel/futex.c        |   10 ++++++++++
+ kernel/sysctl.c       |    8 ++++++++
+ 3 files changed, 19 insertions(+)
+
+Index: linux-2.6.24.7-rt21/kernel/futex.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/futex.c	2008-10-08 22:24:33.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/futex.c	2008-10-08 22:25:14.000000000 -0400
+@@ -61,6 +61,7 @@
+ #include "rtmutex_common.h"
+ 
+ int __read_mostly futex_cmpxchg_enabled;
++int __read_mostly futex_rt_pi_warning;
+ 
+ #define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
+ 
+@@ -1243,6 +1244,15 @@ static int futex_wait(u32 __user *uaddr,
+ 
+ 	hb = queue_lock(&q, -1, NULL);
+ 
++	if (futex_rt_pi_warning && unlikely(rt_task(curr))) {
++		if (printk_ratelimit()) {
++			printk(KERN_WARNING
++			       "RT task %s:%d with priority %d"
++			       " using non PI futex\n",
++			       current->comm, current->pid,
++			       100 - current->prio);
++		}
++	}
+ 	/*
+ 	 * Access the page AFTER the futex is queued.
+ 	 * Order is important:
+Index: linux-2.6.24.7-rt21/include/linux/futex.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/linux/futex.h	2008-10-08 22:22:08.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/futex.h	2008-10-08 22:25:14.000000000 -0400
+@@ -154,6 +154,7 @@ union futex_key {
+ extern void exit_robust_list(struct task_struct *curr);
+ extern void exit_pi_state_list(struct task_struct *curr);
+ extern int futex_cmpxchg_enabled;
++extern int futex_rt_pi_warning;
+ #else
+ static inline void exit_robust_list(struct task_struct *curr)
+ {
+Index: linux-2.6.24.7-rt21/kernel/sysctl.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/sysctl.c	2008-10-08 22:24:52.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/sysctl.c	2008-10-08 22:25:14.000000000 -0400
+@@ -354,6 +354,14 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= &proc_dointvec,
+ 	},
++	{
++		.ctl_name	= CTL_UNNUMBERED,
++		.procname	= "futex_rt_pi_warning",
++		.data		= &futex_rt_pi_warning,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
+ #endif
+ 	{
+ 		.ctl_name	= CTL_UNNUMBERED,

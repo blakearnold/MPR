@@ -15,10 +15,10 @@
  include/linux/genhd.h     |   11 +++++++--
  14 files changed, 132 insertions(+), 31 deletions(-)
 
-Index: linux-2.6.24.3-rt3/block/ll_rw_blk.c
+Index: linux-2.6.24.7-rt21/block/ll_rw_blk.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/block/ll_rw_blk.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/block/ll_rw_blk.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/block/ll_rw_blk.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/block/ll_rw_blk.c	2008-10-08 22:24:00.000000000 -0400
 @@ -1548,7 +1548,7 @@ static int ll_merge_requests_fn(struct r
   */
  void blk_plug_device(struct request_queue *q)
@@ -46,10 +46,10 @@ Index: linux-2.6.24.3-rt3/block/ll_rw_blk.c
  
  	clear_bit(QUEUE_FLAG_STOPPED, &q->queue_flags);
  
-Index: linux-2.6.24.3-rt3/fs/aio.c
+Index: linux-2.6.24.7-rt21/fs/aio.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/aio.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/aio.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/aio.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/aio.c	2008-10-08 22:24:00.000000000 -0400
 @@ -582,13 +582,15 @@ static void use_mm(struct mm_struct *mm)
  	tsk->flags |= PF_BORROWED_MM;
  	active_mm = tsk->active_mm;
@@ -68,10 +68,10 @@ Index: linux-2.6.24.3-rt3/fs/aio.c
  	task_unlock(tsk);
  
  	mmdrop(active_mm);
-Index: linux-2.6.24.3-rt3/fs/block_dev.c
+Index: linux-2.6.24.7-rt21/fs/block_dev.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/block_dev.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/block_dev.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/block_dev.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/block_dev.c	2008-10-08 22:24:00.000000000 -0400
 @@ -1225,14 +1225,32 @@ static int __blkdev_get(struct block_dev
  	 * For now, block device ->open() routine must _not_
  	 * examine anything in 'inode' argument except ->i_rdev.
@@ -113,10 +113,10 @@ Index: linux-2.6.24.3-rt3/fs/block_dev.c
  }
  
  int blkdev_get(struct block_device *bdev, mode_t mode, unsigned flags)
-Index: linux-2.6.24.3-rt3/fs/dcache.c
+Index: linux-2.6.24.7-rt21/fs/dcache.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/dcache.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/dcache.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/dcache.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/dcache.c	2008-10-08 22:24:00.000000000 -0400
 @@ -704,8 +704,9 @@ void shrink_dcache_for_umount(struct sup
  {
  	struct dentry *dentry;
@@ -129,11 +129,11 @@ Index: linux-2.6.24.3-rt3/fs/dcache.c
  
  	dentry = sb->s_root;
  	sb->s_root = NULL;
-Index: linux-2.6.24.3-rt3/fs/dnotify.c
+Index: linux-2.6.24.7-rt21/fs/dnotify.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/dnotify.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/dnotify.c	2008-02-26 23:30:45.000000000 -0500
-@@ -162,7 +162,7 @@ void dnotify_parent(struct dentry *dentr
+--- linux-2.6.24.7-rt21.orig/fs/dnotify.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/dnotify.c	2008-10-08 22:24:00.000000000 -0400
+@@ -173,7 +173,7 @@ void dnotify_parent(struct dentry *dentr
  
  	spin_lock(&dentry->d_lock);
  	parent = dentry->d_parent;
@@ -142,10 +142,10 @@ Index: linux-2.6.24.3-rt3/fs/dnotify.c
  		dget(parent);
  		spin_unlock(&dentry->d_lock);
  		__inode_dir_notify(parent->d_inode, event);
-Index: linux-2.6.24.3-rt3/fs/exec.c
+Index: linux-2.6.24.7-rt21/fs/exec.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/exec.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/exec.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/exec.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/exec.c	2008-10-08 22:24:00.000000000 -0400
 @@ -48,6 +48,7 @@
  #include <linux/security.h>
  #include <linux/syscalls.h>
@@ -172,10 +172,10 @@ Index: linux-2.6.24.3-rt3/fs/exec.c
  	arch_pick_mmap_layout(mm);
  	if (old_mm) {
  		up_read(&old_mm->mmap_sem);
-Index: linux-2.6.24.3-rt3/fs/file.c
+Index: linux-2.6.24.7-rt21/fs/file.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/file.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/file.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/file.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/file.c	2008-10-08 22:24:00.000000000 -0400
 @@ -96,14 +96,15 @@ void free_fdtable_rcu(struct rcu_head *r
  		kfree(fdt->open_fds);
  		kfree(fdt);
@@ -194,10 +194,10 @@ Index: linux-2.6.24.3-rt3/fs/file.c
  	}
  }
  
-Index: linux-2.6.24.3-rt3/fs/lockd/svc.c
+Index: linux-2.6.24.7-rt21/fs/lockd/svc.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/lockd/svc.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/lockd/svc.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/lockd/svc.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/lockd/svc.c	2008-10-08 22:24:00.000000000 -0400
 @@ -349,16 +349,12 @@ lockd_down(void)
  	 * Wait for the lockd process to exit, but since we're holding
  	 * the lockd semaphore, we can't wait around forever ...
@@ -217,10 +217,10 @@ Index: linux-2.6.24.3-rt3/fs/lockd/svc.c
  out:
  	mutex_unlock(&nlmsvc_mutex);
  }
-Index: linux-2.6.24.3-rt3/fs/pipe.c
+Index: linux-2.6.24.7-rt21/fs/pipe.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/pipe.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/pipe.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/pipe.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/pipe.c	2008-10-08 22:24:00.000000000 -0400
 @@ -385,8 +385,14 @@ redo:
  		wake_up_interruptible_sync(&pipe->wait);
  		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
@@ -251,10 +251,10 @@ Index: linux-2.6.24.3-rt3/fs/pipe.c
  	return ret;
  }
  
-Index: linux-2.6.24.3-rt3/fs/proc/proc_misc.c
+Index: linux-2.6.24.7-rt21/fs/proc/proc_misc.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/proc/proc_misc.c	2008-02-26 23:30:32.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/proc/proc_misc.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/proc/proc_misc.c	2008-10-08 22:23:46.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/proc/proc_misc.c	2008-10-08 22:24:00.000000000 -0400
 @@ -96,6 +96,27 @@ static int loadavg_read_proc(char *page,
  	return proc_calc_metrics(page, start, off, count, eof, len);
  }
@@ -332,10 +332,10 @@ Index: linux-2.6.24.3-rt3/fs/proc/proc_misc.c
  		{"uptime",	uptime_read_proc},
  		{"meminfo",	meminfo_read_proc},
  		{"version",	version_read_proc},
-Index: linux-2.6.24.3-rt3/fs/proc/task_mmu.c
+Index: linux-2.6.24.7-rt21/fs/proc/task_mmu.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/proc/task_mmu.c	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/proc/task_mmu.c	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/proc/task_mmu.c	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/proc/task_mmu.c	2008-10-08 22:24:00.000000000 -0400
 @@ -416,8 +416,10 @@ static void *m_start(struct seq_file *m,
  	vma = NULL;
  	if ((unsigned long)l < mm->map_count) {
@@ -348,10 +348,10 @@ Index: linux-2.6.24.3-rt3/fs/proc/task_mmu.c
  		goto out;
  	}
  
-Index: linux-2.6.24.3-rt3/fs/xfs/linux-2.6/mrlock.h
+Index: linux-2.6.24.7-rt21/fs/xfs/linux-2.6/mrlock.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/xfs/linux-2.6/mrlock.h	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/xfs/linux-2.6/mrlock.h	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/xfs/linux-2.6/mrlock.h	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/xfs/linux-2.6/mrlock.h	2008-10-08 22:24:00.000000000 -0400
 @@ -23,8 +23,8 @@
  enum { MR_NONE, MR_ACCESS, MR_UPDATE };
  
@@ -363,10 +363,10 @@ Index: linux-2.6.24.3-rt3/fs/xfs/linux-2.6/mrlock.h
  } mrlock_t;
  
  #define mrinit(mrp, name)	\
-Index: linux-2.6.24.3-rt3/fs/xfs/xfs_mount.h
+Index: linux-2.6.24.7-rt21/fs/xfs/xfs_mount.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/fs/xfs/xfs_mount.h	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/fs/xfs/xfs_mount.h	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/fs/xfs/xfs_mount.h	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/fs/xfs/xfs_mount.h	2008-10-08 22:24:00.000000000 -0400
 @@ -383,7 +383,7 @@ typedef struct xfs_mount {
  	uint			m_bm_maxlevels[2]; /* XFS_BM_MAXLEVELS */
  	uint			m_in_maxlevels;	/* XFS_IN_MAXLEVELS */
@@ -376,10 +376,10 @@ Index: linux-2.6.24.3-rt3/fs/xfs/xfs_mount.h
  	struct mutex		m_growlock;	/* growfs mutex */
  	int			m_fixedfsid[2];	/* unchanged for life of FS */
  	uint			m_dmevmask;	/* DMI events for this FS */
-Index: linux-2.6.24.3-rt3/include/linux/genhd.h
+Index: linux-2.6.24.7-rt21/include/linux/genhd.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/include/linux/genhd.h	2008-02-26 23:29:24.000000000 -0500
-+++ linux-2.6.24.3-rt3/include/linux/genhd.h	2008-02-26 23:30:45.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/include/linux/genhd.h	2008-10-08 22:22:28.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/genhd.h	2008-10-08 22:24:00.000000000 -0400
 @@ -157,15 +157,22 @@ struct disk_attribute {
   * variants disable/enable preemption.
   */

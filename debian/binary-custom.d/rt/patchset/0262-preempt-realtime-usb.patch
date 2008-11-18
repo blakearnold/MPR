@@ -4,10 +4,10 @@
  drivers/usb/core/message.c |   11 ++++++-----
  3 files changed, 13 insertions(+), 8 deletions(-)
 
-Index: linux-2.6.24.3-rt3/drivers/net/usb/usbnet.c
+Index: linux-2.6.24.7-rt21/drivers/net/usb/usbnet.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/drivers/net/usb/usbnet.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/drivers/net/usb/usbnet.c	2008-02-26 23:30:50.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/drivers/net/usb/usbnet.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/drivers/net/usb/usbnet.c	2008-10-08 22:24:06.000000000 -0400
 @@ -905,6 +905,8 @@ static void tx_complete (struct urb *urb
  
  	urb->dev = NULL;
@@ -17,10 +17,10 @@ Index: linux-2.6.24.3-rt3/drivers/net/usb/usbnet.c
  	defer_bh(dev, skb, &dev->txq);
  }
  
-Index: linux-2.6.24.3-rt3/drivers/usb/core/devio.c
+Index: linux-2.6.24.7-rt21/drivers/usb/core/devio.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/drivers/usb/core/devio.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/drivers/usb/core/devio.c	2008-02-26 23:30:50.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/drivers/usb/core/devio.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/drivers/usb/core/devio.c	2008-10-08 22:24:06.000000000 -0400
 @@ -307,10 +307,12 @@ static void async_completed(struct urb *
          struct async *as = urb->context;
          struct dev_state *ps = as->ps;
@@ -37,10 +37,10 @@ Index: linux-2.6.24.3-rt3/drivers/usb/core/devio.c
  	as->status = urb->status;
  	if (as->signr) {
  		sinfo.si_signo = as->signr;
-Index: linux-2.6.24.3-rt3/drivers/usb/core/message.c
+Index: linux-2.6.24.7-rt21/drivers/usb/core/message.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/drivers/usb/core/message.c	2008-02-26 23:29:22.000000000 -0500
-+++ linux-2.6.24.3-rt3/drivers/usb/core/message.c	2008-02-26 23:30:50.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/drivers/usb/core/message.c	2008-10-08 22:22:27.000000000 -0400
++++ linux-2.6.24.7-rt21/drivers/usb/core/message.c	2008-10-08 22:24:06.000000000 -0400
 @@ -259,8 +259,9 @@ static void sg_complete (struct urb *urb
  {
  	struct usb_sg_request	*io = urb->context;

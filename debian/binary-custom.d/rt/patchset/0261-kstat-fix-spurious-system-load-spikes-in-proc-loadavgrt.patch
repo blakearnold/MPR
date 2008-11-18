@@ -89,11 +89,29 @@ Signed-off-by: Luis Claudio R. Goncalves <lclaudio@uudg.org>
  kernel/timer.c    |   14 ++++++++------
  2 files changed, 15 insertions(+), 6 deletions(-)
 
-Index: linux-2.6.24.3-rt3/kernel/timer.c
+Index: linux-2.6.24.7-rt21/kernel/sched_rt.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/kernel/timer.c	2008-02-26 23:30:49.000000000 -0500
-+++ linux-2.6.24.3-rt3/kernel/timer.c	2008-02-26 23:30:49.000000000 -0500
-@@ -964,23 +964,25 @@ unsigned long avenrun_rt[3];
+--- linux-2.6.24.7-rt21.orig/kernel/sched_rt.c	2008-10-08 22:23:59.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/sched_rt.c	2008-10-08 22:24:04.000000000 -0400
+@@ -149,6 +149,13 @@ unsigned long rt_nr_uninterruptible(void
+ 	for_each_online_cpu(i)
+ 		sum += cpu_rq(i)->rt.rt_nr_uninterruptible;
+ 
++	/*
++	 * Since we read the counters lockless, it might be slightly
++	 * inaccurate. Do not allow it to go below zero though:
++	 */
++	if (unlikely((long)sum < 0))
++		sum = 0;
++
+ 	return sum;
+ }
+ 
+Index: linux-2.6.24.7-rt21/kernel/timer.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/timer.c	2008-10-08 22:24:04.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/timer.c	2008-10-08 22:24:04.000000000 -0400
+@@ -973,23 +973,25 @@ unsigned long avenrun_rt[3];
  static inline void calc_load(unsigned long ticks)
  {
  	unsigned long active_tasks; /* fixed-point */
@@ -123,23 +141,5 @@ Index: linux-2.6.24.3-rt3/kernel/timer.c
 +
 +		} while (count < 0);
  	}
- }
- 
-Index: linux-2.6.24.3-rt3/kernel/sched_rt.c
-===================================================================
---- linux-2.6.24.3-rt3.orig/kernel/sched_rt.c	2008-02-26 23:30:44.000000000 -0500
-+++ linux-2.6.24.3-rt3/kernel/sched_rt.c	2008-02-26 23:30:49.000000000 -0500
-@@ -149,6 +149,13 @@ unsigned long rt_nr_uninterruptible(void
- 	for_each_online_cpu(i)
- 		sum += cpu_rq(i)->rt.rt_nr_uninterruptible;
- 
-+	/*
-+	 * Since we read the counters lockless, it might be slightly
-+	 * inaccurate. Do not allow it to go below zero though:
-+	 */
-+	if (unlikely((long)sum < 0))
-+		sum = 0;
-+
- 	return sum;
  }
  

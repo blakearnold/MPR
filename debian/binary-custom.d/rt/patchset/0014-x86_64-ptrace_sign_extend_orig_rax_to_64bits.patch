@@ -1,0 +1,54 @@
+Bugzilla:
+
+From: Clark Williams <williams@redhat.com>
+
+https://bugzilla.redhat.com/show_bug.cgi?id=437882
+
+Description:
+GDB testsuite failure for x86_64 debugger running i386 debuggee.
+GDB sets orig_rax to 0x00000000ffffffff which is not recognized by
+kernel as -1.
+That bug is revealed by the fix of 434998. It could not happen
+before.
+
+Solution:
+Make ptrace always sign-extend orig_rax to 64 bits
+
+Upstream status:
+commit 84c6f6046c5a2189160a8f0dca8b90427bf690ea
+
+Test status:
+Built on all arch, tested on x86_64 using the reproducer provided on
+bugzilla.
+
+Brew build (also includes patch for bz434998):
+http://brewweb.devel.redhat.com/brew/taskinfo?taskID=1365281
+
+Regards,
+Jerome
+---
+
+ arch/x86/kernel/ptrace_64.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/ptrace_64.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/ptrace_64.c	2008-10-08 22:22:48.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/ptrace_64.c	2008-10-08 22:22:54.000000000 -0400
+@@ -267,6 +267,16 @@ static int putreg(struct task_struct *ch
+ 				return -EIO;
+ 			child->thread.gs = value;
+ 			return 0;
++		case offsetof(struct user_regs_struct, orig_rax):
++			/*
++			 * Orig_rax is really just a flag with small positive
++			 * and negative values, so make sure to always
++			 * sign-extend it from 32 bits so that it works
++			 * correctly regardless of whether we come from a
++			 * 32-bit environment or not.
++			 */
++			value = (long) (s32) value;
++			break;
+ 		case offsetof(struct user_regs_struct, eflags):
+ 			value &= FLAG_MASK;
+ 			tmp = get_stack_long(child, EFL_OFFSET); 

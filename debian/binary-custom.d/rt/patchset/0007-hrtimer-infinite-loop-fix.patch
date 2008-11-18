@@ -1,0 +1,59 @@
+Subject: [RHEL5.2 PATCH] CVE-2007-6712 kernel: infinite loop in highres
+
+From: Michal Schmidt <mschmidt@redhat.com>
+
+timers (kernel hang)
+
+Description
+===========
+(from Thomas Gleixner's patch description:)
+
+hrtimer_forward() does not check for the possible overflow of
+timer->expires.  This can happen on 64 bit machines with large interval
+values and results currently in an endless loop in the softirq because
+the expiry value becomes negative and therefor the timer is expired all
+the time.
+
+Check for this condition and set the expiry value to the max.  expiry
+time in the future.  The fix should be applied to stable kernel series
+as well.
+
+Upstream status
+===============
+Upstream commit 13788ccc41ceea5893f9c747c59bc0b28f2416c2
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Fri Mar 16 13:38:20 2007 -0800
+    [PATCH] hrtimer: prevent overrun DoS in hrtimer_forward()
+
+Testing
+=======
+Scratch build in Brew:
+http://brewweb.devel.redhat.com/brew/taskinfo?taskID=1269316
+A reproducer is attached to the BZ. I tested it successfully on a
+x86_64 system.
+
+
+Please ACK.
+Michal
+---
+
+ kernel/hrtimer.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: linux-2.6.24.7-rt21/kernel/hrtimer.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/hrtimer.c	2008-10-08 22:22:51.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/hrtimer.c	2008-10-08 22:22:51.000000000 -0400
+@@ -717,6 +717,12 @@ hrtimer_forward(struct hrtimer *timer, k
+ 		orun++;
+ 	}
+ 	timer->expires = ktime_add_safe(timer->expires, interval);
++	/*
++	 * Make sure, that the result did not wrap with a very large
++	 * interval.
++	 */
++	if (timer->expires.tv64 < 0)
++		timer->expires = ktime_set(KTIME_SEC_MAX, 0);
+ 
+ 	return orun;
+ }

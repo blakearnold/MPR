@@ -1,0 +1,42 @@
+Subject: hrtimer: prevent migration for raising CPU
+
+From: Steven Rostedt <srostedt@redhat.com>
+
+Due to a possible deadlock, the waking of the softirq was pushed outside
+of the hrtimer base locks. Unfortunately this allows the task to migrate
+after setting up the softirq and raising it. Since softirqs run a queue that
+is per-cpu we may raise the softirq on the wrong CPU and this will keep
+the queued softirq task from running.
+
+To solve this issue, this patch disables preemption around the releasing
+of the hrtimer lock and raising of the softirq.
+
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+---
+
+ kernel/hrtimer.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+Index: linux-2.6.24.7-rt21/kernel/hrtimer.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/hrtimer.c	2008-10-08 22:22:51.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/hrtimer.c	2008-10-08 22:22:51.000000000 -0400
+@@ -904,10 +904,18 @@ hrtimer_start(struct hrtimer *timer, kti
+ 	 */
+ 	raise = timer->state == HRTIMER_STATE_PENDING;
+ 
++	/*
++	 * We use preempt_disable to prevent this task from migrating after
++	 * setting up the softirq and raising it. Otherwise, if me migrate
++	 * we will raise the softirq on the wrong CPU.
++	 */
++	preempt_disable();
++
+ 	unlock_hrtimer_base(timer, &flags);
+ 
+ 	if (raise)
+ 		hrtimer_raise_softirq();
++	preempt_enable();
+ 
+ 	return ret;
+ }

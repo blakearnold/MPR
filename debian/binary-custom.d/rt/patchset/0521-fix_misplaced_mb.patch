@@ -1,0 +1,48 @@
+Subject: rcu: fix misplaced mb()
+From: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+In the process of writing up the mechanical proof of correctness for the
+dynticks/preemptable-RCU interface, I noticed misplaced memory barriers
+in rcu_enter_nohz() and rcu_exit_nohz().  This patch puts them in the
+right place and adds a comment.  The key thing to keep in mind is that
+rcu_enter_nohz() is -exiting- the mode that can legally execute RCU
+read-side critical sections.  The memory barrier must be between any
+potential RCU read-side critical sections and the increment of the per-CPU
+dynticks_progress_counter, and thus must come -before- this increment.
+And vice versa for rcu_exit_nohz().
+
+The locking in the scheduler is probably saving us for the moment.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+
+ include/linux/rcupreempt.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.24.7-rt21/include/linux/rcupreempt.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/linux/rcupreempt.h	2008-10-08 22:25:07.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/rcupreempt.h	2008-10-08 22:25:09.000000000 -0400
+@@ -105,6 +105,7 @@ DECLARE_PER_CPU(long, dynticks_progress_
+ 
+ static inline void rcu_enter_nohz(void)
+ {
++	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
+ 	__get_cpu_var(dynticks_progress_counter)++;
+ 	if (unlikely(__get_cpu_var(dynticks_progress_counter) & 0x1)) {
+ 		printk("BUG: bad accounting of dynamic ticks\n");
+@@ -113,13 +114,12 @@ static inline void rcu_enter_nohz(void)
+ 		/* try to fix it */
+ 		__get_cpu_var(dynticks_progress_counter)++;
+ 	}
+-	mb();
+ }
+ 
+ static inline void rcu_exit_nohz(void)
+ {
+-	mb();
+ 	__get_cpu_var(dynticks_progress_counter)++;
++	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
+ 	if (unlikely(!(__get_cpu_var(dynticks_progress_counter) & 0x1))) {
+ 		printk("BUG: bad accounting of dynamic ticks\n");
+ 		printk("   will try to fix, but it is best to reboot\n");

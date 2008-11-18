@@ -15,10 +15,10 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
  lib/lock_list.c           |  107 ++++++++++++++++++++++++++++++++++++++++++++++
  3 files changed, 182 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.24.3-rt3/include/linux/lock_list.h
+Index: linux-2.6.24.7-rt21/include/linux/lock_list.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.3-rt3/include/linux/lock_list.h	2008-02-26 23:30:55.000000000 -0500
++++ linux-2.6.24.7-rt21/include/linux/lock_list.h	2008-10-08 22:24:11.000000000 -0400
 @@ -0,0 +1,74 @@
 +/*
 + * Copyright (C) 2006, Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
@@ -94,10 +94,10 @@ Index: linux-2.6.24.3-rt3/include/linux/lock_list.h
 +
 +#endif /* __KERNEL__ */
 +#endif /* _LINUX_LOCK_LIST_H */
-Index: linux-2.6.24.3-rt3/lib/Makefile
+Index: linux-2.6.24.7-rt21/lib/Makefile
 ===================================================================
---- linux-2.6.24.3-rt3.orig/lib/Makefile	2008-02-26 23:30:44.000000000 -0500
-+++ linux-2.6.24.3-rt3/lib/Makefile	2008-02-26 23:30:55.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/lib/Makefile	2008-10-08 22:23:59.000000000 -0400
++++ linux-2.6.24.7-rt21/lib/Makefile	2008-10-08 22:24:11.000000000 -0400
 @@ -3,7 +3,7 @@
  #
  
@@ -107,10 +107,10 @@ Index: linux-2.6.24.3-rt3/lib/Makefile
  	 idr.o int_sqrt.o extable.o prio_tree.o \
  	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
  	 proportions.o prio_heap.o
-Index: linux-2.6.24.3-rt3/lib/lock_list.c
+Index: linux-2.6.24.7-rt21/lib/lock_list.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.24.3-rt3/lib/lock_list.c	2008-02-26 23:30:55.000000000 -0500
++++ linux-2.6.24.7-rt21/lib/lock_list.c	2008-10-08 22:24:11.000000000 -0400
 @@ -0,0 +1,107 @@
 +/*
 + * Copyright (C) 2006, Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>

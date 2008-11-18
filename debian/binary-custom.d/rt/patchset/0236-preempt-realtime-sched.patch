@@ -1,13 +1,13 @@
 ---
  include/linux/sched.h |   47 ++++++
- kernel/sched.c        |  379 +++++++++++++++++++++++++++++++++++++++++++-------
- kernel/sched_rt.c     |   60 +++++++
- 3 files changed, 435 insertions(+), 51 deletions(-)
+ kernel/sched.c        |  375 +++++++++++++++++++++++++++++++++++++++++++-------
+ kernel/sched_rt.c     |   60 +++++++-
+ 3 files changed, 431 insertions(+), 51 deletions(-)
 
-Index: linux-2.6.24.3-rt3/include/linux/sched.h
+Index: linux-2.6.24.7-rt21/include/linux/sched.h
 ===================================================================
---- linux-2.6.24.3-rt3.orig/include/linux/sched.h	2008-02-26 23:30:32.000000000 -0500
-+++ linux-2.6.24.3-rt3/include/linux/sched.h	2008-02-26 23:30:43.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/include/linux/sched.h	2008-10-08 22:23:46.000000000 -0400
++++ linux-2.6.24.7-rt21/include/linux/sched.h	2008-10-08 22:23:58.000000000 -0400
 @@ -91,6 +91,16 @@ struct sched_param {
  
  #include <asm/processor.h>
@@ -90,10 +90,10 @@ Index: linux-2.6.24.3-rt3/include/linux/sched.h
  
  /*
   * Per process flags
-Index: linux-2.6.24.3-rt3/kernel/sched.c
+Index: linux-2.6.24.7-rt21/kernel/sched.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/kernel/sched.c	2008-02-26 23:30:32.000000000 -0500
-+++ linux-2.6.24.3-rt3/kernel/sched.c	2008-02-26 23:30:43.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/kernel/sched.c	2008-10-08 22:23:46.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/sched.c	2008-10-08 22:23:58.000000000 -0400
 @@ -4,6 +4,7 @@
   *  Kernel scheduler and related syscalls
   *
@@ -212,7 +212,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  #endif
  	struct lock_class_key rq_lock_key;
  };
-@@ -567,11 +620,23 @@ unsigned long long cpu_clock(int cpu)
+@@ -569,11 +622,23 @@ unsigned long long notrace cpu_clock(int
  }
  EXPORT_SYMBOL_GPL(cpu_clock);
  
@@ -237,7 +237,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  #endif
  
  static inline int task_current(struct rq *rq, struct task_struct *p)
-@@ -602,7 +667,7 @@ static inline void finish_lock_switch(st
+@@ -604,7 +669,7 @@ static inline void finish_lock_switch(st
  	 */
  	spin_acquire(&rq->lock.dep_map, 0, 0, _THIS_IP_);
  
@@ -246,7 +246,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  }
  
  #else /* __ARCH_WANT_UNLOCKED_CTXSW */
-@@ -643,8 +708,8 @@ static inline void finish_lock_switch(st
+@@ -645,8 +710,8 @@ static inline void finish_lock_switch(st
  	smp_wmb();
  	prev->oncpu = 0;
  #endif
@@ -257,7 +257,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  #endif
  }
  #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
-@@ -1048,6 +1113,8 @@ static inline int normal_prio(struct tas
+@@ -1093,6 +1158,8 @@ static inline int normal_prio(struct tas
  		prio = MAX_RT_PRIO-1 - p->rt_priority;
  	else
  		prio = __normal_prio(p);
@@ -266,7 +266,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	return prio;
  }
  
-@@ -1547,6 +1614,13 @@ try_to_wake_up(struct task_struct *p, un
+@@ -1593,6 +1660,13 @@ try_to_wake_up(struct task_struct *p, un
  	long old_state;
  	struct rq *rq;
  
@@ -280,17 +280,10 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	rq = task_rq_lock(p, &flags);
  	old_state = p->state;
  	if (!(old_state & state))
-@@ -1610,10 +1684,17 @@ out_activate:
- 	activate_task(rq, p, 1);
- 	ftrace_wake_up_new_task(p, rq->curr);
- 	check_preempt_curr(rq, p);
-+#if 0
-+	if (rq->curr && p && rq && _need_resched())
-+		trace_special_pid(p->pid, PRIO(p), PRIO(rq->curr));
-+#endif
- 	success = 1;
+@@ -1658,7 +1732,10 @@ out_activate:
  
  out_running:
+ 	trace_kernel_sched_wakeup(rq, p);
 -	p->state = TASK_RUNNING;
 +	if (mutex)
 +		p->state = TASK_RUNNING_MUTEX;
@@ -299,7 +292,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  #ifdef CONFIG_SMP
  	if (p->sched_class->task_wake_up)
  		p->sched_class->task_wake_up(rq, p);
-@@ -1916,7 +1997,7 @@ static void finish_task_switch(struct rq
+@@ -1962,7 +2039,7 @@ static void finish_task_switch(struct rq
  	 *		Manfred Spraul <manfred@colorfullife.com>
  	 */
  	prev_state = prev->state;
@@ -308,7 +301,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	finish_lock_switch(rq, prev);
  #ifdef CONFIG_SMP
  	if (current->sched_class->post_schedule)
-@@ -1943,12 +2024,15 @@ static void finish_task_switch(struct rq
+@@ -1989,12 +2066,15 @@ static void finish_task_switch(struct rq
  asmlinkage void schedule_tail(struct task_struct *prev)
  	__releases(rq->lock)
  {
@@ -327,7 +320,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  #endif
  	if (current->set_child_tid)
  		put_user(task_pid_vnr(current), current->set_child_tid);
-@@ -1996,6 +2080,11 @@ context_switch(struct rq *rq, struct tas
+@@ -2043,6 +2123,11 @@ context_switch(struct rq *rq, struct tas
  	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
  #endif
  
@@ -339,7 +332,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	/* Here we just switch the register state and the stack. */
  	switch_to(prev, next, prev);
  
-@@ -2042,6 +2131,11 @@ unsigned long nr_uninterruptible(void)
+@@ -2089,6 +2174,11 @@ unsigned long nr_uninterruptible(void)
  	return sum;
  }
  
@@ -351,7 +344,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  unsigned long long nr_context_switches(void)
  {
  	int i;
-@@ -3521,6 +3615,8 @@ void scheduler_tick(void)
+@@ -3569,6 +3659,8 @@ void scheduler_tick(void)
  	struct task_struct *curr = rq->curr;
  	u64 next_tick = rq->tick_timestamp + TICK_NSEC;
  
@@ -360,7 +353,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	spin_lock(&rq->lock);
  	__update_rq_clock(rq);
  	/*
-@@ -3618,8 +3714,8 @@ static noinline void __schedule_bug(stru
+@@ -3666,8 +3758,8 @@ static noinline void __schedule_bug(stru
  {
  	struct pt_regs *regs = get_irq_regs();
  
@@ -371,7 +364,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  
  	debug_show_held_locks(prev);
  	if (irqs_disabled())
-@@ -3636,6 +3732,8 @@ static noinline void __schedule_bug(stru
+@@ -3684,6 +3776,8 @@ static noinline void __schedule_bug(stru
   */
  static inline void schedule_debug(struct task_struct *prev)
  {
@@ -380,7 +373,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	/*
  	 * Test if we are atomic. Since do_exit() needs to call into
  	 * schedule() atomically, we ignore that path for now.
-@@ -3690,14 +3788,13 @@ pick_next_task(struct rq *rq, struct tas
+@@ -3738,14 +3832,13 @@ pick_next_task(struct rq *rq, struct tas
  /*
   * schedule() is the main scheduler function.
   */
@@ -396,7 +389,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	preempt_disable();
  	cpu = smp_processor_id();
  	rq = cpu_rq(cpu);
-@@ -3706,7 +3803,6 @@ need_resched:
+@@ -3754,7 +3847,6 @@ need_resched:
  	switch_count = &prev->nivcsw;
  
  	release_kernel_lock(prev);
@@ -404,7 +397,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  
  	schedule_debug(prev);
  
-@@ -3716,19 +3812,25 @@ need_resched_nonpreemptible:
+@@ -3764,19 +3856,25 @@ need_resched_nonpreemptible:
  	local_irq_disable();
  	__update_rq_clock(rq);
  	spin_lock(&rq->lock);
@@ -431,7 +424,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  #ifdef CONFIG_SMP
  	if (prev->sched_class->pre_schedule)
  		prev->sched_class->pre_schedule(rq, prev);
-@@ -3748,22 +3850,90 @@ need_resched_nonpreemptible:
+@@ -3796,22 +3894,90 @@ need_resched_nonpreemptible:
  		++*switch_count;
  
  		context_switch(rq, prev, next); /* unlocks the rq */
@@ -532,7 +525,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  /*
   * this is the entry point to schedule() from in-kernel preemption
   * off of preempt_enable. Kernel preemptions off return from interrupt
-@@ -3776,6 +3946,8 @@ asmlinkage void __sched preempt_schedule
+@@ -3824,6 +3990,8 @@ asmlinkage void __sched preempt_schedule
  	struct task_struct *task = current;
  	int saved_lock_depth;
  #endif
@@ -541,7 +534,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	/*
  	 * If there is a non-zero preempt_count or interrupts are disabled,
  	 * we do not want to preempt the current task. Just return..
-@@ -3784,6 +3956,7 @@ asmlinkage void __sched preempt_schedule
+@@ -3832,6 +4000,7 @@ asmlinkage void __sched preempt_schedule
  		return;
  
  	do {
@@ -549,7 +542,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  		add_preempt_count(PREEMPT_ACTIVE);
  
  		/*
-@@ -3795,11 +3968,11 @@ asmlinkage void __sched preempt_schedule
+@@ -3843,11 +4012,11 @@ asmlinkage void __sched preempt_schedule
  		saved_lock_depth = task->lock_depth;
  		task->lock_depth = -1;
  #endif
@@ -563,7 +556,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  
  		/*
  		 * Check again in case we missed a preemption opportunity
-@@ -3811,10 +3984,10 @@ asmlinkage void __sched preempt_schedule
+@@ -3859,10 +4028,10 @@ asmlinkage void __sched preempt_schedule
  EXPORT_SYMBOL(preempt_schedule);
  
  /*
@@ -578,7 +571,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
   */
  asmlinkage void __sched preempt_schedule_irq(void)
  {
-@@ -3823,10 +3996,18 @@ asmlinkage void __sched preempt_schedule
+@@ -3871,10 +4040,18 @@ asmlinkage void __sched preempt_schedule
  	struct task_struct *task = current;
  	int saved_lock_depth;
  #endif
@@ -599,7 +592,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  		add_preempt_count(PREEMPT_ACTIVE);
  
  		/*
-@@ -3838,13 +4019,12 @@ asmlinkage void __sched preempt_schedule
+@@ -3886,13 +4063,12 @@ asmlinkage void __sched preempt_schedule
  		saved_lock_depth = task->lock_depth;
  		task->lock_depth = -1;
  #endif
@@ -615,7 +608,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  
  		/*
  		 * Check again in case we missed a preemption opportunity
-@@ -4108,7 +4288,7 @@ EXPORT_SYMBOL(sleep_on_timeout);
+@@ -4156,7 +4332,7 @@ EXPORT_SYMBOL(sleep_on_timeout);
  void rt_mutex_setprio(struct task_struct *p, int prio)
  {
  	unsigned long flags;
@@ -624,18 +617,17 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	struct rq *rq;
  	const struct sched_class *prev_class = p->sched_class;
  
-@@ -4133,6 +4313,9 @@ void rt_mutex_setprio(struct task_struct
+@@ -4180,12 +4356,17 @@ void rt_mutex_setprio(struct task_struct
  
  	p->prio = prio;
  
 +//	trace_special_pid(p->pid, __PRIO(oldprio), PRIO(p));
 +	prev_resched = _need_resched();
 +
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
  	if (on_rq) {
- 		if (running)
- 			p->sched_class->set_curr_task(rq);
-@@ -4141,6 +4324,8 @@ void rt_mutex_setprio(struct task_struct
- 
+ 		enqueue_task(rq, p, 0);
  		check_class_changed(rq, p, prev_class, oldprio, running);
  	}
 +//	trace_special(prev_resched, _need_resched(), 0);
@@ -643,7 +635,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	task_rq_unlock(rq, &flags);
  }
  
-@@ -4735,14 +4920,17 @@ asmlinkage long sys_sched_yield(void)
+@@ -4777,14 +4958,17 @@ asmlinkage long sys_sched_yield(void)
  	 */
  	spin_unlock_no_resched(&rq->lock);
  
@@ -663,7 +655,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	__might_sleep(__FILE__, __LINE__);
  #endif
  	/*
-@@ -4751,10 +4939,11 @@ static void __cond_resched(void)
+@@ -4793,10 +4977,11 @@ static void __cond_resched(void)
  	 * cond_resched() call.
  	 */
  	do {
@@ -677,7 +669,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  }
  
  int __sched cond_resched(void)
-@@ -4780,7 +4969,7 @@ int __cond_resched_raw_spinlock(raw_spin
+@@ -4822,7 +5007,7 @@ int __cond_resched_raw_spinlock(raw_spin
  {
  	int ret = 0;
  
@@ -686,7 +678,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  		spin_unlock(lock);
  		cpu_relax();
  		ret = 1;
-@@ -4796,6 +4985,25 @@ int __cond_resched_raw_spinlock(raw_spin
+@@ -4838,6 +5023,25 @@ int __cond_resched_raw_spinlock(raw_spin
  }
  EXPORT_SYMBOL(__cond_resched_raw_spinlock);
  
@@ -712,7 +704,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  /*
   * Voluntarily preempt a process context that has softirqs disabled:
   */
-@@ -4842,11 +5050,15 @@ int cond_resched_hardirq_context(void)
+@@ -4884,11 +5088,15 @@ int cond_resched_hardirq_context(void)
  	WARN_ON_ONCE(!irqs_disabled());
  
  	if (hardirq_need_resched()) {
@@ -728,7 +720,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  
  		return 1;
  	}
-@@ -4854,17 +5066,58 @@ int cond_resched_hardirq_context(void)
+@@ -4896,17 +5104,58 @@ int cond_resched_hardirq_context(void)
  }
  EXPORT_SYMBOL(cond_resched_hardirq_context);
  
@@ -788,7 +780,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  EXPORT_SYMBOL(yield);
  
  /*
-@@ -5047,6 +5300,7 @@ static void show_task(struct task_struct
+@@ -5089,6 +5338,7 @@ static void show_task(struct task_struct
  void show_state_filter(unsigned long state_filter)
  {
  	struct task_struct *g, *p;
@@ -796,7 +788,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  
  #if BITS_PER_LONG == 32
  	printk(KERN_INFO
-@@ -5055,7 +5309,16 @@ void show_state_filter(unsigned long sta
+@@ -5097,7 +5347,16 @@ void show_state_filter(unsigned long sta
  	printk(KERN_INFO
  		"  task                        PC stack   pid father\n");
  #endif
@@ -813,7 +805,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	do_each_thread(g, p) {
  		/*
  		 * reset the NMI-timeout, listing all files on a slow
-@@ -5071,7 +5334,8 @@ void show_state_filter(unsigned long sta
+@@ -5113,7 +5372,8 @@ void show_state_filter(unsigned long sta
  #ifdef CONFIG_SCHED_DEBUG
  	sysrq_sched_debug_show();
  #endif
@@ -823,7 +815,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	/*
  	 * Only show locks if all tasks are dumped:
  	 */
-@@ -5112,7 +5376,9 @@ void __cpuinit init_idle(struct task_str
+@@ -5154,7 +5414,9 @@ void __cpuinit init_idle(struct task_str
  	spin_unlock_irqrestore(&rq->lock, flags);
  
  	/* Set the preempt count _outside_ the spinlocks! */
@@ -834,7 +826,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	task_thread_info(idle)->preempt_count = (idle->lock_depth >= 0);
  #else
  	task_thread_info(idle)->preempt_count = 0;
-@@ -5237,11 +5503,18 @@ EXPORT_SYMBOL_GPL(set_cpus_allowed);
+@@ -5279,11 +5541,18 @@ EXPORT_SYMBOL_GPL(set_cpus_allowed);
  static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
  {
  	struct rq *rq_dest, *rq_src;
@@ -853,7 +845,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	rq_src = cpu_rq(src_cpu);
  	rq_dest = cpu_rq(dest_cpu);
  
-@@ -5265,6 +5538,8 @@ static int __migrate_task(struct task_st
+@@ -5307,6 +5576,8 @@ static int __migrate_task(struct task_st
  	ret = 1;
  out:
  	double_rq_unlock(rq_src, rq_dest);
@@ -862,7 +854,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	return ret;
  }
  
-@@ -7058,6 +7333,9 @@ void __init sched_init(void)
+@@ -7100,6 +7371,9 @@ void __init sched_init(void)
  	atomic_inc(&init_mm.mm_count);
  	enter_lazy_tlb(&init_mm, current);
  
@@ -872,7 +864,7 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  	/*
  	 * Make us the idle thread. Technically, schedule() should not be
  	 * called from this thread, however somewhere below it might be,
-@@ -7079,13 +7357,16 @@ void __might_sleep(char *file, int line)
+@@ -7121,13 +7395,16 @@ void __might_sleep(char *file, int line)
  
  	if ((in_atomic() || irqs_disabled()) &&
  	    system_state == SYSTEM_RUNNING && !oops_in_progress) {
@@ -892,10 +884,10 @@ Index: linux-2.6.24.3-rt3/kernel/sched.c
  		debug_show_held_locks(current);
  		if (irqs_disabled())
  			print_irqtrace_events(current);
-Index: linux-2.6.24.3-rt3/kernel/sched_rt.c
+Index: linux-2.6.24.7-rt21/kernel/sched_rt.c
 ===================================================================
---- linux-2.6.24.3-rt3.orig/kernel/sched_rt.c	2008-02-26 23:29:53.000000000 -0500
-+++ linux-2.6.24.3-rt3/kernel/sched_rt.c	2008-02-26 23:30:43.000000000 -0500
+--- linux-2.6.24.7-rt21.orig/kernel/sched_rt.c	2008-10-08 22:23:05.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/sched_rt.c	2008-10-08 22:23:58.000000000 -0400
 @@ -115,6 +115,48 @@ static inline void dec_rt_tasks(struct t
  #endif /* CONFIG_SMP */
  }

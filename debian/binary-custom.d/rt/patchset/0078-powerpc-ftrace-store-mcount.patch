@@ -1,0 +1,169 @@
+---
+ arch/powerpc/kernel/entry_32.S |    4 ++++
+ arch/powerpc/kernel/entry_64.S |    5 ++++-
+ arch/powerpc/kernel/ftrace.c   |   21 +++++++--------------
+ include/asm-powerpc/ftrace.h   |    8 ++++++++
+ 4 files changed, 23 insertions(+), 15 deletions(-)
+
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/entry_32.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/entry_32.S	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/entry_32.S	2008-10-08 22:23:11.000000000 -0400
+@@ -30,6 +30,7 @@
+ #include <asm/ppc_asm.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/unistd.h>
++#include <asm/ftrace.h>
+ 
+ #undef SHOW_SYSCALLS
+ #undef SHOW_SYSCALLS_TASK
+@@ -1040,6 +1041,7 @@ _GLOBAL(_mcount)
+ 	stw	r10,40(r1)
+ 	stw	r3, 44(r1)
+ 	stw	r5, 8(r1)
++	subi	r3, r3, MCOUNT_INSN_SIZE
+ 	.globl mcount_call
+ mcount_call:
+ 	bl	ftrace_stub
+@@ -1077,6 +1079,7 @@ _GLOBAL(ftrace_caller)
+ 	stw	r10,40(r1)
+ 	stw	r3, 44(r1)
+ 	stw	r5, 8(r1)
++	subi	r3, r3, MCOUNT_INSN_SIZE
+ .globl ftrace_call
+ ftrace_call:
+ 	bl	ftrace_stub
+@@ -1115,6 +1118,7 @@ _GLOBAL(_mcount)
+ 	stw	r3, 44(r1)
+ 	stw	r5, 8(r1)
+ 
++	subi	r3, r3, MCOUNT_INSN_SIZE
+ 	LOAD_REG_ADDR(r5, ftrace_trace_function)
+ 	lwz	r5,0(r5)
+ 
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/entry_64.S
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/entry_64.S	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/entry_64.S	2008-10-08 22:23:11.000000000 -0400
+@@ -29,6 +29,7 @@
+ #include <asm/cputable.h>
+ #include <asm/firmware.h>
+ #include <asm/bug.h>
++#include <asm/ftrace.h>
+ 
+ /*
+  * System calls.
+@@ -855,6 +856,7 @@ _GLOBAL(_mcount)
+ 	mflr	r3
+ 	stdu	r1, -112(r1)
+ 	std	r3, 128(r1)
++	subi	r3, r3, MCOUNT_INSN_SIZE
+ 	.globl mcount_call
+ mcount_call:
+ 	bl	ftrace_stub
+@@ -871,6 +873,7 @@ _GLOBAL(ftrace_caller)
+ 	stdu	r1, -112(r1)
+ 	std	r3, 128(r1)
+ 	ld	r4, 16(r11)
++	subi	r3, r3, MCOUNT_INSN_SIZE
+ .globl ftrace_call
+ ftrace_call:
+ 	bl	ftrace_stub
+@@ -892,7 +895,7 @@ _GLOBAL(_mcount)
+ 	std	r3, 128(r1)
+ 	ld	r4, 16(r11)
+ 
+-
++	subi	r3, r3, MCOUNT_INSN_SIZE
+ 	LOAD_REG_ADDR(r5,ftrace_trace_function)
+ 	ld	r5,0(r5)
+ 	ld	r5,0(r5)
+Index: linux-2.6.24.7-rt21/arch/powerpc/kernel/ftrace.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/powerpc/kernel/ftrace.c	2008-10-08 22:23:11.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/powerpc/kernel/ftrace.c	2008-10-08 22:23:11.000000000 -0400
+@@ -15,8 +15,8 @@
+ #include <linux/list.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/ftrace.h>
+ 
+-#define CALL_BACK		4
+ 
+ static unsigned int ftrace_nop = 0x60000000;
+ 
+@@ -27,9 +27,10 @@ static unsigned int ftrace_nop = 0x60000
+ # define GET_ADDR(addr) *(unsigned long *)addr
+ #endif
+ 
++
+ static unsigned int notrace ftrace_calc_offset(long ip, long addr)
+ {
+-	return (int)((addr + CALL_BACK) - ip);
++	return (int)(addr - ip);
+ }
+ 
+ notrace unsigned char *ftrace_nop_replace(void)
+@@ -76,9 +77,6 @@ ftrace_modify_code(unsigned long ip, uns
+ 	unsigned new = *(unsigned *)new_code;
+ 	int faulted = 0;
+ 
+-	/* move the IP back to the start of the call */
+-	ip -= CALL_BACK;
+-
+ 	/*
+ 	 * Note: Due to modules and __init, code can
+ 	 *  disappear and change, we need to protect against faulting
+@@ -118,12 +116,10 @@ ftrace_modify_code(unsigned long ip, uns
+ notrace int ftrace_update_ftrace_func(ftrace_func_t func)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_call);
+-	unsigned char old[4], *new;
++	unsigned char old[MCOUNT_INSN_SIZE], *new;
+ 	int ret;
+ 
+-	ip += CALL_BACK;
+-
+-	memcpy(old, &ftrace_call, 4);
++	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
+ 	new = ftrace_call_replace(ip, (unsigned long)func);
+ 	ret = ftrace_modify_code(ip, old, new);
+ 
+@@ -134,16 +130,13 @@ notrace int ftrace_mcount_set(unsigned l
+ {
+ 	unsigned long ip = (long)(&mcount_call);
+ 	unsigned long *addr = data;
+-	unsigned char old[4], *new;
+-
+-	/* ip is at the location, but modify code will subtact this */
+-	ip += CALL_BACK;
++	unsigned char old[MCOUNT_INSN_SIZE], *new;
+ 
+ 	/*
+ 	 * Replace the mcount stub with a pointer to the
+ 	 * ip recorder function.
+ 	 */
+-	memcpy(old, &mcount_call, 4);
++	memcpy(old, &mcount_call, MCOUNT_INSN_SIZE);
+ 	new = ftrace_call_replace(ip, *addr);
+ 	*addr = ftrace_modify_code(ip, old, new);
+ 
+Index: linux-2.6.24.7-rt21/include/asm-powerpc/ftrace.h
+===================================================================
+--- linux-2.6.24.7-rt21.orig/include/asm-powerpc/ftrace.h	2008-10-08 22:23:10.000000000 -0400
++++ linux-2.6.24.7-rt21/include/asm-powerpc/ftrace.h	2008-10-08 22:23:11.000000000 -0400
+@@ -1,6 +1,14 @@
+ #ifndef _ASM_POWERPC_FTRACE
+ #define _ASM_POWERPC_FTRACE
+ 
++#ifdef CONFIG_FTRACE
++#define MCOUNT_ADDR		((long)(_mcount))
++#define MCOUNT_INSN_SIZE	4 /* sizeof mcount call */
++
++#ifndef __ASSEMBLY__
+ extern void _mcount(void);
++#endif
+ 
+ #endif
++
++#endif /* _ASM_POWERPC_FTRACE */

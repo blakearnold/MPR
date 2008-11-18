@@ -1,0 +1,134 @@
+# Commit:     ce28b9864b853803320c3f1d8de1b81aa4120b14
+
+From: Clark Williams <williams@redhat.com>
+
+# Parent:     d4afe414189b098d56bcd24280c018aa2ac9a990
+ # Author:     Thomas Gleixner <[EMAIL PROTECTED]>
+ # AuthorDate: Wed Feb 20 23:57:30 2008 +0100
+ # Committer:  Ingo Molnar <[EMAIL PROTECTED]>
+ # CommitDate: Tue Feb 26 12:55:57 2008 +0100
+
+    x86: fix vsyscall wreckage
+
+    based on a report from Arne Georg Gleditsch about user-space apps
+    misbehaving after toggling /proc/sys/kernel/vsyscall64, a review
+    of the code revealed that the "NOP patching" done there is
+    fundamentally unsafe for a number of reasons:
+
+    1) the patching code runs without synchronizing other CPUs
+
+    2) it inserts NOPs even if there is no clock source which provides vread
+
+    3) when the clock source changes to one without vread we run in
+       exactly the same problem as in #2
+
+    4) if nobody toggles the proc entry from 1 to 0 and to 1 again, then
+       the syscall is not patched out
+
+    as a result it is possible to break user-space via this patching.
+    The only safe thing for now is to remove the patching.
+
+    This code was broken since v2.6.21.
+
+    Reported-by: Arne Georg Gleditsch <[EMAIL PROTECTED]>
+    Signed-off-by: Thomas Gleixner <[EMAIL PROTECTED]>
+    Signed-off-by: Ingo Molnar <[EMAIL PROTECTED]>
+---
+
+ arch/x86/kernel/vsyscall_64.c |   52 ++----------------------------------------
+ 1 file changed, 3 insertions(+), 49 deletions(-)
+
+Index: linux-2.6.24.7-rt21/arch/x86/kernel/vsyscall_64.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/arch/x86/kernel/vsyscall_64.c	2008-10-08 22:22:48.000000000 -0400
++++ linux-2.6.24.7-rt21/arch/x86/kernel/vsyscall_64.c	2008-10-08 22:22:54.000000000 -0400
+@@ -44,11 +44,6 @@
+ 
+ #define __vsyscall(nr) __attribute__ ((unused,__section__(".vsyscall_" #nr)))
+ #define __syscall_clobber "r11","rcx","memory"
+-#define __pa_vsymbol(x)			\
+-	({unsigned long v;  		\
+-	extern char __vsyscall_0; 	\
+-	  asm("" : "=r" (v) : "0" (x)); \
+-	  ((v - VSYSCALL_START) + __pa_symbol(&__vsyscall_0)); })
+ 
+ /*
+  * vsyscall_gtod_data contains data that is :
+@@ -102,7 +97,7 @@ static __always_inline void do_get_tz(st
+ static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
+ {
+ 	int ret;
+-	asm volatile("vsysc2: syscall"
++	asm volatile("syscall"
+ 		: "=a" (ret)
+ 		: "0" (__NR_gettimeofday),"D" (tv),"S" (tz)
+ 		: __syscall_clobber );
+@@ -112,7 +107,7 @@ static __always_inline int gettimeofday(
+ static __always_inline long time_syscall(long *t)
+ {
+ 	long secs;
+-	asm volatile("vsysc1: syscall"
++	asm volatile("syscall"
+ 		: "=a" (secs)
+ 		: "0" (__NR_time),"D" (t) : __syscall_clobber);
+ 	return secs;
+@@ -227,50 +222,10 @@ long __vsyscall(3) venosys_1(void)
+ }
+ 
+ #ifdef CONFIG_SYSCTL
+-
+-#define SYSCALL 0x050f
+-#define NOP2    0x9090
+-
+-/*
+- * NOP out syscall in vsyscall page when not needed.
+- */
+-static int vsyscall_sysctl_change(ctl_table *ctl, int write, struct file * filp,
+-                        void __user *buffer, size_t *lenp, loff_t *ppos)
+-{
+-	extern u16 vsysc1, vsysc2;
+-	u16 __iomem *map1;
+-	u16 __iomem *map2;
+-	int ret = proc_dointvec(ctl, write, filp, buffer, lenp, ppos);
+-	if (!write)
+-		return ret;
+-	/* gcc has some trouble with __va(__pa()), so just do it this
+-	   way. */
+-	map1 = ioremap(__pa_vsymbol(&vsysc1), 2);
+-	if (!map1)
+-		return -ENOMEM;
+-	map2 = ioremap(__pa_vsymbol(&vsysc2), 2);
+-	if (!map2) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+-	if (!vsyscall_gtod_data.sysctl_enabled) {
+-		writew(SYSCALL, map1);
+-		writew(SYSCALL, map2);
+-	} else {
+-		writew(NOP2, map1);
+-		writew(NOP2, map2);
+-	}
+-	iounmap(map2);
+-out:
+-	iounmap(map1);
+-	return ret;
+-}
+-
+ static ctl_table kernel_table2[] = {
+ 	{ .procname = "vsyscall64",
+ 	  .data = &vsyscall_gtod_data.sysctl_enabled, .maxlen = sizeof(int),
+-	  .mode = 0644,
+-	  .proc_handler = vsyscall_sysctl_change },
++	  .mode = 0644 },
+ 	{}
+ };
+ 
+@@ -279,7 +234,6 @@ static ctl_table kernel_root_table2[] = 
+ 	  .child = kernel_table2 },
+ 	{}
+ };
+-
+ #endif
+ 
+ /* Assume __initcall executes before all user space. Hopefully kmod

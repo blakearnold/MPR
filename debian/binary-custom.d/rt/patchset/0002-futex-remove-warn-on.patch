@@ -1,0 +1,23 @@
+Subject: futex-unlock-rtmutex-on-fault.patch
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 21 Jun 2008 14:14:08 +0200
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+Index: linux-2.6.24.7-rt21/kernel/futex.c
+===================================================================
+--- linux-2.6.24.7-rt21.orig/kernel/futex.c	2008-10-08 22:22:50.000000000 -0400
++++ linux-2.6.24.7-rt21/kernel/futex.c	2008-10-08 22:22:50.000000000 -0400
+@@ -1592,9 +1592,6 @@ static int futex_lock_pi(u32 __user *uad
+ 				res = fixup_pi_state_owner(uaddr, &q, owner,
+ 							   fshared);
+ 
+-				WARN_ON(rt_mutex_owner(&q.pi_state->pi_mutex) !=
+-					owner);
+-
+ 				/* propagate -EFAULT, if the fixup failed */
+ 				if (res)
+ 					ret = res;
