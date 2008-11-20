@@ -1187,6 +1187,7 @@ struct task_struct {
 	int latency_record_count;
 	struct latency_record latency_record[LT_SAVECOUNT];
 #endif
+	struct list_head	*scm_work_list;
 };
 
 /*

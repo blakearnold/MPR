@@ -1,3 +1,30 @@
+linux (2.6.24-22.45) hardy-security; urgency=low
+
+  [Upstream Kernel Changes]
+
+  * Don't allow splice() to files opened with O_APPEND
+    - CVE-2008-4554
+  * sctp: Fix oops when INIT-ACK indicates that peer doesn't support AUTH
+    - CVE-2008-4576
+  * sctp: Fix kernel panic while process protocol violation parameter
+    - CVE-2008-4618
+  * hfsplus: fix Buffer overflow with a corrupted image
+    - CVE-2008-4933
+  * hfsplus: check read_mapping_page() return value
+    - CVE-2008-4934
+  * net: Fix recursive descent in __scm_destroy().
+    - CVE-2008-5029
+  * net: unix: fix inflight counting bug in garbage collector
+    - CVE-2008-5029
+  * security: avoid calling a NULL function pointer in
+    drivers/video/tvaudio.c
+    - CVE-2008-5033
+  * hfs: fix namelength memory corruption
+    - CVE-2008-5025
+  * V4L/DVB (9621): Avoid writing outside shadow.bytes[] array
+
+ -- Stefan Bader <stefan.bader@canonical.com>  Tue, 18 Nov 2008 17:19:02 +0100
+
 linux (2.6.24-22.44) hardy-proposed; urgency=low
 
   [Amit Kucheria]
@@ -32,9 +59,6 @@ linux (2.6.24-22.44) hardy-proposed; urgency=low
     - LP: #278794
   * SAUCE: ALPS touchpad for Dell Latitude E6500/E6400
     - LP: #270643
-
-  [Upstream Kernel Changes]
-
   * KVM: VMX: Clear CR4.VMXE in hardware_disable
     - LP: #268981
   * USB: serial: ch341: New VID/PID for CH341 USB-serial
