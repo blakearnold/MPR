@@ -1,3 +1,57 @@
+linux (2.6.24-23.46) hardy-proposed; urgency=low
+
+  [Amit Kucheria]
+
+  * SAUCE: Update lpia patches from moblin tree
+    - LP: #291457
+
+  [Colin Ian King]
+
+  * isdn: Do not validate ISDN net device address prior to interface-up
+    - LP: #237306
+  * hwmon: (coretemp) Add Penryn CPU to coretemp
+    - LP: #235119
+  * USB: add support for Motorola ROKR Z6 cellphone in mass storage mode
+    - LP: #263217
+  * md: fix an occasional deadlock in raid5
+    - LP: #208551
+
+  [Stefan Bader]
+
+  * SAUCE: buildenv: Show CVE entries in printchanges
+  * buildenv: Send git-ubuntu-log informational message to stderr
+
+  [Tim Gardner]
+
+  * Enable CONFIG_AX25_DAMA_SLAVE=y
+    - LP: #257684
+  * SAUCE: Correctly blacklist Thinkpad r40e in ACPI
+    - LP: #278794
+  * SAUCE: ALPS touchpad for Dell Latitude E6500/E6400
+    - LP: #270643
+
+  [Upstream Kernel Changes]
+
+  * Revert "[Bluetooth] Eliminate checks for impossible conditions in IRQ
+    handler"
+    - LP: #217659
+  * KVM: VMX: Clear CR4.VMXE in hardware_disable
+    - LP: #268981
+  * iov_iter_advance() fix
+    - LP: #231746
+  * Fix off-by-one error in iov_iter_advance()
+    - LP: #231746
+  * USB: serial: ch341: New VID/PID for CH341 USB-serial
+    - LP: #272485
+  * x86: Fix 32-bit x86 MSI-X allocation leakage
+    - LP: #273103
+  * b43legacy: Fix failure in rate-adjustment mechanism
+    - LP: #273143
+  * x86: Reserve FIRST_DEVICE_VECTOR in used_vectors bitmap.
+    - LP: #276334
+
+ -- Stefan Bader <stefan.bader@canonical.com>  Mon, 24 Nov 2008 09:44:34 +0100
+
 linux (2.6.24-22.45) hardy-security; urgency=low
 
   [Upstream Kernel Changes]
