@@ -4333,6 +4333,7 @@ EXPORT_SYMBOL_GPL vmlinux 0x37ec0bc4	inet_csk_reqsk_queue_hash_add
 EXPORT_SYMBOL_GPL vmlinux 0x38149a8f	pci_scan_child_bus
 EXPORT_SYMBOL_GPL vmlinux 0x390ff2fa	inotify_add_watch
 EXPORT_SYMBOL_GPL vmlinux 0x391b62f2	vfs_removexattr
+EXPORT_SYMBOL_GPL vmlinux 0x396067a9	fb_deferred_io_open
 EXPORT_SYMBOL_GPL vmlinux 0x39793639	tcp_reno_ssthresh
 EXPORT_SYMBOL_GPL vmlinux 0x39ab451a	crypto_register_instance
 EXPORT_SYMBOL_GPL vmlinux 0x3a2fc40d	get_driver
