@@ -8,11 +8,11 @@ http://bugzilla.openvz.org/show_bug.cgi?id=835
  fs/open.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 305f7e5..110be4d 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -1101,7 +1101,7 @@ asmlinkage long sys_open(const char __user *filename, int flags, int mode)
+Index: kernel/fs/open.c
+===================================================================
+--- kernel.orig/fs/open.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/fs/open.c	2008-11-24 15:56:46.000000000 +0100
+@@ -1102,7 +1102,7 @@
  	prevent_tail_call(ret);
  	return ret;
  }
@@ -21,6 +21,3 @@ index 305f7e5..110be4d 100644
  
  asmlinkage long sys_openat(int dfd, const char __user *filename, int flags,
  			   int mode)
--- 
-1.5.4.3
-

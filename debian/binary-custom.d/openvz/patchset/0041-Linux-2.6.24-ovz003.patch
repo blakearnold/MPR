@@ -7,10 +7,16 @@ Subject: [PATCH 41/48] Linux 2.6.24-ovz003
  Makefile |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 9cdf2cc..f5d4b16 100644
---- a/Makefile
-+++ b/Makefile
-@@ -2,1 +2,1 @@ VERSION = 2
+Index: kernel/Makefile
+===================================================================
+--- kernel.orig/Makefile	2008-11-24 15:47:45.000000000 +0100
++++ kernel/Makefile	2008-11-24 15:59:06.000000000 +0100
+@@ -3,7 +3,7 @@
+ SUBLEVEL = 24
+ EXTRAVERSION = .6
+ NAME = Err Metey! A Heury Beelge-a Ret!
 -VZVERSION = ovz002
 +VZVERSION = ovz003
+ 
+ # *DOCUMENTATION*
+ # To see a list of typical targets execute "make help"

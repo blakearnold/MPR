@@ -18,11 +18,11 @@ Bug #97575
  kernel/ve/vecalls.c    |   13 ++++++++++++-
  4 files changed, 27 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/vzstat.h b/include/linux/vzstat.h
-index 5c23ea4..c7dfd1f 100644
---- a/include/linux/vzstat.h
-+++ b/include/linux/vzstat.h
-@@ -36,7 +36,7 @@ struct kstat_lat_struct {
+Index: kernel/include/linux/vzstat.h
+===================================================================
+--- kernel.orig/include/linux/vzstat.h	2008-11-24 15:47:46.000000000 +0100
++++ kernel/include/linux/vzstat.h	2008-11-24 16:01:59.000000000 +0100
+@@ -36,7 +36,7 @@
  	cycles_t avg[3];
  };
  struct kstat_lat_pcpu_struct {
@@ -31,7 +31,7 @@ index 5c23ea4..c7dfd1f 100644
  	cycles_t max_snap;
  	struct kstat_lat_snap_struct last;
  	cycles_t avg[3];
-@@ -121,7 +121,7 @@ static inline void KSTAT_LAT_PCPU_ADD(struct kstat_lat_pcpu_struct *p, int cpu,
+@@ -121,7 +121,7 @@
  {
  	struct kstat_lat_pcpu_snap_struct *cur;
  
@@ -40,7 +40,7 @@ index 5c23ea4..c7dfd1f 100644
  	write_seqcount_begin(&cur->lock);
  	cur->count++;
  	if (cur->maxlat < dur)
-@@ -152,8 +152,8 @@ static inline void KSTAT_LAT_PCPU_UPDATE(struct kstat_lat_pcpu_struct *p)
+@@ -152,8 +152,8 @@
  	cycles_t m;
  
  	memset(&p->last, 0, sizeof(p->last));
@@ -51,11 +51,11 @@ index 5c23ea4..c7dfd1f 100644
  		do {
  			i = read_seqcount_begin(&cur->lock);
  			memcpy(&snap, cur, sizeof(snap));
-diff --git a/kernel/sched.c b/kernel/sched.c
-index a2f30a0..ffc01fe 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -385,7 +385,12 @@ static inline int cpu_of(struct rq *rq)
+Index: kernel/kernel/sched.c
+===================================================================
+--- kernel.orig/kernel/sched.c	2008-11-24 15:57:08.000000000 +0100
++++ kernel/kernel/sched.c	2008-11-24 16:01:59.000000000 +0100
+@@ -385,7 +385,12 @@
  #endif
  }
  
@@ -68,7 +68,7 @@ index a2f30a0..ffc01fe 100644
  DEFINE_SPINLOCK(kstat_glb_lock);
  EXPORT_SYMBOL(kstat_glob);
  EXPORT_SYMBOL(kstat_glb_lock);
-@@ -7126,6 +7131,8 @@ void __init sched_init(void)
+@@ -7167,6 +7172,8 @@
  	int highest_cpu = 0;
  	int i, j;
  
@@ -77,11 +77,11 @@ index a2f30a0..ffc01fe 100644
  	for_each_possible_cpu(i) {
  		struct rt_prio_array *array;
  		struct rq *rq;
-diff --git a/kernel/ve/ve.c b/kernel/ve/ve.c
-index 04da442..2756622 100644
---- a/kernel/ve/ve.c
-+++ b/kernel/ve/ve.c
-@@ -120,9 +120,10 @@ EXPORT_SYMBOL(ve0);
+Index: kernel/kernel/ve/ve.c
+===================================================================
+--- kernel.orig/kernel/ve/ve.c	2008-11-24 16:00:05.000000000 +0100
++++ kernel/kernel/ve/ve.c	2008-11-24 16:01:59.000000000 +0100
+@@ -120,9 +120,10 @@
  #ifdef CONFIG_SMP
  static struct {
  	void *ptrs[NR_CPUS];
@@ -93,7 +93,7 @@ index 04da442..2756622 100644
  
  LIST_HEAD(ve_list_head);
  rwlock_t ve_list_lock = RW_LOCK_UNLOCKED;
-@@ -147,6 +148,8 @@ void init_ve0(void)
+@@ -147,6 +148,8 @@
  
  	ve->cpu_stats = static_percpu_ptr(&ve0_cpu_stats,
  			ve0_cpu_stats_data);
@@ -102,11 +102,11 @@ index 04da442..2756622 100644
  
  	list_add(&ve->ve_list, &ve_list_head);
  }
-diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
-index c05685a..07042bf 100644
---- a/kernel/ve/vecalls.c
-+++ b/kernel/ve/vecalls.c
-@@ -1374,13 +1374,24 @@ static inline void fini_ve_iptables(struct ve_struct *ve, __u64 init_mask)
+Index: kernel/kernel/ve/vecalls.c
+===================================================================
+--- kernel.orig/kernel/ve/vecalls.c	2008-11-24 16:01:56.000000000 +0100
++++ kernel/kernel/ve/vecalls.c	2008-11-24 16:01:59.000000000 +0100
+@@ -1374,13 +1374,24 @@
  static inline int init_ve_cpustats(struct ve_struct *ve)
  {
  	ve->cpu_stats = alloc_percpu(struct ve_cpu_stats);
@@ -132,6 +132,3 @@ index c05685a..07042bf 100644
  }
  
  static int alone_in_pgrp(struct task_struct *tsk)
--- 
-1.5.4.3
-

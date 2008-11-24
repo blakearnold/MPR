@@ -17,11 +17,10 @@ Subject: [PATCH 18/48] FAIRSCHED: add scheduler grouping based on stock grouping
  create mode 100644 include/linux/fairsched.h
  create mode 100644 kernel/vzfairsched.c
 
-diff --git a/include/linux/fairsched.h b/include/linux/fairsched.h
-new file mode 100644
-index 0000000..e5bb3a2
---- /dev/null
-+++ b/include/linux/fairsched.h
+Index: kernel/include/linux/fairsched.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ kernel/include/linux/fairsched.h	2008-11-24 15:57:08.000000000 +0100
 @@ -0,0 +1,61 @@
 +/*
 + * Fair Scheduler
@@ -84,10 +83,10 @@ index 0000000..e5bb3a2
 +#endif /* __KERNEL__ */
 +
 +#endif /* __LINUX_FAIRSCHED_H__ */
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 184de08..7f44087 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
+Index: kernel/include/linux/init_task.h
+===================================================================
+--- kernel.orig/include/linux/init_task.h	2008-11-24 15:47:46.000000000 +0100
++++ kernel/include/linux/init_task.h	2008-11-24 15:57:08.000000000 +0100
 @@ -10,6 +10,7 @@
  #include <linux/pid_namespace.h>
  #include <linux/user_namespace.h>
@@ -96,7 +95,7 @@ index 184de08..7f44087 100644
  
  #define INIT_FDTABLE \
  {							\
-@@ -180,6 +181,7 @@ extern struct group_info init_groups;
+@@ -180,6 +181,7 @@
  	.dirties = INIT_PROP_LOCAL_SINGLE(dirties),			\
  	INIT_TRACE_IRQFLAGS						\
  	INIT_LOCKDEP							\
@@ -104,11 +103,11 @@ index 184de08..7f44087 100644
  }
  
  
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3eeecc6..849ad15 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1229,6 +1229,9 @@ struct task_struct {
+Index: kernel/include/linux/sched.h
+===================================================================
+--- kernel.orig/include/linux/sched.h	2008-11-24 15:47:46.000000000 +0100
++++ kernel/include/linux/sched.h	2008-11-24 15:57:08.000000000 +0100
+@@ -1239,6 +1239,9 @@
  	unsigned long	magic;
  	struct inode	*ino;
  #endif
@@ -118,11 +117,11 @@ index 3eeecc6..849ad15 100644
  };
  
  /*
-diff --git a/init/Kconfig b/init/Kconfig
-index 3577b39..210c557 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -353,6 +353,12 @@ config FAIR_CGROUP_SCHED
+Index: kernel/init/Kconfig
+===================================================================
+--- kernel.orig/init/Kconfig	2008-11-24 15:47:46.000000000 +0100
++++ kernel/init/Kconfig	2008-11-24 15:57:08.000000000 +0100
+@@ -362,6 +362,12 @@
  	  Refer to Documentation/cgroups.txt for more information
  	  on "cgroup" pseudo filesystem.
  
@@ -135,11 +134,11 @@ index 3577b39..210c557 100644
  endchoice
  
  config CGROUP_CPUACCT
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 25ca787..e89a054 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -61,6 +61,7 @@ obj-$(CONFIG_SYSCTL) += utsname_sysctl.o
+Index: kernel/kernel/Makefile
+===================================================================
+--- kernel.orig/kernel/Makefile	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/Makefile	2008-11-24 15:57:08.000000000 +0100
+@@ -62,6 +62,7 @@
  obj-$(CONFIG_TASKSTATS) += taskstats.o tsacct.o
  obj-$(CONFIG_MARKERS) += marker.o
  obj-$(CONFIG_LATENCYTOP) += latencytop.o
@@ -147,10 +146,10 @@ index 25ca787..e89a054 100644
  
  ifneq ($(CONFIG_SCHED_NO_NO_OMIT_FRAME_POINTER),y)
  # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
-diff --git a/kernel/exit.c b/kernel/exit.c
-index f89b6da..9760f62 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
+Index: kernel/kernel/exit.c
+===================================================================
+--- kernel.orig/kernel/exit.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/exit.c	2008-11-24 15:57:08.000000000 +0100
 @@ -47,6 +47,7 @@
  #include <linux/blkdev.h>
  #include <linux/task_io_accounting_ops.h>
@@ -159,7 +158,7 @@ index f89b6da..9760f62 100644
  
  #include <bc/misc.h>
  #include <bc/oom_kill.h>
-@@ -185,6 +186,7 @@ repeat:
+@@ -185,6 +186,7 @@
  		 */
  		zap_leader = (leader->exit_signal == -1);
  	}
@@ -167,11 +166,11 @@ index f89b6da..9760f62 100644
  
  	write_unlock_irq(&tasklist_lock);
  	release_thread(p);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8817fbb..6e82c6f 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1363,6 +1363,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+Index: kernel/kernel/fork.c
+===================================================================
+--- kernel.orig/kernel/fork.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/fork.c	2008-11-24 15:57:08.000000000 +0100
+@@ -1364,6 +1364,7 @@
  #endif
  	total_forks++;
  	spin_unlock(&current->sighand->siglock);
@@ -179,10 +178,10 @@ index 8817fbb..6e82c6f 100644
  	write_unlock_irq(&tasklist_lock);
  	proc_fork_connector(p);
  	cgroup_post_fork(p);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d26ecab..aea8628 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
+Index: kernel/kernel/sched.c
+===================================================================
+--- kernel.orig/kernel/sched.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/sched.c	2008-11-24 15:57:08.000000000 +0100
 @@ -63,6 +63,7 @@
  #include <linux/reciprocal_div.h>
  #include <linux/unistd.h>
@@ -191,7 +190,7 @@ index d26ecab..aea8628 100644
  
  #include <asm/tlb.h>
  #include <asm/irq_regs.h>
-@@ -208,6 +209,8 @@ static inline struct task_group *task_group(struct task_struct *p)
+@@ -208,6 +209,8 @@
  #elif defined(CONFIG_FAIR_CGROUP_SCHED)
  	tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
  				struct task_group, css);
@@ -200,7 +199,7 @@ index d26ecab..aea8628 100644
  #else
  	tg = &init_task_group;
  #endif
-@@ -7213,6 +7216,7 @@ void __init sched_init(void)
+@@ -7254,6 +7257,7 @@
  	 * During early bootup we pretend to be a normal task:
  	 */
  	current->sched_class = &fair_sched_class;
@@ -208,11 +207,10 @@ index d26ecab..aea8628 100644
  }
  
  #ifdef CONFIG_DEBUG_SPINLOCK_SLEEP
-diff --git a/kernel/vzfairsched.c b/kernel/vzfairsched.c
-new file mode 100644
-index 0000000..43c743a
---- /dev/null
-+++ b/kernel/vzfairsched.c
+Index: kernel/kernel/vzfairsched.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ kernel/kernel/vzfairsched.c	2008-11-24 15:57:08.000000000 +0100
 @@ -0,0 +1,30 @@
 +/*
 + * Fair Scheduler
@@ -244,6 +242,3 @@ index 0000000..43c743a
 +       fairsched_nr_nodes++;
 +}
 +
--- 
-1.5.4.3
-

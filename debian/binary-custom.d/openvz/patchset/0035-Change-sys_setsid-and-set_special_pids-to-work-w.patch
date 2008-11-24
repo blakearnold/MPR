@@ -11,11 +11,11 @@ Backport mainstream patch from Oleg Nesterov <oleg@tv-sign.ru> .
  kernel/sys.c          |   11 ++++++-----
  4 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 849ad15..3fda73a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1649,8 +1649,6 @@ extern struct task_struct *find_task_by_vpid(pid_t nr);
+Index: kernel/include/linux/sched.h
+===================================================================
+--- kernel.orig/include/linux/sched.h	2008-11-24 15:57:08.000000000 +0100
++++ kernel/include/linux/sched.h	2008-11-24 15:58:47.000000000 +0100
+@@ -1665,8 +1665,6 @@
  extern struct task_struct *find_task_by_pid_ns(pid_t nr,
  		struct pid_namespace *ns);
  
@@ -24,7 +24,7 @@ index 849ad15..3fda73a 100644
  /* per-UID process charging. */
  extern struct user_struct * alloc_uid(struct user_namespace *, uid_t);
  static inline struct user_struct *get_uid(struct user_struct *u)
-@@ -1662,8 +1660,8 @@ extern void free_uid(struct user_struct *);
+@@ -1678,8 +1676,8 @@
  extern void switch_uid(struct user_struct *);
  extern void release_uids(struct user_namespace *ns);
  extern int set_user(uid_t uid, int dumpclear);
@@ -35,11 +35,11 @@ index 849ad15..3fda73a 100644
  
  #include <asm/current.h>
  
-diff --git a/init/main.c b/init/main.c
-index a568c05..430df4f 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -851,7 +851,7 @@ static int __init kernel_init(void * unused)
+Index: kernel/init/main.c
+===================================================================
+--- kernel.orig/init/main.c	2008-11-24 15:57:27.000000000 +0100
++++ kernel/init/main.c	2008-11-24 15:58:47.000000000 +0100
+@@ -858,7 +858,7 @@
  	 */
  	init_pid_ns.child_reaper = current;
  
@@ -48,11 +48,11 @@ index a568c05..430df4f 100644
  	cad_pid = task_pid(current);
  
  	smp_prepare_cpus(max_cpus);
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 9760f62..594be07 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -310,26 +310,27 @@ static void reparent_to_kthreadd(void)
+Index: kernel/kernel/exit.c
+===================================================================
+--- kernel.orig/kernel/exit.c	2008-11-24 15:57:08.000000000 +0100
++++ kernel/kernel/exit.c	2008-11-24 15:58:47.000000000 +0100
+@@ -310,26 +310,27 @@
  	switch_uid(INIT_USER);
  }
  
@@ -89,7 +89,7 @@ index 9760f62..594be07 100644
  	write_unlock_irq(&tasklist_lock);
  }
  EXPORT_SYMBOL(set_special_pids);
-@@ -401,7 +402,7 @@ void daemonize(const char *name, ...)
+@@ -401,7 +402,7 @@
  	 */
  	current->flags |= PF_NOFREEZE;
  
@@ -98,11 +98,11 @@ index 9760f62..594be07 100644
  	proc_clear_tty(current);
  
  	/* Block and flush all signals */
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 1ef45b2..4a26b04 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1192,6 +1192,7 @@ asmlinkage long sys_setsid(void)
+Index: kernel/kernel/sys.c
+===================================================================
+--- kernel.orig/kernel/sys.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/sys.c	2008-11-24 15:58:47.000000000 +0100
+@@ -1192,6 +1192,7 @@
  {
  	struct task_struct *group_leader = current->group_leader;
  	pid_t session;
@@ -110,7 +110,7 @@ index 1ef45b2..4a26b04 100644
  	int err = -EPERM;
  
  	write_lock_irq(&tasklist_lock);
-@@ -1200,7 +1201,8 @@ asmlinkage long sys_setsid(void)
+@@ -1200,7 +1201,8 @@
  	if (group_leader->signal->leader)
  		goto out;
  
@@ -120,7 +120,7 @@ index 1ef45b2..4a26b04 100644
  	/* Fail if a process group id already exists that equals the
  	 * proposed session id.
  	 *
-@@ -1208,19 +1210,18 @@ asmlinkage long sys_setsid(void)
+@@ -1208,19 +1210,18 @@
  	 * session id and so the check will always fail and make it so
  	 * init cannot successfully call setsid.
  	 */
@@ -143,6 +143,3 @@ index 1ef45b2..4a26b04 100644
  out:
  	write_unlock_irq(&tasklist_lock);
  	return err;
--- 
-1.5.4.3
-

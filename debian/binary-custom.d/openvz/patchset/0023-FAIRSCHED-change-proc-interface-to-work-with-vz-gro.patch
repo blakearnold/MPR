@@ -11,11 +11,11 @@ CFS internals are different, so show (start_tag, value, delay) fields as zeros.
  kernel/vzfairsched.c      |   89 ++++++++++++++++++++-------------------------
  3 files changed, 44 insertions(+), 49 deletions(-)
 
-diff --git a/include/linux/fairsched.h b/include/linux/fairsched.h
-index cdba9a4..e08c84d 100644
---- a/include/linux/fairsched.h
-+++ b/include/linux/fairsched.h
-@@ -39,6 +39,7 @@ struct fairsched_node {
+Index: kernel/include/linux/fairsched.h
+===================================================================
+--- kernel.orig/include/linux/fairsched.h	2008-11-24 15:57:19.000000000 +0100
++++ kernel/include/linux/fairsched.h	2008-11-24 15:57:27.000000000 +0100
+@@ -39,6 +39,7 @@
  extern struct fairsched_node fairsched_init_node;
  
  void fairsched_init_early(void);
@@ -23,7 +23,7 @@ index cdba9a4..e08c84d 100644
  
  static inline int task_fairsched_node_id(struct task_struct *p)
  {
-@@ -72,6 +73,7 @@ asmlinkage int sys_fairsched_rate(unsigned int id, int op, unsigned rate);
+@@ -72,6 +73,7 @@
  #else /* CONFIG_VZ_FAIRSCHED */
  
  static inline void fairsched_init_early(void) { }
@@ -31,10 +31,10 @@ index cdba9a4..e08c84d 100644
  static inline int task_fairsched_node_id(struct task_struct *p) { return 0; }
  static inline void get_task_fairsched_node(struct task_struct *p) { }
  static inline void put_task_fairsched_node(struct task_struct *p) { }
-diff --git a/init/main.c b/init/main.c
-index 44c759e..a568c05 100644
---- a/init/main.c
-+++ b/init/main.c
+Index: kernel/init/main.c
+===================================================================
+--- kernel.orig/init/main.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/init/main.c	2008-11-24 15:57:27.000000000 +0100
 @@ -57,6 +57,7 @@
  #include <linux/device.h>
  #include <linux/kthread.h>
@@ -43,7 +43,7 @@ index 44c759e..a568c05 100644
  
  #include <bc/beancounter.h>
  
-@@ -858,6 +859,7 @@ static int __init kernel_init(void * unused)
+@@ -865,6 +866,7 @@
  	do_pre_smp_initcalls();
  
  	smp_init();
@@ -51,11 +51,11 @@ index 44c759e..a568c05 100644
  	sched_init_smp();
  
  	cpuset_init_smp();
-diff --git a/kernel/vzfairsched.c b/kernel/vzfairsched.c
-index 12f4874..74f6d6e 100644
---- a/kernel/vzfairsched.c
-+++ b/kernel/vzfairsched.c
-@@ -337,37 +337,31 @@ EXPORT_SYMBOL(sys_fairsched_mvpr);
+Index: kernel/kernel/vzfairsched.c
+===================================================================
+--- kernel.orig/kernel/vzfairsched.c	2008-11-24 15:57:26.000000000 +0100
++++ kernel/kernel/vzfairsched.c	2008-11-24 15:57:27.000000000 +0100
+@@ -337,37 +337,31 @@
   */
  /*********************************************************************/
  
@@ -100,7 +100,7 @@ index 12f4874..74f6d6e 100644
  
  start:
  	nr_nodes = (ve_is_super(get_exec_env()) ? fairsched_nr_nodes + 16 : 1);
-@@ -376,7 +370,7 @@ start:
+@@ -376,7 +370,7 @@
  	if (dump == NULL)
  		goto out;
  
@@ -109,7 +109,7 @@ index 12f4874..74f6d6e 100644
  	if (ve_is_super(get_exec_env()) && nr_nodes < fairsched_nr_nodes)
  		goto repeat;
  	p = dump->nodes;
-@@ -388,39 +382,24 @@ start:
+@@ -388,39 +382,24 @@
  #ifdef CONFIG_VE
  		if (!ve_accessible(node->owner_env, get_exec_env()))
  			continue;
@@ -154,7 +154,7 @@ index 12f4874..74f6d6e 100644
  	vfree(dump);
  	goto start;
  }
-@@ -429,7 +408,7 @@ repeat:
+@@ -429,7 +408,7 @@
  
  #define FAIRSHED_DEBUG          " debug"
  
@@ -163,7 +163,7 @@ index 12f4874..74f6d6e 100644
  /*
   * File format is dictated by compatibility reasons.
   */
-@@ -451,7 +430,7 @@ static int fairsched_seq_show(struct seq_file *m, void *v)
+@@ -451,7 +430,7 @@
  				       "    parent "
  				       "weight "
  				       " rate "
@@ -172,7 +172,7 @@ index 12f4874..74f6d6e 100644
  				       "  run "
  				       "cpus"
  				       " "
-@@ -491,12 +470,9 @@ static int fairsched_seq_show(struct seq_file *m, void *v)
+@@ -491,12 +470,9 @@
  			       p->nr_runtasks,
  			       p->nr_pcpu,
  			       p->rate_limited ? 'L' : '.',
@@ -188,7 +188,7 @@ index 12f4874..74f6d6e 100644
  	}
  
  	return 0;
-@@ -523,7 +499,7 @@ static void *fairsched_seq_next(struct seq_file *m, void *v, loff_t *pos)
+@@ -523,7 +499,7 @@
  	++*pos;
  	return fairsched_seq_start(m, pos);
  }
@@ -197,7 +197,7 @@ index 12f4874..74f6d6e 100644
  
  static int fairsched2_seq_show(struct seq_file *m, void *v)
  {
-@@ -563,16 +539,14 @@ static int fairsched2_seq_show(struct seq_file *m, void *v)
+@@ -563,16 +539,14 @@
  			       p->id,
  			       p->weight,
  			       p->rate,
@@ -218,7 +218,7 @@ index 12f4874..74f6d6e 100644
  #endif
  			       );
  	}
-@@ -654,4 +628,21 @@ static struct file_operations proc_fairsched_operations = {
+@@ -654,4 +628,21 @@
  	.release	= fairsched_seq_release
  };
  
@@ -240,6 +240,3 @@ index 12f4874..74f6d6e 100644
 +void __init fairsched_init_late(void) { }
 +
  #endif /* CONFIG_PROC_FS */
--- 
-1.5.4.3
-

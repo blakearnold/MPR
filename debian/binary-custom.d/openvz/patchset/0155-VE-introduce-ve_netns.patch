@@ -49,11 +49,11 @@ Preparations for fixing "NULL ->ve_ns" oops in inet6_rt_notify().
  net/netfilter/xt_hashlimit.c                       |    4 +-
  42 files changed, 101 insertions(+), 98 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 2fcf253..07531b7 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -495,7 +495,7 @@ static struct tun_struct *tun_get_by_name(const char *name)
+Index: kernel/drivers/net/tun.c
+===================================================================
+--- kernel.orig/drivers/net/tun.c	2008-11-24 15:59:11.000000000 +0100
++++ kernel/drivers/net/tun.c	2008-11-24 16:08:08.000000000 +0100
+@@ -495,7 +495,7 @@
  
  static int tun_set_iff(struct file *file, struct ifreq *ifr)
  {
@@ -62,11 +62,11 @@ index 2fcf253..07531b7 100644
  	struct tun_struct *tun;
  	struct net_device *dev;
  	int err;
-diff --git a/drivers/net/venet_core.c b/drivers/net/venet_core.c
-index 7c718d8..ea7db31 100644
---- a/drivers/net/venet_core.c
-+++ b/drivers/net/venet_core.c
-@@ -374,7 +374,7 @@ venet_set_op(struct net_device *dev, u32 data,
+Index: kernel/drivers/net/venet_core.c
+===================================================================
+--- kernel.orig/drivers/net/venet_core.c	2008-11-24 16:01:57.000000000 +0100
++++ kernel/drivers/net/venet_core.c	2008-11-24 16:08:08.000000000 +0100
+@@ -374,7 +374,7 @@
  
  		ve_old = set_exec_env(ve);
  		read_lock(&dev_base_lock);
@@ -75,7 +75,7 @@ index 7c718d8..ea7db31 100644
  			if (dev->hard_start_xmit == venet_xmit)
  				ret = fop(dev, data);
  		}
-@@ -630,7 +630,7 @@ int venet_dev_start(struct ve_struct *ve)
+@@ -630,7 +630,7 @@
  	dev_venet = alloc_netdev(0, "venet%d", venet_setup);
  	if (!dev_venet)
  		return -ENOMEM;
@@ -84,11 +84,11 @@ index 7c718d8..ea7db31 100644
  	err = dev_alloc_name(dev_venet, dev_venet->name);
  	if (err<0)
  		goto err;
-diff --git a/drivers/net/vzethdev.c b/drivers/net/vzethdev.c
-index 2c52593..041e3e8 100644
---- a/drivers/net/vzethdev.c
-+++ b/drivers/net/vzethdev.c
-@@ -609,7 +609,7 @@ struct net_device * veth_dev_start(char *dev_addr, char *name)
+Index: kernel/drivers/net/vzethdev.c
+===================================================================
+--- kernel.orig/drivers/net/vzethdev.c	2008-11-24 15:59:31.000000000 +0100
++++ kernel/drivers/net/vzethdev.c	2008-11-24 16:08:08.000000000 +0100
+@@ -609,7 +609,7 @@
  	dev = alloc_netdev(sizeof(struct veth_struct), name, veth_setup);
  	if (!dev)
  		return ERR_PTR(-ENOMEM);
@@ -97,11 +97,11 @@ index 2c52593..041e3e8 100644
  	if (strchr(dev->name, '%')) {
  		err = dev_alloc_name(dev, dev->name);
  		if (err < 0)
-diff --git a/include/linux/ve.h b/include/linux/ve.h
-index 88ecd3b..544e579 100644
---- a/include/linux/ve.h
-+++ b/include/linux/ve.h
-@@ -342,6 +342,7 @@ struct ve_struct {
+Index: kernel/include/linux/ve.h
+===================================================================
+--- kernel.orig/include/linux/ve.h	2008-11-24 16:01:25.000000000 +0100
++++ kernel/include/linux/ve.h	2008-11-24 16:08:08.000000000 +0100
+@@ -342,6 +342,7 @@
  #endif
  
  	struct nsproxy		*ve_ns;
@@ -109,11 +109,11 @@ index 88ecd3b..544e579 100644
  #ifdef CONFIG_GRKERNSEC
  	struct {
  		int		lock;
-diff --git a/kernel/cpt/cpt_dump.c b/kernel/cpt/cpt_dump.c
-index 72b7712..8f2be51 100644
---- a/kernel/cpt/cpt_dump.c
-+++ b/kernel/cpt/cpt_dump.c
-@@ -1035,7 +1035,7 @@ out_wake:
+Index: kernel/kernel/cpt/cpt_dump.c
+===================================================================
+--- kernel.orig/kernel/cpt/cpt_dump.c	2008-11-24 16:00:38.000000000 +0100
++++ kernel/kernel/cpt/cpt_dump.c	2008-11-24 16:08:08.000000000 +0100
+@@ -1035,7 +1035,7 @@
  
  static void check_unsupported_netdevices(struct cpt_context *ctx, __u32 *caps)
  {
@@ -122,11 +122,11 @@ index 72b7712..8f2be51 100644
  	struct net_device *dev;
  
  	read_lock(&dev_base_lock);
-diff --git a/kernel/cpt/cpt_net.c b/kernel/cpt/cpt_net.c
-index 1944654..46671b1 100644
---- a/kernel/cpt/cpt_net.c
-+++ b/kernel/cpt/cpt_net.c
-@@ -153,7 +153,7 @@ static void cpt_dump_tuntap(struct net_device *dev, struct cpt_context * ctx)
+Index: kernel/kernel/cpt/cpt_net.c
+===================================================================
+--- kernel.orig/kernel/cpt/cpt_net.c	2008-11-24 16:00:36.000000000 +0100
++++ kernel/kernel/cpt/cpt_net.c	2008-11-24 16:08:08.000000000 +0100
+@@ -153,7 +153,7 @@
  
  int cpt_dump_link(struct cpt_context * ctx)
  {
@@ -135,7 +135,7 @@ index 1944654..46671b1 100644
  	struct net_device *dev;
  
  	cpt_open_section(ctx, CPT_SECT_NET_DEVICE);
-@@ -237,7 +237,7 @@ int cpt_resume_network(struct cpt_context *ctx)
+@@ -237,7 +237,7 @@
  
  int cpt_dump_ifaddr(struct cpt_context * ctx)
  {
@@ -144,11 +144,11 @@ index 1944654..46671b1 100644
  	struct net_device *dev;
  
  	cpt_open_section(ctx, CPT_SECT_NET_IFADDR);
-diff --git a/kernel/cpt/rst_net.c b/kernel/cpt/rst_net.c
-index aa79c8b..7575dd8 100644
---- a/kernel/cpt/rst_net.c
-+++ b/kernel/cpt/rst_net.c
-@@ -48,7 +48,7 @@ extern struct in_device *inetdev_init(struct net_device *dev);
+Index: kernel/kernel/cpt/rst_net.c
+===================================================================
+--- kernel.orig/kernel/cpt/rst_net.c	2008-11-24 16:01:08.000000000 +0100
++++ kernel/kernel/cpt/rst_net.c	2008-11-24 16:08:08.000000000 +0100
+@@ -48,7 +48,7 @@
  
  int rst_restore_ifaddr(struct cpt_context *ctx)
  {
@@ -157,7 +157,7 @@ index aa79c8b..7575dd8 100644
  	int err;
  	loff_t sec = ctx->sections[CPT_SECT_NET_IFADDR];
  	loff_t endsec;
-@@ -408,7 +408,7 @@ static int rst_restore_netstats(loff_t pos, struct net_device *dev,
+@@ -408,7 +408,7 @@
  {
  	struct cpt_netstats_image *n;
  	struct net_device_stats *stats = NULL;
@@ -166,7 +166,7 @@ index aa79c8b..7575dd8 100644
  	int err;
  
  	if (!dev->get_stats)
-@@ -472,7 +472,7 @@ out:
+@@ -472,7 +472,7 @@
  
  int rst_restore_netdev(struct cpt_context *ctx)
  {
@@ -175,11 +175,11 @@ index aa79c8b..7575dd8 100644
  	int err;
  	loff_t sec = ctx->sections[CPT_SECT_NET_DEVICE];
  	loff_t endsec;
-diff --git a/kernel/ve/ve.c b/kernel/ve/ve.c
-index 2756622..e61e647 100644
---- a/kernel/ve/ve.c
-+++ b/kernel/ve/ve.c
-@@ -111,6 +111,7 @@ struct ve_struct ve0 = {
+Index: kernel/kernel/ve/ve.c
+===================================================================
+--- kernel.orig/kernel/ve/ve.c	2008-11-24 16:01:59.000000000 +0100
++++ kernel/kernel/ve/ve.c	2008-11-24 16:08:08.000000000 +0100
+@@ -111,6 +111,7 @@
  	.devpts_config		= &devpts_config,
  #endif
  	.ve_ns			= &init_nsproxy,
@@ -187,11 +187,11 @@ index 2756622..e61e647 100644
  	.is_running		= 1,
  	.op_sem			= __RWSEM_INITIALIZER(ve0.op_sem),
  };
-diff --git a/kernel/ve/vecalls.c b/kernel/ve/vecalls.c
-index 07042bf..ee5d600 100644
---- a/kernel/ve/vecalls.c
-+++ b/kernel/ve/vecalls.c
-@@ -991,6 +991,7 @@ static int init_ve_netns(struct ve_struct *ve, struct nsproxy **old)
+Index: kernel/kernel/ve/vecalls.c
+===================================================================
+--- kernel.orig/kernel/ve/vecalls.c	2008-11-24 16:01:59.000000000 +0100
++++ kernel/kernel/ve/vecalls.c	2008-11-24 16:08:08.000000000 +0100
+@@ -991,6 +991,7 @@
  
  	put_nsproxy(ve->ve_ns);
  	ve->ve_ns = get_nsproxy(tsk->nsproxy);
@@ -199,7 +199,7 @@ index 07042bf..ee5d600 100644
  	*old = cur;
  	return 0;
  }
-@@ -2156,7 +2157,7 @@ static int ve_dev_add(envid_t veid, char *dev_name)
+@@ -2156,7 +2157,7 @@
  	if (dst_ve == NULL)
  		goto out;
  
@@ -208,7 +208,7 @@ index 07042bf..ee5d600 100644
  
  	rtnl_lock();
  	read_lock(&dev_base_lock);
-@@ -2189,7 +2190,7 @@ static int ve_dev_del(envid_t veid, char *dev_name)
+@@ -2189,7 +2190,7 @@
  	if (src_ve == NULL)
  		goto out;
  
@@ -217,7 +217,7 @@ index 07042bf..ee5d600 100644
  
  	rtnl_lock();
  
-@@ -2228,7 +2229,7 @@ int real_ve_dev_map(envid_t veid, int op, char *dev_name)
+@@ -2228,7 +2229,7 @@
  
  static void ve_mapped_devs_cleanup(struct ve_struct *ve)
  {
@@ -226,11 +226,11 @@ index 07042bf..ee5d600 100644
  	struct net_device *dev, *next;
  	int rv;
  
-diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-index 5c53f2e..1baa715 100644
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -604,7 +604,7 @@ static int register_vlan_device(struct net_device *real_dev,
+Index: kernel/net/8021q/vlan.c
+===================================================================
+--- kernel.orig/net/8021q/vlan.c	2008-11-24 16:00:29.000000000 +0100
++++ kernel/net/8021q/vlan.c	2008-11-24 16:08:08.000000000 +0100
+@@ -604,7 +604,7 @@
  	if (new_dev == NULL)
  		return -ENOBUFS;
  
@@ -239,11 +239,11 @@ index 5c53f2e..1baa715 100644
  	/* need 4 bytes for extra VLAN header info,
  	 * hope the underlying device can handle it.
  	 */
-diff --git a/net/8021q/vlanproc.c b/net/8021q/vlanproc.c
-index 1207c21..1070214 100644
---- a/net/8021q/vlanproc.c
-+++ b/net/8021q/vlanproc.c
-@@ -166,7 +166,7 @@ static const char *vlan_name_type_str[VLAN_NAME_TYPE_HIGHEST] = {
+Index: kernel/net/8021q/vlanproc.c
+===================================================================
+--- kernel.orig/net/8021q/vlanproc.c	2008-11-24 16:00:29.000000000 +0100
++++ kernel/net/8021q/vlanproc.c	2008-11-24 16:08:08.000000000 +0100
+@@ -166,7 +166,7 @@
  
  void vlan_proc_cleanup(void)
  {
@@ -252,7 +252,7 @@ index 1207c21..1070214 100644
  
  	if (proc_vlan_conf)
  		remove_proc_entry(name_conf, proc_vlan_dir);
-@@ -185,7 +185,7 @@ void vlan_proc_cleanup(void)
+@@ -185,7 +185,7 @@
  
  int vlan_proc_init(void)
  {
@@ -261,11 +261,11 @@ index 1207c21..1070214 100644
  
  	proc_vlan_dir = proc_mkdir(name_root, net->proc_net);
  	if (proc_vlan_dir) {
-diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
-index af51000..30eacc0 100644
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -82,7 +82,7 @@ nla_put_failure:
+Index: kernel/net/bridge/br_netlink.c
+===================================================================
+--- kernel.orig/net/bridge/br_netlink.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/bridge/br_netlink.c	2008-11-24 16:08:08.000000000 +0100
+@@ -82,7 +82,7 @@
   */
  void br_ifinfo_notify(int event, struct net_bridge_port *port)
  {
@@ -274,11 +274,11 @@ index af51000..30eacc0 100644
  	struct sk_buff *skb;
  	int err = -ENOBUFS;
  
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index 39f8645..c70b8b8 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -575,7 +575,7 @@ static void notify_rule_change(int event, struct fib_rule *rule,
+Index: kernel/net/core/fib_rules.c
+===================================================================
+--- kernel.orig/net/core/fib_rules.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/core/fib_rules.c	2008-11-24 16:08:08.000000000 +0100
+@@ -575,7 +575,7 @@
  			       struct fib_rules_ops *ops, struct nlmsghdr *nlh,
  			       u32 pid)
  {
@@ -287,11 +287,11 @@ index 39f8645..c70b8b8 100644
  	struct sk_buff *skb;
  	int err = -ENOBUFS;
  
-diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
-index a3e5ca7..e0fcfaf 100644
---- a/net/ipv4/arp.c
-+++ b/net/ipv4/arp.c
-@@ -961,7 +961,7 @@ static int arp_req_set(struct arpreq *r, struct net_device * dev)
+Index: kernel/net/ipv4/arp.c
+===================================================================
+--- kernel.orig/net/ipv4/arp.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/arp.c	2008-11-24 16:08:08.000000000 +0100
+@@ -961,7 +961,7 @@
  		if (mask && mask != htonl(0xFFFFFFFF))
  			return -EINVAL;
  		if (!dev && (r->arp_flags & ATF_COM)) {
@@ -300,7 +300,7 @@ index a3e5ca7..e0fcfaf 100644
  			if (!dev)
  				return -ENODEV;
  		}
-@@ -1150,7 +1150,7 @@ int arp_ioctl(unsigned int cmd, void __user *arg)
+@@ -1150,7 +1150,7 @@
  	rtnl_lock();
  	if (r.arp_dev[0]) {
  		err = -ENODEV;
@@ -309,11 +309,11 @@ index a3e5ca7..e0fcfaf 100644
  			goto out;
  
  		/* Mmmm... It is wrong... ARPHRD_NETROM==0 */
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index d26e56c..536abd6 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -427,7 +427,7 @@ struct in_device *inetdev_by_index(int ifindex)
+Index: kernel/net/ipv4/devinet.c
+===================================================================
+--- kernel.orig/net/ipv4/devinet.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/ipv4/devinet.c	2008-11-24 16:08:08.000000000 +0100
+@@ -427,7 +427,7 @@
  	struct net_device *dev;
  	struct in_device *in_dev = NULL;
  	read_lock(&dev_base_lock);
@@ -322,7 +322,7 @@ index d26e56c..536abd6 100644
  	if (dev)
  		in_dev = in_dev_get(dev);
  	read_unlock(&dev_base_lock);
-@@ -514,7 +514,7 @@ static struct in_ifaddr *rtm_to_ifaddr(struct nlmsghdr *nlh)
+@@ -514,7 +514,7 @@
  		goto errout;
  	}
  
@@ -331,7 +331,7 @@ index d26e56c..536abd6 100644
  	if (dev == NULL) {
  		err = -ENODEV;
  		goto errout;
-@@ -618,7 +618,7 @@ int devinet_ioctl(unsigned int cmd, void __user *arg)
+@@ -618,7 +618,7 @@
  	char *colon;
  	int ret = -EFAULT;
  	int tryaddrmatch = 0;
@@ -340,7 +340,7 @@ index d26e56c..536abd6 100644
  
  	/*
  	 *	Fetch the caller's info block into kernel space
-@@ -917,7 +917,7 @@ no_in_dev:
+@@ -917,7 +917,7 @@
  	 */
  	read_lock(&dev_base_lock);
  	rcu_read_lock();
@@ -349,7 +349,7 @@ index d26e56c..536abd6 100644
  		if ((in_dev = __in_dev_get_rcu(dev)) == NULL)
  			continue;
  
-@@ -996,7 +996,7 @@ __be32 inet_confirm_addr(const struct net_device *dev, __be32 dst, __be32 local,
+@@ -996,7 +996,7 @@
  
  	read_lock(&dev_base_lock);
  	rcu_read_lock();
@@ -358,7 +358,7 @@ index d26e56c..536abd6 100644
  		if ((in_dev = __in_dev_get_rcu(dev))) {
  			addr = confirm_addr_indev(in_dev, dst, local, scope);
  			if (addr)
-@@ -1190,7 +1190,7 @@ static int inet_dump_ifaddr(struct sk_buff *skb, struct netlink_callback *cb)
+@@ -1190,7 +1190,7 @@
  
  	s_ip_idx = ip_idx = cb->args[1];
  	idx = 0;
@@ -367,7 +367,7 @@ index d26e56c..536abd6 100644
  		if (idx < s_idx)
  			goto cont;
  		if (idx > s_idx)
-@@ -1250,7 +1250,7 @@ static void devinet_copy_dflt_conf(int i)
+@@ -1250,7 +1250,7 @@
  	struct net_device *dev;
  
  	read_lock(&dev_base_lock);
@@ -376,7 +376,7 @@ index d26e56c..536abd6 100644
  		struct in_device *in_dev;
  		rcu_read_lock();
  		in_dev = __in_dev_get_rcu(dev);
-@@ -1338,7 +1338,7 @@ void inet_forward_change(void)
+@@ -1338,7 +1338,7 @@
  	IPV4_DEVCONF_DFLT(FORWARDING) = on;
  
  	read_lock(&dev_base_lock);
@@ -385,11 +385,11 @@ index d26e56c..536abd6 100644
  		struct in_device *in_dev;
  		rcu_read_lock();
  		in_dev = __in_dev_get_rcu(dev);
-diff --git a/net/ipv4/fib_frontend.c b/net/ipv4/fib_frontend.c
-index 8c4b457..2da93aa 100644
---- a/net/ipv4/fib_frontend.c
-+++ b/net/ipv4/fib_frontend.c
-@@ -352,7 +352,7 @@ static int rtentry_to_fib_config(int cmd, struct rtentry *rt,
+Index: kernel/net/ipv4/fib_frontend.c
+===================================================================
+--- kernel.orig/net/ipv4/fib_frontend.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/fib_frontend.c	2008-11-24 16:08:08.000000000 +0100
+@@ -352,7 +352,7 @@
  		colon = strchr(devname, ':');
  		if (colon)
  			*colon = 0;
@@ -398,11 +398,11 @@ index 8c4b457..2da93aa 100644
  		if (!dev)
  			return -ENODEV;
  		cfg->fc_oif = dev->ifindex;
-diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
-index de7a06f..f93a5e5 100644
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -325,7 +325,7 @@ void rtmsg_fib(int event, __be32 key, struct fib_alias *fa,
+Index: kernel/net/ipv4/fib_semantics.c
+===================================================================
+--- kernel.orig/net/ipv4/fib_semantics.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/ipv4/fib_semantics.c	2008-11-24 16:08:08.000000000 +0100
+@@ -325,7 +325,7 @@
  	       int dst_len, u32 tb_id, struct nl_info *info,
  	       unsigned int nlm_flags)
  {
@@ -411,7 +411,7 @@ index de7a06f..f93a5e5 100644
  	struct sk_buff *skb;
  	u32 seq = info->nlh ? info->nlh->nlmsg_seq : 0;
  	int err = -ENOBUFS;
-@@ -556,7 +556,7 @@ static int fib_check_nh(struct fib_config *cfg, struct fib_info *fi,
+@@ -556,7 +556,7 @@
  				return -EINVAL;
  			if (inet_addr_type(nh->nh_gw) != RTN_UNICAST)
  				return -EINVAL;
@@ -420,7 +420,7 @@ index de7a06f..f93a5e5 100644
  				return -ENODEV;
  			if (!(dev->flags&IFF_UP))
  				return -ENETDOWN;
-@@ -822,7 +822,7 @@ struct fib_info *fib_create_info(struct fib_config *cfg)
+@@ -822,7 +822,7 @@
  		if (nhs != 1 || nh->nh_gw)
  			goto err_inval;
  		nh->nh_scope = RT_SCOPE_NOWHERE;
@@ -429,11 +429,11 @@ index de7a06f..f93a5e5 100644
  		err = -ENODEV;
  		if (nh->nh_dev == NULL)
  			goto failure;
-diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
-index 15a989d..66f149e 100644
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -514,7 +514,7 @@ void icmp_send(struct sk_buff *skb_in, int type, int code, __be32 info)
+Index: kernel/net/ipv4/icmp.c
+===================================================================
+--- kernel.orig/net/ipv4/icmp.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/icmp.c	2008-11-24 16:08:08.000000000 +0100
+@@ -514,7 +514,7 @@
  		struct net_device *dev = NULL;
  
  		if (rt->fl.iif && sysctl_icmp_errors_use_inbound_ifaddr)
@@ -442,11 +442,11 @@ index 15a989d..66f149e 100644
  
  		if (dev) {
  			saddr = inet_select_addr(dev, 0, RT_SCOPE_LINK);
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 5bfd510..d94038f 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -2301,7 +2301,7 @@ static inline struct ip_mc_list *igmp_mc_get_first(struct seq_file *seq)
+Index: kernel/net/ipv4/igmp.c
+===================================================================
+--- kernel.orig/net/ipv4/igmp.c	2008-11-24 16:00:59.000000000 +0100
++++ kernel/net/ipv4/igmp.c	2008-11-24 16:08:08.000000000 +0100
+@@ -2301,7 +2301,7 @@
  	struct igmp_mc_iter_state *state = igmp_mc_seq_private(seq);
  
  	state->in_dev = NULL;
@@ -455,7 +455,7 @@ index 5bfd510..d94038f 100644
  		struct in_device *in_dev;
  
  		in_dev = in_dev_get(state->dev);
-@@ -2449,7 +2449,7 @@ static inline struct ip_sf_list *igmp_mcf_get_first(struct seq_file *seq)
+@@ -2449,7 +2449,7 @@
  
  	state->idev = NULL;
  	state->im = NULL;
@@ -464,11 +464,11 @@ index 5bfd510..d94038f 100644
  		struct in_device *idev;
  
  		idev = in_dev_get(state->dev);
-diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
-index eac0f0e..bcfd004 100644
---- a/net/ipv4/ip_fragment.c
-+++ b/net/ipv4/ip_fragment.c
-@@ -228,7 +228,7 @@ static void ip_expire(unsigned long arg)
+Index: kernel/net/ipv4/ip_fragment.c
+===================================================================
+--- kernel.orig/net/ipv4/ip_fragment.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/ip_fragment.c	2008-11-24 16:08:08.000000000 +0100
+@@ -228,7 +228,7 @@
  	if ((qp->q.last_in&FIRST_IN) && qp->q.fragments != NULL) {
  		struct sk_buff *head = qp->q.fragments;
  		/* Send an ICMP "Fragment Reassembly Timeout" message. */
@@ -477,11 +477,11 @@ index eac0f0e..bcfd004 100644
  			icmp_send(head, ICMP_TIME_EXCEEDED, ICMP_EXC_FRAGTIME, 0);
  			dev_put(head->dev);
  		}
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index 3550870..6025bdb 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -263,7 +263,7 @@ static struct ip_tunnel * ipgre_tunnel_locate(struct ip_tunnel_parm *parms, int
+Index: kernel/net/ipv4/ip_gre.c
+===================================================================
+--- kernel.orig/net/ipv4/ip_gre.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/ip_gre.c	2008-11-24 16:08:08.000000000 +0100
+@@ -263,7 +263,7 @@
  		int i;
  		for (i=1; i<100; i++) {
  			sprintf(name, "gre%d", i);
@@ -490,7 +490,7 @@ index 3550870..6025bdb 100644
  				break;
  		}
  		if (i==100)
-@@ -1211,7 +1211,7 @@ static int ipgre_tunnel_init(struct net_device *dev)
+@@ -1211,7 +1211,7 @@
  	}
  
  	if (!tdev && tunnel->parms.link)
@@ -499,11 +499,11 @@ index 3550870..6025bdb 100644
  
  	if (tdev) {
  		hlen = tdev->hard_header_len;
-diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
-index 44ed1f0..27e5d12 100644
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -602,7 +602,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+Index: kernel/net/ipv4/ip_sockglue.c
+===================================================================
+--- kernel.orig/net/ipv4/ip_sockglue.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/ip_sockglue.c	2008-11-24 16:08:08.000000000 +0100
+@@ -596,7 +596,7 @@
  				dev_put(dev);
  			}
  		} else
@@ -512,11 +512,11 @@ index 44ed1f0..27e5d12 100644
  
  
  		err = -EADDRNOTAVAIL;
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index e69f45c..4d3231d 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -185,7 +185,7 @@ static int __init ic_open_devs(void)
+Index: kernel/net/ipv4/ipconfig.c
+===================================================================
+--- kernel.orig/net/ipv4/ipconfig.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/ipconfig.c	2008-11-24 16:08:08.000000000 +0100
+@@ -185,7 +185,7 @@
  	struct ic_device *d, **last;
  	struct net_device *dev;
  	unsigned short oflags;
@@ -525,11 +525,11 @@ index e69f45c..4d3231d 100644
  
  	last = &ic_first_dev;
  	rtnl_lock();
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 09ddf1c..9dd4d8e 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -226,7 +226,7 @@ static struct ip_tunnel * ipip_tunnel_locate(struct ip_tunnel_parm *parms, int c
+Index: kernel/net/ipv4/ipip.c
+===================================================================
+--- kernel.orig/net/ipv4/ipip.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/ipip.c	2008-11-24 16:08:08.000000000 +0100
+@@ -226,7 +226,7 @@
  		int i;
  		for (i=1; i<100; i++) {
  			sprintf(name, "tunl%d", i);
@@ -538,7 +538,7 @@ index 09ddf1c..9dd4d8e 100644
  				break;
  		}
  		if (i==100)
-@@ -821,7 +821,7 @@ static int ipip_tunnel_init(struct net_device *dev)
+@@ -821,7 +821,7 @@
  	}
  
  	if (!tdev && tunnel->parms.link)
@@ -547,11 +547,11 @@ index 09ddf1c..9dd4d8e 100644
  
  	if (tdev) {
  		dev->hard_header_len = tdev->hard_header_len + sizeof(struct iphdr);
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index 1cb6670..6f0e69d 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -124,7 +124,7 @@ static struct timer_list ipmr_expire_timer;
+Index: kernel/net/ipv4/ipmr.c
+===================================================================
+--- kernel.orig/net/ipv4/ipmr.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/ipv4/ipmr.c	2008-11-24 16:08:08.000000000 +0100
+@@ -124,7 +124,7 @@
  static
  struct net_device *ipmr_new_tunnel(struct vifctl *v)
  {
@@ -560,11 +560,11 @@ index 1cb6670..6f0e69d 100644
  	struct net_device  *dev;
  
  	dev = __dev_get_by_name(net, "tunl0");
-diff --git a/net/ipv4/ipvs/ip_vs_sync.c b/net/ipv4/ipvs/ip_vs_sync.c
-index a0eda7b..0995e90 100644
---- a/net/ipv4/ipvs/ip_vs_sync.c
-+++ b/net/ipv4/ipvs/ip_vs_sync.c
-@@ -405,7 +405,7 @@ static int set_mcast_if(struct sock *sk, char *ifname)
+Index: kernel/net/ipv4/ipvs/ip_vs_sync.c
+===================================================================
+--- kernel.orig/net/ipv4/ipvs/ip_vs_sync.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/ipvs/ip_vs_sync.c	2008-11-24 16:08:08.000000000 +0100
+@@ -405,7 +405,7 @@
  	struct net_device *dev;
  	struct inet_sock *inet = inet_sk(sk);
  
@@ -573,7 +573,7 @@ index a0eda7b..0995e90 100644
  		return -ENODEV;
  
  	if (sk->sk_bound_dev_if && dev->ifindex != sk->sk_bound_dev_if)
-@@ -426,7 +426,7 @@ static int set_mcast_if(struct sock *sk, char *ifname)
+@@ -426,7 +426,7 @@
   */
  static int set_sync_mesg_maxlen(int sync_state)
  {
@@ -582,7 +582,7 @@ index a0eda7b..0995e90 100644
  	struct net_device *dev;
  	int num;
  
-@@ -470,7 +470,7 @@ join_mcast_group(struct sock *sk, struct in_addr *addr, char *ifname)
+@@ -470,7 +470,7 @@
  	memset(&mreq, 0, sizeof(mreq));
  	memcpy(&mreq.imr_multiaddr, addr, sizeof(struct in_addr));
  
@@ -591,7 +591,7 @@ index a0eda7b..0995e90 100644
  		return -ENODEV;
  	if (sk->sk_bound_dev_if && dev->ifindex != sk->sk_bound_dev_if)
  		return -EINVAL;
-@@ -491,7 +491,7 @@ static int bind_mcastif_addr(struct socket *sock, char *ifname)
+@@ -491,7 +491,7 @@
  	__be32 addr;
  	struct sockaddr_in sin;
  
@@ -600,11 +600,11 @@ index a0eda7b..0995e90 100644
  		return -ENODEV;
  
  	addr = inet_select_addr(dev, 0, RT_SCOPE_UNIVERSE);
-diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-index 7f35e31..13b7d17 100644
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -402,7 +402,7 @@ checkentry(const char *tablename,
+Index: kernel/net/ipv4/netfilter/ipt_CLUSTERIP.c
+===================================================================
+--- kernel.orig/net/ipv4/netfilter/ipt_CLUSTERIP.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/netfilter/ipt_CLUSTERIP.c	2008-11-24 16:08:08.000000000 +0100
+@@ -402,7 +402,7 @@
  				return false;
  			}
  
@@ -613,11 +613,11 @@ index 7f35e31..13b7d17 100644
  			if (!dev) {
  				printk(KERN_WARNING "CLUSTERIP: no such interface %s\n", e->ip.iniface);
  				return false;
-diff --git a/net/ipv4/netfilter/ipt_recent.c b/net/ipv4/netfilter/ipt_recent.c
-index a6e4080..6556adb 100644
---- a/net/ipv4/netfilter/ipt_recent.c
-+++ b/net/ipv4/netfilter/ipt_recent.c
-@@ -508,7 +508,7 @@ static int init_ipt_recent(struct ve_struct *ve)
+Index: kernel/net/ipv4/netfilter/ipt_recent.c
+===================================================================
+--- kernel.orig/net/ipv4/netfilter/ipt_recent.c	2008-11-24 15:57:31.000000000 +0100
++++ kernel/net/ipv4/netfilter/ipt_recent.c	2008-11-24 16:08:08.000000000 +0100
+@@ -508,7 +508,7 @@
  #ifdef CONFIG_PROC_FS
  	if (err)
  		return err;
@@ -626,7 +626,7 @@ index a6e4080..6556adb 100644
  	if (proc_dir == NULL) {
  		err = -ENOMEM;
  		goto out_mem;
-@@ -525,7 +525,7 @@ out_mem:
+@@ -525,7 +525,7 @@
  
  static void fini_ipt_recent(struct ve_struct *ve)
  {
@@ -635,11 +635,11 @@ index a6e4080..6556adb 100644
  #ifdef CONFIG_VE_IPTABLES
  	kfree(ve->_ipt_recent);
  	ve->_ipt_recent = NULL;
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-index 7418e5d..e5c18f0 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-@@ -422,7 +422,7 @@ static ctl_table ip_ct_net_table[] = {
+Index: kernel/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+===================================================================
+--- kernel.orig/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c	2008-11-24 16:08:08.000000000 +0100
+@@ -422,7 +422,7 @@
  
  int nf_conntrack_ipv4_compat_init(void)
  {
@@ -648,7 +648,7 @@ index 7418e5d..e5c18f0 100644
  	struct proc_dir_entry *proc, *proc_exp, *proc_stat;
  
  	proc = proc_net_fops_create(net, "ip_conntrack", 0440, &ct_file_ops);
-@@ -471,7 +471,7 @@ err1:
+@@ -471,7 +471,7 @@
  
  void nf_conntrack_ipv4_compat_fini(void)
  {
@@ -657,11 +657,11 @@ index 7418e5d..e5c18f0 100644
  
  	unregister_sysctl_table(ve_ip_ct_sysctl_header);
  	if (!ve_is_super(get_exec_env()))
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index b924a30..0cc11c5 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1684,7 +1684,7 @@ static int ip_route_input_mc(struct sk_buff *skb, __be32 daddr, __be32 saddr,
+Index: kernel/net/ipv4/route.c
+===================================================================
+--- kernel.orig/net/ipv4/route.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/ipv4/route.c	2008-11-24 16:08:08.000000000 +0100
+@@ -1684,7 +1684,7 @@
  #endif
  	rth->rt_iif	=
  	rth->fl.iif	= dev->ifindex;
@@ -670,7 +670,7 @@ index b924a30..0cc11c5 100644
  	dev_hold(rth->u.dst.dev);
  	rth->idev	= in_dev_get(rth->u.dst.dev);
  	rth->fl.oif	= 0;
-@@ -1944,7 +1944,7 @@ static int ip_route_input_slow(struct sk_buff *skb, __be32 daddr, __be32 saddr,
+@@ -1944,7 +1944,7 @@
  	if (res.type == RTN_LOCAL) {
  		int result;
  		result = fib_validate_source(saddr, daddr, tos,
@@ -679,7 +679,7 @@ index b924a30..0cc11c5 100644
  					     dev, &spec_dst, &itag);
  		if (result < 0)
  			goto martian_source;
-@@ -2006,7 +2006,7 @@ local_input:
+@@ -2006,7 +2006,7 @@
  #endif
  	rth->rt_iif	=
  	rth->fl.iif	= dev->ifindex;
@@ -688,7 +688,7 @@ index b924a30..0cc11c5 100644
  	dev_hold(rth->u.dst.dev);
  	rth->idev	= in_dev_get(rth->u.dst.dev);
  	rth->rt_gateway	= daddr;
-@@ -2275,7 +2275,7 @@ static inline int ip_mkroute_output(struct rtable **rp,
+@@ -2275,7 +2275,7 @@
  
  static int ip_route_output_slow(struct rtable **rp, const struct flowi *oldflp)
  {
@@ -697,7 +697,7 @@ index b924a30..0cc11c5 100644
  	struct net_device * loopback_dev = net->loopback_dev;
  	u32 tos	= RT_FL_TOS(oldflp);
  	struct flowi fl = { .nl_u = { .ip4_u =
-@@ -2736,7 +2736,7 @@ static int inet_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr* nlh, void
+@@ -2736,7 +2736,7 @@
  	if (iif) {
  		struct net_device *dev;
  
@@ -706,11 +706,11 @@ index b924a30..0cc11c5 100644
  		if (dev == NULL) {
  			err = -ENODEV;
  			goto errout_free;
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index f2b65ec..d2119c4 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -463,7 +463,7 @@ static void addrconf_forward_change(void)
+Index: kernel/net/ipv6/addrconf.c
+===================================================================
+--- kernel.orig/net/ipv6/addrconf.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/ipv6/addrconf.c	2008-11-24 16:08:08.000000000 +0100
+@@ -463,7 +463,7 @@
  	struct inet6_dev *idev;
  
  	read_lock(&dev_base_lock);
@@ -719,7 +719,7 @@ index f2b65ec..d2119c4 100644
  		rcu_read_lock();
  		idev = __in6_dev_get(dev);
  		if (idev) {
-@@ -941,7 +941,7 @@ int ipv6_dev_get_saddr(struct net_device *daddr_dev,
+@@ -941,7 +941,7 @@
  	read_lock(&dev_base_lock);
  	rcu_read_lock();
  
@@ -728,7 +728,7 @@ index f2b65ec..d2119c4 100644
  		struct inet6_dev *idev;
  		struct inet6_ifaddr *ifa;
  
-@@ -1884,7 +1884,7 @@ ok:
+@@ -1884,7 +1884,7 @@
   */
  int addrconf_set_dstaddr(void __user *arg)
  {
@@ -737,7 +737,7 @@ index f2b65ec..d2119c4 100644
  	struct in6_ifreq ireq;
  	struct net_device *dev;
  	int err = -EINVAL;
-@@ -1956,7 +1956,7 @@ int inet6_addr_add(int ifindex, struct in6_addr *pfx, int plen,
+@@ -1956,7 +1956,7 @@
  	if (!valid_lft || prefered_lft > valid_lft)
  		return -EINVAL;
  
@@ -746,7 +746,7 @@ index f2b65ec..d2119c4 100644
  		return -ENODEV;
  
  	if ((idev = addrconf_add_dev(dev)) == NULL)
-@@ -2008,7 +2008,7 @@ static int inet6_addr_del(int ifindex, struct in6_addr *pfx, int plen)
+@@ -2008,7 +2008,7 @@
  	struct inet6_dev *idev;
  	struct net_device *dev;
  
@@ -755,7 +755,7 @@ index f2b65ec..d2119c4 100644
  		return -ENODEV;
  
  	if ((idev = __in6_dev_get(dev)) == NULL)
-@@ -2103,7 +2103,7 @@ static void sit_add_v4_addrs(struct inet6_dev *idev)
+@@ -2103,7 +2103,7 @@
  		return;
  	}
  
@@ -764,7 +764,7 @@ index f2b65ec..d2119c4 100644
  		struct in_device * in_dev = __in_dev_get_rtnl(dev);
  		if (in_dev && (dev->flags & IFF_UP)) {
  			struct in_ifaddr * ifa;
-@@ -2255,7 +2255,7 @@ ipv6_inherit_linklocal(struct inet6_dev *idev, struct net_device *link_dev)
+@@ -2255,7 +2255,7 @@
  
  static void ip6_tnl_add_linklocal(struct inet6_dev *idev)
  {
@@ -773,7 +773,7 @@ index f2b65ec..d2119c4 100644
  	struct net_device *link_dev;
  
  	/* first try to inherit the link-local address from the link device */
-@@ -3152,7 +3152,7 @@ inet6_rtm_newaddr(struct sk_buff *skb, struct nlmsghdr *nlh, void *arg)
+@@ -3152,7 +3152,7 @@
  		valid_lft = INFINITY_LIFE_TIME;
  	}
  
@@ -782,7 +782,7 @@ index f2b65ec..d2119c4 100644
  	if (dev == NULL)
  		return -ENODEV;
  
-@@ -3336,7 +3336,7 @@ static int inet6_dump_addr(struct sk_buff *skb, struct netlink_callback *cb,
+@@ -3336,7 +3336,7 @@
  	s_ip_idx = ip_idx = cb->args[1];
  
  	idx = 0;
@@ -791,7 +791,7 @@ index f2b65ec..d2119c4 100644
  		if (idx < s_idx)
  			goto cont;
  		if (idx > s_idx)
-@@ -3446,7 +3446,7 @@ static int inet6_rtm_getaddr(struct sk_buff *in_skb, struct nlmsghdr* nlh,
+@@ -3446,7 +3446,7 @@
  
  	ifm = nlmsg_data(nlh);
  	if (ifm->ifa_index)
@@ -800,7 +800,7 @@ index f2b65ec..d2119c4 100644
  
  	if ((ifa = ipv6_get_ifaddr(addr, dev, 1)) == NULL) {
  		err = -EADDRNOTAVAIL;
-@@ -3659,7 +3659,7 @@ static int inet6_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+@@ -3659,7 +3659,7 @@
  
  	read_lock(&dev_base_lock);
  	idx = 0;
@@ -809,11 +809,11 @@ index f2b65ec..d2119c4 100644
  		if (idx < s_idx)
  			goto cont;
  		if ((idev = in6_dev_get(dev)) == NULL)
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index 4e35199..0325938 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -318,7 +318,7 @@ int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+Index: kernel/net/ipv6/af_inet6.c
+===================================================================
+--- kernel.orig/net/ipv6/af_inet6.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/af_inet6.c	2008-11-24 16:08:08.000000000 +0100
+@@ -318,7 +318,7 @@
  					err = -EINVAL;
  					goto out;
  				}
@@ -822,11 +822,11 @@ index 4e35199..0325938 100644
  				if (!dev) {
  					err = -ENODEV;
  					goto out;
-diff --git a/net/ipv6/anycast.c b/net/ipv6/anycast.c
-index 9ad48f1..0ba79c0 100644
---- a/net/ipv6/anycast.c
-+++ b/net/ipv6/anycast.c
-@@ -114,10 +114,10 @@ int ipv6_sock_ac_join(struct sock *sk, int ifindex, struct in6_addr *addr)
+Index: kernel/net/ipv6/anycast.c
+===================================================================
+--- kernel.orig/net/ipv6/anycast.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/anycast.c	2008-11-24 16:08:08.000000000 +0100
+@@ -114,10 +114,10 @@
  		} else {
  			/* router, no matching interface: just pick one */
  
@@ -839,7 +839,7 @@ index 9ad48f1..0ba79c0 100644
  
  	if (dev == NULL) {
  		err = -ENODEV;
-@@ -198,7 +198,7 @@ int ipv6_sock_ac_drop(struct sock *sk, int ifindex, struct in6_addr *addr)
+@@ -198,7 +198,7 @@
  
  	write_unlock_bh(&ipv6_sk_ac_lock);
  
@@ -848,7 +848,7 @@ index 9ad48f1..0ba79c0 100644
  	if (dev) {
  		ipv6_dev_ac_dec(dev, &pac->acl_addr);
  		dev_put(dev);
-@@ -226,7 +226,7 @@ void ipv6_sock_ac_close(struct sock *sk)
+@@ -226,7 +226,7 @@
  		if (pac->acl_ifindex != prev_index) {
  			if (dev)
  				dev_put(dev);
@@ -857,7 +857,7 @@ index 9ad48f1..0ba79c0 100644
  			prev_index = pac->acl_ifindex;
  		}
  		if (dev)
-@@ -431,7 +431,7 @@ int ipv6_chk_acast_addr(struct net_device *dev, struct in6_addr *addr)
+@@ -431,7 +431,7 @@
  	if (dev)
  		return ipv6_chk_acast_dev(dev, addr);
  	read_lock(&dev_base_lock);
@@ -866,7 +866,7 @@ index 9ad48f1..0ba79c0 100644
  		if (ipv6_chk_acast_dev(dev, addr)) {
  			found = 1;
  			break;
-@@ -455,7 +455,7 @@ static inline struct ifacaddr6 *ac6_get_first(struct seq_file *seq)
+@@ -455,7 +455,7 @@
  	struct ac6_iter_state *state = ac6_seq_private(seq);
  
  	state->idev = NULL;
@@ -875,11 +875,11 @@ index 9ad48f1..0ba79c0 100644
  		struct inet6_dev *idev;
  
  		idev = in6_dev_get(state->dev);
-diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
-index b858db7..dce504f 100644
---- a/net/ipv6/datagram.c
-+++ b/net/ipv6/datagram.c
-@@ -545,7 +545,7 @@ int datagram_send_ctl(struct msghdr *msg, struct flowi *fl,
+Index: kernel/net/ipv6/datagram.c
+===================================================================
+--- kernel.orig/net/ipv6/datagram.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/datagram.c	2008-11-24 16:08:08.000000000 +0100
+@@ -545,7 +545,7 @@
  				if (!src_info->ipi6_ifindex)
  					return -EINVAL;
  				else {
@@ -888,11 +888,11 @@ index b858db7..dce504f 100644
  					if (!dev)
  						return -ENODEV;
  				}
-diff --git a/net/ipv6/ipv6_sockglue.c b/net/ipv6/ipv6_sockglue.c
-index 376e364..33c582c 100644
---- a/net/ipv6/ipv6_sockglue.c
-+++ b/net/ipv6/ipv6_sockglue.c
-@@ -545,7 +545,7 @@ done:
+Index: kernel/net/ipv6/ipv6_sockglue.c
+===================================================================
+--- kernel.orig/net/ipv6/ipv6_sockglue.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/ipv6_sockglue.c	2008-11-24 16:08:08.000000000 +0100
+@@ -545,7 +545,7 @@
  			if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != val)
  				goto e_inval;
  
@@ -901,11 +901,11 @@ index 376e364..33c582c 100644
  				retv = -ENODEV;
  				break;
  			}
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index 17055a9..191c3c2 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -216,7 +216,7 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, struct in6_addr *addr)
+Index: kernel/net/ipv6/mcast.c
+===================================================================
+--- kernel.orig/net/ipv6/mcast.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/mcast.c	2008-11-24 16:08:08.000000000 +0100
+@@ -216,7 +216,7 @@
  			dst_release(&rt->u.dst);
  		}
  	} else
@@ -914,7 +914,7 @@ index 17055a9..191c3c2 100644
  
  	if (dev == NULL) {
  		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
-@@ -268,7 +268,7 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, struct in6_addr *addr)
+@@ -268,7 +268,7 @@
  			*lnk = mc_lst->next;
  			write_unlock_bh(&ipv6_sk_mc_lock);
  
@@ -923,7 +923,7 @@ index 17055a9..191c3c2 100644
  				struct inet6_dev *idev = in6_dev_get(dev);
  
  				(void) ip6_mc_leave_src(sk, mc_lst, idev);
-@@ -303,7 +303,7 @@ static struct inet6_dev *ip6_mc_find_dev(struct in6_addr *group, int ifindex)
+@@ -303,7 +303,7 @@
  			dst_release(&rt->u.dst);
  		}
  	} else
@@ -932,7 +932,7 @@ index 17055a9..191c3c2 100644
  
  	if (!dev)
  		return NULL;
-@@ -334,7 +334,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+@@ -334,7 +334,7 @@
  		np->ipv6_mc_list = mc_lst->next;
  		write_unlock_bh(&ipv6_sk_mc_lock);
  
@@ -941,7 +941,7 @@ index 17055a9..191c3c2 100644
  		if (dev) {
  			struct inet6_dev *idev = in6_dev_get(dev);
  
-@@ -2334,7 +2334,7 @@ static inline struct ifmcaddr6 *igmp6_mc_get_first(struct seq_file *seq)
+@@ -2334,7 +2334,7 @@
  	struct igmp6_mc_iter_state *state = igmp6_mc_seq_private(seq);
  
  	state->idev = NULL;
@@ -950,7 +950,7 @@ index 17055a9..191c3c2 100644
  		struct inet6_dev *idev;
  
  		idev = in6_dev_get(state->dev);
-@@ -2463,7 +2463,7 @@ static inline struct ip6_sf_list *igmp6_mcf_get_first(struct seq_file *seq)
+@@ -2463,7 +2463,7 @@
  
  	state->idev = NULL;
  	state->im = NULL;
@@ -959,11 +959,11 @@ index 17055a9..191c3c2 100644
  		struct inet6_dev *idev;
  
  		idev = in6_dev_get(state->dev);
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index 1cc3e0f..d2431bb 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -288,7 +288,7 @@ static int rawv6_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+Index: kernel/net/ipv6/raw.c
+===================================================================
+--- kernel.orig/net/ipv6/raw.c	2008-11-24 15:59:49.000000000 +0100
++++ kernel/net/ipv6/raw.c	2008-11-24 16:08:08.000000000 +0100
+@@ -288,7 +288,7 @@
  			if (!sk->sk_bound_dev_if)
  				goto out;
  
@@ -972,11 +972,11 @@ index 1cc3e0f..d2431bb 100644
  			if (!dev) {
  				err = -ENODEV;
  				goto out;
-diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
-index 2cc9769..07110a4 100644
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -217,7 +217,7 @@ static void ip6_frag_expire(unsigned long data)
+Index: kernel/net/ipv6/reassembly.c
+===================================================================
+--- kernel.orig/net/ipv6/reassembly.c	2008-11-24 16:00:27.000000000 +0100
++++ kernel/net/ipv6/reassembly.c	2008-11-24 16:08:08.000000000 +0100
+@@ -217,7 +217,7 @@
  
  	fq_kill(fq);
  
@@ -985,11 +985,11 @@ index 2cc9769..07110a4 100644
  	if (!dev)
  		goto out;
  
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index ada957e..f744ba0 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1052,7 +1052,7 @@ int ipv6_get_hoplimit(struct net_device *dev)
+Index: kernel/net/ipv6/route.c
+===================================================================
+--- kernel.orig/net/ipv6/route.c	2008-11-24 16:02:40.000000000 +0100
++++ kernel/net/ipv6/route.c	2008-11-24 16:08:08.000000000 +0100
+@@ -1052,7 +1052,7 @@
  
  int ip6_route_add(struct fib6_config *cfg)
  {
@@ -998,7 +998,7 @@ index ada957e..f744ba0 100644
  	int err;
  	struct rt6_info *rt = NULL;
  	struct net_device *dev = NULL;
-@@ -1125,7 +1125,7 @@ int ip6_route_add(struct fib6_config *cfg)
+@@ -1125,7 +1125,7 @@
  	 */
  	if ((cfg->fc_flags & RTF_REJECT) ||
  	    (dev && (dev->flags&IFF_LOOPBACK) && !(addr_type&IPV6_ADDR_LOOPBACK))) {
@@ -1007,7 +1007,7 @@ index ada957e..f744ba0 100644
  
  		/* hold loopback dev/idev if we haven't done so. */
  		if (dev != net->loopback_dev) {
-@@ -1832,7 +1832,7 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
+@@ -1832,7 +1832,7 @@
  				    const struct in6_addr *addr,
  				    int anycast)
  {
@@ -1016,7 +1016,7 @@ index ada957e..f744ba0 100644
  	struct rt6_info *rt = ip6_dst_alloc();
  
  	if (rt == NULL)
-@@ -2140,7 +2140,7 @@ static int rt6_fill_node(struct sk_buff *skb, struct rt6_info *rt,
+@@ -2140,7 +2140,7 @@
  	if (rt->u.dst.dev) {
  		struct net_device *odev = rt->rt6i_dev;
  		if (rt == &ip6_null_entry)
@@ -1025,7 +1025,7 @@ index ada957e..f744ba0 100644
  		NLA_PUT_U32(skb, RTA_OIF, odev->ifindex);
  	}
  
-@@ -2250,7 +2250,7 @@ errout:
+@@ -2250,7 +2250,7 @@
  
  void inet6_rt_notify(int event, struct rt6_info *rt, struct nl_info *info)
  {
@@ -1034,11 +1034,11 @@ index ada957e..f744ba0 100644
  	struct sk_buff *skb;
  	u32 pid = 0, seq = 0;
  	struct nlmsghdr *nlh = NULL;
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 12827ea..d4b4d45 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -191,7 +191,7 @@ static struct ip_tunnel * ipip6_tunnel_locate(struct ip_tunnel_parm *parms, int
+Index: kernel/net/ipv6/sit.c
+===================================================================
+--- kernel.orig/net/ipv6/sit.c	2008-11-24 15:56:52.000000000 +0100
++++ kernel/net/ipv6/sit.c	2008-11-24 16:08:08.000000000 +0100
+@@ -191,7 +191,7 @@
  		int i;
  		for (i=1; i<100; i++) {
  			sprintf(name, "sit%d", i);
@@ -1047,7 +1047,7 @@ index 12827ea..d4b4d45 100644
  				break;
  		}
  		if (i==100)
-@@ -201,7 +201,7 @@ static struct ip_tunnel * ipip6_tunnel_locate(struct ip_tunnel_parm *parms, int
+@@ -201,7 +201,7 @@
  	dev = alloc_netdev(sizeof(*t), name, ipip6_tunnel_setup);
  	if (dev == NULL)
  		return NULL;
@@ -1056,7 +1056,7 @@ index 12827ea..d4b4d45 100644
  	nt = netdev_priv(dev);
  	dev->init = ipip6_tunnel_init;
  	nt->parms = *parms;
-@@ -794,7 +794,7 @@ static int ipip6_tunnel_init(struct net_device *dev)
+@@ -794,7 +794,7 @@
  	}
  
  	if (!tdev && tunnel->parms.link)
@@ -1065,7 +1065,7 @@ index 12827ea..d4b4d45 100644
  
  	if (tdev) {
  		dev->hard_header_len = tdev->hard_header_len + sizeof(struct iphdr);
-@@ -876,7 +876,7 @@ static int sit_ve_start(void *data)
+@@ -876,7 +876,7 @@
  		err = -ENOMEM;
  		goto free_tunnel;
  	}
@@ -1074,11 +1074,11 @@ index 12827ea..d4b4d45 100644
  	st->_ipip6_fb_tunnel_dev->init = ipip6_fb_tunnel_init;
  	err = register_netdev(st->_ipip6_fb_tunnel_dev);
  	if (err < 0)
-diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-index 3b2df53..faee956 100644
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -303,7 +303,7 @@ static const struct file_operations ct_cpu_seq_fops = {
+Index: kernel/net/netfilter/nf_conntrack_standalone.c
+===================================================================
+--- kernel.orig/net/netfilter/nf_conntrack_standalone.c	2008-11-24 16:02:16.000000000 +0100
++++ kernel/net/netfilter/nf_conntrack_standalone.c	2008-11-24 16:08:08.000000000 +0100
+@@ -303,7 +303,7 @@
  
  static int nf_conntrack_init_ve_proc(struct ve_struct *ve)
  {
@@ -1087,7 +1087,7 @@ index 3b2df53..faee956 100644
  	struct proc_dir_entry *proc, *proc_stat;
  	int create_proc_net_stat_nf_conntrack = 1;
  
-@@ -330,7 +330,7 @@ out:
+@@ -330,7 +330,7 @@
  
  static void nf_conntrack_fini_ve_proc(struct ve_struct *ve)
  {
@@ -1096,11 +1096,11 @@ index 3b2df53..faee956 100644
  	int remove_proc_net_stat_nf_conntrack = 1;
  
  #ifdef CONFIG_VE_IPTABLES
-diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
-index d76b279..520c19a 100644
---- a/net/netfilter/xt_hashlimit.c
-+++ b/net/netfilter/xt_hashlimit.c
-@@ -748,7 +748,7 @@ static const struct file_operations dl_file_ops = {
+Index: kernel/net/netfilter/xt_hashlimit.c
+===================================================================
+--- kernel.orig/net/netfilter/xt_hashlimit.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/netfilter/xt_hashlimit.c	2008-11-24 16:08:08.000000000 +0100
+@@ -748,7 +748,7 @@
  
  static int init_xt_hashlimit(struct ve_struct *ve)
  {
@@ -1109,7 +1109,7 @@ index d76b279..520c19a 100644
  
  #if defined(CONFIG_VE_IPTABLES)
  	if (ve->_xt_hashlimit)
-@@ -788,7 +788,7 @@ err1:
+@@ -788,7 +788,7 @@
  
  static void fini_xt_hashlimit(struct ve_struct *ve)
  {
@@ -1118,6 +1118,3 @@ index d76b279..520c19a 100644
  
  	remove_proc_entry("ip6t_hashlimit", proc_net);
  	remove_proc_entry("ipt_hashlimit", proc_net);
--- 
-1.5.4.3
-

@@ -14,11 +14,11 @@ This is getting incosistent across netfilter changes, so make it consistent.
  net/netfilter/nf_conntrack_proto_udp.c         |   38 ++++++++++++------------
  7 files changed, 99 insertions(+), 99 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-index 9ac2567..fee3438 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-@@ -429,16 +429,6 @@ MODULE_LICENSE("GPL");
+Index: kernel/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+===================================================================
+--- kernel.orig/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c	2008-11-24 15:57:32.000000000 +0100
++++ kernel/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c	2008-11-24 15:57:35.000000000 +0100
+@@ -429,16 +429,6 @@
  
  #ifdef CONFIG_VE_IPTABLES
  #if defined(CONFIG_SYSCTL) && defined(CONFIG_NF_CONNTRACK_PROC_COMPAT)
@@ -35,7 +35,7 @@ index 9ac2567..fee3438 100644
  static int nf_ct_proto_ipv4_sysctl_init(void)
  {
  	struct nf_conntrack_l3proto *ipv4 = ve_nf_conntrack_l3proto_ipv4;
-@@ -456,6 +446,16 @@ static int nf_ct_proto_ipv4_sysctl_init(void)
+@@ -456,6 +446,16 @@
  
  	return 0;
  }
@@ -52,11 +52,11 @@ index 9ac2567..fee3438 100644
  #else
  static inline int nf_ct_proto_ipv4_sysctl_init(void)
  {
-diff --git a/net/ipv4/netfilter/nf_conntrack_proto_icmp.c b/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
-index d3c13ad..83a62bb 100644
---- a/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
-+++ b/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
-@@ -337,22 +337,6 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_icmp __read_mostly =
+Index: kernel/net/ipv4/netfilter/nf_conntrack_proto_icmp.c
+===================================================================
+--- kernel.orig/net/ipv4/netfilter/nf_conntrack_proto_icmp.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv4/netfilter/nf_conntrack_proto_icmp.c	2008-11-24 15:57:35.000000000 +0100
+@@ -337,22 +337,6 @@
  };
  
  #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
@@ -79,7 +79,7 @@ index d3c13ad..83a62bb 100644
  int nf_ct_proto_icmp_sysctl_init(void)
  {
  	struct nf_conntrack_l4proto *icmp;
-@@ -397,4 +381,20 @@ no_mem_ct:
+@@ -397,4 +381,20 @@
  	return -ENOMEM;
  }
  EXPORT_SYMBOL(nf_ct_proto_icmp_sysctl_init);
@@ -100,11 +100,11 @@ index d3c13ad..83a62bb 100644
 +}
 +EXPORT_SYMBOL(nf_ct_proto_icmp_sysctl_cleanup);
  #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
-diff --git a/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c b/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
-index 030ab5c..3cf1e6c 100644
---- a/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
-+++ b/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
-@@ -396,16 +396,6 @@ MODULE_LICENSE("GPL");
+Index: kernel/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
+===================================================================
+--- kernel.orig/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c	2008-11-24 15:57:35.000000000 +0100
+@@ -396,16 +396,6 @@
  MODULE_AUTHOR("Yasuyuki KOZAKAI @USAGI <yasuyuki.kozakai@toshiba.co.jp>");
  
  #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
@@ -121,7 +121,7 @@ index 030ab5c..3cf1e6c 100644
  static int nf_ct_proto_ipv6_sysctl_init(void)
  {
  	struct nf_conntrack_l3proto *ipv6;
-@@ -441,6 +431,16 @@ no_mem_sys:
+@@ -441,6 +431,16 @@
  no_mem_ct:
          return -ENOMEM;
  }
@@ -138,11 +138,11 @@ index 030ab5c..3cf1e6c 100644
  #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
  
  int init_nf_ct_l3proto_ipv6(void)
-diff --git a/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c b/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
-index 8b930a3..9f23a5d 100644
---- a/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
-+++ b/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
-@@ -297,17 +297,6 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_icmpv6 __read_mostly =
+Index: kernel/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
+===================================================================
+--- kernel.orig/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c	2008-11-24 15:57:35.000000000 +0100
+@@ -297,17 +297,6 @@
  };
  
  #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
@@ -160,7 +160,7 @@ index 8b930a3..9f23a5d 100644
  int nf_ct_proto_icmpv6_sysctl_init(void)
  {
  	struct nf_conntrack_l4proto *icmp6;
-@@ -340,4 +329,15 @@ no_mem_ct:
+@@ -340,4 +329,15 @@
  	return -ENOMEM;
  }
  EXPORT_SYMBOL(nf_ct_proto_icmpv6_sysctl_init);
@@ -176,11 +176,11 @@ index 8b930a3..9f23a5d 100644
 +}
 +EXPORT_SYMBOL(nf_ct_proto_icmpv6_sysctl_cleanup);
  #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
-diff --git a/net/netfilter/nf_conntrack_proto_generic.c b/net/netfilter/nf_conntrack_proto_generic.c
-index 9980d3d..e1a9cdd 100644
---- a/net/netfilter/nf_conntrack_proto_generic.c
-+++ b/net/netfilter/nf_conntrack_proto_generic.c
-@@ -118,20 +118,6 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_generic __read_mostly =
+Index: kernel/net/netfilter/nf_conntrack_proto_generic.c
+===================================================================
+--- kernel.orig/net/netfilter/nf_conntrack_proto_generic.c	2008-11-24 15:57:33.000000000 +0100
++++ kernel/net/netfilter/nf_conntrack_proto_generic.c	2008-11-24 15:57:35.000000000 +0100
+@@ -118,20 +118,6 @@
  };
  
  #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
@@ -201,7 +201,7 @@ index 9980d3d..e1a9cdd 100644
  int nf_ct_proto_generic_sysctl_init(void)
  {
  	struct nf_conntrack_l4proto *generic;
-@@ -175,4 +161,18 @@ no_mem_ct:
+@@ -175,4 +161,18 @@
  	return -ENOMEM;
  }
  EXPORT_SYMBOL(nf_ct_proto_generic_sysctl_init);
@@ -220,11 +220,11 @@ index 9980d3d..e1a9cdd 100644
 +}
 +EXPORT_SYMBOL(nf_ct_proto_generic_sysctl_cleanup);
  #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
-diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
-index ca1462a..9908983 100644
---- a/net/netfilter/nf_conntrack_proto_tcp.c
-+++ b/net/netfilter/nf_conntrack_proto_tcp.c
-@@ -1411,25 +1411,6 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_tcp6 __read_mostly =
+Index: kernel/net/netfilter/nf_conntrack_proto_tcp.c
+===================================================================
+--- kernel.orig/net/netfilter/nf_conntrack_proto_tcp.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/netfilter/nf_conntrack_proto_tcp.c	2008-11-24 15:57:35.000000000 +0100
+@@ -1430,25 +1430,6 @@
  EXPORT_SYMBOL_GPL(nf_conntrack_l4proto_tcp6);
  
  #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
@@ -250,7 +250,7 @@ index ca1462a..9908983 100644
  int nf_ct_proto_tcp_sysctl_init(void)
  {
  	struct nf_conntrack_l4proto *tcp4, *tcp6;
-@@ -1522,5 +1503,24 @@ no_mem_ct4:
+@@ -1541,5 +1522,24 @@
  	return -ENOMEM;
  }
  EXPORT_SYMBOL(nf_ct_proto_tcp_sysctl_init);
@@ -275,11 +275,11 @@ index ca1462a..9908983 100644
 +EXPORT_SYMBOL(nf_ct_proto_tcp_sysctl_cleanup);
  #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
  
-diff --git a/net/netfilter/nf_conntrack_proto_udp.c b/net/netfilter/nf_conntrack_proto_udp.c
-index bc43b9e..64674ae 100644
---- a/net/netfilter/nf_conntrack_proto_udp.c
-+++ b/net/netfilter/nf_conntrack_proto_udp.c
-@@ -241,25 +241,6 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_udp6 __read_mostly =
+Index: kernel/net/netfilter/nf_conntrack_proto_udp.c
+===================================================================
+--- kernel.orig/net/netfilter/nf_conntrack_proto_udp.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/netfilter/nf_conntrack_proto_udp.c	2008-11-24 15:57:35.000000000 +0100
+@@ -241,25 +241,6 @@
  EXPORT_SYMBOL_GPL(nf_conntrack_l4proto_udp6);
  
  #if defined(CONFIG_VE_IPTABLES) && defined(CONFIG_SYSCTL)
@@ -305,7 +305,7 @@ index bc43b9e..64674ae 100644
  int nf_ct_proto_udp_sysctl_init(void)
  {
  	struct nf_conntrack_l4proto *udp4, *udp6;
-@@ -323,4 +304,23 @@ no_mem_ct4:
+@@ -323,4 +304,23 @@
  	return -ENOMEM;
  }
  EXPORT_SYMBOL(nf_ct_proto_udp_sysctl_init);
@@ -329,6 +329,3 @@ index bc43b9e..64674ae 100644
 +}
 +EXPORT_SYMBOL(nf_ct_proto_udp_sysctl_cleanup);
  #endif /* CONFIG_VE_IPTABLES && CONFIG_SYSCTL */
--- 
-1.5.4.3
-

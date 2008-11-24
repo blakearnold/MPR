@@ -20,11 +20,11 @@ http://bugzilla.openvz.org/show_bug.cgi?id=784
  net/ipv6/tcp_ipv6.c        |    3 ++-
  4 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 7de5423..9d39f90 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -1359,6 +1359,7 @@ extern int tcp_proc_register(struct net *net, struct tcp_seq_afinfo *afinfo);
+Index: kernel/include/net/tcp.h
+===================================================================
+--- kernel.orig/include/net/tcp.h	2008-11-24 15:59:46.000000000 +0100
++++ kernel/include/net/tcp.h	2008-11-24 16:00:40.000000000 +0100
+@@ -1362,6 +1362,7 @@
  extern void tcp_proc_unregister(struct net *net, struct tcp_seq_afinfo *afinfo);
  
  extern struct request_sock_ops tcp_request_sock_ops;
@@ -32,11 +32,11 @@ index 7de5423..9d39f90 100644
  
  extern int tcp_v4_destroy_sock(struct sock *sk);
  
-diff --git a/kernel/cpt/cpt_socket_in.c b/kernel/cpt/cpt_socket_in.c
-index ac2ec62..e25c387 100644
---- a/kernel/cpt/cpt_socket_in.c
-+++ b/kernel/cpt/cpt_socket_in.c
-@@ -313,7 +313,7 @@ static int dump_openreq(struct request_sock *req, struct sock *sk, int index,
+Index: kernel/kernel/cpt/cpt_socket_in.c
+===================================================================
+--- kernel.orig/kernel/cpt/cpt_socket_in.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/cpt/cpt_socket_in.c	2008-11-24 16:00:40.000000000 +0100
+@@ -313,7 +313,7 @@
  	v->cpt_snt_isn = tcp_rsk(req)->snt_isn;
  	v->cpt_rmt_port = inet_rsk(req)->rmt_port;
  	v->cpt_mss = req->mss;
@@ -45,11 +45,11 @@ index ac2ec62..e25c387 100644
  	v->cpt_retrans = req->retrans;
  	v->cpt_snd_wscale = inet_rsk(req)->snd_wscale;
  	v->cpt_rcv_wscale = inet_rsk(req)->rcv_wscale;
-diff --git a/kernel/cpt/rst_socket_in.c b/kernel/cpt/rst_socket_in.c
-index 4e9ffa5..471a44e 100644
---- a/kernel/cpt/rst_socket_in.c
-+++ b/kernel/cpt/rst_socket_in.c
-@@ -400,7 +400,7 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+Index: kernel/kernel/cpt/rst_socket_in.c
+===================================================================
+--- kernel.orig/kernel/cpt/rst_socket_in.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/cpt/rst_socket_in.c	2008-11-24 16:00:40.000000000 +0100
+@@ -400,7 +400,7 @@
  			      loff_t pos, struct cpt_context *ctx)
  {
  	int err;
@@ -58,7 +58,7 @@ index 4e9ffa5..471a44e 100644
  
  	pos += si->cpt_hdrlen;
  	while (pos < end) {
-@@ -415,11 +415,21 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+@@ -415,11 +415,21 @@
  		}
  
  		if (oi.cpt_object == CPT_OBJ_OPENREQ) {
@@ -82,7 +82,7 @@ index 4e9ffa5..471a44e 100644
  			tcp_rsk(req)->rcv_isn = oi.cpt_rcv_isn;
  			tcp_rsk(req)->snt_isn = oi.cpt_snt_isn;
  			inet_rsk(req)->rmt_port = oi.cpt_rmt_port;
-@@ -432,10 +442,14 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+@@ -432,10 +442,14 @@
  			inet_rsk(req)->wscale_ok = oi.cpt_wscale_ok;
  			inet_rsk(req)->ecn_ok = oi.cpt_ecn_ok;
  			inet_rsk(req)->acked = oi.cpt_acked;
@@ -97,7 +97,7 @@ index 4e9ffa5..471a44e 100644
  
  			if (oi.cpt_family == AF_INET) {
  				memcpy(&inet_rsk(req)->loc_addr, oi.cpt_loc_addr, 4);
-@@ -443,6 +457,7 @@ int rst_restore_synwait_queue(struct sock *sk, struct cpt_sock_image *si,
+@@ -443,6 +457,7 @@
  				inet_csk_reqsk_queue_hash_add(sk, req, TCP_TIMEOUT_INIT);
  			} else {
  #if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
@@ -105,11 +105,11 @@ index 4e9ffa5..471a44e 100644
  				memcpy(&inet6_rsk(req)->loc_addr, oi.cpt_loc_addr, 16);
  				memcpy(&inet6_rsk(req)->rmt_addr, oi.cpt_rmt_addr, 16);
  				inet6_rsk(req)->iif = oi.cpt_iif;
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index d2cf1f0..2a37362 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -925,7 +925,7 @@ done_opts:
+Index: kernel/net/ipv6/tcp_ipv6.c
+===================================================================
+--- kernel.orig/net/ipv6/tcp_ipv6.c	2008-11-24 15:59:46.000000000 +0100
++++ kernel/net/ipv6/tcp_ipv6.c	2008-11-24 16:00:40.000000000 +0100
+@@ -925,7 +925,7 @@
  }
  #endif
  
@@ -118,7 +118,7 @@ index d2cf1f0..2a37362 100644
  	.family		=	AF_INET6,
  	.obj_size	=	sizeof(struct tcp6_request_sock),
  	.rtx_syn_ack	=	tcp_v6_send_synack,
-@@ -933,6 +933,7 @@ static struct request_sock_ops tcp6_request_sock_ops __read_mostly = {
+@@ -933,6 +933,7 @@
  	.destructor	=	tcp_v6_reqsk_destructor,
  	.send_reset	=	tcp_v6_send_reset
  };
@@ -126,6 +126,3 @@ index d2cf1f0..2a37362 100644
  
  #ifdef CONFIG_TCP_MD5SIG
  static struct tcp_request_sock_ops tcp_request_sock_ipv6_ops = {
--- 
-1.5.4.3
-

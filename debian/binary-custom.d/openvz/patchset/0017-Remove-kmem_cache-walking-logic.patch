@@ -12,11 +12,11 @@ It can't work in case of SLUB because full pages aren't in any slab lists.
  mm/slub.c            |   55 -----------------
  5 files changed, 0 insertions(+), 333 deletions(-)
 
-diff --git a/include/bc/dcache.h b/include/bc/dcache.h
-index b5502b7..5ebefff 100644
---- a/include/bc/dcache.h
-+++ b/include/bc/dcache.h
-@@ -40,10 +40,8 @@ struct dentry_beancounter
+Index: kernel/include/bc/dcache.h
+===================================================================
+--- kernel.orig/include/bc/dcache.h	2008-11-24 15:47:46.000000000 +0100
++++ kernel/include/bc/dcache.h	2008-11-24 15:57:05.000000000 +0100
+@@ -40,10 +40,8 @@
  #define INUSE_INIT		0
  
  extern int ub_dentry_on;
@@ -27,11 +27,11 @@ index b5502b7..5ebefff 100644
 -#define ub_dentry_checkup()	do { } while (0)
  #endif
  #endif
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 793613f..6d1d2f4 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -83,7 +83,6 @@ int kmem_ptr_validate(struct kmem_cache *cachep, const void *ptr);
+Index: kernel/include/linux/slab.h
+===================================================================
+--- kernel.orig/include/linux/slab.h	2008-11-24 15:56:45.000000000 +0100
++++ kernel/include/linux/slab.h	2008-11-24 15:57:05.000000000 +0100
+@@ -83,7 +83,6 @@
  extern void show_slab_info(void);
  int kmem_cache_objuse(struct kmem_cache *cachep);
  int kmem_obj_objuse(void *obj);
@@ -39,11 +39,11 @@ index 793613f..6d1d2f4 100644
  unsigned long ub_cache_growth(struct kmem_cache *cachep);
  
  #ifdef CONFIG_BEANCOUNTERS
-diff --git a/kernel/bc/dcache.c b/kernel/bc/dcache.c
-index 826b1cf..a9114e8 100644
---- a/kernel/bc/dcache.c
-+++ b/kernel/bc/dcache.c
-@@ -322,7 +322,6 @@ int ub_dentry_on = 1;
+Index: kernel/kernel/bc/dcache.c
+===================================================================
+--- kernel.orig/kernel/bc/dcache.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/bc/dcache.c	2008-11-24 15:57:05.000000000 +0100
+@@ -322,7 +322,6 @@
  int ub_dentry_alloc_barrier;
  EXPORT_SYMBOL(ub_dentry_on);
  
@@ -51,7 +51,7 @@ index 826b1cf..a9114e8 100644
  static unsigned long checklowat = 0;
  static unsigned long checkhiwat = ULONG_MAX;
  
-@@ -333,168 +332,6 @@ static DECLARE_RWSEM(ub_dentry_alloc_sem);
+@@ -333,168 +332,6 @@
  /* 1024th of lowmem size */
  static unsigned int sysctl_ub_watermark[2] = {0, 100};
  
@@ -220,11 +220,11 @@ index 826b1cf..a9114e8 100644
  static void ub_dentry_set_limits(unsigned long pages, unsigned long cap)
  {
  	down_write(&ub_dentry_alloc_sem);
-diff --git a/mm/slab.c b/mm/slab.c
-index 40c6b21..20dd0d8 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -755,105 +755,6 @@ int kmem_obj_objuse(void *obj)
+Index: kernel/mm/slab.c
+===================================================================
+--- kernel.orig/mm/slab.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/mm/slab.c	2008-11-24 15:57:05.000000000 +0100
+@@ -755,105 +755,6 @@
  	return virt_to_cache(obj)->objuse;
  }
  
@@ -330,7 +330,7 @@ index 40c6b21..20dd0d8 100644
  unsigned long ub_cache_growth(struct kmem_cache *cachep)
  {
  	return (cachep->grown - cachep->reaped - cachep->shrunk)
-@@ -3644,19 +3545,6 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+@@ -3643,19 +3544,6 @@
  	}
  }
  
@@ -350,11 +350,11 @@ index 40c6b21..20dd0d8 100644
  static void cache_flusharray(struct kmem_cache *cachep, struct array_cache *ac)
  {
  	int batchcount;
-diff --git a/mm/slub.c b/mm/slub.c
-index b251d42..fa6179e 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -348,61 +348,6 @@ unsigned long ub_cache_growth(struct kmem_cache *cachep)
+Index: kernel/mm/slub.c
+===================================================================
+--- kernel.orig/mm/slub.c	2008-11-24 15:56:35.000000000 +0100
++++ kernel/mm/slub.c	2008-11-24 15:57:05.000000000 +0100
+@@ -348,61 +348,6 @@
  
  static void __flush_cpu_slab(struct kmem_cache *s, int cpu);
  
@@ -416,6 +416,3 @@ index b251d42..fa6179e 100644
  int kmem_cache_objuse(struct kmem_cache *cachep)
  {
  	return cachep->objuse;
--- 
-1.5.4.3
-

@@ -20,11 +20,11 @@ Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
  kernel/ve/ve.c          |   15 ++++-----------
  4 files changed, 25 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 37b8258..54a1d82 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -49,11 +49,20 @@ struct percpu_data {
+Index: kernel/include/linux/percpu.h
+===================================================================
+--- kernel.orig/include/linux/percpu.h	2008-11-24 15:47:46.000000000 +0100
++++ kernel/include/linux/percpu.h	2008-11-24 16:08:17.000000000 +0100
+@@ -49,11 +49,20 @@
          (__typeof__(ptr))__p->ptrs[(cpu)];	          \
  })
  
@@ -48,7 +48,7 @@ index 37b8258..54a1d82 100644
  	})
  
  extern void *percpu_populate(void *__pdata, size_t size, gfp_t gfp, int cpu);
-@@ -67,7 +76,11 @@ extern void percpu_free(void *__pdata);
+@@ -67,7 +76,11 @@
  #else /* CONFIG_SMP */
  
  #define percpu_ptr(ptr, cpu) ({ (void)(cpu); (ptr); })
@@ -61,11 +61,11 @@ index 37b8258..54a1d82 100644
  
  static inline void percpu_depopulate(void *__pdata, int cpu)
  {
-diff --git a/kernel/bc/beancounter.c b/kernel/bc/beancounter.c
-index 00b6469..41c8335 100644
---- a/kernel/bc/beancounter.c
-+++ b/kernel/bc/beancounter.c
-@@ -651,10 +651,7 @@ static void init_beancounter_syslimits(struct user_beancounter *ub)
+Index: kernel/kernel/bc/beancounter.c
+===================================================================
+--- kernel.orig/kernel/bc/beancounter.c	2008-11-24 16:00:49.000000000 +0100
++++ kernel/kernel/bc/beancounter.c	2008-11-24 16:08:17.000000000 +0100
+@@ -651,10 +651,7 @@
  	ub->ub_limit_rl.interval = 300*HZ;
  }
  
@@ -77,7 +77,7 @@ index 00b6469..41c8335 100644
  
  void __init ub_init_early(void)
  {
-@@ -667,7 +664,7 @@ void __init ub_init_early(void)
+@@ -667,7 +664,7 @@
  	init_beancounter_nolimits(ub);
  	init_beancounter_store(ub);
  	init_beancounter_struct(ub);
@@ -86,11 +86,11 @@ index 00b6469..41c8335 100644
  
  	memset(&current->task_bc, 0, sizeof(struct task_beancounter));
  	(void)set_exec_ub(ub);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index ffc01fe..327d11a 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -385,10 +385,7 @@ static inline int cpu_of(struct rq *rq)
+Index: kernel/kernel/sched.c
+===================================================================
+--- kernel.orig/kernel/sched.c	2008-11-24 16:01:59.000000000 +0100
++++ kernel/kernel/sched.c	2008-11-24 16:08:17.000000000 +0100
+@@ -385,10 +385,7 @@
  #endif
  }
  
@@ -102,7 +102,7 @@ index ffc01fe..327d11a 100644
  struct kernel_stat_glob kstat_glob;
  
  DEFINE_SPINLOCK(kstat_glb_lock);
-@@ -7131,8 +7128,7 @@ void __init sched_init(void)
+@@ -7172,8 +7169,7 @@
  	int highest_cpu = 0;
  	int i, j;
  
@@ -112,11 +112,11 @@ index ffc01fe..327d11a 100644
  	for_each_possible_cpu(i) {
  		struct rt_prio_array *array;
  		struct rq *rq;
-diff --git a/kernel/ve/ve.c b/kernel/ve/ve.c
-index e61e647..aab9734 100644
---- a/kernel/ve/ve.c
-+++ b/kernel/ve/ve.c
-@@ -118,13 +118,8 @@ struct ve_struct ve0 = {
+Index: kernel/kernel/ve/ve.c
+===================================================================
+--- kernel.orig/kernel/ve/ve.c	2008-11-24 16:08:08.000000000 +0100
++++ kernel/kernel/ve/ve.c	2008-11-24 16:08:17.000000000 +0100
+@@ -118,13 +118,8 @@
  
  EXPORT_SYMBOL(ve0);
  
@@ -132,7 +132,7 @@ index e61e647..aab9734 100644
  
  LIST_HEAD(ve_list_head);
  rwlock_t ve_list_lock = RW_LOCK_UNLOCKED;
-@@ -147,10 +142,8 @@ void init_ve0(void)
+@@ -147,10 +142,8 @@
  	(void)get_ve(ve);
  	atomic_set(&ve->pcounter, 1);
  
@@ -145,6 +145,3 @@ index e61e647..aab9734 100644
  
  	list_add(&ve->ve_list, &ve_list_head);
  }
--- 
-1.5.4.3
-

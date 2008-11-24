@@ -10,11 +10,11 @@ http://bugzilla.openvz.org/show_bug.cgi?id=857
  net/ipv6/addrconf.c |   21 ++++++++++++++++++---
  1 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index afe811d..9f15d4f 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2854,16 +2854,31 @@ static const struct file_operations if6_fops = {
+Index: kernel/net/ipv6/addrconf.c
+===================================================================
+--- kernel.orig/net/ipv6/addrconf.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/net/ipv6/addrconf.c	2008-11-24 15:59:35.000000000 +0100
+@@ -2873,16 +2873,31 @@
  	.release	= seq_release_private,
  };
  
@@ -49,6 +49,3 @@ index afe811d..9f15d4f 100644
  }
  #endif	/* CONFIG_PROC_FS */
  
--- 
-1.5.4.3
-

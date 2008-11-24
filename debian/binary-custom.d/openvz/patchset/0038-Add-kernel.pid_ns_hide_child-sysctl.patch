@@ -12,11 +12,11 @@ namespaces. sysctl itself visible only in VE0.
  kernel/sysctl.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
  1 files changed, 51 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 88bdf55..f288b72 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -2848,6 +2848,57 @@ static int deprecated_sysctl_warning(struct __sysctl_args *args)
+Index: kernel/kernel/sysctl.c
+===================================================================
+--- kernel.orig/kernel/sysctl.c	2008-11-24 15:47:46.000000000 +0100
++++ kernel/kernel/sysctl.c	2008-11-24 15:59:00.000000000 +0100
+@@ -2911,6 +2911,57 @@
  	return 0;
  }
  
@@ -74,6 +74,3 @@ index 88bdf55..f288b72 100644
  /*
   * No sense putting this after each symbol definition, twice,
   * exception granted :-)
--- 
-1.5.4.3
-
