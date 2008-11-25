@@ -1,0 +1,13 @@
+diff -Nurp custom-source-xen.orig/arch/x86/kernel/machine_kexec_64.c custom-source-xen/arch/x86/kernel/machine_kexec_64.c
+--- custom-source-xen.orig/arch/x86/kernel/machine_kexec_64.c	2008-11-25 19:31:39.000000000 +0100
++++ custom-source-xen/arch/x86/kernel/machine_kexec_64.c	2008-11-25 19:57:56.000000000 +0100
+@@ -281,7 +281,9 @@ NORET_TYPE void machine_kexec(struct kim
+ 
+ void arch_crash_save_vmcoreinfo(void)
+ {
++#ifndef CONFIG_XEN
+ 	VMCOREINFO_SYMBOL(phys_base);
++#endif
+ 	VMCOREINFO_SYMBOL(init_level4_pgt);
+ 
+ #ifdef CONFIG_ARCH_DISCONTIGMEM_ENABLE
