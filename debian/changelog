@@ -335,7 +335,7 @@ linux (2.6.24-23.46) hardy-proposed; urgency=low
     - LP: #301634
   * V4L: Fix VIDIOCGAP corruption in ivtv
     - LP: #301634
-  * Linux 2.6.24.6
+  * Linux 2.6.24.6, 2.6.24.7
     - LP: #301634
 
  -- Stefan Bader <stefan.bader@canonical.com>  Mon, 24 Nov 2008 09:44:34 +0100
