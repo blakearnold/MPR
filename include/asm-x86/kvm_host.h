@@ -489,10 +489,6 @@ bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
 
 void fx_init(struct kvm_vcpu *vcpu);
 
-int emulator_read_std(unsigned long addr,
-		      void *val,
-		      unsigned int bytes,
-		      struct kvm_vcpu *vcpu);
 int emulator_write_emulated(unsigned long addr,
 			    const void *val,
 			    unsigned int bytes,
