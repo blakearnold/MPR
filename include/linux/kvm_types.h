@@ -41,8 +41,7 @@ typedef unsigned long  hfn_t;
 struct kvm_pio_request {
 	unsigned long count;
 	int cur_count;
-	struct page *guest_pages[2];
-	unsigned guest_page_offset;
+	gva_t guest_gva;
 	int in;
 	int port;
 	int size;
