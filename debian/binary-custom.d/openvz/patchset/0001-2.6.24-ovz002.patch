@@ -32057,7 +32057,7 @@ Index: kernel/include/net/inet_sock.h
 ===================================================================
 --- kernel.orig/include/net/inet_sock.h	2008-11-18 01:19:47.000000000 +0100
 +++ kernel/include/net/inet_sock.h	2008-11-24 15:47:46.000000000 +0100
-@@ -173,9 +173,10 @@
+@@ -173,10 +173,11 @@
  extern void build_ehash_secret(void);
  
  static inline unsigned int inet_ehashfn(const __be32 laddr, const __u16 lport,
@@ -32065,8 +32065,9 @@ Index: kernel/include/net/inet_sock.h
 +					const __be32 faddr, const __be16 fport,
 +					const envid_t veid)
  {
--	return jhash_2words((__force __u32) laddr ^ (__force __u32) faddr,
-+	return jhash_2words((__force __u32) laddr ^ (__force __u32) faddr ^ (veid ^ (veid >> 16)),
+ 	return jhash_3words((__force __u32) laddr,
+-			    (__force __u32) faddr,
++			    (__force __u32) faddr ^ (veid ^ (veid >> 16)),
  			    ((__u32) lport) << 16 | (__force __u32)fport,
  			    inet_ehash_secret);
  }
