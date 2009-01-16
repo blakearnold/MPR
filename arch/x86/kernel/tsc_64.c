@@ -315,6 +315,9 @@ EXPORT_SYMBOL_GPL(mark_tsc_unstable);
 void __init init_tsc_clocksource(void)
 {
 	if (!notsc) {
+		if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
+			clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
+
 		clocksource_tsc.mult = clocksource_khz2mult(tsc_khz,
 							clocksource_tsc.shift);
 		if (check_tsc_unstable())

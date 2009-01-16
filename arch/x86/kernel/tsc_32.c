@@ -408,6 +408,9 @@ void __init tsc_init(void)
 
 	unsynchronized_tsc();
 	check_geode_tsc_reliable();
+	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
+		 clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
+
 	current_tsc_khz = tsc_khz;
 	clocksource_tsc.mult = clocksource_khz2mult(current_tsc_khz,
 							clocksource_tsc.shift);
