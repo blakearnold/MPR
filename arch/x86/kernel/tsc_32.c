@@ -10,6 +10,7 @@
 #include <asm/tsc.h>
 #include <asm/io.h>
 #include <asm/timer.h>
+#include <asm/hypervisor.h>
 
 #include "mach_timer.h"
 
@@ -130,10 +131,16 @@ unsigned long long sched_clock(void)
 unsigned long native_calculate_cpu_khz(void)
 {
 	unsigned long long start, end;
-	unsigned long count;
+	unsigned long count, hypervisor_tsc_khz;
 	u64 delta64 = (u64)ULLONG_MAX;
 	int i;
 	unsigned long flags;
+
+	hypervisor_tsc_khz = get_hypervisor_tsc_freq();
+	if (hypervisor_tsc_khz) {
+		printk(KERN_INFO "TSC: Frequency read from the hypervisor\n");
+		return hypervisor_tsc_khz;
+	}
 
 	local_irq_save(flags);
 

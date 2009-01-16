@@ -61,6 +61,7 @@
 #include <setup_arch.h>
 #include <bios_ebda.h>
 #include <asm/cacheflush.h>
+#include <asm/hypervisor.h>
 
 /* This value is set up by the early boot code to point to the value
    immediately after the boot time page tables.  It contains a *physical*
@@ -647,6 +648,12 @@ void __init setup_arch(char **cmdline_p)
 	paravirt_post_allocator_init();
 
 	dmi_scan_machine();
+
+	/*
+	 * VMware detection requires dmi to be available, so this
+	 * needs to be done after dmi_scan_machine, for the BP.
+	 */
+	init_hypervisor(&boot_cpu_data);
 
 	io_delay_init();;
 

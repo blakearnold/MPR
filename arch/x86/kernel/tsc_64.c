@@ -11,6 +11,7 @@
 #include <asm/hpet.h>
 #include <asm/timex.h>
 #include <asm/vgtod.h>
+#include <asm/hypervisor.h>
 
 static int notsc __initdata = 0;
 
@@ -152,7 +153,16 @@ static unsigned long __init tsc_read_refs(unsigned long *pm,
 void __init tsc_calibrate(void)
 {
 	unsigned long flags, tsc1, tsc2, tr1, tr2, pm1, pm2, hpet1, hpet2;
+	unsigned long hypervisor_tsc_khz;
 	int hpet = is_hpet_enabled();
+
+	hypervisor_tsc_khz = get_hypervisor_tsc_freq();
+	if (hypervisor_tsc_khz) {
+		printk(KERN_INFO "TSC: Frequency read from the hypervisor\n");
+		tsc_khz = hypervisor_tsc_khz;
+		set_cyc2ns_scale(tsc_khz);
+		return;
+	}
 
 	local_irq_save(flags);
 

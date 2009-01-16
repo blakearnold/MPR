@@ -59,6 +59,7 @@
 #include <asm/sections.h>
 #include <asm/dmi.h>
 #include <asm/cacheflush.h>
+#include <asm/hypervisor.h>
 
 /*
  * Machine setup..
@@ -310,6 +311,12 @@ void __init setup_arch(char **cmdline_p)
 	init_memory_mapping(0, (end_pfn_map << PAGE_SHIFT));
 
 	dmi_scan_machine();
+
+	/*
+	 * VMware detection requires dmi to be available, so this
+	 * needs to be done after dmi_scan_machine, for the BP.
+	 */
+	init_hypervisor(&boot_cpu_data);
 
 	io_delay_init();
 
@@ -955,6 +962,8 @@ void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
 
 	select_idle_routine(c);
 	detect_ht(c); 
+
+	init_hypervisor(c);
 
 	/*
 	 * On SMP, boot_cpu_data holds the common feature set between

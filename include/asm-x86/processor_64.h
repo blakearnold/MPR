@@ -77,6 +77,7 @@ struct cpuinfo_x86 {
 	__u8	cpu_core_id;	/* Core id. */
 	__u8	cpu_index;	/* index into per_cpu list */
 #endif
+	unsigned int x86_hyper_vendor;
 } ____cacheline_aligned;
 
 #define X86_VENDOR_INTEL 0
@@ -88,6 +89,9 @@ struct cpuinfo_x86 {
 #define X86_VENDOR_TRANSMETA 7
 #define X86_VENDOR_NUM 8
 #define X86_VENDOR_UNKNOWN 0xff
+
+#define X86_HYPER_VENDOR_NONE  0
+#define X86_HYPER_VENDOR_VMWARE 1
 
 #ifdef CONFIG_SMP
 DECLARE_PER_CPU(struct cpuinfo_x86, cpu_info);
