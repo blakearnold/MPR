@@ -233,6 +233,9 @@ __cpuinit int unsynchronized_tsc(void)
 	if (apic_is_clustered_box())
 		return 1;
 #endif
+	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
+		return 0;
+
 	/* Most intel systems have synchronized TSCs except for
 	   multi node systems */
 	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) {
