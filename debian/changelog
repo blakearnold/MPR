@@ -1,3 +1,22 @@
+linux (2.6.24-23.48) hardy-security; urgency=low
+
+  [Upstream Kernel Changes]
+
+  * ATM: CVE-2008-5079: duplicate listen() on socket corrupts the vcc table
+    - CVE-2008-5079
+  * libertas: fix buffer overrun
+    - CVE-2008-5134
+  * Fix inotify watch removal/umount races
+    - CVE-2008-5182
+  * net: Fix soft lockups/OOM issues w/ unix garbage collector
+    - CVE-2008-5300
+  * Enforce a minimum SG_IO timeout
+    - CVE-2008-5700
+  * ib700wdt.c - fix buffer_underflow bug
+    - CVE-2008-5702
+
+ -- Stefan Bader <stefan.bader@canonical.com>  Wed, 14 Jan 2009 17:46:55 +0100
+
 linux (2.6.24-23.47) hardy-proposed; urgency=low
 
   [Colin Ian King]
