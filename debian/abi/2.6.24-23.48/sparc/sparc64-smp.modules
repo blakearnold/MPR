@@ -40,7 +40,6 @@ ahci
 aic79xx
 aic94xx
 aiptek
-airprime
 alim15x3
 anubis
 aoe
@@ -553,7 +552,6 @@ ocfs2_nodemanager
 ohci1394
 ohci-hcd
 openpromfs
-option
 orinoco
 osst
 output
@@ -601,7 +599,6 @@ phidget
 phidgetkit
 phidgetmotorcontrol
 pktcdvd
-pl2303
 plip
 plusb
 pm3fb
@@ -969,7 +966,6 @@ usbled
 usblp
 usbmouse
 usbnet
-usbserial
 usb-storage
 usbvision
 uvesafb
