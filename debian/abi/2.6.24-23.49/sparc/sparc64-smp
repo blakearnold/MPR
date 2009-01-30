@@ -889,6 +889,8 @@ EXPORT_SYMBOL drivers/ssb/ssb 0xc57572df	ssb_device_enable
 EXPORT_SYMBOL drivers/ssb/ssb 0xd481192b	ssb_admatch_size
 EXPORT_SYMBOL drivers/ssb/ssb 0xebb92e4b	ssb_dma_translation
 EXPORT_SYMBOL drivers/usb/host/sl811-hcd 0xa6a0cba9	sl811h_driver
+EXPORT_SYMBOL drivers/usb/serial/usbserial 0x1a855fb5	usb_serial_resume
+EXPORT_SYMBOL drivers/usb/serial/usbserial 0xed704db0	usb_serial_suspend
 EXPORT_SYMBOL drivers/video/backlight/corgi_bl 0xc86baa7c	corgibl_limit_intensity
 EXPORT_SYMBOL drivers/video/backlight/lcd 0x1d501249	lcd_device_unregister
 EXPORT_SYMBOL drivers/video/backlight/lcd 0x38a5070b	lcd_device_register
@@ -4935,6 +4937,14 @@ EXPORT_SYMBOL_GPL drivers/usb/misc/ftdi-elan 0xc6f68cd1	usb_ftdi_elan_write_pcim
 EXPORT_SYMBOL_GPL drivers/usb/misc/ftdi-elan 0xdb961763	usb_ftdi_elan_edset_empty
 EXPORT_SYMBOL_GPL drivers/usb/misc/ftdi-elan 0xf16d5bf8	usb_ftdi_elan_edset_flush
 EXPORT_SYMBOL_GPL drivers/usb/misc/phidget 0xcfed2058	phidget_class
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0x3eef385d	usb_serial_generic_open
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0x6362f874	usb_serial_generic_read_bulk_callback
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0x68f85306	usb_serial_generic_write_bulk_callback
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0x74ff9a87	usb_serial_port_softint
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0x7e203d2a	usb_serial_probe
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0x9cf1058e	usb_serial_register
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0xa6d8054e	usb_serial_disconnect
+EXPORT_SYMBOL_GPL drivers/usb/serial/usbserial 0xad43007b	usb_serial_deregister
 EXPORT_SYMBOL_GPL drivers/w1/wire 0x22d91d72	w1_reset_bus
 EXPORT_SYMBOL_GPL drivers/w1/wire 0x73d455cb	w1_reset_select_slave
 EXPORT_SYMBOL_GPL drivers/w1/wire 0x7c2f2afb	w1_calc_crc8
