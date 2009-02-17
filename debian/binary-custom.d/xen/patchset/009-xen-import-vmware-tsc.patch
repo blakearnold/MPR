@@ -1,0 +1,42 @@
+diff -Nurp custom-source-xen.orig/include/asm-x86/mach-xen/asm/processor_32.h custom-source-xen/include/asm-x86/mach-xen/asm/processor_32.h
+--- custom-source-xen.orig/include/asm-x86/mach-xen/asm/processor_32.h	2009-02-17 12:15:04.697531000 +0100
++++ custom-source-xen/include/asm-x86/mach-xen/asm/processor_32.h	2009-02-17 13:41:35.636278857 +0100
+@@ -82,6 +82,7 @@ struct cpuinfo_x86 {
+ 	__u8 cpu_core_id;  		/* Core id */
+ 	__u8 cpu_index;			/* index into per_cpu list */
+ #endif
++	unsigned int x86_hyper_vendor;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+ #define X86_VENDOR_INTEL 0
+@@ -95,6 +96,9 @@ struct cpuinfo_x86 {
+ #define X86_VENDOR_NUM 9
+ #define X86_VENDOR_UNKNOWN 0xff
+ 
++#define X86_HYPER_VENDOR_NONE	0
++#define X86_HYPER_VENDOR_VMWARE	1
++
+ /*
+  * capabilities of CPUs
+  */
+diff -Nurp custom-source-xen.orig/include/asm-x86/mach-xen/asm/processor_64.h custom-source-xen/include/asm-x86/mach-xen/asm/processor_64.h
+--- custom-source-xen.orig/include/asm-x86/mach-xen/asm/processor_64.h	2009-02-17 12:15:04.707530000 +0100
++++ custom-source-xen/include/asm-x86/mach-xen/asm/processor_64.h	2009-02-17 13:41:19.246278326 +0100
+@@ -76,6 +76,7 @@ struct cpuinfo_x86 {
+ 	__u8	cpu_core_id;	/* Core id. */
+ 	__u8	cpu_index;	/* index into per_cpu list */
+ #endif
++	unsigned int x86_hyper_vendor;
+ } ____cacheline_aligned;
+ 
+ #define X86_VENDOR_INTEL 0
+@@ -88,6 +89,9 @@ struct cpuinfo_x86 {
+ #define X86_VENDOR_NUM 8
+ #define X86_VENDOR_UNKNOWN 0xff
+ 
++#define X86_HYPER_VENDOR_NONE	0
++#define X86_HYPER_VENDOR_VMWARE	1
++
+ #ifdef CONFIG_SMP
+ DECLARE_PER_CPU(struct cpuinfo_x86, cpu_info);
+ #define cpu_data(cpu)		per_cpu(cpu_info, cpu)
