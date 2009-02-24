@@ -1,0 +1,31 @@
+Subject: sched: fix the wrong time slice value for SCHED_FIFO tasks
+From: Miao Xie <miaox@cn.fujitsu.com>
+
+X-Git-Tag: v2.6.25-rc5~13^2~2
+X-Git-Url: http://git.kernel.org/?p=linux%2Fkernel%2Fgit%2Ftorvalds%2Flinux-2.6.git;a=commitdiff_plain;h=1868f958eb56fc41c5985c8732e564a400c5fdf5
+
+sched: fix the wrong time slice value for SCHED_FIFO tasks
+
+Function sys_sched_rr_get_interval returns wrong time slice value for
+SCHED_FIFO tasks. The time slice for SCHED_FIFO tasks should be 0.
+
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+
+ kernel/sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.24.7-rt27/kernel/sched.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/sched.c	2009-02-08 00:04:55.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/sched.c	2009-02-08 00:04:59.000000000 -0500
+@@ -5392,7 +5392,7 @@ long sys_sched_rr_get_interval(pid_t pid
+ 	time_slice = 0;
+ 	if (p->policy == SCHED_RR) {
+ 		time_slice = DEF_TIMESLICE;
+-	} else {
++	} else if (p->policy != SCHED_FIFO) {
+ 		struct sched_entity *se = &p->se;
+ 		unsigned long flags;
+ 		struct rq *rq;

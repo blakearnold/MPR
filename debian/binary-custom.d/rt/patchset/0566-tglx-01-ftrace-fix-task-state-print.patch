@@ -1,0 +1,109 @@
+From tglx@linutronix.de Fri Dec 19 16:40:02 2008
+Date: Fri, 19 Dec 2008 21:22:44 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>, Peter Zijlstra <peterz@infradead.org>, Clark Williams <clark.williams@gmail.com>, Gregory Haskins <ghaskins@novell.com>, Linux-rt <linux-rt-users@vger.kernel.org>
+Subject: [patch 1/7] ftrace: fix task state printout
+
+Impact: tracer task state decoding is wrong, size check is buggy
+
+The tracing code has interesting varieties of printing out task state.
+Unfortunalely only one of the instances is correct as it copies the
+code from sched.c:sched_show_task(). The others are plain wrong as
+they treatthe bitfield as an integer offset into the character
+array. Also the size check of the character array is wrong as it
+includes the trailing \0.
+
+Use a common state decoder inline which does the Right Thing.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/trace/trace.c |   40 ++++++++++++++++++----------------------
+ 1 file changed, 18 insertions(+), 22 deletions(-)
+
+Index: linux-2.6.24.7-rt27/kernel/trace/trace.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/trace/trace.c	2009-02-08 00:05:06.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/trace/trace.c	2009-02-08 00:05:21.000000000 -0500
+@@ -1626,6 +1626,13 @@ lat_print_timestamp(struct trace_seq *s,
+ 
+ static const char state_to_char[] = TASK_STATE_TO_CHAR_STR;
+ 
++static int task_state_char(unsigned long state)
++{
++	int bit = state ? __ffs(state) + 1 : 0;
++
++	return bit < sizeof(state_to_char) - 1 ? state_to_char[bit] : '?';
++}
++
+ extern unsigned long sys_call_table[NR_syscalls];
+ 
+ #if defined(CONFIG_COMPAT) && defined(CONFIG_X86)
+@@ -1654,7 +1661,6 @@ print_lat_fmt(struct trace_iterator *ite
+ 	char *comm;
+ 	int S, T;
+ 	int i;
+-	unsigned state;
+ 
+ 	if (!next_entry)
+ 		next_entry = entry;
+@@ -1685,11 +1691,8 @@ print_lat_fmt(struct trace_iterator *ite
+ 		break;
+ 	case TRACE_CTX:
+ 	case TRACE_WAKE:
+-		T = entry->ctx.next_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.next_state] : 'X';
+-
+-		state = entry->ctx.prev_state ? __ffs(entry->ctx.prev_state) + 1 : 0;
+-		S = state < sizeof(state_to_char) - 1 ? state_to_char[state] : 'X';
++		T = task_state_char(entry->ctx.next_state);
++		S = task_state_char(entry->ctx.prev_state);
+ 		comm = trace_find_cmdline(entry->ctx.next_pid);
+ 		trace_seq_printf(s, " %5d:%3d:%c %s %5d:%3d:%c %s\n",
+ 				 entry->ctx.prev_pid,
+@@ -1862,10 +1865,8 @@ static int print_trace_fmt(struct trace_
+ 		break;
+ 	case TRACE_CTX:
+ 	case TRACE_WAKE:
+-		S = entry->ctx.prev_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.prev_state] : 'X';
+-		T = entry->ctx.next_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.next_state] : 'X';
++		T = task_state_char(entry->ctx.next_state);
++		S = task_state_char(entry->ctx.prev_state);
+ 		ret = trace_seq_printf(s, " %5d:%3d:%c %s %5d:%3d:%c\n",
+ 				       entry->ctx.prev_pid,
+ 				       entry->ctx.prev_prio,
+@@ -2012,12 +2013,10 @@ static int print_raw_fmt(struct trace_it
+ 		break;
+ 	case TRACE_CTX:
+ 	case TRACE_WAKE:
+-		S = entry->ctx.prev_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.prev_state] : 'X';
+-		T = entry->ctx.next_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.next_state] : 'X';
+-		if (entry->type == TRACE_WAKE)
+-			S = '+';
++		T = task_state_char(entry->ctx.next_state);
++		S = entry->type == TRACE_WAKE ? '+' :
++			task_state_char(entry->ctx.prev_state);
++
+ 		ret = trace_seq_printf(s, "%d %d %c %d %d %c\n",
+ 				       entry->ctx.prev_pid,
+ 				       entry->ctx.prev_prio,
+@@ -2073,12 +2072,9 @@ static int print_hex_fmt(struct trace_it
+ 		break;
+ 	case TRACE_CTX:
+ 	case TRACE_WAKE:
+-		S = entry->ctx.prev_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.prev_state] : 'X';
+-		T = entry->ctx.next_state < sizeof(state_to_char) ?
+-			state_to_char[entry->ctx.next_state] : 'X';
+-		if (entry->type == TRACE_WAKE)
+-			S = '+';
++		T = task_state_char(entry->ctx.next_state);
++		S = entry->type == TRACE_WAKE ? '+' :
++			task_state_char(entry->ctx.prev_state);
+ 		SEQ_PUT_HEX_FIELD_RET(s, entry->ctx.prev_pid);
+ 		SEQ_PUT_HEX_FIELD_RET(s, entry->ctx.prev_prio);
+ 		SEQ_PUT_HEX_FIELD_RET(s, S);

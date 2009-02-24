@@ -1,0 +1,35 @@
+From f575ccd685ef46c6abf88922f4df5cfb8283ae77 Mon Sep 17 00:00:00 2001
+From: Sebastian Siewior <bigeasy@linutronix.de>
+Date: Fri, 18 Apr 2008 17:02:28 +0200
+Subject: [PATCH] add CONFIG_MMU in uaccess.h
+
+because non-MMU arches don't need to enable or disable page faults.
+
+Signed-off-by: Sebastian Siewior <bigeasy@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/uaccess.h |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+Index: linux-2.6.24.7-rt27/include/linux/uaccess.h
+===================================================================
+--- linux-2.6.24.7-rt27.orig/include/linux/uaccess.h	2009-02-08 00:03:13.000000000 -0500
++++ linux-2.6.24.7-rt27/include/linux/uaccess.h	2009-02-08 00:03:14.000000000 -0500
+@@ -4,12 +4,17 @@
+ #include <linux/preempt.h>
+ #include <asm/uaccess.h>
+ 
++#ifdef CONFIG_MMU
+ /*
+  * These routines enable/disable the pagefault handler in that
+  * it will not take any MM locks and go straight to the fixup table.
+  */
+ extern void pagefault_disable(void);
+ extern void pagefault_enable(void);
++#else
++static inline void pagefault_disable(void) { }
++static inline void pagefault_enable(void) { }
++#endif
+ 
+ #ifndef ARCH_HAS_NOCACHE_UACCESS
+ 

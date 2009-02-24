@@ -1,0 +1,52 @@
+commit f7676254f179eac6b5244a80195ec8ae0e9d4606
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Sat Sep 6 03:03:32 2008 +0200
+
+    x86: HPET fix moronic 32/64bit thinko
+    
+    We use the HPET only in 32bit mode because:
+    1) some HPETs are 32bit only
+    2) on i386 there is no way to read/write the HPET atomic 64bit wide
+    
+    The HPET code unification done by the "moron of the year" did
+    not take into account that unsigned long is different on 32 and
+    64 bit.
+    
+    This thinko results in a possible endless loop in the clockevents
+    code, when the return comparison fails due to the 64bit/332bit
+    unawareness.
+    
+    unsigned long cnt = (u32) hpet_read() + delta can wrap over 32bit.
+    but the final compare will fail and return -ETIME causing endless
+    loops.
+    
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ arch/x86/kernel/hpet.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Index: linux-2.6.24.7-rt27/arch/x86/kernel/hpet.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/arch/x86/kernel/hpet.c	2009-02-08 00:05:11.000000000 -0500
++++ linux-2.6.24.7-rt27/arch/x86/kernel/hpet.c	2009-02-08 00:05:13.000000000 -0500
+@@ -281,15 +281,15 @@ static void hpet_legacy_set_mode(enum cl
+ }
+ 
+ static int hpet_legacy_next_event(unsigned long delta,
+-			   struct clock_event_device *evt)
++				  struct clock_event_device *evt)
+ {
+-	unsigned long cnt;
++	u32 cnt;
+ 
+ 	cnt = hpet_readl(HPET_COUNTER);
+-	cnt += delta;
++	cnt += (u32) delta;
+ 	hpet_writel(cnt, HPET_T0_CMP);
+ 
+-	return ((long)(hpet_readl(HPET_COUNTER) - cnt ) > 0) ? -ETIME : 0;
++	return (s32)((u32)hpet_readl(HPET_COUNTER) - cnt) >= 0 ? -ETIME : 0;
+ }
+ 
+ /*

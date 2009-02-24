@@ -1,0 +1,31 @@
+commit e539d8fcd11af811db70707d47ea436d5621d0da
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Thu Jun 5 10:28:00 2008 +0200
+
+    sched: fix the cpuprio count really
+   
+    Peter pointed out that the last version of the "fix" was still one off
+    under certain circumstances. Use BITS_TO_LONG instead to get an
+    accurate result.
+   
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ kernel/sched_cpupri.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.24.7-rt27/kernel/sched_cpupri.h
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/sched_cpupri.h	2009-02-08 00:04:47.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/sched_cpupri.h	2009-02-08 00:05:26.000000000 -0500
+@@ -3,8 +3,8 @@
+ 
+ #include <linux/sched.h>
+ 
+-#define CPUPRI_NR_PRIORITIES 2+MAX_RT_PRIO
+-#define CPUPRI_NR_PRI_WORDS (CPUPRI_NR_PRIORITIES + BITS_PER_LONG/2)/BITS_PER_LONG
++#define CPUPRI_NR_PRIORITIES   (MAX_RT_PRIO + 2)
++#define CPUPRI_NR_PRI_WORDS    BITS_TO_LONGS(CPUPRI_NR_PRIORITIES)
+ 
+ #define CPUPRI_INVALID -1
+ #define CPUPRI_IDLE     0

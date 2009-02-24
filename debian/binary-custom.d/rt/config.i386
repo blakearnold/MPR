@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.24.7
-# Fri Nov 21 17:16:40 2008
+# Linux kernel version: 2.6.24.6
+# Mon Feb 23 16:02:25 2009
 #
 # CONFIG_64BIT is not set
 CONFIG_X86_32=y
@@ -143,7 +143,7 @@ CONFIG_PREEMPT_NOTIFIERS=y
 # Processor type and features
 #
 CONFIG_TICK_ONESHOT=y
-# CONFIG_NO_HZ is not set
+CONFIG_NO_HZ=y
 CONFIG_HIGH_RES_TIMERS=y
 CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
 CONFIG_SMP=y
@@ -375,6 +375,7 @@ CONFIG_X86_SPEEDSTEP_LIB=m
 CONFIG_X86_SPEEDSTEP_RELAXED_CAP_CHECK=y
 CONFIG_CPU_IDLE=y
 CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
 
 #
 # Bus options (PCI etc.)
@@ -3757,7 +3758,7 @@ CONFIG_PROFILING=y
 CONFIG_OPROFILE=m
 CONFIG_PROFILE_NMI=y
 CONFIG_KPROBES=y
-CONFIG_MARKERS=y
+# CONFIG_MARKERS is not set
 
 #
 # Kernel hacking

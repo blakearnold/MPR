@@ -1,0 +1,26 @@
+---
+ init/main.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: linux-2.6.24.7-rt27/init/main.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/init/main.c	2009-02-08 00:02:16.000000000 -0500
++++ linux-2.6.24.7-rt27/init/main.c	2009-02-08 00:02:36.000000000 -0500
+@@ -59,6 +59,7 @@
+ #include <linux/device.h>
+ #include <linux/kthread.h>
+ #include <linux/sched.h>
++#include <linux/ftrace.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -783,6 +784,9 @@ static int noinline init_post(void)
+ 	(void) sys_dup(0);
+ 	(void) sys_dup(0);
+ 
++#ifdef CONFIG_PREEMPT_RT
++	ftrace_disable_daemon();
++#endif
+ 	if (ramdisk_execute_command) {
+ 		run_init_process(ramdisk_execute_command);
+ 		printk(KERN_WARNING "Failed to execute %s\n",

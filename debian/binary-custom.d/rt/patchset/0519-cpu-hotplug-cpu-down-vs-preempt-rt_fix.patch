@@ -1,0 +1,17 @@
+---
+ kernel/rcupreempt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.24.7-rt27/kernel/rcupreempt.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/rcupreempt.c	2009-02-08 00:04:55.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/rcupreempt.c	2009-02-08 00:04:58.000000000 -0500
+@@ -860,7 +860,7 @@ void __devinit rcu_online_cpu_rt(int cpu
+ 
+ #else /* #ifdef CONFIG_HOTPLUG_CPU */
+ 
+-void rcu_offline_cpu(int cpu)
++void rcu_offline_cpu_rt(int cpu)
+ {
+ }
+ 

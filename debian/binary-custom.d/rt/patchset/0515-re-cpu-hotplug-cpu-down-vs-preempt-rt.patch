@@ -1,0 +1,92 @@
+Subject: Re:  cpu-hotplug: cpu_down vs preempt-rt
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed, 11 Jun 2008 08:53:45 +0200
+
+Because 5/5 has a horrible bug...
+
+We should only do __mmdrop() from rcu, not mmdrop().
+
+---
+---
+ include/linux/sched.h |    7 +++++++
+ kernel/fork.c         |   12 ++++++++++++
+ kernel/sched.c        |   11 +----------
+ 3 files changed, 20 insertions(+), 10 deletions(-)
+
+Index: linux-2.6.24.7-rt27/include/linux/sched.h
+===================================================================
+--- linux-2.6.24.7-rt27.orig/include/linux/sched.h	2009-02-08 00:04:52.000000000 -0500
++++ linux-2.6.24.7-rt27/include/linux/sched.h	2009-02-08 00:04:55.000000000 -0500
+@@ -1832,6 +1832,7 @@ extern struct mm_struct * mm_alloc(void)
+ /* mmdrop drops the mm and the page tables */
+ extern void FASTCALL(__mmdrop(struct mm_struct *));
+ extern void FASTCALL(__mmdrop_delayed(struct mm_struct *));
++extern void FASTCALL(__mmdrop_rcu(struct mm_struct *));
+ 
+ static inline void mmdrop(struct mm_struct * mm)
+ {
+@@ -1845,6 +1846,12 @@ static inline void mmdrop_delayed(struct
+ 		__mmdrop_delayed(mm);
+ }
+ 
++static inline void mmdrop_rcu(struct mm_struct * mm)
++{
++	if (atomic_dec_and_test(&mm->mm_count))
++		__mmdrop_rcu(mm);
++}
++
+ /* mmput gets rid of the mappings and all user-space */
+ extern void mmput(struct mm_struct *);
+ /* Grab a reference to a task's mm, if it is not already going away */
+Index: linux-2.6.24.7-rt27/kernel/fork.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/fork.c	2009-02-08 00:04:52.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/fork.c	2009-02-08 00:04:55.000000000 -0500
+@@ -431,6 +431,18 @@ void fastcall __mmdrop(struct mm_struct 
+ 	free_mm(mm);
+ }
+ 
++#ifdef CONFIG_PREEMPT_RT
++static void ___mmdrop_rcu(struct rcu_head *head)
++{
++	__mmdrop(container_of(head, struct mm_struct, rcu_head));
++}
++
++void fastcall __mmdrop_rcu(struct mm_struct *mm)
++{
++	call_rcu_preempt_online(&mm->rcu_head, ___mmdrop_rcu);
++}
++#endif
++
+ /*
+  * Decrement the use count and release all resources for an mm.
+  */
+Index: linux-2.6.24.7-rt27/kernel/sched.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/sched.c	2009-02-08 00:04:55.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/sched.c	2009-02-08 00:04:55.000000000 -0500
+@@ -5888,15 +5888,6 @@ void sched_idle_next(void)
+ 	spin_unlock_irqrestore(&rq->lock, flags);
+ }
+ 
+-#ifdef CONFIG_PREEMPT_RT
+-void mmdrop_rcu(struct rcu_head *head)
+-{
+-	struct mm_struct *mm = container_of(head, struct mm_struct, rcu_head);
+-
+-	mmdrop(mm);
+-}
+-#endif
+-
+ /*
+  * Ensures that the idle task is using init_mm right before its cpu goes
+  * offline.
+@@ -5910,7 +5901,7 @@ void idle_task_exit(void)
+ 	if (mm != &init_mm)
+ 		switch_mm(mm, &init_mm, current);
+ #ifdef CONFIG_PREEMPT_RT
+-	call_rcu_preempt_online(&mm->rcu_head, mmdrop_rcu);
++	mmdrop_rcu(mm);
+ #else
+ 	mmdrop(mm);
+ #endif
