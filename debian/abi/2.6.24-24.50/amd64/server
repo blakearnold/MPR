@@ -2421,7 +2421,6 @@ EXPORT_SYMBOL vmlinux 0x0a956f95	nf_hooks
 EXPORT_SYMBOL vmlinux 0x0aaf22ab	__xfrm_state_destroy
 EXPORT_SYMBOL vmlinux 0x0ab135a8	compat_tcp_setsockopt
 EXPORT_SYMBOL vmlinux 0x0ab53258	ida_pre_get
-EXPORT_SYMBOL vmlinux 0x0ac5fee4	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0x0ac6ea32	tcf_exts_dump_stats
 EXPORT_SYMBOL vmlinux 0x0acb1a3c	__bitmap_shift_right
 EXPORT_SYMBOL vmlinux 0x0adf839d	kernel_bind
@@ -2937,6 +2936,7 @@ EXPORT_SYMBOL vmlinux 0x42a40c8b	bio_free
 EXPORT_SYMBOL vmlinux 0x42a4bdf2	in_egroup_p
 EXPORT_SYMBOL vmlinux 0x42b35c60	lock_super
 EXPORT_SYMBOL vmlinux 0x4302d0eb	free_pages
+EXPORT_SYMBOL vmlinux 0x43207d14	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0x4327f0d5	memset_io
 EXPORT_SYMBOL vmlinux 0x432cc573	gnet_stats_copy_queue
 EXPORT_SYMBOL vmlinux 0x43385ad9	acpi_pci_unregister_driver
@@ -3791,7 +3791,6 @@ EXPORT_SYMBOL vmlinux 0x95e0a76b	init_level4_pgt
 EXPORT_SYMBOL vmlinux 0x95fde4e4	acpi_os_wait_semaphore
 EXPORT_SYMBOL vmlinux 0x960db676	acpi_lock_battery_dir
 EXPORT_SYMBOL vmlinux 0x962a3e36	inet_getname
-EXPORT_SYMBOL vmlinux 0x963e62ce	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0x9653699a	end_page_writeback
 EXPORT_SYMBOL vmlinux 0x967c2a85	acpi_get_current_resources
 EXPORT_SYMBOL vmlinux 0x96d7cecd	input_free_device
@@ -4210,6 +4209,7 @@ EXPORT_SYMBOL vmlinux 0xc003c637	__strncpy_from_user
 EXPORT_SYMBOL vmlinux 0xc01cb42c	kset_register
 EXPORT_SYMBOL vmlinux 0xc026aefa	force_sig
 EXPORT_SYMBOL vmlinux 0xc02842f3	deregister_atm_ioctl
+EXPORT_SYMBOL vmlinux 0xc028b164	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0xc045ad4e	timespec_trunc
 EXPORT_SYMBOL vmlinux 0xc04ae1c3	inet_frag_destroy
 EXPORT_SYMBOL vmlinux 0xc0575dae	skb_split

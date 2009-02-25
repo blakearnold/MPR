@@ -3948,7 +3948,6 @@ EXPORT_SYMBOL vmlinux 0xa20ce1b8	net_msg_warn
 EXPORT_SYMBOL vmlinux 0xa20e4cf0	__mod_timer
 EXPORT_SYMBOL vmlinux 0xa218bf61	complete
 EXPORT_SYMBOL vmlinux 0xa2343c8e	kset_unregister
-EXPORT_SYMBOL vmlinux 0xa2364c52	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0xa270ccbc	init_mm
 EXPORT_SYMBOL vmlinux 0xa2a5fd77	inet_ehash_secret
 EXPORT_SYMBOL vmlinux 0xa2a8b28e	skb_append
@@ -4291,6 +4290,7 @@ EXPORT_SYMBOL vmlinux 0xc7208c3a	serial8250_resume_port
 EXPORT_SYMBOL vmlinux 0xc722a0e2	tcp_v4_calc_md5_hash
 EXPORT_SYMBOL vmlinux 0xc72c3dc0	register_gifconf
 EXPORT_SYMBOL vmlinux 0xc7a4fbed	rtnl_lock
+EXPORT_SYMBOL vmlinux 0xc7c38cfd	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0xc7c91dda	try_to_release_page
 EXPORT_SYMBOL vmlinux 0xc7d5d92e	udp_ioctl
 EXPORT_SYMBOL vmlinux 0xc7e1f8b4	fb_firmware_edid

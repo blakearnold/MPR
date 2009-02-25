@@ -1734,6 +1734,7 @@ EXPORT_SYMBOL vmlinux 0x1eba9e49	iowrite16_rep
 EXPORT_SYMBOL vmlinux 0x1ed1d459	grab_cache_page_nowait
 EXPORT_SYMBOL vmlinux 0x1f7fba0e	blk_cleanup_queue
 EXPORT_SYMBOL vmlinux 0x1f83fa64	dma_free_coherent
+EXPORT_SYMBOL vmlinux 0x1f88fcde	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0x1f94a7e7	__serio_register_driver
 EXPORT_SYMBOL vmlinux 0x1f9cfe83	iomem_resource
 EXPORT_SYMBOL vmlinux 0x1fe5ede6	per_cpu__irq_stat
@@ -2987,7 +2988,6 @@ EXPORT_SYMBOL vmlinux 0xa22691c8	pcim_enable_device
 EXPORT_SYMBOL vmlinux 0xa2570a67	elv_rb_former_request
 EXPORT_SYMBOL vmlinux 0xa29cd72c	generic_delete_inode
 EXPORT_SYMBOL vmlinux 0xa2a5fd77	inet_ehash_secret
-EXPORT_SYMBOL vmlinux 0xa2c23650	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xa2f03534	force_sig
 EXPORT_SYMBOL vmlinux 0xa304d1ca	sk_reset_timer
 EXPORT_SYMBOL vmlinux 0xa329f07e	register_shrinker
@@ -3140,6 +3140,7 @@ EXPORT_SYMBOL vmlinux 0xb2780f36	mempool_alloc
 EXPORT_SYMBOL vmlinux 0xb27acbf5	xfrm_policy_flush
 EXPORT_SYMBOL vmlinux 0xb2bdbe65	alloc_netdev_mq
 EXPORT_SYMBOL vmlinux 0xb2be638a	dma_chan_cleanup
+EXPORT_SYMBOL vmlinux 0xb2d56e2b	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xb2e09fbc	blk_queue_resize_tags
 EXPORT_SYMBOL vmlinux 0xb2fd5ceb	__put_user_4
 EXPORT_SYMBOL vmlinux 0xb321fe29	shrink_dcache_parent
@@ -3302,7 +3303,6 @@ EXPORT_SYMBOL vmlinux 0xc5d54a29	kmap_atomic_to_page
 EXPORT_SYMBOL vmlinux 0xc612cc0d	xfrm4_rcv_encap
 EXPORT_SYMBOL vmlinux 0xc627d28f	d_invalidate
 EXPORT_SYMBOL vmlinux 0xc63575f3	pnp_disable_dev
-EXPORT_SYMBOL vmlinux 0xc64796bc	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0xc6ae6b3c	eth_type_trans
 EXPORT_SYMBOL vmlinux 0xc6b368d3	acpi_gpe_count
 EXPORT_SYMBOL vmlinux 0xc6b90c81	uart_add_one_port

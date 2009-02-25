@@ -2677,6 +2677,7 @@ EXPORT_SYMBOL vmlinux 0x1f391a8a	generic_delete_inode
 EXPORT_SYMBOL vmlinux 0x1f4c4922	filemap_write_and_wait
 EXPORT_SYMBOL vmlinux 0x1f69c879	ethtool_op_set_tx_csum
 EXPORT_SYMBOL vmlinux 0x1f869a62	sock_rfree
+EXPORT_SYMBOL vmlinux 0x1f88fcde	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0x1f9c767e	__page_symlink
 EXPORT_SYMBOL vmlinux 0x1f9cfe83	iomem_resource
 EXPORT_SYMBOL vmlinux 0x1fcd2bb2	neigh_create
@@ -3919,7 +3920,6 @@ EXPORT_SYMBOL vmlinux 0xa22a07e3	tcp_v4_send_check
 EXPORT_SYMBOL vmlinux 0xa2553ac6	sk_stream_wait_connect
 EXPORT_SYMBOL vmlinux 0xa2837e74	d_lookup
 EXPORT_SYMBOL vmlinux 0xa2a5fd77	inet_ehash_secret
-EXPORT_SYMBOL vmlinux 0xa2c23650	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xa32096eb	find_task_by_pid_ns
 EXPORT_SYMBOL vmlinux 0xa329f07e	register_shrinker
 EXPORT_SYMBOL vmlinux 0xa3424439	tty_mutex
@@ -4092,6 +4092,7 @@ EXPORT_SYMBOL vmlinux 0xb2780f36	mempool_alloc
 EXPORT_SYMBOL vmlinux 0xb27acbf5	xfrm_policy_flush
 EXPORT_SYMBOL vmlinux 0xb2be638a	dma_chan_cleanup
 EXPORT_SYMBOL vmlinux 0xb2d4f9cf	inet_put_port
+EXPORT_SYMBOL vmlinux 0xb2d56e2b	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xb2efb6be	mca_read_stored_pos
 EXPORT_SYMBOL vmlinux 0xb2fd5ceb	__put_user_4
 EXPORT_SYMBOL vmlinux 0xb3182815	dev_change_flags
@@ -4296,7 +4297,6 @@ EXPORT_SYMBOL vmlinux 0xc5f6d16d	rtnl_notify
 EXPORT_SYMBOL vmlinux 0xc61176cc	llc_set_station_handler
 EXPORT_SYMBOL vmlinux 0xc62db06f	call_usermodehelper_stdinpipe
 EXPORT_SYMBOL vmlinux 0xc63bb504	bdget
-EXPORT_SYMBOL vmlinux 0xc64796bc	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0xc649c505	blk_queue_dma_alignment
 EXPORT_SYMBOL vmlinux 0xc66eaf68	xfrm_init_state
 EXPORT_SYMBOL vmlinux 0xc672dc36	tty_hung_up_p

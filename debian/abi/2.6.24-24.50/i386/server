@@ -2670,6 +2670,7 @@ EXPORT_SYMBOL vmlinux 0x1eb41d59	pci_set_power_state
 EXPORT_SYMBOL vmlinux 0x1eb922a3	IO_APIC_get_PCI_irq_vector
 EXPORT_SYMBOL vmlinux 0x1eba9e49	iowrite16_rep
 EXPORT_SYMBOL vmlinux 0x1f79950d	path_lookup
+EXPORT_SYMBOL vmlinux 0x1f88fcde	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0x1f927b15	iunique
 EXPORT_SYMBOL vmlinux 0x1fab3300	uart_unregister_driver
 EXPORT_SYMBOL vmlinux 0x1fb469e2	simple_transaction_read
@@ -3934,7 +3935,6 @@ EXPORT_SYMBOL vmlinux 0xa2268b59	mutex_unlock
 EXPORT_SYMBOL vmlinux 0xa26ee49c	netlink_dump_start
 EXPORT_SYMBOL vmlinux 0xa271c6b2	inet_sendmsg
 EXPORT_SYMBOL vmlinux 0xa2a5fd77	inet_ehash_secret
-EXPORT_SYMBOL vmlinux 0xa2c23650	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xa2c9e22b	dev_set_promiscuity
 EXPORT_SYMBOL vmlinux 0xa2f2eb82	new_inode
 EXPORT_SYMBOL vmlinux 0xa2fc95b8	pci_disable_msix
@@ -4102,6 +4102,7 @@ EXPORT_SYMBOL vmlinux 0xb29af880	noop_qdisc
 EXPORT_SYMBOL vmlinux 0xb2b01c8d	__pskb_pull_tail
 EXPORT_SYMBOL vmlinux 0xb2b7e152	sock_no_poll
 EXPORT_SYMBOL vmlinux 0xb2be638a	dma_chan_cleanup
+EXPORT_SYMBOL vmlinux 0xb2d56e2b	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xb2efb6be	mca_read_stored_pos
 EXPORT_SYMBOL vmlinux 0xb2fd5ceb	__put_user_4
 EXPORT_SYMBOL vmlinux 0xb32242d3	dma_spin_lock
@@ -4270,7 +4271,6 @@ EXPORT_SYMBOL vmlinux 0xc5f49825	test_set_page_writeback
 EXPORT_SYMBOL vmlinux 0xc6044150	skb_unlink
 EXPORT_SYMBOL vmlinux 0xc610ece0	__insert_inode_hash
 EXPORT_SYMBOL vmlinux 0xc63b26ed	pci_enable_bridges
-EXPORT_SYMBOL vmlinux 0xc64796bc	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0xc6641b66	balance_dirty_pages_ratelimited_nr
 EXPORT_SYMBOL vmlinux 0xc66d71b2	read_cache_page_async
 EXPORT_SYMBOL vmlinux 0xc6b368d3	acpi_gpe_count

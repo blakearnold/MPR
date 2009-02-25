@@ -2581,7 +2581,6 @@ EXPORT_SYMBOL vmlinux 0x1d763df3	pci_bus_add_devices
 EXPORT_SYMBOL vmlinux 0x1d7e19c4	d_invalidate
 EXPORT_SYMBOL vmlinux 0x1d8a6316	generic_file_aio_write
 EXPORT_SYMBOL vmlinux 0x1db7706b	__copy_user_nocache
-EXPORT_SYMBOL vmlinux 0x1dba3624	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0x1dc36131	fb_destroy_modedb
 EXPORT_SYMBOL vmlinux 0x1dd571e6	fb_copy_cmap
 EXPORT_SYMBOL vmlinux 0x1de13687	directly_mappable_cdev_bdi
@@ -3020,6 +3019,7 @@ EXPORT_SYMBOL vmlinux 0x494ecc05	dma_async_memcpy_pg_to_pg
 EXPORT_SYMBOL vmlinux 0x4966516d	dev_alloc_name
 EXPORT_SYMBOL vmlinux 0x498f6525	tcf_exts_dump
 EXPORT_SYMBOL vmlinux 0x4997b1da	mapping_tagged
+EXPORT_SYMBOL vmlinux 0x499ef388	boot_cpu_data
 EXPORT_SYMBOL vmlinux 0x49b1ac36	dev_set_mtu
 EXPORT_SYMBOL vmlinux 0x49c303df	key_instantiate_and_link
 EXPORT_SYMBOL vmlinux 0x49d50234	agp_generic_remove_memory
@@ -3142,6 +3142,7 @@ EXPORT_SYMBOL vmlinux 0x54e13487	register_framebuffer
 EXPORT_SYMBOL vmlinux 0x54e6fcdd	net_enable_timestamp
 EXPORT_SYMBOL vmlinux 0x55036df3	do_splice_to
 EXPORT_SYMBOL vmlinux 0x550f8ade	groups_alloc
+EXPORT_SYMBOL vmlinux 0x552e6149	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0x555f3de7	proc_dointvec_ms_jiffies
 EXPORT_SYMBOL vmlinux 0x5594be03	bitmap_remap
 EXPORT_SYMBOL vmlinux 0x55969f88	__read_lock_failed
@@ -4221,7 +4222,6 @@ EXPORT_SYMBOL vmlinux 0xc175bdbc	blk_queue_init_tags
 EXPORT_SYMBOL vmlinux 0xc177db9c	test_set_page_writeback
 EXPORT_SYMBOL vmlinux 0xc1bd4f47	block_prepare_write
 EXPORT_SYMBOL vmlinux 0xc1f7bb03	cdev_del
-EXPORT_SYMBOL vmlinux 0xc200d39e	per_cpu__cpu_info
 EXPORT_SYMBOL vmlinux 0xc21bd822	poll_initwait
 EXPORT_SYMBOL vmlinux 0xc2424641	agp3_generic_cleanup
 EXPORT_SYMBOL vmlinux 0xc25327e2	key_task_permission
