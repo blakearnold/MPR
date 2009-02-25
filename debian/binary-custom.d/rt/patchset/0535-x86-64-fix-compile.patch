@@ -1,0 +1,24 @@
+Subject: x86-64-fix-compile.patch
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 25 Jul 2008 15:54:04 +0200
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/trace/trace.h |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: linux-2.6.24.7-rt27/kernel/trace/trace.h
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/trace/trace.h	2009-02-08 00:04:45.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/trace/trace.h	2009-02-08 00:05:05.000000000 -0500
+@@ -7,6 +7,10 @@
+ #include <linux/clocksource.h>
+ #include <linux/mmiotrace.h>
+ 
++#ifdef CONFIG_X86_64
++#include <asm/asm-offsets.h>
++#endif
++
+ enum trace_type {
+ 	__TRACE_FIRST_TYPE = 0,
+ 

@@ -1,0 +1,24 @@
+From: Steven Rostedt <srostedt@redhat.com>
+Subject: fix semaphore type in qla_mbx
+
+A compat_semaphore is passed as a pointer to a timeout function, but
+that timeout function converts it to a semaphore instead of a compat.
+
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+---
+ drivers/scsi/qla2xxx/qla_mbx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.24.7-rt27/drivers/scsi/qla2xxx/qla_mbx.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/drivers/scsi/qla2xxx/qla_mbx.c	2009-02-07 23:59:34.000000000 -0500
++++ linux-2.6.24.7-rt27/drivers/scsi/qla2xxx/qla_mbx.c	2009-02-08 00:05:09.000000000 -0500
+@@ -11,7 +11,7 @@
+ static void
+ qla2x00_mbx_sem_timeout(unsigned long data)
+ {
+-	struct semaphore	*sem_ptr = (struct semaphore *)data;
++	struct compat_semaphore	*sem_ptr = (struct compat_semaphore *)data;
+ 
+ 	DEBUG11(printk("qla2x00_sem_timeout: entered.\n"));
+ 

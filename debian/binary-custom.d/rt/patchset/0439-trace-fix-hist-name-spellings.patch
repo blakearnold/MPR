@@ -1,0 +1,60 @@
+From c.emde@osadl.org Thu May 15 09:56:37 2008
+Date: Tue, 01 Apr 2008 00:34:59 +0200
+From: Carsten Emde <c.emde@osadl.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Label missplaced in kernel/trace/Kconfig
+Resent-Date: Wed, 9 Apr 2008 17:43:50 +0200 (CEST)
+Resent-From: tglx@linutronix.de
+Resent-To: Steven Rostedt <rostedt@goodmis.org>
+Resent-Subject: Label missplaced in kernel/trace/Kconfig
+
+Hi Thomas,
+
+there is a strange problem in kernel/trace/Kconfig:
+
+Here
+
+config INTERRUPT_OFF_HIST
+         bool "Interrupts off critical timings histogram"
+
+and here
+
+config WAKEUP_LATENCY_HIST
+         bool "Interrupts off critical timings histogram"
+
+the same label is used, but at the second occurrence the label should 
+most probably read
+
+config WAKEUP_LATENCY_HIST
+         bool "Wakeup latencies histogram"
+
+or similar. Patch see below.
+
+I called it a "strange" problem, because it is so obvious and everybody 
+who was editing this kernel configuration, must have seen it. Any idea 
+what happened here?
+
+
+Carsten.
+
+
+
+
+
+---
+ kernel/trace/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.24.7-rt27/kernel/trace/Kconfig
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/trace/Kconfig	2009-02-08 00:01:16.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/trace/Kconfig	2009-02-08 00:04:19.000000000 -0500
+@@ -150,7 +150,7 @@ config PREEMPT_OFF_HIST
+ 	  preemption off timings to create a histogram of latencies.
+ 
+ config WAKEUP_LATENCY_HIST
+-	bool "Interrupts off critical timings histogram"
++	bool "Wakeup latencies histogram"
+ 	select TRACING
+ 	select MARKERS
+ 	help

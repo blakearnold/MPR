@@ -1,0 +1,26 @@
+Subject: sched: one is enough to not be idle
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+Cap the load balancing on new_idle - you only need one task to run,
+no need to bring the whole machine in balance again - let the softirq
+balancer do that.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6.24.7-rt27/kernel/sched.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/sched.c	2009-02-08 00:04:29.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/sched.c	2009-02-08 00:04:30.000000000 -0500
+@@ -2569,6 +2569,9 @@ static int move_tasks(struct rq *this_rq
+ 			*lb_flags &= ~LB_START;
+ 			schedstat_inc(this_rq, lb_breaks);
+ 
++			if (idle == CPU_NEWLY_IDLE && total_load_moved)
++				break;
++
+ 			double_rq_unlock(this_rq, busiest);
+ 			local_irq_enable();
+ 

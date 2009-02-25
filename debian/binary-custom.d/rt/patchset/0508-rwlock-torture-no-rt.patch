@@ -1,0 +1,23 @@
+From: Steven Rostedt <srostedt@redhat.com>
+Subject: rwlock: fix torture test to handle non-rt
+
+
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+---
+ kernel/rwlock_torture.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-2.6.24.7-rt27/kernel/rwlock_torture.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/rwlock_torture.c	2009-02-08 00:04:46.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/rwlock_torture.c	2009-02-08 00:04:52.000000000 -0500
+@@ -570,7 +570,9 @@ static int run_test(unsigned long time)
+ 		run_two_locks(time, read);
+ 	}
+ 
++#ifdef CONFIG_PREEMPT_RT
+ 	WARN_ON_ONCE(current->reader_lock_count);
++#endif
+ 
+ 	return ret;
+ }

@@ -1,0 +1,24 @@
+Default boot behavior to dynticks off.
+
+From: Jon Masters <jcm redhat com>
+
+
+---
+
+ kernel/time/tick-sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index a70a98c..ae7f394 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -95,7 +95,7 @@ static ktime_t tick_init_jiffy_update(void)
+ /*
+  * NO HZ enabled ?
+  */
+-static int tick_nohz_enabled __read_mostly  = 1;
++static int tick_nohz_enabled __read_mostly  = 0;
+ 
+ /*
+  * Enable / Disable tickless mode

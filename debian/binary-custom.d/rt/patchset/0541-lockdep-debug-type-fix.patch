@@ -1,0 +1,33 @@
+From: Steven Rostedt <srostedt@redhat.com>
+Subject: lockdep: fix debug lock counting
+
+The change to convert the task count to atomic_t did not take into
+consideration debugging.
+
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+---
+ lib/locking-selftest.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.24.7-rt27/lib/locking-selftest.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/lib/locking-selftest.c	2009-02-08 00:02:39.000000000 -0500
++++ linux-2.6.24.7-rt27/lib/locking-selftest.c	2009-02-08 00:05:08.000000000 -0500
+@@ -948,7 +948,7 @@ static void dotest(void (*testcase_fn)(v
+ 	unsigned long saved_preempt_count = preempt_count();
+ 	int expected_failure = 0;
+ #if defined(CONFIG_DEBUG_PREEMPT) && defined(CONFIG_DEBUG_RT_MUTEXES)
+-        int saved_lock_count = current->lock_count;
++        long saved_lock_count = atomic_read(&current->lock_count);
+ #endif
+ 
+ 	WARN_ON(irqs_disabled());
+@@ -1000,7 +1000,7 @@ static void dotest(void (*testcase_fn)(v
+ 
+ 	reset_locks();
+ #if defined(CONFIG_DEBUG_PREEMPT) && defined(CONFIG_DEBUG_RT_MUTEXES)
+-        current->lock_count = saved_lock_count;
++        atomic_set(&current->lock_count, saved_lock_count);
+ #endif
+ }
+ 

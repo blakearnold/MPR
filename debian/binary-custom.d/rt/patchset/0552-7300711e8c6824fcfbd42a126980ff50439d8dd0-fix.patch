@@ -1,0 +1,17 @@
+---
+ kernel/time/tick-broadcast.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.24.7-rt27/kernel/time/tick-broadcast.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/kernel/time/tick-broadcast.c	2009-02-08 00:05:12.000000000 -0500
++++ linux-2.6.24.7-rt27/kernel/time/tick-broadcast.c	2009-02-08 00:05:13.000000000 -0500
+@@ -498,7 +498,7 @@ static void tick_broadcast_init_next_eve
+ 	struct tick_device *td;
+ 	int cpu;
+ 
+-	for_each_cpu_mask_nr(cpu, *mask) {
++	for_each_cpu_mask(cpu, *mask) {
+ 		td = &per_cpu(tick_cpu_device, cpu);
+ 		if (td->evtdev)
+ 			td->evtdev->next_event = expires;

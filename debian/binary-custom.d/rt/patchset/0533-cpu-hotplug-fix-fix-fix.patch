@@ -1,0 +1,161 @@
+---
+ arch/x86/kernel/head64.c     |    1 
+ arch/x86/kernel/setup64.c    |   54 +++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/smpboot_64.c |   54 -------------------------------------------
+ arch/x86/kernel/traps_64.c   |    1 
+ 4 files changed, 55 insertions(+), 55 deletions(-)
+
+Index: linux-2.6.24.7-rt27/arch/x86/kernel/head64.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/arch/x86/kernel/head64.c	2009-02-08 00:05:04.000000000 -0500
++++ linux-2.6.24.7-rt27/arch/x86/kernel/head64.c	2009-02-08 00:05:05.000000000 -0500
+@@ -70,7 +70,6 @@ void __init x86_64_start_kernel(char * r
+  		cpu_pda(i) = &boot_cpu_pda[i];
+ 
+ 	pda_init(0);
+-	allocate_stacks(0);
+ 	copy_bootdata(__va(real_mode_data));
+ #ifdef CONFIG_SMP
+ 	cpu_set(0, cpu_online_map);
+Index: linux-2.6.24.7-rt27/arch/x86/kernel/setup64.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/arch/x86/kernel/setup64.c	2009-02-08 00:04:54.000000000 -0500
++++ linux-2.6.24.7-rt27/arch/x86/kernel/setup64.c	2009-02-08 00:05:05.000000000 -0500
+@@ -143,6 +143,60 @@ void pda_init(int cpu)
+ 	pda->irqstackptr += IRQSTACKSIZE-64;
+ } 
+ 
++static char boot_exception_stacks[(N_EXCEPTION_STACKS - 1) * EXCEPTION_STKSZ + DEBUG_STKSZ]
++__attribute__((section(".bss.page_aligned")));
++
++int __cpuinit allocate_stacks(int cpu)
++{
++	static const unsigned int order[N_EXCEPTION_STACKS] = {
++		[0 ... N_EXCEPTION_STACKS - 1] = EXCEPTION_STACK_ORDER,
++#if DEBUG_STACK > 0
++		[DEBUG_STACK - 1] = DEBUG_STACK_ORDER
++#endif
++	};
++	struct tss_struct *t = &per_cpu(init_tss, cpu);
++	int node = cpu_to_node(cpu);
++	struct page *page;
++	char *estack;
++	int v;
++
++	if (cpu && !t->irqstack) {
++		page = alloc_pages_node(node, GFP_KERNEL,
++				IRQSTACK_ORDER);
++		if (!page)
++			goto fail_oom;
++		t->irqstack = page_address(page);
++	}
++
++	if (!cpu)
++		estack = boot_exception_stacks;
++
++	for (v = 0; v < N_EXCEPTION_STACKS; v++) {
++		if (t->estacks[v])
++			continue;
++
++		if (cpu) {
++			page = alloc_pages_node(node, GFP_KERNEL, order[v]);
++			if (!page)
++				goto fail_oom;
++			estack = page_address(page);
++		}
++		estack += PAGE_SIZE << order[v];
++		/*
++		 * XXX: can we set t->isr[v] here directly, or will that be
++		 * modified later? - the existance of orig_ist seems to suggest
++		 * it _can_ be modified, which would imply we'd need to reset
++		 * it.
++		 */
++		t->estacks[v] = estack;
++	}
++
++	return 0;
++
++fail_oom:
++	return -ENOMEM;
++}
++
+ extern asmlinkage void ignore_sysret(void);
+ 
+ /* May not be marked __init: used by software suspend */
+Index: linux-2.6.24.7-rt27/arch/x86/kernel/smpboot_64.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/arch/x86/kernel/smpboot_64.c	2009-02-08 00:05:04.000000000 -0500
++++ linux-2.6.24.7-rt27/arch/x86/kernel/smpboot_64.c	2009-02-08 00:05:05.000000000 -0500
+@@ -535,60 +535,6 @@ static void __cpuinit do_fork_idle(struc
+ 	complete(&c_idle->done);
+ }
+ 
+-static char boot_exception_stacks[(N_EXCEPTION_STACKS - 1) * EXCEPTION_STKSZ + DEBUG_STKSZ]
+-__attribute__((section(".bss.page_aligned")));
+-
+-int __cpuinit allocate_stacks(int cpu)
+-{
+-	static const unsigned int order[N_EXCEPTION_STACKS] = {
+-		[0 ... N_EXCEPTION_STACKS - 1] = EXCEPTION_STACK_ORDER,
+-#if DEBUG_STACK > 0
+-		[DEBUG_STACK - 1] = DEBUG_STACK_ORDER
+-#endif
+-	};
+-	struct tss_struct *t = &per_cpu(init_tss, cpu);
+-	int node = cpu_to_node(cpu);
+-	struct page *page;
+-	char *estack;
+-	int v;
+-
+-	if (cpu && !t->irqstack) {
+-		page = alloc_pages_node(node, GFP_KERNEL,
+-				IRQSTACK_ORDER);
+-		if (!page)
+-			goto fail_oom;
+-		t->irqstack = page_address(page);
+-	}
+-
+-	if (!cpu)
+-		estack = boot_exception_stacks;
+-
+-	for (v = 0; v < N_EXCEPTION_STACKS; v++) {
+-		if (t->estacks[v])
+-			continue;
+-
+-		if (cpu) {
+-			page = alloc_pages_node(node, GFP_KERNEL, order[v]);
+-			if (!page)
+-				goto fail_oom;
+-			estack = page_address(page);
+-		}
+-		estack += PAGE_SIZE << order[v];
+-		/*
+-		 * XXX: can we set t->isr[v] here directly, or will that be
+-		 * modified later? - the existance of orig_ist seems to suggest
+-		 * it _can_ be modified, which would imply we'd need to reset
+-		 * it.
+-		 */
+-		t->estacks[v] = estack;
+-	}
+-
+-	return 0;
+-
+-fail_oom:
+-	return -ENOMEM;
+-}
+-
+ /*
+  * Boot one CPU.
+  */
+Index: linux-2.6.24.7-rt27/arch/x86/kernel/traps_64.c
+===================================================================
+--- linux-2.6.24.7-rt27.orig/arch/x86/kernel/traps_64.c	2009-02-08 00:04:52.000000000 -0500
++++ linux-2.6.24.7-rt27/arch/x86/kernel/traps_64.c	2009-02-08 00:05:05.000000000 -0500
+@@ -1138,6 +1138,7 @@ void __init trap_init(void)
+ 	/*
+ 	 * Should be a barrier for any external CPU state.
+ 	 */
++	allocate_stacks(0);
+ 	cpu_init();
+ }
+ 
