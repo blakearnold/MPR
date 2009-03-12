@@ -35,6 +35,33 @@ static struct fixed_range_block fixed_range_blocks[] = {
 static unsigned long smp_changes_mask;
 static struct mtrr_state mtrr_state = {};
 
+/**
+ * BIOS is expected to clear MtrrFixDramModEn bit, see for example
+ * "BIOS and Kernel Developer's Guide for the AMD Athlon 64 and AMD
+ * Opteron Processors" (26094 Rev. 3.30 February 2006), section
+ * "13.2.1.2 SYSCFG Register": "The MtrrFixDramModEn bit should be set
+ * to 1 during BIOS initalization of the fixed MTRRs, then cleared to
+ * 0 for operation."
+ */
+#define FW_WARN        "[Firmware Warn]: "
+static inline void k8_check_syscfg_dram_mod_en(void)
+{
+	u32 lo, hi;
+
+	if (!((boot_cpu_data.x86_vendor == X86_VENDOR_AMD) &&
+	      (boot_cpu_data.x86 >= 0x0f)))
+		return;
+
+	rdmsr(MSR_K8_SYSCFG, lo, hi);
+	if (lo & K8_MTRRFIXRANGE_DRAM_MODIFY) {
+		printk(KERN_ERR FW_WARN "MTRR: CPU %u: SYSCFG[MtrrFixDramModEn]"
+		       " not cleared by BIOS, clearing this bit\n",
+		       smp_processor_id());
+		lo &= ~K8_MTRRFIXRANGE_DRAM_MODIFY;
+		mtrr_wrmsr(MSR_K8_SYSCFG, lo, hi);
+	}
+}
+
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "mtrr."
 
@@ -54,6 +81,8 @@ get_fixed_ranges(mtrr_type * frs)
 {
 	unsigned int *p = (unsigned int *) frs;
 	int i;
+
+	k8_check_syscfg_dram_mod_en();
 
 	rdmsr(MTRRfix64K_00000_MSR, p[0], p[1]);
 
@@ -167,23 +196,8 @@ void mtrr_wrmsr(unsigned msr, unsigned a, unsigned b)
 }
 
 /**
- * Enable and allow read/write of extended fixed-range MTRR bits on K8 CPUs
- * see AMD publication no. 24593, chapter 3.2.1 for more information
- */
-static inline void k8_enable_fixed_iorrs(void)
-{
-	unsigned lo, hi;
-
-	rdmsr(MSR_K8_SYSCFG, lo, hi);
-	mtrr_wrmsr(MSR_K8_SYSCFG, lo
-				| K8_MTRRFIXRANGE_DRAM_ENABLE
-				| K8_MTRRFIXRANGE_DRAM_MODIFY, hi);
-}
-
-/**
  * Checks and updates an fixed-range MTRR if it differs from the value it
- * should have. If K8 extentions are wanted, update the K8 SYSCFG MSR also.
- * see AMD publication no. 24593, chapter 7.8.1, page 233 for more information
+ * should have.
  * \param msr MSR address of the MTTR which should be checked and updated
  * \param changed pointer which indicates whether the MTRR needed to be changed
  * \param msrwords pointer to the MSR values which the MSR should have
@@ -195,10 +209,6 @@ static void set_fixed_range(int msr, int * changed, unsigned int * msrwords)
 	rdmsr(msr, lo, hi);
 
 	if (lo != msrwords[0] || hi != msrwords[1]) {
-		if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD &&
-		    boot_cpu_data.x86 == 15 &&
-		    ((msrwords[0] | msrwords[1]) & K8_MTRR_RDMEM_WRMEM_MASK))
-			k8_enable_fixed_iorrs();
 		mtrr_wrmsr(msr, msrwords[0], msrwords[1]);
 		*changed = TRUE;
 	}
@@ -262,6 +272,8 @@ static int set_fixed_ranges(mtrr_type * frs)
 	unsigned long long *saved = (unsigned long long *) frs;
 	int changed = FALSE;
 	int block=-1, range;
+
+	k8_check_syscfg_dram_mod_en();
 
 	while (fixed_range_blocks[++block].ranges)
 	    for (range=0; range < fixed_range_blocks[block].ranges; range++)
