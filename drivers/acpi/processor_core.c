@@ -654,7 +654,8 @@ static int __cpuinit acpi_processor_start(struct acpi_device *device)
 		goto end;
 
 	sysdev = get_cpu_sysdev(pr->id);
-	if (sysfs_create_link(&device->dev.kobj, &sysdev->kobj, "sysdev"))
+	if (sysdev &&
+	    sysfs_create_link(&device->dev.kobj, &sysdev->kobj, "sysdev"))
 		return -EFAULT;
 
 	status = acpi_install_notify_handler(pr->handle, ACPI_DEVICE_NOTIFY,
@@ -793,7 +794,8 @@ static int acpi_processor_remove(struct acpi_device *device, int type)
 	status = acpi_remove_notify_handler(pr->handle, ACPI_DEVICE_NOTIFY,
 					    acpi_processor_notify);
 
-	sysfs_remove_link(&device->dev.kobj, "sysdev");
+	if (get_cpu_sysdev(pr->id))
+		sysfs_remove_link(&device->dev.kobj, "sysdev");
 
 	acpi_processor_remove_fs(device);
 
