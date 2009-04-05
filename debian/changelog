@@ -1,3 +1,11 @@
+linux (2.6.24-24.53) hardy-proposed; urgency=low
+
+  [Stefan Bader]
+
+  * Rebuild of 2.6.24-24.51 with 2.6.24-23.52 security patches applied.
+
+ -- Stefan Bader <stefan.bader@canonical.com>  Sun, 05 Apr 2009 08:23:06 -0400
+
 linux (2.6.24-24.51) hardy-proposed; urgency=low
 
   [Alessio Igor Bogani]
