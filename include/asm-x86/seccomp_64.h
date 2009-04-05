@@ -1,13 +1,5 @@
 #ifndef _ASM_SECCOMP_H
 
-#include <linux/thread_info.h>
-
-#ifdef TIF_32BIT
-#error "unexpected TIF_32BIT on x86_64"
-#else
-#define TIF_32BIT TIF_IA32
-#endif
-
 #include <linux/unistd.h>
 #include <asm/ia32_unistd.h>
 

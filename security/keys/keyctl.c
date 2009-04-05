@@ -253,6 +253,7 @@ long keyctl_join_session_keyring(const char __user *_name)
 
 	/* join the session */
 	ret = join_session_keyring(name);
+	kfree(name);
 
  error:
 	return ret;

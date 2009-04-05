@@ -630,11 +630,15 @@ static void shm_get_stat(struct ipc_namespace *ns, unsigned long *rss,
 			struct address_space *mapping = inode->i_mapping;
 			*rss += (HPAGE_SIZE/PAGE_SIZE)*mapping->nrpages;
 		} else {
+#ifdef CONFIG_SHMEM
 			struct shmem_inode_info *info = SHMEM_I(inode);
 			spin_lock(&info->lock);
 			*rss += inode->i_mapping->nrpages;
 			*swp += info->swapped;
 			spin_unlock(&info->lock);
+#else
+			*rss += inode->i_mapping->nrpages;
+#endif
 		}
 
 		total++;
