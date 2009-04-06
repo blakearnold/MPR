@@ -813,8 +813,7 @@ static void exit_notify(struct task_struct *tsk)
 	 */
 	if (tsk->exit_signal != SIGCHLD && tsk->exit_signal != -1 &&
 	    ( tsk->parent_exec_id != t->self_exec_id  ||
-	      tsk->self_exec_id != tsk->parent_exec_id)
-	    && !capable(CAP_KILL))
+	      tsk->self_exec_id != tsk->parent_exec_id))
 		tsk->exit_signal = SIGCHLD;
 
 
