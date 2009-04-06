@@ -585,6 +585,12 @@ static void syscall_trace(struct pt_regs *regs)
 	}
 }
 
+#if defined CONFIG_IA32_EMULATION
+# define IS_IA32	is_compat_task()
+#else
+# define IS_IA32	0
+#endif
+
 asmlinkage void syscall_trace_enter(struct pt_regs *regs)
 {
 	/* do the secure computing check first */
@@ -595,7 +601,7 @@ asmlinkage void syscall_trace_enter(struct pt_regs *regs)
 		syscall_trace(regs);
 
 	if (unlikely(current->audit_context)) {
-		if (test_thread_flag(TIF_IA32)) {
+		if (IS_IA32) {
 			audit_syscall_entry(AUDIT_ARCH_I386,
 					    regs->orig_rax,
 					    regs->rbx, regs->rcx,
