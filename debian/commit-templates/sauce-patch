@@ -25,13 +25,13 @@
 # OriginalLocation allows for a URL or description of where the patch came
 # from.
 #
-# Bug is a reference to a Malone bug number.
+# BugLink is a reference (url) to a Malone bug.
 #
 # Ignore: yes will keep this commit from showing up in the changelog.
 #
 UBUNTU: SAUCE: 
 # OriginalAuthor: 
 # OriginalLocation: 
-# Bug: 
+# BugLink: 
 # Ignore: yes
 # Other text below here.
