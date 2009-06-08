@@ -394,7 +394,7 @@ linux (2.6.24-23.46) hardy-proposed; urgency=low
   * IPCONFIG: The kernel gets no IP from some DHCP servers
     - LP: #301608
   * IPCOMP: Disable BH on output when using shared tfm
-    - LP: #301608
+    - LP: #301608, #242804
   * IRQ_NOPROBE helper functions
     - LP: #301608
   * MIPS: Mark all but i8259 interrupts as no-probe.
