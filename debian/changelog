@@ -596,7 +596,7 @@ linux (2.6.24-23.46) hardy-proposed; urgency=low
   * DVB: tda10086: make the 22kHz tone for DISEQC a config option
     - LP: #301632
   * HFS+: fix unlink of links
-    - LP: #301632
+    - LP: #301632, #154416
   * plip: replace spin_lock_irq with spin_lock_irqsave in irq context
     - LP: #301632
   * signalfd: fix for incorrect SI_QUEUE user data reporting
