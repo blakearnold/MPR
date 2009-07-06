@@ -1913,7 +1913,8 @@ int nfs_permission(struct inode *inode, int mask, struct nameidata *nd)
 			/* NFSv4 has atomic_open... */
 			if (nfs_server_capable(inode, NFS_CAP_ATOMIC_OPEN)
 					&& nd != NULL
-					&& (nd->flags & LOOKUP_OPEN))
+					&& (nd->flags & LOOKUP_OPEN)
+					&& !(mask & MAY_EXEC))
 				goto out;
 			break;
 		case S_IFDIR:
