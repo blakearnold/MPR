@@ -64413,9 +64413,9 @@ Index: kernel/kernel/signal.c
  		read_lock(&tasklist_lock);
 -		for_each_process(p) {
 +		for_each_process_ve(p) {
- 			if (p->pid > 1 && !same_thread_group(p, current)) {
+ 			if (task_pid_vnr(p) > 1 &&
+					!same_thread_group(p, current)) {
  				int err = group_send_sig_info(sig, info, p);
- 				++count;
 @@ -1446,6 +1485,14 @@
  	BUG_ON(!tsk->ptrace &&
  	       (tsk->group_leader != tsk || !thread_group_empty(tsk)));
