@@ -1,6 +1,7 @@
 #include <linux/sched.h>
 #include <linux/clocksource.h>
 #include <linux/workqueue.h>
+#include <linux/delay.h>
 #include <linux/cpufreq.h>
 #include <linux/jiffies.h>
 #include <linux/init.h>
@@ -390,6 +391,8 @@ static inline void check_geode_tsc_reliable(void) { }
 
 void __init tsc_init(void)
 {
+	u64 lpj;
+
 	if (!cpu_has_tsc || tsc_disable)
 		goto out_no_tsc;
 
@@ -398,6 +401,10 @@ void __init tsc_init(void)
 
 	if (!cpu_khz)
 		goto out_no_tsc;
+
+	lpj = ((u64)tsc_khz * 1000);
+	do_div(lpj, HZ);
+	lpj_tsc = lpj;
 
 	printk("Detected %lu.%03lu MHz processor.\n",
 				(unsigned long)cpu_khz / 1000,

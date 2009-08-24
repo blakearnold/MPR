@@ -33125,8 +33125,8 @@ Index: kernel/init/calibrate.c
 +#include <linux/module.h>
  
  #include <asm/timex.h>
- 
-@@ -105,6 +106,60 @@
+ #include <linux/smp.h>
+@@ -107,6 +108,60 @@
  static unsigned long __devinit calibrate_delay_direct(void) {return 0;}
  #endif
  
@@ -33187,10 +33187,11 @@ Index: kernel/init/calibrate.c
  /*
   * This is the number of bits of precision for the loops_per_jiffy.  Each
   * bit takes on average 1.5/HZ seconds.  This (like the original) is a little
-@@ -170,4 +225,5 @@
- 			loops_per_jiffy);
- 	}
- 
+@@ -172,4 +227,6 @@
+ 	printk(KERN_CONT "%lu.%02lu BogoMIPS (lpj=%lu)\n",
+ 			loops_per_jiffy/(500000/HZ),
+ 			(loops_per_jiffy/(5000/HZ)) % 100, loops_per_jiffy);
++
 +	calc_cycles_per_jiffy();
  }
 Index: kernel/init/main.c

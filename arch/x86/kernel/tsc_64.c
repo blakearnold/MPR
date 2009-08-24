@@ -158,9 +158,10 @@ void __init tsc_calibrate(void)
 
 	hypervisor_tsc_khz = get_hypervisor_tsc_freq();
 	if (hypervisor_tsc_khz) {
-		printk(KERN_INFO "TSC: Frequency read from the hypervisor\n");
 		tsc_khz = hypervisor_tsc_khz;
 		set_cyc2ns_scale(tsc_khz);
+		printk(KERN_INFO "TSC: Frequency read from the hypervisor is "
+			"%d.%03d MHz\n", tsc_khz / 1000, tsc_khz % 1000);
 		return;
 	}
 

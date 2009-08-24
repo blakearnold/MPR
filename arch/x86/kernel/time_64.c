@@ -279,6 +279,8 @@ void __init time_init(void)
 		boot_cpu_data.x86 == 16)
 		cpu_khz = tsc_calibrate_cpu_khz();
 
+	lpj_tsc = ((unsigned long)tsc_khz * 1000)/HZ;
+
 	if (unsynchronized_tsc())
 		mark_tsc_unstable("TSCs unsynchronized");
 
