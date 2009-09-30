@@ -16,6 +16,11 @@
 #include <asm/irqflags.h>
 #include <linux/linkage.h>
 
+#ifndef CONFIG_AUDITSYSCALL
+#define sysexit_audit ia32_ret_from_sys_call
+#define sysretl_audit ia32_ret_from_sys_call
+#endif
+
 #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
 
 	.macro IA32_ARG_FIXUP noebp=0
@@ -30,12 +35,12 @@
 	.endm 
 
 	/* clobbers %eax */	
-	.macro  CLEAR_RREGS
+	.macro  CLEAR_RREGS offset=0
 	xorl 	%eax,%eax
-	movq	%rax,R11(%rsp)
-	movq	%rax,R10(%rsp)
-	movq	%rax,R9(%rsp)
-	movq	%rax,R8(%rsp)
+	movq    %rax,\offset+R11(%rsp)
+	movq    %rax,\offset+R10(%rsp)
+	movq    %rax,\offset+R9(%rsp)
+	movq    %rax,\offset+R8(%rsp)
 	.endm
 
 	.macro LOAD_ARGS32 offset
@@ -143,6 +148,10 @@ sysenter_do_call:
 	/* clear IF, that popfq doesn't enable interrupts early */
 	andl  $~0x200,EFLAGS-R11(%rsp) 
 	RESTORE_ARGS 1,24,1,1,1,1
+	xorq    %r8,%r8
+	xorq    %r9,%r9
+	xorq    %r10,%r10
+	xorq    %r11,%r11
 	popfq
 	CFI_ADJUST_CFA_OFFSET -8
 	/*CFI_RESTORE rflags*/
@@ -250,6 +259,9 @@ cstar_do_call:
 	CFI_REGISTER rip,rcx
 	movl EFLAGS-ARGOFFSET(%rsp),%r11d	
 	/*CFI_REGISTER rflags,r11*/
+	xorq    %r10,%r10
+	xorq    %r9,%r9
+	xorq    %r8,%r8
 	TRACE_IRQS_ON
 	movl RSP-ARGOFFSET(%rsp),%esp
 	CFI_RESTORE rsp
@@ -260,7 +272,7 @@ cstar_tracesys:
 	CFI_RESTORE_STATE
 	xchgl %r9d,%ebp
 	SAVE_REST
-	CLEAR_RREGS
+	CLEAR_RREGS 0
 	movq %r9,R9(%rsp)
 	movq $-ENOSYS,RAX(%rsp)	/* really needed? */
 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
@@ -331,6 +343,8 @@ ia32_do_syscall:
 	call *ia32_sys_call_table(,%rax,8) # xxx: rip relative
 ia32_sysret:
 	movq %rax,RAX-ARGOFFSET(%rsp)
+ia32_ret_from_sys_call:
+	CLEAR_RREGS -ARGOFFSET
 	jmp int_ret_from_sys_call 
 
 ia32_tracesys:			 
@@ -346,8 +360,8 @@ END(ia32_syscall)
 
 ia32_badsys:
 	movq $0,ORIG_RAX-ARGOFFSET(%rsp)
-	movq $-ENOSYS,RAX-ARGOFFSET(%rsp)
-	jmp int_ret_from_sys_call
+	movq $-ENOSYS,%rax
+	jmp ia32_sysret
 
 quiet_ni_syscall:
 	movq $-ENOSYS,%rax
