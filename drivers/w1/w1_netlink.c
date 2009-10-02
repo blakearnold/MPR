@@ -128,9 +128,8 @@ static int w1_process_command_slave(struct w1_slave *sl, struct cn_msg *msg,
 	return err;
 }
 
-static void w1_cn_callback(void *data)
+static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
 {
-	struct cn_msg *msg = data;
 	struct w1_netlink_msg *m = (struct w1_netlink_msg *)(msg + 1);
 	struct w1_netlink_cmd *cmd;
 	struct w1_slave *sl;
