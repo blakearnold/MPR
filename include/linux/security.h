@@ -60,6 +60,9 @@ extern int cap_inode_setxattr(struct dentry *dentry, struct vfsmount *mnt, char 
 extern int cap_inode_removexattr(struct dentry *dentry, struct vfsmount *mnt, char *name, struct file *file);
 extern int cap_inode_need_killpriv(struct dentry *dentry);
 extern int cap_inode_killpriv(struct dentry *dentry);
+extern int cap_file_mmap(struct file *file, unsigned long reqprot,
+			unsigned long prot, unsigned long flags,
+			unsigned long addr, unsigned long addr_only);
 extern int cap_task_post_setuid (uid_t old_ruid, uid_t old_euid, uid_t old_suid, int flags);
 extern void cap_task_reparent_to_init (struct task_struct *p);
 extern int cap_task_setscheduler (struct task_struct *p, int policy, struct sched_param *lp);
