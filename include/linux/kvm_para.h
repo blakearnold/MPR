@@ -11,6 +11,7 @@
 
 /* Return values for hypercalls */
 #define KVM_ENOSYS		1000
+#define KVM_EPERM		EPERM
 
 #define KVM_HC_VAPIC_POLL_IRQ            1
 
