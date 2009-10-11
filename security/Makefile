@@ -10,6 +10,8 @@ ifneq ($(CONFIG_SECURITY),y)
 obj-y		+= commoncap.o
 endif
 
+obj-y		+= min_addr.o
+
 # Object file lists
 obj-$(CONFIG_SECURITY)			+= security.o dummy.o inode.o
 # Must precede capability.o in order to stack properly.
