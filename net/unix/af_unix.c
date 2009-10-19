@@ -1071,6 +1071,8 @@ restart:
 	err = -ECONNREFUSED;
 	if (other->sk_state != TCP_LISTEN)
 		goto out_unlock;
+	if (other->sk_shutdown & RCV_SHUTDOWN)
+		goto out_unlock;
 
 	if (skb_queue_len(&other->sk_receive_queue) >
 	    other->sk_max_ack_backlog) {
