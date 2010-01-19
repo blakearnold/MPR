@@ -343,6 +343,8 @@ struct e1000_adapter {
 	boolean_t quad_port_a;
 	unsigned long flags;
 	uint32_t eeprom_wol;
+
+	bool discarding;
 };
 
 enum e1000_state_t {
