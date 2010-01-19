@@ -267,6 +267,7 @@ struct e1000_adapter {
 	unsigned long led_status;
 
 	unsigned int flags;
+	unsigned int flags2;
 };
 
 struct e1000_info {
@@ -310,6 +311,8 @@ struct e1000_info {
 #define FLAG_MSI_ENABLED                  (1 << 27)
 #define FLAG_RX_CSUM_ENABLED              (1 << 28)
 #define FLAG_TSO_FORCE                    (1 << 29)
+
+#define FLAG2_IS_DISCARDING               (1 << 2)
 
 #define E1000_RX_DESC_PS(R, i)	    \
 	(&(((union e1000_rx_desc_packet_split *)((R).desc))[i]))
