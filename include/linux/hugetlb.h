@@ -8,6 +8,7 @@
 #include <linux/mempolicy.h>
 #include <linux/shm.h>
 #include <asm/tlbflush.h>
+#include <linux/mm.h>
 
 struct ctl_table;
 

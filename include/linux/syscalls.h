@@ -66,6 +66,22 @@ struct getcpu_cache;
 #include <linux/quota.h>
 #include <linux/key.h>
 
+#define __SC_DECL1(t1, a1)      t1 a1
+#define __SC_DECL2(t2, a2, ...) t2 a2, __SC_DECL1(__VA_ARGS__)
+#define __SC_DECL3(t3, a3, ...) t3 a3, __SC_DECL2(__VA_ARGS__)
+#define __SC_DECL4(t4, a4, ...) t4 a4, __SC_DECL3(__VA_ARGS__)
+#define __SC_DECL5(t5, a5, ...) t5 a5, __SC_DECL4(__VA_ARGS__)
+#define __SC_DECL6(t6, a6, ...) t6 a6, __SC_DECL5(__VA_ARGS__)
+
+#define SYSCALL_DEFINE6(name, ...) SYSCALL_DEFINEx(6, _##name, __VA_ARGS__)
+
+#define SYSCALL_DEFINEx(x, sname, ...)                          \
+	__SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
+
+#define SYSCALL_DEFINE(name) asmlinkage long sys_##name
+#define __SYSCALL_DEFINEx(x, name, ...)                                 \
+	asmlinkage long sys##name(__SC_DECL##x(__VA_ARGS__))
+
 asmlinkage long sys_time(time_t __user *tloc);
 asmlinkage long sys_stime(time_t __user *tptr);
 asmlinkage long sys_gettimeofday(struct timeval __user *tv,
@@ -614,4 +630,7 @@ asmlinkage long sys_fallocate(int fd, int mode, loff_t offset, loff_t len);
 
 int kernel_execve(const char *filename, char *const argv[], char *const envp[]);
 
+asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
+			unsigned long prot, unsigned long flags,
+			unsigned long fd, unsigned long pgoff);
 #endif

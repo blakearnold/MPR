@@ -344,12 +344,12 @@ sys_mmap2:
 		tst	r5, #PGOFF_MASK
 		moveq	r5, r5, lsr #PAGE_SHIFT - 12
 		streq	r5, [sp, #4]
-		beq	do_mmap2
+		beq	sys_mmap_pgoff
 		mov	r0, #-EINVAL
 		mov	pc, lr
 #else
 		str	r5, [sp, #4]
-		b	do_mmap2
+		b	sys_mmap_pgoff
 #endif
 
 #ifdef CONFIG_OABI_COMPAT
