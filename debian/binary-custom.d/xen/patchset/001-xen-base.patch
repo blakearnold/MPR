@@ -563,7 +563,7 @@ diff -Naur ubuntu-hardy/arch/x86/ia32/ia32entry-xen.S ubuntu-hardy-xen/arch/x86/
 +	.quad quiet_ni_syscall		/* streams2 */
 +	.quad stub32_vfork            /* 190 */
 +	.quad compat_sys_getrlimit
-+	.quad sys32_mmap2
++	.quad sys_mmap_pgoff
 +	.quad sys32_truncate64
 +	.quad sys32_ftruncate64
 +	.quad sys32_stat64		/* 195 */
