@@ -234,6 +234,8 @@ static int load_aout32_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 	/* OK, This is the point of no return */
 	set_personality(PER_SUNOS);
 
+	setup_new_exec(bprm);
+
 	current->mm->end_code = ex.a_text +
 		(current->mm->start_code = N_TXTADDR(ex));
 	current->mm->end_data = ex.a_data +

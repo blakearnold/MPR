@@ -759,6 +759,7 @@ static int load_irix_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 
 	kfree(elf_phdata);
 	set_personality(PER_IRIX32);
+	setup_new_exec(bprm);
 	set_binfmt(&irix_format);
 	compute_creds(bprm);
 	current->flags &= ~PF_FORKNOEXEC;
