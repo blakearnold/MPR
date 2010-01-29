@@ -176,20 +176,9 @@ extern int force_personality32;
 #define ELF_EXEC_PAGESIZE PAGE_SIZE
 #define ELF_HWCAP (boot_cpu_data.x86_capability[0])
 #define ELF_PLATFORM  ("i686")
-#define SET_PERSONALITY(ex, ibcs2)			\
-do {							\
-	unsigned long new_flags = 0;				\
-	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)		\
-		new_flags = _TIF_IA32;				\
-	if ((current_thread_info()->flags & _TIF_IA32)		\
-	    != new_flags)					\
-		set_thread_flag(TIF_ABI_PENDING);		\
-	else							\
-		clear_thread_flag(TIF_ABI_PENDING);		\
-	/* XXX This overwrites the user set personality */	\
-	current->personality |= force_personality32;		\
-} while (0)
 
+void set_personality_ia32(void);
+#define SET_PERSONALITY(ex, ibcs2) set_personality_ia32()
 /* Override some function names */
 #define elf_format			elf32_format
 
