@@ -246,14 +246,10 @@ extern int dump_task_altivec(struct task_struct *, elf_vrregset_t *vrregs);
 #ifdef __powerpc64__
 # define SET_PERSONALITY(ex, ibcs2)				\
 do {								\
-	unsigned long new_flags = 0;				\
 	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)		\
-		new_flags = _TIF_32BIT;				\
-	if ((current_thread_info()->flags & _TIF_32BIT)		\
-	    != new_flags)					\
-		set_thread_flag(TIF_ABI_PENDING);		\
+		set_thread_flag(TIF_32BIT);                     \
 	else							\
-		clear_thread_flag(TIF_ABI_PENDING);		\
+		clear_thread_flag(TIF_32BIT);                   \
 	if (personality(current->personality) != PER_LINUX32)	\
 		set_personality(PER_LINUX);			\
 } while (0)
