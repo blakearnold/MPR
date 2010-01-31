@@ -971,19 +971,6 @@ Index: kernel/arch/ia64/kernel/signal.c
  			}
  		}
  	}
-Index: kernel/arch/ia64/kernel/sys_ia64.c
-===================================================================
---- kernel.orig/arch/ia64/kernel/sys_ia64.c	2008-11-18 01:19:41.000000000 +0100
-+++ kernel/arch/ia64/kernel/sys_ia64.c	2008-11-24 15:47:45.000000000 +0100
-@@ -204,7 +204,7 @@
- 
- 	/* Careful about overflows.. */
- 	len = PAGE_ALIGN(len);
--	if (!len || len > TASK_SIZE) {
-+	if (len > TASK_SIZE) {
- 		addr = -EINVAL;
- 		goto out;
- 	}
 Index: kernel/arch/ia64/kernel/unaligned.c
 ===================================================================
 --- kernel.orig/arch/ia64/kernel/unaligned.c	2008-11-18 01:19:41.000000000 +0100
@@ -71103,11 +71090,11 @@ Index: kernel/mm/mremap.c
 +	return -ENOMEM;
  }
  
- /*
-@@ -364,7 +376,15 @@
- 			max_addr = vma->vm_next->vm_start;
+ static struct vm_area_struct *vma_to_resize(unsigned long addr,
+@@ -436,7 +448,15 @@
+ 	if (old_len == vma->vm_end - addr) {
  		/* can we just expand the current mapping? */
- 		if (max_addr - addr >= new_len) {
+ 		if (vma_expandable(vma, new_len - old_len)) {
 -			int pages = (new_len - old_len) >> PAGE_SHIFT;
 +			unsigned long len;
 +			int pages;

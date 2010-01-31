@@ -2,6 +2,10 @@
 #include <linux/string.h>
 #include <linux/module.h>
 #include <linux/err.h>
+#include <linux/hugetlb.h>
+#include <linux/syscalls.h>
+#include <linux/mman.h>
+#include <linux/file.h>
 #include <asm/uaccess.h>
 
 /**
@@ -136,3 +140,28 @@ char *strndup_user(const char __user *s, long n)
 	return p;
 }
 EXPORT_SYMBOL(strndup_user);
+
+SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+		unsigned long, prot, unsigned long, flags,
+		unsigned long, fd, unsigned long, pgoff)
+{
+	struct file * file = NULL;
+	unsigned long retval = -EBADF;
+
+	if (!(flags & MAP_ANONYMOUS)) {
+		file = fget(fd);
+		if (!file)
+			goto out;
+	}
+
+	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
+
+	down_write(&current->mm->mmap_sem);
+	retval = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+	up_write(&current->mm->mmap_sem);
+
+	if (file)
+		fput(file);
+out:
+	return retval;
+}

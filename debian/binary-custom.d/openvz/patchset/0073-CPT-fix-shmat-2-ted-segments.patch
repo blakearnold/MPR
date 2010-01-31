@@ -131,7 +131,7 @@ diff --git a/ipc/shm.c b/ipc/shm.c
 index 14f0cc2..03cf380 100644
 --- a/ipc/shm.c
 +++ b/ipc/shm.c
-@@ -47,24 +47,10 @@
+@@ -43,24 +43,10 @@
  
  #include "util.h"
  
@@ -156,7 +156,7 @@ index 14f0cc2..03cf380 100644
  #define shm_buildid(id, seq)	ipc_buildid(id, seq)
  
  static int newseg(struct ipc_namespace *, struct ipc_params *);
-@@ -165,17 +151,6 @@ static inline struct shmid_kernel *shm_lock_check_down(
+@@ -161,17 +147,6 @@ static inline struct shmid_kernel *shm_lock_check_down(
  	return container_of(ipcp, struct shmid_kernel, shm_perm);
  }
  
@@ -174,8 +174,8 @@ index 14f0cc2..03cf380 100644
  static inline struct shmid_kernel *shm_lock_check(struct ipc_namespace *ns,
  						int id)
  {
-@@ -402,12 +377,13 @@ int is_file_shm_hugepages(struct file *file)
- 	return ret;
+@@ -344,11 +319,12 @@ static unsigned long shm_get_unmapped_area(struct file *file,
+ 						pgoff, flags);
  }
  
 -static const struct file_operations shm_file_operations = {
@@ -183,12 +183,11 @@ index 14f0cc2..03cf380 100644
  	.mmap		= shm_mmap,
  	.fsync		= shm_fsync,
  	.release	= shm_release,
- 	.get_unmapped_area	= shm_get_unmapped_area,
  };
 +EXPORT_SYMBOL_GPL(shm_file_operations);
  
- static struct vm_operations_struct shm_vm_ops = {
- 	.open	= shm_open,	/* callback for a new vm-area open */
+ static const struct file_operations shm_file_operations_huge = {
+ 	.mmap           = shm_mmap,
 diff --git a/ipc/util.c b/ipc/util.c
 index 50d9838..8e0a7db 100644
 --- a/ipc/util.c
