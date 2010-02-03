@@ -186,6 +186,12 @@ static int nfs_wait_bit_interruptible(void *word)
 	return ret;
 }
 
+static int nfs_wait_bit_uninterruptible(void *word)
+{
+	io_schedule();
+	return 0;
+}
+
 /**
  * nfs_wait_on_request - Wait for a request to complete.
  * @req: request to wait upon.
@@ -196,22 +202,9 @@ static int nfs_wait_bit_interruptible(void *word)
 int
 nfs_wait_on_request(struct nfs_page *req)
 {
-	struct rpc_clnt *clnt = NFS_CLIENT(req->wb_context->path.dentry->d_inode);
-	sigset_t oldmask;
-	int ret = 0;
-
-	if (!test_bit(PG_BUSY, &req->wb_flags))
-		goto out;
-	/*
-	 * Note: the call to rpc_clnt_sigmask() suffices to ensure that we
-	 *	 are not interrupted if intr flag is not set
-	 */
-	rpc_clnt_sigmask(clnt, &oldmask);
-	ret = out_of_line_wait_on_bit(&req->wb_flags, PG_BUSY,
-			nfs_wait_bit_interruptible, TASK_INTERRUPTIBLE);
-	rpc_clnt_sigunmask(clnt, &oldmask);
-out:
-	return ret;
+	return wait_on_bit(&req->wb_flags, PG_BUSY,
+			nfs_wait_bit_uninterruptible,
+			TASK_UNINTERRUPTIBLE);
 }
 
 /**
