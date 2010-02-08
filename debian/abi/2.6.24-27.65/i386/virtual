@@ -795,6 +795,11 @@ EXPORT_SYMBOL net/ipv6/ipv6 0xf2424f31	ipv6_chk_addr
 EXPORT_SYMBOL net/ipv6/ipv6 0xf2bd9764	in6_dev_finish_destroy
 EXPORT_SYMBOL net/ipv6/ipv6 0xfef02ac0	inet6_register_protosw
 EXPORT_SYMBOL net/ipv6/ipv6 0xff91a7d8	ip6_route_me_harder
+EXPORT_SYMBOL net/ipv6/netfilter/ip6_tables 0x1bad35d9	ipv6_find_hdr
+EXPORT_SYMBOL net/ipv6/netfilter/ip6_tables 0x9d823b47	ip6t_unregister_table
+EXPORT_SYMBOL net/ipv6/netfilter/ip6_tables 0xae51508d	ip6t_do_table
+EXPORT_SYMBOL net/ipv6/netfilter/ip6_tables 0xb8bddf33	ip6t_ext_hdr
+EXPORT_SYMBOL net/ipv6/netfilter/ip6_tables 0xbfb241ec	ip6t_register_table
 EXPORT_SYMBOL net/ipv6/tunnel6 0x423a66e4	xfrm6_tunnel_register
 EXPORT_SYMBOL net/ipv6/tunnel6 0x4941a84e	xfrm6_tunnel_deregister
 EXPORT_SYMBOL net/ipv6/xfrm6_tunnel 0x9cd013f2	xfrm6_tunnel_alloc_spi
