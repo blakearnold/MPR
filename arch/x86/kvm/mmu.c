@@ -148,11 +148,6 @@ static int dbg = 1;
 #define PT64_PERM_MASK (PT_PRESENT_MASK | PT_WRITABLE_MASK | PT_USER_MASK \
 			| PT64_NX_MASK)
 
-#define PFERR_PRESENT_MASK (1U << 0)
-#define PFERR_WRITE_MASK (1U << 1)
-#define PFERR_USER_MASK (1U << 2)
-#define PFERR_FETCH_MASK (1U << 4)
-
 #define PT64_ROOT_LEVEL 4
 #define PT32_ROOT_LEVEL 2
 #define PT32E_ROOT_LEVEL 3
@@ -1000,7 +995,7 @@ struct page *gva_to_page(struct kvm_vcpu *vcpu, gva_t gva)
 {
 	struct page *page;
 
-	gpa_t gpa = vcpu->arch.mmu.gva_to_gpa(vcpu, gva);
+	gpa_t gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
 
 	if (gpa == UNMAPPED_GVA)
 		return NULL;
@@ -1301,8 +1296,11 @@ static void mmu_alloc_roots(struct kvm_vcpu *vcpu)
 	vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
 }
 
-static gpa_t nonpaging_gva_to_gpa(struct kvm_vcpu *vcpu, gva_t vaddr)
+static gpa_t nonpaging_gva_to_gpa(struct kvm_vcpu *vcpu, gva_t vaddr,
+				  u32 access, u32 *error)
 {
+	if (error)
+		*error = 0;
 	return vaddr;
 }
 
@@ -1780,7 +1778,7 @@ int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva)
 	int r;
 
 	down_read(&vcpu->kvm->slots_lock);
-	gpa = vcpu->arch.mmu.gva_to_gpa(vcpu, gva);
+	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
 	up_read(&vcpu->kvm->slots_lock);
 
 	spin_lock(&vcpu->kvm->mmu_lock);
@@ -2036,7 +2034,7 @@ static void audit_mappings_page(struct kvm_vcpu *vcpu, u64 page_pte,
 
 			audit_mappings_page(vcpu, ent, va, level - 1);
 		} else {
-			gpa_t gpa = vcpu->arch.mmu.gva_to_gpa(vcpu, va);
+			gpa_t gpa = kvm_mmu_gva_to_gpa_read(vcpu, va, NULL);
 			struct page *page = gpa_to_page(vcpu, gpa);
 			hpa_t hpa = page_to_phys(page);
 

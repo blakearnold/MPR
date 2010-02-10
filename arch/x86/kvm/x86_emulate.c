@@ -534,7 +534,7 @@ static int do_fetch_insn_byte(struct x86_emulate_ctxt *ctxt,
 
 	if (linear < fc->start || linear >= fc->end) {
 		size = min(15UL, PAGE_SIZE - offset_in_page(linear));
-		rc = ops->read_std(linear, fc->data, size, ctxt->vcpu);
+		rc = ops->fetch(linear, fc->data, size, ctxt->vcpu, NULL);
 		if (rc)
 			return rc;
 		fc->start = linear;
@@ -589,11 +589,11 @@ static int read_descriptor(struct x86_emulate_ctxt *ctxt,
 		op_bytes = 3;
 	*address = 0;
 	rc = ops->read_std((unsigned long)ptr, (unsigned long *)size, 2,
-			   ctxt->vcpu);
+			   ctxt->vcpu, NULL);
 	if (rc)
 		return rc;
 	rc = ops->read_std((unsigned long)ptr + 2, address, op_bytes,
-			   ctxt->vcpu);
+			   ctxt->vcpu, NULL);
 	return rc;
 }
 
@@ -1087,7 +1087,7 @@ static inline int emulate_grp1a(struct x86_emulate_ctxt *ctxt,
 
 	rc = ops->read_std(register_address(c, ctxt->ss_base,
 					    c->regs[VCPU_REGS_RSP]),
-			   &c->dst.val, c->dst.bytes, ctxt->vcpu);
+			   &c->dst.val, c->dst.bytes, ctxt->vcpu, NULL);
 	if (rc != 0)
 		return rc;
 
@@ -1419,7 +1419,7 @@ special_insn:
 	pop_instruction:
 		if ((rc = ops->read_std(register_address(c, ctxt->ss_base,
 			c->regs[VCPU_REGS_RSP]), c->dst.ptr,
-			c->op_bytes, ctxt->vcpu)) != 0)
+			c->op_bytes, ctxt->vcpu, NULL)) != 0)
 			goto done;
 
 		register_address_increment(c, &c->regs[VCPU_REGS_RSP],
