@@ -850,6 +850,7 @@ x86_decode_insn(struct x86_emulate_ctxt *ctxt, struct x86_emulate_ops *ops)
 
 	switch (mode) {
 	case X86EMUL_MODE_REAL:
+	case X86EMUL_MODE_VM86:
 	case X86EMUL_MODE_PROT16:
 		def_op_bytes = def_ad_bytes = 2;
 		break;
