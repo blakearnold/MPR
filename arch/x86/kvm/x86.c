@@ -2980,7 +2980,7 @@ int kvm_arch_vcpu_ioctl_set_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
 	return 0;
 }
 
-static void get_segment(struct kvm_vcpu *vcpu,
+void get_segment(struct kvm_vcpu *vcpu,
 			struct kvm_segment *var, int seg)
 {
 	kvm_x86_ops->get_segment(vcpu, var, seg);

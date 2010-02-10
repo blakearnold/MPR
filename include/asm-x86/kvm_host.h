@@ -471,6 +471,8 @@ int emulator_get_dr(struct x86_emulate_ctxt *ctxt, int dr,
 int emulator_set_dr(struct x86_emulate_ctxt *ctxt, int dr,
 		    unsigned long value);
 
+void get_segment(struct kvm_vcpu *vcpu, struct kvm_segment *var, int seg);
+
 void kvm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0);
 void kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr0);
 void kvm_set_cr4(struct kvm_vcpu *vcpu, unsigned long cr0);
@@ -519,6 +521,7 @@ void kvm_enable_tdp(void);
 
 int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3);
 int complete_pio(struct kvm_vcpu *vcpu);
+bool kvm_check_iopl(struct kvm_vcpu *vcpu);
 
 static inline struct kvm_mmu_page *page_header(hpa_t shadow_page)
 {
