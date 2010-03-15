@@ -462,4 +462,4 @@ Index: linux-2.6.24.7-rt27/include/asm-x86/thread_info_64.h
 +#define _TIF_NEED_RESCHED_DELAYED (1<<TIF_NEED_RESCHED_DELAYED)
  #define _TIF_IA32		(1<<TIF_IA32)
  #define _TIF_FORK		(1<<TIF_FORK)
- #define _TIF_ABI_PENDING	(1<<TIF_ABI_PENDING)
+ #define _TIF_DEBUG		(1<<TIF_DEBUG)

@@ -8960,7 +8960,7 @@ Index: kernel/fs/exec.c
  
  		tsk->group_leader = tsk;
  		leader->group_leader = tsk;
-@@ -989,12 +1020,10 @@
+@@ -987,11 +1018,10 @@
  	/*
  	 * Release all of the old mmap stuff
  	 */
@@ -8970,10 +8970,9 @@ Index: kernel/fs/exec.c
  		goto mmap_failed;
  
 -	bprm->mm = NULL;		/* We're using it now */
--
- 	/* This is the point of no return */
- 	put_files_struct(files);
- 
+	put_files_struct(files);
+
+	current->flags &= ~PF_RANDOMIZE;
 @@ -1298,6 +1327,10 @@
  	unsigned long env_p;
  	int retval;
@@ -21550,7 +21549,7 @@ Index: kernel/include/asm-sparc64/thread_info.h
  
  #define free_thread_info(ti) \
 @@ -236,6 +236,7 @@
- #define TIF_ABI_PENDING		12
+  */
  #define TIF_MEMDIE		13
  #define TIF_POLLING_NRFLAG	14
 +#define TIF_FREEZE		15	/* Freeze request (atomic PF_FREEZE) */
@@ -48848,7 +48847,7 @@ Index: kernel/kernel/cpt/cpt_process.c
 +	v->cpt_64bit = 0;
 +#ifdef CONFIG_X86_64
 +	/* Clear x86_64 specific flags */
-+	v->cpt_thrflags &= ~(_TIF_FORK|_TIF_ABI_PENDING|_TIF_IA32);
++	v->cpt_thrflags &= ~(_TIF_FORK|_TIF_IA32);
 +	if (!(task_thread_info(tsk)->flags & _TIF_IA32)) {
 +		ctx->tasks64++;
 +		v->cpt_64bit = 1;
@@ -48856,7 +48855,7 @@ Index: kernel/kernel/cpt/cpt_process.c
 +#endif
 +#ifdef CONFIG_IA64
 +	/* Clear ia64 specific flags */
-+	//// v->cpt_thrflags &= ~(_TIF_FORK|_TIF_ABI_PENDING|_TIF_IA32);
++	//// v->cpt_thrflags &= ~(_TIF_FORK||_TIF_IA32);
 +	if (!IS_IA32_PROCESS(task_pt_regs(tsk))) {
 +		ctx->tasks64++;
 +		v->cpt_64bit = 1;

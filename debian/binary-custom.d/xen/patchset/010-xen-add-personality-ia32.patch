@@ -1,0 +1,24 @@
+diff -Nurp custom-source-xen/arch/x86/kernel/process_64-xen.c custom-source-xen-new/arch/x86/kernel/process_64-xen.c
+--- custom-source-xen/arch/x86/kernel/process_64-xen.c	2010-03-05 18:37:04.917991247 +0100
++++ custom-source-xen-new/arch/x86/kernel/process_64-xen.c	2010-03-05 18:47:53.665991812 +0100
+@@ -683,6 +683,20 @@ void set_personality_64bit(void)
+ 	current->personality &= ~READ_IMPLIES_EXEC;
+ }
+ 
++extern int force_personality32;
++
++void set_personality_ia32(void)
++{
++	/* inherit personality from parent */
++
++	/* Make sure to be in 32bit mode */
++	set_thread_flag(TIF_IA32);
++	current->personality |= force_personality32;
++
++	/* Prepare the first "return" to user space */
++	current_thread_info()->status |= TS_COMPAT;
++}
++
+ asmlinkage long sys_fork(struct pt_regs *regs)
+ {
+ 	return do_fork(SIGCHLD, regs->rsp, regs, 0, NULL, NULL);

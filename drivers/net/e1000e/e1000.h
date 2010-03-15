@@ -267,6 +267,7 @@ struct e1000_adapter {
 	unsigned long led_status;
 
 	unsigned int flags;
+	unsigned int flags2;
 };
 
 struct e1000_info {
@@ -311,6 +312,8 @@ struct e1000_info {
 #define FLAG_RX_CSUM_ENABLED              (1 << 28)
 #define FLAG_TSO_FORCE                    (1 << 29)
 
+#define FLAG2_IS_DISCARDING               (1 << 2)
+
 #define E1000_RX_DESC_PS(R, i)	    \
 	(&(((union e1000_rx_desc_packet_split *)((R).desc))[i]))
 #define E1000_GET_DESC(R, i, type)	(&(((struct type *)((R).desc))[i]))
@@ -321,8 +324,7 @@ struct e1000_info {
 enum e1000_state_t {
 	__E1000_TESTING,
 	__E1000_RESETTING,
-	__E1000_DOWN,
-	__E1000_DISCARDING
+	__E1000_DOWN
 };
 
 enum latency_range {

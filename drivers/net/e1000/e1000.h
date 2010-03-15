@@ -343,13 +343,14 @@ struct e1000_adapter {
 	boolean_t quad_port_a;
 	unsigned long flags;
 	uint32_t eeprom_wol;
+
+	bool discarding;
 };
 
 enum e1000_state_t {
 	__E1000_TESTING,
 	__E1000_RESETTING,
-	__E1000_DOWN,
-	__E1000_DISCARDING
+	__E1000_DOWN
 };
 
 extern char e1000_driver_name[];

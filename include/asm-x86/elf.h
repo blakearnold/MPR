@@ -245,6 +245,8 @@ extern int dump_task_extended_fpu (struct task_struct *,
 	dump_task_extended_fpu(tsk, elf_xfpregs)
 #define ELF_CORE_XFPREG_TYPE NT_PRXFPREG
 
+#define STACK_RND_MASK (0x7ff)
+
 #define VDSO_HIGH_BASE		(__fix_to_virt(FIX_VDSO))
 #define VDSO_CURRENT_BASE	((unsigned long)current->mm->context.vdso)
 #define VDSO_PRELINK		0

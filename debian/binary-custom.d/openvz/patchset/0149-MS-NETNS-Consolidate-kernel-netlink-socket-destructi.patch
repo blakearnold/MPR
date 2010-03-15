@@ -44,16 +44,6 @@ index bf9716b..615bc09 100644
  		return -EINVAL;
  	}
  	
-@@ -452,8 +451,7 @@ static int __devinit cn_init(void)
- 	if (err) {
- 		cn_already_initialized = 0;
- 		cn_queue_free_dev(dev->cbdev);
--		if (dev->nls->sk_socket)
--			sock_release(dev->nls->sk_socket);
-+		netlink_kernel_release(dev->nls);
- 		return -EINVAL;
- 	}
- 
 @@ -468,8 +466,7 @@ static void __devexit cn_fini(void)
  
  	cn_del_callback(&dev->id);
