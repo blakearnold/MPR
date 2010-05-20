@@ -10838,14 +10838,16 @@ Index: kernel/fs/namei.c
  			err = do_follow_link(&next, nd);
  			if (err)
  				goto return_err;
-@@ -972,6 +1005,7 @@
+@@ -972,7 +1005,8 @@
+ 		if (err)
  			break;
  		inode = next.dentry->d_inode;
- 		if ((lookup_flags & LOOKUP_FOLLOW)
-+		    && !(lookup_flags & LOOKUP_STRICT)
- 		    && inode && inode->i_op && inode->i_op->follow_link) {
+-		if (follow_on_final(inode, lookup_flags)) {
++		if (follow_on_final(inode, lookup_flags)
++		    && !(lookup_flags & LOOKUP_STRICT)) {
  			err = do_follow_link(&next, nd);
  			if (err)
+ 				goto return_err
 @@ -993,26 +1027,40 @@
  		nd->last_type = LAST_NORM;
  		if (this.name[0] != '.')
