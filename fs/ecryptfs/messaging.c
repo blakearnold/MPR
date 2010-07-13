@@ -28,9 +28,9 @@ static struct mutex ecryptfs_msg_ctx_lists_mux;
 
 static struct hlist_head *ecryptfs_daemon_id_hash;
 static struct mutex ecryptfs_daemon_id_hash_mux;
-static int ecryptfs_hash_buckets;
+static int ecryptfs_hash_bits;
 #define ecryptfs_uid_hash(uid) \
-        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
+        hash_long((unsigned long)uid, ecryptfs_hash_bits)
 
 static unsigned int ecryptfs_msg_counter;
 static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
@@ -419,18 +419,19 @@ int ecryptfs_init_messaging(unsigned int transport)
 	}
 	mutex_init(&ecryptfs_daemon_id_hash_mux);
 	mutex_lock(&ecryptfs_daemon_id_hash_mux);
-	ecryptfs_hash_buckets = 1;
-	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
-		ecryptfs_hash_buckets++;
+	ecryptfs_hash_bits = 1;
+	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
+		ecryptfs_hash_bits++;
 	ecryptfs_daemon_id_hash = kmalloc(sizeof(struct hlist_head)
-					  * ecryptfs_hash_buckets, GFP_KERNEL);
+					  * (1 << ecryptfs_hash_bits),
+					  GFP_KERNEL);
 	if (!ecryptfs_daemon_id_hash) {
 		rc = -ENOMEM;
 		ecryptfs_printk(KERN_ERR, "Failed to allocate memory\n");
 		mutex_unlock(&ecryptfs_daemon_id_hash_mux);
 		goto out;
 	}
-	for (i = 0; i < ecryptfs_hash_buckets; i++)
+	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
 		INIT_HLIST_HEAD(&ecryptfs_daemon_id_hash[i]);
 	mutex_unlock(&ecryptfs_daemon_id_hash_mux);
 
@@ -494,7 +495,7 @@ void ecryptfs_release_messaging(unsigned int transport)
 		int i;
 
 		mutex_lock(&ecryptfs_daemon_id_hash_mux);
-		for (i = 0; i < ecryptfs_hash_buckets; i++) {
+		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
 			hlist_for_each_entry(id, elem,
 					     &ecryptfs_daemon_id_hash[i],
 					     id_chain) {
