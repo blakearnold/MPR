@@ -302,6 +302,7 @@ fastcall void __kprobes do_page_fault(struct pt_regs *regs,
 	unsigned long address;
 	int write, si_code;
 	int fault;
+	int should_exit_no_context = 0;
 
 	/*
 	 * We can fault from pretty much anywhere, with unknown IRQ state.
@@ -587,6 +588,9 @@ no_context:
 	bust_spinlocks(0);
 	do_exit(SIGKILL);
 
+	if (should_exit_no_context)
+		return;
+
 /*
  * We ran out of memory, or some other thing happened to us that made
  * us unable to handle the page fault gracefully.
@@ -607,8 +611,10 @@ do_sigbus:
 	up_read(&mm->mmap_sem);
 
 	/* Kernel mode? Handle exceptions or die */
-	if (!(error_code & 4))
+	if (!(error_code & 4)) {
+		should_exit_no_context = 1;
 		goto no_context;
+	}
 
 	/* User space => ok to do another page fault */
 	if (is_prefetch(regs, address, error_code))

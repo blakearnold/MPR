@@ -301,6 +301,7 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs,
 	unsigned long address;
 	const struct exception_table_entry *fixup;
 	int write, fault;
+	int should_exit_no_context = 0;
 	unsigned long flags;
 	siginfo_t info;
 
@@ -548,6 +549,9 @@ no_context:
 	oops_end(flags);
 	do_exit(SIGKILL);
 
+	if (should_exit_no_context)
+		return;
+
 /*
  * We ran out of memory, or some other thing happened to us that made
  * us unable to handle the page fault gracefully.
@@ -567,8 +571,10 @@ do_sigbus:
 	up_read(&mm->mmap_sem);
 
 	/* Kernel mode? Handle exceptions or die */
-	if (!(error_code & PF_USER))
+	if (!(error_code & PF_USER)) {
+		should_exit_no_context = 1;
 		goto no_context;
+	}
 
 	tsk->thread.cr2 = address;
 	tsk->thread.error_code = error_code;
