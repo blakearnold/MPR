@@ -72,8 +72,17 @@ success:
 	pages = (end - start) >> PAGE_SHIFT;
 	if (newflags & VM_LOCKED) {
 		pages = -pages;
-		if (!(newflags & VM_IO))
+		if (!(newflags & VM_IO)) {
+			/*
+			 *  We don't try to access the guard page of a stack
+			 *  vma
+			 */
+			if (vma->vm_flags & VM_GROWSDOWN)
+				if (start == vma->vm_start)
+					start += PAGE_SIZE;
+
 			ret = make_pages_present(start, end);
+		}
 	}
 
 	mm->locked_vm -= pages;
