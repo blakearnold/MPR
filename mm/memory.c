@@ -2185,11 +2185,16 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
 {
 	address &= PAGE_MASK;
 	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
-		address -= PAGE_SIZE;
-		if (find_vma(vma->vm_mm, address) != vma)
-			return -ENOMEM;
+		struct vm_area_struct *prev;
 
-		expand_stack(vma, address);
+		address -= PAGE_SIZE;
+		prev = find_vma(vma->vm_mm, address);
+
+		if (prev == vma)
+			expand_stack(vma, address);
+		else if (!(prev->vm_flags & VM_GROWSDOWN) ||
+			   prev->vm_end != vma->vm_start)
+				return -ENOMEM;
 	}
 	return 0;
 }
