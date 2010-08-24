@@ -155,7 +155,7 @@ static int show_map_internal(struct seq_file *m, void *v, struct mem_size_stats 
 
 	/* We don't show the stack guard page in /proc/maps */
 	start = vma->vm_start;
-	if (vma->vm_flags & VM_GROWSDOWN)
+	if (stack_guard_page(vma, start))
 		start += PAGE_SIZE;
 
 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08lx %02x:%02x %lu %n",

@@ -77,9 +77,8 @@ success:
 			 *  We don't try to access the guard page of a stack
 			 *  vma
 			 */
-			if (vma->vm_flags & VM_GROWSDOWN)
-				if (start == vma->vm_start)
-					start += PAGE_SIZE;
+			if (stack_guard_page(vma, start))
+				start += PAGE_SIZE;
 
 			ret = make_pages_present(start, end);
 		}
