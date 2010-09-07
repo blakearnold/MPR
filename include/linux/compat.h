@@ -267,5 +267,7 @@ asmlinkage long compat_sys_signalfd(int ufd,
 asmlinkage long compat_sys_timerfd(int ufd, int clockid, int flags,
 				const struct compat_itimerspec __user *utmr);
 
+extern void __user *compat_alloc_user_space(unsigned long len);
+
 #endif /* CONFIG_COMPAT */
 #endif /* _LINUX_COMPAT_H */
