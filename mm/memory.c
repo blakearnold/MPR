@@ -2815,3 +2815,19 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, in
 
 	return buf - old_buf;
 }
+
+
+/* start crew tracing */
+asmlinkage long sys_start_crew(void){
+	
+	printk("starting crew events\n");
+	return 0;
+
+}
+
+/*stop tracing crew*/
+asmlinkage long sys_stop_crew(void){
+	printk("stopping crew events\n");
+	return 0;
+
+}
