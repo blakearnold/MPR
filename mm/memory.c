@@ -2816,18 +2816,264 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, in
 	return buf - old_buf;
 }
 
+/* HW5: pte tracing functions */
+/*
+static inline void trace_pte_range(pmd_t *pmd, unsigned long addr, 
+				   unsigned long end, int undo)
+{
+	pte_t *pte;	
 
-/* start crew tracing */
-asmlinkage long sys_start_crew(void){
+	if (pmd_none(*pmd) || pmd_bad(*pmd))
+		return;
+
+	pte = pte_offset_kernel(pmd, addr);
+	do {
+		pte_t entry = *pte;
+		if (undo) {
+			if (pte_present(entry) && pte_trace(entry)) {
+				entry = pte_untrace(pte_mkwrite(entry));
+				set_pte(pte, entry);
+			}
+		} else {
+			if (pte_present(entry) && pte_write(entry)) {
+				entry = pte_mktrace(pte_wrprotect(entry));
+				set_pte(pte, entry);
+			}
+		}
+		addr += PAGE_SIZE;
+		pte++;
+	} while (addr && addr < end);
+}
+
+static inline void trace_pmd_range(pud_t *pud, unsigned long addr,
+				   unsigned long end, int undo)
+{
+	unsigned long next;
+	pmd_t * pmd;
+
+	if (pud_none(*pud) || pud_bad(*pud))
+		return;
+	pmd = pmd_offset(pud, addr);
+	do {
+		next = (addr + PMD_SIZE) & PMD_MASK;
+		if (next <= addr || next > end)
+			next = end;
+		trace_pte_range(pmd, addr, next, undo);
+		addr = next;
+		pmd++;
+	} while (addr && addr < end);
+}
+
+static inline void trace_pud_range(pgd_t *pgd, unsigned long addr,
+				   unsigned long end, int undo)
+{
+	unsigned long next;
+	pud_t * pud;
+
+	if (pgd_none(*pgd) || pgd_bad(*pgd))
+		return;
+	pud = pud_offset(pgd, addr);
+	do {
+		next = (addr + PUD_SIZE) & PUD_MASK;
+		if (next <= addr || next > end)
+			next = end;
+		trace_pmd_range(pud, addr, next, undo);
+		addr = next;
+		pud++;
+	} while (addr && addr < end);
+}
+
+static void trace_page_range(struct vm_area_struct *vma, unsigned long start,
+			     unsigned long end, int undo)
+{
+	struct mm_struct *mm = vma->vm_mm;
+	pgd_t *pgd;
+	unsigned long addr = start, next;
+
+	BUG_ON(start >= end);
+
+	flush_cache_range(vma, start, end);
+	pgd = pgd_offset(mm, start);
+	do {
+		next = (addr + PGDIR_SIZE) & PGDIR_MASK;
+		if (next <= addr || next > end)
+			next = end;
+		trace_pud_range(pgd, addr, next, undo);
+		addr = next;
+		pgd++;
+	} while (addr && addr < end);
+	flush_tlb_range(vma, start, end);
+}
+*/
+/* HW5: __do_mm_trace */
+/*
+static void __do_mm_trace(struct mm_struct *mm, int undo)
+{
+	unsigned long stmp, etmp;
+	struct vm_area_struct *vma;
+
+	vma = find_vma(mm, 0);
+	if (!vma)
+		return;
+
+	for ( ; vma ; vma = vma->vm_next) {
+		if (is_vm_hugetlb_page(vma))
+			continue;
+
+		stmp = vma->vm_start;
+		
+		etmp = vma->vm_end;
+
+		trace_page_range(vma, stmp, etmp, undo);
+	}
+}	
+
+*/
+/* HW5: system call sys_get_trace
+ * 'start' and 'size' specify the range of trace */
+asmlinkage long sys_start_trace(unsigned long start, size_t size)
+{
+/*
+unsigned long end, length;
+	struct mm_struct *mm = current->mm;
+	struct task_struct *p;
+
+	end = start + size;
+	if (!start || !end || end <= start)
+		return -EINVAL;
+
+	length = TRACE_OFFSET(end - 1, start) + 1;
+		
+	spin_lock(&traced_mm_list_lock);
+	spin_lock(&mm->page_table_lock);
+	if (mm_traced(mm)) {
+		spin_unlock(&mm->page_table_lock);
+		spin_unlock(&traced_mm_list_lock);
+		return -EINVAL;
+	}
+	list_add_tail(&mm->trace_list, &traced_mm_list);
+	mm->trace_start = start;
+	mm->trace_end = end;
+	mm->protect_time = jiffies;
+	__do_mm_trace(mm, start, end, 0);
+	spin_unlock(&mm->page_table_lock);
 	
-	printk("starting crew events\n");
-	return 0;
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (p->mm != mm)
+		      	continue;
+		spin_lock(&mm->page_table_lock);
+		if (p->page_wcount) {
+			kfree(p->page_wcount);
+		}
+		
+		p->page_wcount = kmalloc(sizeof(int) * length, GFP_ATOMIC);
+		BUG_ON(!p->page_wcount);
+		memset(p->page_wcount, 0, sizeof(int) * length);		
+		spin_unlock(&mm->page_table_lock);
+	}
+	read_unlock(&tasklist_lock);
+	spin_unlock(&traced_mm_list_lock);
+
+*/
+return 0;
 
 }
 
-/*stop tracing crew*/
-asmlinkage long sys_stop_crew(void){
-	printk("stopping crew events\n");
+
+/* HW5: system call sys_stop_trace */
+asmlinkage long sys_stop_trace(void)
+{
+/*
+unsigned long start, end;
+	struct mm_struct *mm = current->mm;
+	struct task_struct *p;
+
+//	spin_lock(&traced_mm_list_lock);
+	spin_lock(&mm->page_table_lock);
+//	if (!mm_traced(mm)) {
+//		spin_unlock(&mm->page_table_lock);
+//		spin_unlock(&traced_mm_list_lock);
+//		return -EINVAL;
+//	}
+
+//	list_del(&mm->trace_list);
+//	INIT_LIST_HEAD(&mm->trace_list);
+//	start = mm->trace_start;
+//	end = mm->trace_end;
+//	mm->trace_start = 0;
+//	mm->trace_end = 0;
+	__do_mm_trace(mm, 1);
+	spin_unlock(&mm->page_table_lock);
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (p->mm != mm) 
+			continue;
+			
+		spin_lock(&mm->page_table_lock);
+		if (p->page_wcount)
+			kfree(p->page_wcount);
+		p->page_wcount = NULL;
+		spin_unlock(&mm->page_table_lock);
+	}
+	read_unlock(&tasklist_lock);
+	spin_unlock(&traced_mm_list_lock);
+*/
+return 0;
+}
+
+/* start crew tracing */
+asmlinkage long sys_start_crew(void){
+/*
+	struct mm_struct *mm = current->mm;
+	struct task_struct *p;
+
+
+		
+	spin_lock(&mm->page_table_lock);
+	__do_mm_trace(mm, 0);
+	spin_unlock(&mm->page_table_lock);
+	
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (p->mm != mm)
+		      	continue;
+	}
+	read_unlock(&tasklist_lock);
+	return 0;
+	//Page protect all writes to pages
+	//change page fault handler to know when crew events
+	//evacuate other threads
+	//write, give up token
+	printk("starting crew events\n");
 	return 0;
 
+*/
+}
+
+
+/*stop tracing crew*/
+asmlinkage long sys_stop_crew(void){
+/*
+struct mm_struct *mm = current->mm;
+	struct task_struct *p;
+
+	spin_lock(&mm->page_table_lock);
+	__do_mm_trace(mm, 1);
+	spin_unlock(&mm->page_table_lock);
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (p->mm != mm) 
+			continue;
+			
+		spin_lock(&mm->page_table_lock);
+		spin_unlock(&mm->page_table_lock);
+	}
+	read_unlock(&tasklist_lock);
+	return 0;
+	printk("stopping crew events\n");
+	return 0;
+*/
 }

@@ -1,0 +1,36 @@
+
+Tecras and other notebooks 
+--------------------------
+	  (Many thanks to Philip Hands <phil@hands.com> and
+           Avery Pennarun <apenwarr@worldvisions.ca> for this explanation)
+
+Tecras and other notebooks, and some PCs have a problem where they
+fail to flush the cache when switching on the a20 gate (IIRC), which
+is provoked by bzImage kernels, but not by zimage kernels. 
+
+bzImage files are actually "big zImage" not "bzipped Image".  bzImage
+kernels can be as large as you like, but because they need to decompress
+into extended memory, they aggravate this problem.  zImage kernels just
+compress into conventional memory, so they never need to touch the a20 gate,
+but they hit the 640k limit.
+
+This problem is *not* present in 2.1.* and later (2.2 when available)
+kernels, bzImage kernel work just fine (the necessary code has been
+added, see the .S files in the kernel sources).
+
+
+For older kernels there are two solutions that I know of:
+
+  1) apply a patch, which flushes the cache.  Unfortunately this
+     causes other machines to crash so is not universally applicable
+     (hence the tecra disks being segragated from the mainstream)
+
+  2) build a zimage, rather than bzimage kernel.  This seems to get
+     round the problem. use the --zimage option to make-kpkg, or even
+     set this as the default in /etc/kernel-pkg.conf.
+
+
+	manoj
+-- 
+Manoj Srivastava  <srivasta@acm.org> <http://www.datasync.com/%7Esrivasta/>
+Key C7261095 fingerprint = CB D9 F4 12 68 07 E4 05  CC 2D 27 12 1D F5 E8 6E

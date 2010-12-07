@@ -324,5 +324,6 @@ ENTRY(sys_call_table)
 	.long sys_timerfd
 	.long sys_eventfd
 	.long sys_fallocate
-	.long sys_start_crew		/*325*/
-	.long sys_stop_crew
+	.long sys_start_rec		/*325*/
+	.long sys_stop_rec
+	.long sys_rec_owner

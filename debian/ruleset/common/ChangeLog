@@ -1,0 +1,24 @@
+2007-05-04  Manoj Srivastava  <srivasta@debian.org>
+
+	* archvars.mk (HAS_CONFIG):
+		  srivasta@debian.org--lenny/skeleton-make-rules--kernel--1.0--base-0
+		  Only try to include .config if it actually exists.
+
+2006-09-15  Manoj Srivastava  <srivasta@debian.org>
+
+	* targets.mk (stamp-clean):
+		  srivasta@debian.org--etch/skeleton-make-rules--kernel--1.0--patch-4
+		  Exclude version control directories from the generic
+		  clean command.
+
+2006-09-06  Manoj Srivastava  <srivasta@debian.org>
+
+	* install_cmds.mk:
+		  srivasta@debian.org--etch/debian-dir--kernel-package--1.0--none-000
+		  Moved the create md5sum definition here.
+
+2006-09-03  Roland Stigge <stigge@debian.org>
+
+	* md5sums.mk:
+		  Initial version of md5sums creation
+

@@ -1,121 +1,97 @@
-#!/usr/bin/make -f
-#
-# debian/rules for Ubuntu linux
-#
-# Use this however you want, just give credit where credit is due.
-#
-# Copyright (c) 2007 Ben Collins <bcollins@ubuntu.com>
-#
+#! /usr/bin/make -f
+############################ -*- Mode: Makefile -*- ###########################
+## debian.rules ---
+## Author	    : Manoj Srivastava ( srivasta@pilgrim.umass.edu )
+## Created On	    : Sat Apr 27 06:36:31 1996
+## Created On Node  : melkor.pilgrim.umass.edu
+## Last Modified By : Manoj Srivastava
+## Last Modified On : Fri Oct 28 16:15:55 2005
+## Last Machine Used: glaurung.internal.golden-gryphon.com
+## Update Count	    : 973
+## Status	    : Unknown, Use with caution!
+## HISTORY	    :
+## Description	    :
+## arch-tag: aa70d4e5-79bf-405c-95ec-5fa9f7ae7b69
+## 
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 2 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+##
+###############################################################################
 
-# dpkg-buildpackage passes options that are incomptatible
-# with the kernel build.
-unexport CFLAGS
-unexport LDFLAGS
+# The version of kernel-package this belongs to
+kpkg_version := 11.001
 
-# This is the debhelper compatability version to use.
-export DH_COMPAT=4
-export LC_ALL=C
-export SHELL=/bin/bash -e
+# Where the package libs are stored
+LIBLOC     :=/usr/share/kernel-package
 
-# Common variables for all architectures
-include debian/rules.d/0-common-vars.mk
+define which_debdir
+DEBDIR=$(shell if test -f ./debian/ruleset/kernel_version.mk; then echo ./debian;     \
+                                                              else echo $(LIBLOC); fi)
+endef
 
-# Pill in some arch specific stuff
-include debian/rules.d/$(arch).mk
+define deb_rule
+$(eval $(which_debdir))
+  run_command=$(MAKE) -f $(DEBDIR)/rules
+  ifeq ($(strip $(int_am_root)),)
+    root_run_command=$(ROOT_CMD) $(MAKE) -f $(DEBDIR)/rules
+  else
+    root_run_command=$(MAKE) -f $(DEBDIR)/rules
+  endif
+endef
 
-# Maintainer targets
-include debian/rules.d/1-maintainer.mk
+# determine  the architecture for package building
+$(eval $(which_debdir))
+include $(DEBDIR)/ruleset/common/archvars.mk
+# Set variables with information extracted from control and changelog files
+include $(DEBDIR)/ruleset/common/pkgvars.mk
+# Install commands
+include $(DEBDIR)/ruleset/common/install_cmds.mk
+# we use debconf
+include $(DEBDIR)/ruleset/common/debconf.mk
+# Do the local variable setting here
+include $(DEBDIR)/ruleset/local-vars.mk
 
-# Debian Build System targets
-binary: binary-indep binary-arch
+# export variables
+export root_cmd FLAVOUR INT_SUBARCH APPEND_TO_VERSION UNSIGN_CHANGELOG  \
+       UNSIGN_SOURCE ROOT_CMD MODULE_LOC EXTRAVERSION ALL_PATCH_DIR     \
+       ALL_PATCH_APPLY ALL_PATCH_UNPATCH DIR_PATCH_UNPATCH              \
+       DIR_PATCH_APPLY VERSIONED_PATCH_DIR VERSIONED_ALL_PATCH_UNPATCH  \
+       VERSIONED_ALL_PATCH_APPLY VERSIONED_DIR_PATCH_UNPATCH            \
+       VERSIONED_DIR_PATCH_APPLY KPKG_SELECTED_PATCHES                  \
+       KPKG_SELECTED_MODULES CONCURRENCY_LEVEL kpkg_version
 
-build: build-arch build-indep
+all:
+	$(eval $(which_debdir))
+	@echo nothing to be done.
 
-clean: debian/control
-	dh_testdir
-	dh_testroot
-	dh_clean
+$(eval $(which_debdir))
+include $(DEBDIR)/ruleset/common/targets.mk
+include $(DEBDIR)/ruleset/local.mk
 
-	# d-i stuff
-	rm -rf modules kernel-versions package-list
-	rm -rf debian/d-i-$(arch)
+test:
+	$(eval $(which_debdir))
+	echo version: $(version)
+	echo KPKG_ARCH: $(KPKG_ARCH)
+	echo $(DEB_BUILD_ARCH)
+	echo $(DEB_BUILD_GNU_CPU)
+	echo $(DEB_BUILD_GNU_TYPE)
+	echo $(DEB_HOST_ARCH)
+	echo $(DEB_HOST_GNU_CPU)
+	echo $(DEB_HOST_GNU_SYSTEM)
+	echo $(DEB_HOST_GNU_TYPE)
+	echo $(DEB_BUILD_GNU_SYSTEM)
 
-	# normal build junk
-	rm -rf debian/abi/$(release)-$(revision)
-	rm -rf $(builddir)
-	rm -f $(stampdir)/stamp-*
-	rm -rf debian/linux-*
-
-	# This gets rid of the d-i packages in control
-	cp -f debian/control.stub debian/control
-
-# Builds the image, arch headers and debug packages
-include debian/rules.d/2-binary-arch.mk
-
-# Rules for building the udebs (debian-installer)
-include debian/rules.d/5-udebs.mk
-
-# Builds the source, doc and linux-headers indep packages
-include debian/rules.d/3-binary-indep.mk
-
-# Various checks to be performed on builds
-include debian/rules.d/4-checks.mk
-
-# Custom binary images (universe/unsupported)
-include debian/rules.d/6-binary-custom.mk \
-	$(patsubst %,debian/binary-custom.d/%/rules,$(custom_flavours))
-
-# Misc stuff
-debian/control.stub: debian/d-i/kernel-versions.in	\
-		debian/scripts/control-create		\
-		debian/control.stub.in			\
-		debian/changelog			\
-		$(wildcard debian/control.d/*)		\
-		$(patsubst %,debian/binary-custom.d/%/vars,$(all_custom_flavours))
-	for i in debian/d-i/kernel-versions.in debian/control.stub.in; do \
-	  new=`echo $$i | sed 's/\.in$$//'`;					\
-	  cat $$i | sed -e 's/PKGVER/$(release)/g' -e 's/ABINUM/$(abinum)/g' > \
-		$$new;								\
-	done
-	flavours="$(wildcard debian/control.d/vars.*) $(patsubst %,debian/binary-custom.d/%/vars,$(all_custom_flavours))";\
-	for i in $$flavours; do						\
-	  $(SHELL) debian/scripts/control-create $$i |			\
-		sed -e 's/PKGVER/$(release)/g' -e 's/ABINUM/$(abinum)/g' >>\
-		debian/control.stub;					\
-	done
-	cp debian/control.stub debian/control
-
-.PHONY: debian/control
-debian/control: debian/control.stub
-	rm -rf modules kernel-versions package-list
-	mkdir -p modules/$(arch)/
-	cp debian/d-i/modules/* modules/$(arch)/
-	cp debian/d-i/package-list debian/d-i/kernel-versions .
-	touch modules/$(arch)/kernel-image
-
-	# Per flavour module lists
-	flavour_modules=`ls debian/d-i/modules.$(arch)-* 2>/dev/null`	\
-		|| true;						\
-	if [ "$$flavour_modules" != "" ]; then				\
-	    for flav in $$flavour_modules; do				\
-		name=`echo $$flav | sed 's/.*\/modules.$(arch)-//'`;	\
-		mkdir modules/$(arch)-$$name;				\
-		(cd debian/d-i/modules/; tar cf - `cat ../../../$$flav`) |\
-		    (cd modules/$(arch)-$$name/; tar xf -);		\
-		touch modules/$(arch)-$$name/kernel-image;		\
-	    done;							\
-	fi
-
-	# Remove unwanted stuff
-	if [ -r "debian/d-i/exclude-modules.$(arch)" ]; then	\
-	    (cat debian/d-i/exclude-modules.$(arch);		\
-	     ls modules/$(arch)/) | sort | uniq -d |		\
-		(cd modules/$(arch)/; xargs rm -f);		\
-	fi
-
-	if [ ! -d modules/$(build_arch) ]; then			\
-		mkdir -p modules/$(build_arch);			\
-		cp modules/$(arch)/* modules/$(build_arch);	\
-	fi
-
-	kernel-wedge gen-control > debian/control
+#Local variables:
+#mode: makefile
+#End:

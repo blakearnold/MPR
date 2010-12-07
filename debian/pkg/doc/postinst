@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+#                              -*- Mode: Cperl -*- 
+# debian.postinst ---
+# Author           : Manoj Srivastava ( srivasta@pilgrim.umass.edu )
+# Created On       : Sat Apr 27 05:42:43 1996
+# Created On Node  : melkor.pilgrim.umass.edu
+# Last Modified By : Manoj Srivastava
+# Last Modified On : Thu Oct 27 13:38:59 2005
+# Last Machine Used: glaurung.internal.golden-gryphon.com
+# Update Count     : 43
+# Status           : Unknown, Use with caution!
+# HISTORY          :
+# Description      :
+#
+#
+#
+#  arch-tag: bf48605d-f6e9-4df6-9be3-31017c6406df
+#
+
+
+$|=1;
+
+# Predefined values:
+my $package="=P";
+my $version="=V";
+
+# Ignore all invocations uxcept when called on to configure.
+exit 0 unless ($ARGV[0] && $ARGV[0] =~ /configure/);
+
+my $architecture;
+chomp($architecture = `dpkg --print-installation-architecture`);
+$architecture = "ppc" if $architecture eq "powerpc";
+$architecture = "parisc" if $architecture eq "hppa";
+$architecture = "mips" if $architecture eq "mipsel";
+$architecture = "x86_64" if $architecture eq "amd64";
+
+my $stop_and_read     = 0;
+my $have_conffile     = "";
+my $src_postinst_hook = '';
+my $CONF_LOC          = '/etc/kernel-img.conf';
+
+# most of our work is done in /usr/src.
+chdir '/usr/src' or die "Could not chdir to /usr/src:$!";
+
+if (-l 'linux') {
+  if (-e "linux-$version" ){
+    if (! unlink "linux-$version") {
+      exit 0;
+    }
+  }
+}
+
+if (-r "$CONF_LOC" && -f "$CONF_LOC"  ) {
+  if (open(CONF, "$CONF_LOC")) {
+    while (<CONF>) {
+      chomp;
+      s/\#.*$//g;
+      next if /^\s*$/;
+
+      $src_postinst_hook   = "$1"  if /src_postinst_hook\s*=\s*(\S+)/ig;
+    }
+    close CONF;
+    $have_conffile = "Yes";
+  }
+}
+
+## Run user hook script here, if any
+if (-x "$src_postinst_hook") {
+    system ("$src_postinst_hook", $package, $version) &&
+	warn "User hook script $src_postinst_hook failed";
+}
+
+
+
+exit 0;
+
+__END__
+
+
+
+
+
+
+
+

@@ -1,0 +1,223 @@
+#!/usr/bin/perl
+#                              -*- Mode: Cperl -*- 
+# debian.postinst ---
+# Author           : Manoj Srivastava ( srivasta@pilgrim.umass.edu )
+# Created On       : Sat Apr 27 05:42:43 1996
+# Created On Node  : melkor.pilgrim.umass.edu
+# Last Modified By : Manoj Srivastava
+# Last Modified On : Sat Aug  5 13:20:22 2006
+# Last Machine Used: glaurung.internal.golden-gryphon.com
+# Update Count     : 45
+# Status           : Unknown, Use with caution!
+# HISTORY          :
+# Description      :
+#
+#
+#
+#  arch-tag: 1c716174-2f0a-476d-a626-a1322e62503a
+#
+
+
+$|=1;
+
+# Predefined values:
+my $version           = "=V";
+my $link_in_boot      = "=IB";  # Should be empty, mostly
+my $no_symlink        = "=S";   # Should be empty, mostly
+my $reverse_symlink   = "=R";   # Should be empty, mostly
+my $do_symlink        = "Yes";  # target machine defined
+my $do_boot_enable    = "Yes";  # target machine defined
+my $do_bootfloppy     = "Yes";  # target machine defined
+my $do_bootloader     = "Yes";  # target machine defined
+my $move_image        = '';     # target machine defined
+my $kimage            = "=K";   # Should be empty, mostly
+my $loader            = "=L"; # lilo, silo, quik, palo, vmelilo, nettrom, arcboot or delo
+my $image_dir         = "=D";        # where the image is located
+my $clobber_modules   = '';          # target machine defined
+my $relative_links    = "";          # target machine defined
+my $initrd            = "=I";        # initrd kernel
+my $mkimage           = "=M";   # command to generate the initrd image
+my $do_initrd         = '';     # Normally we do not
+my $warn_initrd       = 'YES';  # Normally we do
+my $use_hard_links    = ''; # hardlinks do not work across fs boundaries
+my $postinst_hook     = '';          #Normally we do not
+my $postrm_hook       = '';          #Normally we do not
+my $preinst_hook      = '';          #Normally we do not
+my $prerm_hook        = '';          #Normally we do not
+my $minimal_swap      = '';          # Do not swap symlinks
+my $ignore_depmod_err = '';          # normally we do not
+my $relink_src_link   = 'YES'; # There is no harm in checking the link
+my $relink_build_link = 'YES'; # There is no harm in checking the link
+my $force_build_link  = '';    # There is no harm in checking the link
+my $official_image    = "=OF";  # only true for official images
+my $arch              = "=A"; #  should be same as dpkg --print-installation-architecture
+my $kernel_arch       = "=B";
+my $ramdisk           = "=MK";  # List of tools to create initial ram fs.
+my $initrddep         = "=MD";  # List of dependencies for such tools
+my $package_name    = "=ST-image-$version";
+
+
+# Ignore all invocations uxcept when called on to configure.
+exit 0 unless ($ARGV[0] && $ARGV[0] =~ /configure/);
+
+#known variables
+my $image_dest      = "/";
+my $realimageloc    = "/$image_dir/";
+my $have_conffile   = "";
+my $silent_modules  = '';
+my $silent_loader   = '';
+my $modules_base    = '/lib/modules';
+my $CONF_LOC        = '/etc/kernel-img.conf';
+# remove multiple leading slashes; make sure there is at least one.
+$realimageloc  =~ s|^/*|/|o;
+$realimageloc  =~ s|/+|/|o;
+
+my $architecture;
+chomp($architecture = `dpkg --print-installation-architecture`);
+$architecture = "ppc" if $architecture eq "powerpc";
+$architecture = "parisc" if $architecture eq "hppa";
+$architecture = "mips" if $architecture eq "mipsel";
+$architecture = "x86_64" if $architecture eq "amd64";
+
+my $stop_and_read     = 0;
+my $src_postinst_hook = '';
+
+# most of our work is done in /usr/src.
+chdir '/usr/src' or die "Could not chdir to /usr/src:$!";
+
+if (-d "$package_name") {
+
+
+  # See if we have a kernel image of the same version already installed.
+  if ( -d "$modules_base/$version" && -d "/usr/src/$package_name" ) {
+    if (! -e "$modules_base/$version/build" ) {
+      my $result = symlink ("/usr/src/=ST-headers-$version",
+                            "$modules_base/$version/build");
+      if (! $result) {
+        warn "Could not link /usr/src/=ST-headers-$version to $modules_base/$version/build:$!"
+      }
+    }
+  }
+
+  chdir "/usr/src/$package_name/include" ||
+    die "Could not chdir to  /usr/src/$package_name/include:$!";
+
+  if (! -d "asm-$architecture") {
+    warn "/usr/src/$package_name/include/asm-$architecture does not exist.\n";
+  }
+  elsif (-e 'asm') {
+    if (! -l 'asm') {
+      warn "/usr/src/$package_name/include/asm is not a symlink.\n";
+      $stop_and_read++;
+    }
+    else {
+      my $target=readlink 'asm';
+      if ("$target" ne "asm-$architecture") {
+	if (! unlink 'asm') {
+	  warn "could not unlink /usr/src/$package_name/include/asm: $!\n";
+	  warn "It points to /usr/src/$package_name/include/$target\n";
+	  warn  "rather than at /usr/src/$package_name/include/asm-$architecture\n";
+	  $stop_and_read++;
+	}
+	else {
+	  if (! symlink "asm-$architecture", 'asm') {
+	    warn "Could not link /usr/src/$package_name/include/asm:$!\n";
+	    warn "to /usr/src/$package_name/include/asm-$architecture\n";
+	    $stop_and_read++;
+	  }
+	}
+      }
+    }
+  }
+}
+
+chdir '/usr/src' or die "Could not chdir to /usr/src:$!";
+
+# if ($stop_and_read) {
+#   my $answer;
+#   print STDERR " Please Hit return to continue.";
+#   $answer = <STDIN>;
+# }
+
+if (-r "$CONF_LOC" && -f "$CONF_LOC"  ) {
+  if (open(CONF, "$CONF_LOC")) {
+    while (<CONF>) {
+      chomp;
+      s/\#.*$//g;
+      next if /^\s*$/;
+
+      $src_postinst_hook      = "$1"  if /src_postinst_hook\s*=\s*(\S+)/ig;
+      $header_postinst_hook   = "$1"  if /header_postinst_hook\s*=\s*(\S+)/ig;
+    }
+    close CONF;
+    $have_conffile = "Yes";
+  }
+}
+
+sub exec_script {
+  my $type   = shift;
+  my $script = shift;
+  print STDERR "Running $type hook script $script.\n";
+  system ("$script $version $realimageloc$kimage-$version") &&
+    print STDERR "User $type hook script [$script] ";
+  if ($?) {
+    if ($? == -1) {
+      print STDERR "failed to execute: $!\n";
+    }
+    elsif ($? & 127) {
+      printf STDERR "died with signal %d, %s coredump\n",
+        ($? & 127),  ($? & 128) ? 'with' : 'without';
+    }
+    else {
+      printf STDERR "exited with value %d\n", $? >> 8;
+    }
+    exit $? >> 8;
+  }
+}
+sub run_hook {
+  my $type   = shift;
+  my $script = shift;
+  if ($script =~ m,^/,) {
+    # Full path provided for the hook script
+    if (-x "$script") {
+      &exec_script($type,$script);
+    }
+    else {
+      die "The provided $type hook script [$script] could not be run.\n";
+    }
+  }
+  else {
+    # Look for it in a safe path
+    for my $path ('/bin', '/sbin', '/usr/bin', '/usr/sbin') {
+      if (-x "$path/$script") {
+        &exec_script($type, "$path/$script");
+        return 0;
+      }
+    }
+    # No luck
+    print STDERR "Could not find $type hook script [$script].\n";
+    die "Looked in: '/bin', '/sbin', '/usr/bin', '/usr/sbin'\n";
+  }
+}
+
+## Run user hook script here, if any
+if (-x "$src_postinst_hook") {
+  &run_hook("postinst", $src_postinst_hook);
+}
+if (-x "$header_postinst_hook") {
+  &run_hook("postinst", $header_postinst_hook);
+}
+
+
+
+exit 0;
+
+__END__
+
+
+
+
+
+
+
+

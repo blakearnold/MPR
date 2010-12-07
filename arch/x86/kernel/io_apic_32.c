@@ -32,6 +32,10 @@
 #include <linux/sysdev.h>
 #include <linux/pci.h>
 #include <linux/msi.h>
+
+#ifdef	CONFIG_KDB
+#include <linux/kdb.h>
+#endif	/* CONFIG_KDB */
 #include <linux/htirq.h>
 #include <linux/freezer.h>
 #include <linux/kthread.h>

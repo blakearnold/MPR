@@ -1,0 +1,200 @@
+
+
+
+           HOWTO install an (initrd) linux 2.6 kernel
+                     on Debian woody
+
+                        $Revision: 1.1 $
+
+                   Marc.Herbert@free.fr
+
+
+Motivation
+----------
+
+You may find this document useful if:
+
+- you want to test the latest linux 2.6 kernels
+- you want to keep your debian woody ("stable") box as intact as
+possible, i.e., you want to test _only_ linux 2.6 and not all the latest
+stuff from Debian.
+
+You may find it even more useful if:
+
+- you prefer booting from a RAM-disk instead of from your hard disk
+(the "initrd-way"). See initrd(4) for more information.
+
+
+
+Need fresh modutils and module-init-tools
+-----------------------------------------
+
+The mechanism for dynamically loading kernel modules has been
+rewritten between 2.4 and 2.6. As a consequence, the former "modutils"
+tools (insmod, modprobe,...) are not compatible with 2.6 You need the
+new "module-init-tools" instead.
+
+Issue: these new and incompatible tools have the same filenames as
+their 2.4 siblings (insmod, modprobe,...). As often, installing from
+source updated packages on your stable debian distribution does the
+trick here. The recent debian packages "modutils" and
+module-init-tools" do some automatic kernel version detection before
+invoking the right version of modprobe, insmod, etc.
+
+First you'll need some basic tools to compile and generate
+the debian packages:
+# apt-get install gcc debhelper fakeroot ...
+
+Then edit your /etc/apt/sources/list file, so that the sources of
+packages come from the "testing" or even "unstable" version of
+debian. For instance:
+
+deb-src ftp://ftp.yourmirror.org/pub/debian unstable main non-free contrib
+
+
+Then fetch recent sources:
+$ apt-get source modutils module-init-tools
+
+Recent modutils sources need a small hack to compile on woody:
+
+        dh_installman extra/modules*.5 extra/update-modules*.8 *.8 *.5
+        sh -e debian/fixmanpages
+-       dh_installinit --no-start --update-rcd-params="start 20 S ."
++       dh_installinit --update-rcd-params="start 20 S ."
+        dh_strip
+        dh_link bin/lsmod sbin/lsmod
+
+Build the .deb packages:
+$ cd module-init-* && fakeroot dpkg-buildpackage -d
+
+$ cd ..; cd modutils-* && fakeroot dpkg-buildpackage -d
+
+And install them:
+$ dpkg -i modutil*.deb
+$ dpkg -i module-init-tools*.deb
+
+You're done.
+
+
+Please note that Documentation/Changes gives a lengthy list of other
+kernel-related utilities mandatory upgrades before using 2.6. However,
+upgrading only modprobe & co was enough for me.
+
+
+make config
+-----------
+
+From the (outdated) Documentation/initrd.txt:
+
+"Second, the kernel has to be compiled with RAM disk support and with
+support for the initial RAM disk enabled."
+
+When the kernel boots, it needs to mount the initial ramdisk as its
+root partition, and to read from it. As a consequence, the following
+features need to be compiled _built-in_ (not as modules)
+
+CONFIG_BLK_DEV_RAM=y     (section "Block Devices")
+CONFIG_BLK_DEV_INITRD=y
+
+CONFIG_ROMFS_FS=y        (section "Filesystems")
+
+An alternative to the "ROMFS" filesystem above could be "CRAMFS"
+(short for "Compressed ROM") used by default by the debian mkinitrd
+script, but... the initrd+CRAMFS combination is not supported by
+linux, unless you use a kernel source with debian patches.  Moreover, it
+seemed to me that the mere presence of the CRAMFS code in the vanilla
+linux kernel prevented a ROMFS initrd image to boot!? I suggest
+avoiding built-in CRAMFS code for the moment, unless you are a
+hardcore debian fan (compiling it as module is OK).
+
+CONFIG_CRAMFS=m          (section "Miscellaneous filesystems")
+
+
+
+mkinitrd
+--------
+
+After having installed your brand new 2.6 and its modules, you need to
+create the initrd image.
+
+# apt-get install initrd-tools genromfs
+
+If you use ROMFS instead of CRAMFS (see above), you must edit
+/etc/mkinitrd/mkinitrd.conf:
+
+@@ -18,4 +18,4 @@
+ UMASK=022
+ 
+ # Command to generate the initrd image.
+-MKIMAGE='mkcramfs %s %s > /dev/null'
++MKIMAGE='genromfs -d %s -f %s'
+
+
+The mkinitrd machinery tries hard, when building the initrd image, to
+guess what are the modules to preload from the ram disk, in
+order to be able to access the real (hard drive) root partition.  But
+unfortunately, it may sometimes fail. This is hard to blame, since we
+are mixing software from various provenances.
+
+If you find that your 2.6 kernel boots from the RAM disk, but has
+later problems to mount the root partition of your hard drive,
+then tweaking the RAM disk may help. Thanks to the file
+/etc/mkinitrd/modules (see mkinitrd(8)), you can force the kernel to
+load some modules from the RAM disk (e.g., "sd_mod") before trying to
+mount the real root partition. Check also mkinitrd.conf(5)
+
+If things still go wrong, you can insert "set -x" and other debugging
+stuff into the two scripts that the kernel launches after initrd
+boot and before mounting the real root:
+
+/usr/share/initrd-tools/linuxrc
+/usr/share/initrd-tools/init
+
+
+
+LILO
+----
+
+As stated in Documentation/initrd.txt, do not forget to add an initrd
+line in /etc/lilo.conf
+
+  initrd=/boot/initrd-my2.6
+
+DO NOT append="root=/dev/ram0 init=/linuxrc rw" to boot arguments,
+contrary to stated in Documentation/initrd.txt, which seems outdated
+wrt this.
+
+
+
+What did you break?
+-------------------
+
+OK, your debian woody machine is now running a linux 2.6 kernel and is
+almost intact, expect... you cannot create initrd images compatible
+with 2.4 kernels anymore, because mkinitrd blindly stores
+/sbin/modprobe etc. in the RAM disk, i.e., 2.6-modules utilities!
+
+Again, if needed, you can solve this issue by upgrading initrd-tools
+to a recent version that takes 2.4/2.6 differences into account.  The
+good side-effect is that the new version of the mkinitrd script will 
+probably be more clever when guessing the modules needed to mount the
+real root. The nasty side-effect is that you may get some bugs...
+
+As usual, type:
+$ apt-get source initrd-tools
+$ fakeroot dpkg-buildpackage
+# dpkg -i initrd-tools*.deb
+
+It seems you can safely ignore the failure of the configure step.
+
+
+
+kernel-package
+--------------
+
+When everything above is working OK, then you can use the "make-kpkg"
+tool to automate some parts and create a debian package with your 2.6
+kernels, its modules, etc.  It seems the (old) woody version of
+make-kpkg is able to manage (new) 2.6 kernels without problem.
+
+

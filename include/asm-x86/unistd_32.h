@@ -330,12 +330,13 @@
 #define __NR_timerfd		322
 #define __NR_eventfd		323
 #define __NR_fallocate		324
-#define __NR_start_crew		325
-#define __NR_stop_crew		326
+#define __NR_start_rec		325
+#define __NR_stop_rec		326
+#define __NR_rec_owner		327
 
 #ifdef __KERNEL__
 
-#define NR_syscalls 327
+#define NR_syscalls 328
 
 #define __ARCH_WANT_IPC_PARSE_VERSION
 #define __ARCH_WANT_OLD_READDIR

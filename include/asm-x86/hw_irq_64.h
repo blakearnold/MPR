@@ -30,7 +30,7 @@
 #define FIRST_EXTERNAL_VECTOR	0x20
 
 #define IA32_SYSCALL_VECTOR	0x80
-
+#define KDBENTER_VECTOR         0x81
 
 /* Reserve the lowest usable priority level 0x20 - 0x2f for triggering
  * cleanup after irq migration.
@@ -68,8 +68,7 @@
 #define ERROR_APIC_VECTOR	0xfe
 #define RESCHEDULE_VECTOR	0xfd
 #define CALL_FUNCTION_VECTOR	0xfc
-/* fb free - please don't readd KDB here because it's useless
-   (hint - think what a NMI bit does to a vector) */
+#define KDB_VECTOR		0xfb
 #define THERMAL_APIC_VECTOR	0xfa
 #define THRESHOLD_APIC_VECTOR   0xf9
 /* f8 free */

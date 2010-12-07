@@ -1,0 +1,14 @@
+This directory contains files that are not very specific to kernel
+packages, but deal with generic packaging issues, and can be used in
+almost any package. The files are 
+ archvars.mk -- calls dpkg-architecture and sets up various arch related
+                variables
+ debconf.mk  -- helps with using debconf and translations
+ install_cmds.mk -- helps install files, scripts, and programs as part
+                    of packaging
+ pkgvars.mk -- This is what allows us toseparate out the top level targets,
+               by determining which packages needto be built. 
+ targets.mk -- The top level targets mandated by policy, as well as their
+               dependencies.
+
+arch-tag: 238a95fe-56b8-44d1-818b-44975866bb95
