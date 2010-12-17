@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "recordEvent.h"
 
 int main(int argc, char* argv[]){
@@ -12,6 +14,7 @@ int main(int argc, char* argv[]){
 	case 0: //child
 		if(start_rec() < 0){
 			printf("start_Rec failed\n");
+			//stop_rec();
 			exit(1);
 		}
 		if(execv(*++argv,argc > 2 ? ++ argv : NULL)< 0)

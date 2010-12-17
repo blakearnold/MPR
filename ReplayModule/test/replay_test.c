@@ -12,7 +12,7 @@ void *secondThread( void *ptr){
 	int i;
 	for(i = 0; i < 10000; i++){
 		rec_owner();		
-		//usleep(i*16);
+		//usleep(i);
 		x++;
 		/*
 		pthread_spin_lock(&lock);

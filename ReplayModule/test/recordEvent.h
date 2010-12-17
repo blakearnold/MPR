@@ -1,4 +1,4 @@
-#include </home/blake/kernel/ubuntu-hardy/include/asm-x86/unistd_32.h>
+#include <linux/unistd.h>
 #include <sys/syscall.h>
 
 long start_rec(void){

@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 int main(int argc, char* argv[]){
 	pid_t pid = fork();
@@ -20,7 +22,7 @@ int main(int argc, char* argv[]){
 		printf("waited in child\n");
 		
 	}
-
+	return 0;
 
 
 

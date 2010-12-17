@@ -635,6 +635,12 @@ __SYSCALL(__NR_timerfd, sys_timerfd)
 __SYSCALL(__NR_eventfd, sys_eventfd)
 #define __NR_fallocate				285
 __SYSCALL(__NR_fallocate, sys_fallocate)
+#define __NR_start_rec				286
+__SYSCALL(__NR_start_rec, sys_start_rec)
+#define __NR_stop_rec				287
+__SYSCALL(__NR_stop_rec, sys_stop_rec)
+#define __NR_rec_owner				288
+__SYSCALL(__NR_rec_owner, sys_rec_owner)
 
 #ifndef __NO_STUBS
 #define __ARCH_WANT_OLD_READDIR
