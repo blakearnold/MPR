@@ -14,8 +14,14 @@ for(i=0; i<10; i++)
 		if(stop_rec() < 0){
 			printf("stop_rec failed\n");
 		}
-printf("what do i do here?");
+printf("what do i do here?\n");
 
+unsigned long long high, low;
+high= 0xffffffffffffffffULL;
+low = 0x0;
+high &= ~(0x1ULL<<22);
+
+printf("wahoo %llx, %llx\n", high, low);
 
 return 0;
 
