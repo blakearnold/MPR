@@ -11,7 +11,7 @@
 #define DRIVER_AUTHOR	"Blake Arnold <bablake@gmail.com>"
 #define DRIVER_DESC	"Branch Record module for modified kernel"
 
-extern long (*start_rec)(void);
+extern long (*start_rec)(int state, struct recording *rec);
 extern long (*stop_rec)(void);
 extern long (*rec_owner)(void);
 

@@ -1,13 +1,14 @@
 #include <linux/errno.h>
 #include <linux/module.h>
+#include <linux/record.h>
 //Create mock syscalls to use module
 
 
-long (*start_rec)(void) = NULL;
+long (*start_rec)(int state, struct recording *rec) = NULL;
 EXPORT_SYMBOL(start_rec);
 
-asmlinkage long sys_start_rec(void){
-    return start_rec ? start_rec() : -ENOSYS;
+asmlinkage long sys_start_rec(int state, struct recording *rec){
+    return start_rec ? start_rec(state, rec) : -ENOSYS;
 }
 
 long (*stop_rec)(void) = NULL;
