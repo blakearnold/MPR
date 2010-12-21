@@ -7,6 +7,7 @@
 #include "br_msr.h"
 #include "br_record.h"
 #include "br_pmcaccess.h"
+#include "op_apic.h"
 
 #define DRIVER_AUTHOR	"Blake Arnold <bablake@gmail.com>"
 #define DRIVER_DESC	"Branch Record module for modified kernel"
@@ -18,7 +19,13 @@ extern long (*rec_owner)(void);
 
 static int __init init_hello(void)
 {
-		//TODO: check cpuinfo
+		int err = 0;
+				if(probeCPUID() < 0){
+					printk(KERN_INFO "cannot start recording\n");
+					return -ENXIO;
+				}
+		if((err = apic_setup()))
+			return err;
 		printk(KERN_INFO "Loading Branch recording module\n");
 		/* 
 		 * A non 0 return means init_module failed; module can't be loaded. 
@@ -33,6 +40,7 @@ static void __exit cleanup_hello(void)
 {
 		//TODO: stop performance counter
 		printk(KERN_INFO "Unloading branch recording module\n");
+		apic_restore();
 		start_rec = NULL;
 		stop_rec = NULL;
 		rec_owner = NULL;

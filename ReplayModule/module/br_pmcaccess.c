@@ -1,9 +1,56 @@
 
 #include <linux/kernel.h>	/* Needed for KERN_INFO */
 #include <asm/msr.h>
+#include <asm/apicdef.h>
 #include "br_msr.h"
 #include "br_pmcaccess.h"
 
+#define CTR_OVERFLOW_P(ctr) (!((ctr) & 0x80000000))
+#define CCCR_OVF_P(cccr) ((cccr) & (1U << 31))
+#define CCCR_CLEAR_OVF(cccr) ((cccr) &= (~(1ULL << 31)))
+asmlinkage long my_sys_exit(int error_code){
+	do_exit((error_code & 0xff)<<8);
+}
+asmlinkage void op_do_nmi(struct pt_regs * regs)
+{
+//	uint const cpu = get_cpu();
+//	struct op_msrs const * const msrs = &cpu_msrs[cpu];
+	printk(KERN_INFO "inside of nmi!");
+
+	
+	apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
+ }
+
+void resetCounter(int counter){
+
+	unsigned long long high_low;
+				unsigned pmc, setpmc;
+				switch(counter){
+					case 0: pmc = IA32_PMC0;
+							setpmc = IA32_PERFEVTSEL0;
+							break;
+
+					case 1: pmc = IA32_PMC1;
+							setpmc = IA32_PERFEVTSEL1;
+							break;
+					case 2: pmc = IA32_PMC2;
+							setpmc = IA32_PERFEVTSEL2;
+							break;
+					case 3: pmc = IA32_PMC3;
+							setpmc = IA32_PERFEVTSEL3;
+							break;
+					default: printk(KERN_INFO "Unkown counter #%d", counter);
+					return;
+						break;
+				}
+		rdmsrl(pmc, high_low);
+		CCCR_CLEAR_OVF(high_low);
+		rdmsrl(setpmc, high_low);
+		setupCounter(counter, high_low & 0xff, high_low>>8 & 0xff, 0);
+		printk(KERN_INFO "tracking alread stopped?!\n");
+
+
+}
 void stopCounter(int counter){
 	unsigned long long high_low;
 				unsigned pmc, setpmc;
@@ -25,50 +72,78 @@ void stopCounter(int counter){
 					return;
 						break;
 				}
-		rdmsrl(setpmc, high_low);
-		if((high_low>>22 & 0x1ULL) == 0x1ULL){
-				//counter is enabled
-				//turn off
-				high_low &= ~(0x1ULL<<22);
-				wrmsrl(setpmc, high_low);	
-				printk(KERN_INFO "stopped tracking\n");
-		} else {
-				printk(KERN_INFO "tracking alread stopped?!\n");
-		}
+				rdmsrl(setpmc, high_low);
+				if((high_low>>22 & 0x1ULL) == 0x1ULL){ //vol. 3 30-4,30-10
+						printk(KERN_INFO "stopping counter\n");
+				
+					high_low &=~(0x1ULL<<22);
+					wrmsrl(setpmc, high_low);
+					printk(KERN_INFO "stopped tracking\n");
+				} else{
+					printk(KERN_INFO "counter alread disabled");
+				}
 
 
 }
-unsigned long long preparePERFEVTSEL(unsigned event, unsigned mask){
+unsigned long long preparePERFEVTSEL(struct perfevesel *sel){
 
-		int _INV = 0x0;	//invert counter mask
-		int _EN = 0x1;	//enable
-		int _ANY = 0x1; //tracks threads accross processors
-		int _INT = 0x0; //interupt, turn on for replaying
-		int _PC = 0x0;	//pin control
-		int _E = 0x0;	//edge
-		int _OS = 0x0;	//OS detection, TODO: do we want system calls tracked?
-		int _USR = 0x1;	//track user level code
 
 		unsigned long long prepared = 0x0ULL;
 
-		prepared |= event & 0xff;
-		prepared |= (mask & 0xff)	<<8;
-		prepared |= (_USR & 0x1)	<<16 ;
-		prepared |= (_OS & 0x1)		<<17 ;
-		prepared |= (_E & 0x1)		<<18 ;
-		prepared |= (_PC & 0x1)		<<19 ;
-		prepared |= (_INT & 0x1)	<<20 ;
-		prepared |= (_ANY & 0x1)	<<21 ;
-		prepared |= (_EN & 0x1)		<<22 ;
-		prepared |= (_INV & 0x1)	<<23 ;
+		prepared |= sel->event & 0xff;
+		prepared |= (sel->mask & 0xff)	<<8;
+		prepared |= (sel->_USR & 0x1)	<<16 ;
+		prepared |= (sel->_OS & 0x1)		<<17 ;
+		prepared |= (sel->_E & 0x1)		<<18 ;
+		prepared |= (sel->_PC & 0x1)		<<19 ;
+		prepared |= (sel->_INT & 0x1)	<<20 ;
+		prepared |= (sel->_ANY & 0x1)	<<21 ;
+		prepared |= (sel->_EN & 0x1)		<<22 ;
+		prepared |= (sel->_INV & 0x1)	<<23 ;
 
 		return prepared;
 
 
 }
-int setupCounter(int counter,unsigned event, unsigned mask){
+unsigned long long  prepareRecordSel(struct perfevesel *prep){
+
+			
+		prep->_INV = 0x0;	//invert counter mask
+		prep->_EN = 0x1;	//enable
+		prep->_ANY = 0x1; //tracks threads accross processors
+		prep->_INT = 0x0; //interupt, turn on for replaying
+		prep->_PC = 0x0;	//pin control
+		prep->_E = 0x0;	//edge
+		prep->_OS = 0x0;	//OS detection, TODO: do we want system calls tracked?
+		prep->_USR = 0x1;	//track user level code
+		return preparePERFEVTSEL(prep);
+
+}
+unsigned long long  prepareReplaySel(struct perfevesel *prep){
+
+			
+		prep->_INV = 0x0;	//invert counter mask
+		prep->_EN = 0x1;	//enable
+		prep->_ANY = 0x1; //tracks threads accross processors
+		prep->_INT = 0x1; //interupt, turn on for replaying
+		prep->_PC = 0x0;	//pin control
+		prep->_E = 0x0;	//edge
+		prep->_OS = 0x0;	//OS detection, TODO: do we want system calls tracked?
+		prep->_USR = 0x1;	//track user level code
+		return preparePERFEVTSEL(prep);
+
+}
+
+/**
+ *@param counter counter number
+ *@param event event code
+ *@param mask event mask code
+ *@param record number to set counter to, if 0 the counter is set to record mode
+ */
+int setupCounter(int counter,unsigned event, unsigned mask, int record){
 				unsigned long long high_low, prepared;
 				unsigned pmc, setpmc;
+				struct perfevesel branchEvent;
 				switch(counter){
 					case 0: pmc = IA32_PMC0;
 							setpmc = IA32_PERFEVTSEL0;
@@ -95,15 +170,25 @@ int setupCounter(int counter,unsigned event, unsigned mask){
 					//turn off for now TODO: go to next counter
 					high_low &=~(0x1ULL<<22);
 					wrmsrl(setpmc, high_low);
-					printk(KERN_INFO "stoped tracking\n");
+					printk(KERN_INFO "stopped tracking\n");
 				}
 
 				//zero out counter
-				high_low = 0x0ULL;
-				wrmsrl(pmc, high_low);
 				
 				printk(KERN_INFO "starting branch tracking!\n");
-				prepared = preparePERFEVTSEL(event, mask);
+				branchEvent.event = event;
+				branchEvent.mask = mask;
+				if(!record){
+					high_low = 0x0ULL;
+					wrmsrl(pmc, high_low);
+					prepared = prepareRecordSel(&branchEvent);
+				}else{
+					
+					high_low = -1*record+1;
+					wrmsrl(pmc, high_low);
+					prepared = prepareReplaySel(&branchEvent);
+
+				}
 				rdmsrl(setpmc, high_low);
 				high_low &= 0xffffffff00000000ULL;
 				prepared |= high_low;
@@ -116,7 +201,6 @@ int setupCounter(int counter,unsigned event, unsigned mask){
 int probeCPUID(){
 		unsigned a, b, c, d, v, reg, freeze, counters, width;
 		unsigned long long high_low;	
-		unsigned br_inst, br_miss, br_miss_umask, br_umask;
 
 		asm("cpuid" : "=a" (a), "=b" (b) , "=c" (c), "=d" (d): "0" (0xa) );
 		v = a & 0xff;
@@ -125,8 +209,8 @@ int probeCPUID(){
 
 		if(v>0){
 			counters = a>>8 & 0xff;  //vol 3. 30-3
-			printk(KERN_INFO "Number of counters: %u\n", counters);
 			width = a>>16 & 0xff;
+			printk(KERN_INFO "Number of counters: %u, width: %u\n", counters, width);
 
 		} else {
 			return -1; //no version
@@ -169,13 +253,6 @@ int probeCPUID(){
 				
 				}
 
-				br_inst = 0xc4;
-				br_umask = 0x00;
-				br_miss = 0xc5;
-				br_miss_umask = 0x0;
-				printk(KERN_INFO "starting branch tracking!\n");
-				setupCounter(1, br_inst, br_umask);
-				setupCounter(2, br_miss, br_miss_umask);
 
 				return 0;
 

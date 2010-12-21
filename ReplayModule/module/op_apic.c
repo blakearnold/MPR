@@ -14,10 +14,9 @@
 
 #include <linux/mm.h>
 #include <linux/init.h>
-#include <linux/config.h>
+//#include <linux/config.h>
 #include <asm/io.h>
 
-#include "oprofile.h"
 #include "op_msr.h"
 #include "op_apic.h"
 
@@ -31,14 +30,17 @@ static ulong lvtpc_masked;
 static void mask_lvtpc(void * e)
 {
 	u32 v = apic_read(APIC_LVTPC);
+	printk(KERN_INFO "masking lvtpc");
 	lvtpc_masked = v & APIC_LVT_MASKED;
 	apic_write(APIC_LVTPC, v | APIC_LVT_MASKED);
 }
 
 static void unmask_lvtpc(void * e)
 {
-	if (!lvtpc_masked)
+	if (!lvtpc_masked){
+	printk(KERN_INFO "unmasking lvtpc");
 		apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
+	}
 }
 
 
@@ -49,7 +51,7 @@ void install_nmi(void)
 	/* NMI handler is at idt_table[IDT_VECTOR_NUMBER]            */
 	/* see Intel Vol.3 Figure 5-2, interrupt gate                */
 
-	smp_call_function(mask_lvtpc, NULL, 0, 1);
+	smp_call_function(mask_lvtpc, NULL, 0, 1); //defined in arch/arm/kernel/smp.c, line 455
 	mask_lvtpc(NULL);
 
 	store_idt(descr);
@@ -78,14 +80,14 @@ void restore_nmi(void)
 /* ---------------- APIC setup ------------------ */
 static uint saved_lvtpc[NR_CPUS];
 
-void __init lvtpc_apic_setup(void * dummy)
+void/* __init*/ lvtpc_apic_setup(void * dummy)
 {
 	uint val;
 
 	/* set up LVTPC as we need it */
 	/* IA32 V3, Figure 7.8 */
 	val = apic_read(APIC_LVTPC);
-	saved_lvtpc[op_cpu_id()] = val;
+	saved_lvtpc[get_cpu()] = val;
 	/* allow PC overflow interrupts */
 	val &= ~APIC_LVT_MASKED;
 	/* set delivery to NMI */
@@ -103,11 +105,11 @@ void lvtpc_apic_restore(void * dummy)
 	 */
 	uint v = apic_read(APIC_LVTERR);
 	apic_write(APIC_LVTERR, v | APIC_LVT_MASKED);
-	apic_write(APIC_LVTPC, saved_lvtpc[op_cpu_id()]);
+	apic_write(APIC_LVTPC, saved_lvtpc[get_cpu()]);
 	apic_write(APIC_LVTERR, v);
 }
 
-static int __init enable_apic(void)
+static int/* __init*/ enable_apic(void)
 {
 	uint msr_low, msr_high;
 	uint val;
@@ -144,11 +146,11 @@ not_local_apic:
 	if ((msr_low & (1 << 11)) == 0)
 		wrmsr(MSR_IA32_APICBASE, msr_low & ~(1 << 11), msr_high);
 
-	printk(KERN_ERR "oprofile: no suitable local APIC. Falling back to RTC mode.\n");
+	printk(KERN_ERR "branchCounter: no suitable local APIC.\n");
 	return -ENODEV;
 }
 
-static void __init do_apic_setup(void)
+static void/* __init*/ do_apic_setup(void)
 {
 	uint val;
 
@@ -189,7 +191,7 @@ static void __init do_apic_setup(void)
 }
 
 /* does the CPU have a local APIC ? */
-static int __init check_cpu_ok(void)
+static int/* __init*/ check_cpu_ok(void)
 {
 /*
 	if (sysctl.cpu_type != CPU_PPRO &&
@@ -201,17 +203,17 @@ static int __init check_cpu_ok(void)
 		sysctl.cpu_type != CPU_P4_HT2)
 		return 0;
 */
-	return 0;
+	return 1;
 }
 
-int __init apic_setup(void)
+int /*__init */ apic_setup(void)
 {
 	u32 val;
 
 	if (!check_cpu_ok())
 		goto nodev;
 
-	fixmap_setup();
+//	fixmap_setup(); //used for older kernels
 
 	switch (enable_apic()) {
 		case 0:
@@ -236,5 +238,6 @@ nodev:
 
 void apic_restore(void)
 {
-	fixmap_restore();
+	//fixmap_restore();
+	printk(KERN_INFO "oprofile: freeing APIC mapping.\n");
 }

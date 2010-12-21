@@ -1,39 +1,60 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "crew_test.h"
+#include <linux/record.h>
+#include "recordEvent.h"
+#include <errno.h>
 
+void replayFunction(void);
 int main(int argc, char **argv){
-int i;
-		if(start_rec() < 0){
-			printf("start_Rec failed\n");
+struct recording *rec, *next;
+rec = malloc(sizeof(struct recording));
+rec->next = NULL;
+stop_rec();
+printf("Starting to record\n");
+//first record
+		if(start_rec(rec) < 0){
+			perror("start_Rec failed\n");
 			//stop_rec();
 			exit(1);
 		}
-for(i=0; i<10; i++)
-	rec_owner();
+replayFunction();
 		if(stop_rec() < 0){
-			printf("stop_rec failed\n");
+			perror("stop_rec failed\n");
 		}
+printf("Starting to replay\n");
+//now replay
+		if(start_rep(rec) < 0){
+			perror("start_Rep failed\n");
+			//stop_rec();
+			exit(1);
+		}
+replayFunction();
+		if(stop_rep() < 0){
+			perror("stop_rep failed\n");
+		}
+
+next = rec;
+while((next=next->next)){
+	printf("Branch num: %llu, thread id: %u", next->branchNum, next->threadId);
+}
+return 0;
+}
+
+
+
+void replayFunction(){
+int i;
+for(i=0; i<10; i++){
+	rec_owner();
+	printf("loop: %i\n", i);
+	}
 printf("what do i do here?\n");
 
-unsigned long long high, low;
-high= 0xffffffffffffffffULL;
-low = 0x0;
-high &= ~(0x1ULL<<22);
-
-printf("wahoo %llx, %llx\n", high, low);
-
-return 0;
 
 
+}
 
+void replayed(void){
 
-
-
-
-
-
-
-
-
+	printf("hi!");
 }

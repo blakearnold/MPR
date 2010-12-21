@@ -14,13 +14,17 @@
 #ifndef OP_APIC_H
 #define OP_APIC_H
 
-#include "apic_compat.h"
+//#include "apic_compat.h"
+#include <linux/types.h>
 #include <linux/linkage.h>
 
 #define NMI_GATE_TYPE 14
 #define NMI_VECTOR_NUM 2
 #define NMI_DPL_LEVEL 0
 
+struct pt_regs;
+
+#define APIC_MODE_EXINT			0x7
 
 /* copied from kernel 2.4.19 : arch/i386/traps.c */
 
@@ -29,9 +33,6 @@ struct gate_struct {
 	u32 b;
 } __attribute__((packed));
 
-
-//Maybe use functio in asm-x86/desc_64.h line 54?
-//intel vol 3a 7-9
 #define _set_gate(gate_addr, type, dpl, addr) \
 do { \
 	int __d0, __d1; \
@@ -69,6 +70,7 @@ void restore_nmi(void);
 
 void fixmap_setup(void);
 void fixmap_restore(void);
+//void fixmap_restore(void);
 
 asmlinkage void op_nmi(void);
 

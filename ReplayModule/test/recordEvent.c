@@ -3,16 +3,19 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <linux/record.h>
 #include "recordEvent.h"
 
 int main(int argc, char* argv[]){
+struct recording *rec;
+rec = malloc(sizeof(struct recording));
 	pid_t pid = fork();
 	switch(pid){
 	case -1: printf("An error occured, could not fork\n");
 		exit(1);
 		break;
 	case 0: //child
-		if(start_rec() < 0){
+		if(start_rec(rec) < 0){
 			printf("start_Rec failed\n");
 			exit(1);
 		}

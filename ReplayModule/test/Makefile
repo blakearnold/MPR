@@ -15,5 +15,4 @@ crew_test:
 
 
 clean:
-	rm -f *.o recordEvent replayEvent replay_test
-
+	rm -f *.o recordEvent replayEvent replay_test simple xsimple
