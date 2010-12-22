@@ -58,6 +58,6 @@ ENTRY(op_nmi)
 	SAVE_ALL
 	movl %esp, %edx
 	pushl %edx
-	call op_do_nmi
+	call br_do_nmi
 	addl $4, %esp
 	RESTORE_ALL

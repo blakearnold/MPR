@@ -26,6 +26,7 @@ struct perfevesel{
 int probeCPUID(void);
 void stopCounter(int counter);
 int setupCounter(int counter,unsigned event, unsigned mask,int record);
+void resetCounter(int counter);
 unsigned long long  prepareRecordSel(struct perfevesel *prep);
 unsigned long long  prepareReplaySel(struct perfevesel *prep);
 

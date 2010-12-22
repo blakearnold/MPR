@@ -8,18 +8,20 @@
 #define CTR_OVERFLOW_P(ctr) (!((ctr) & 0x80000000))
 #define CCCR_OVF_P(cccr) ((cccr) & (1U << 31))
 #define CCCR_CLEAR_OVF(cccr) ((cccr) &= (~(1ULL << 31)))
-asmlinkage long my_sys_exit(int error_code){
+asmlinkage long my_sys_exit(int error_code)
+{
 	do_exit((error_code & 0xff)<<8);
 }
-asmlinkage void op_do_nmi(struct pt_regs * regs)
+asmlinkage void br_do_nmi(struct pt_regs * regs)
 {
-//	uint const cpu = get_cpu();
-//	struct op_msrs const * const msrs = &cpu_msrs[cpu];
-	printk(KERN_INFO "inside of nmi!");
+//uint const cpu = get_cpu();
+//struct op_msrs const * const msrs = &cpu_msrs[cpu];
+//	we can do printk's here!!!
+int i = 0;
+i++;
+apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
 
-	
-	apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
- }
+}
 
 void resetCounter(int counter){
 
@@ -39,7 +41,7 @@ void resetCounter(int counter){
 					case 3: pmc = IA32_PMC3;
 							setpmc = IA32_PERFEVTSEL3;
 							break;
-					default: printk(KERN_INFO "Unkown counter #%d", counter);
+					default: 
 					return;
 						break;
 				}
@@ -47,7 +49,6 @@ void resetCounter(int counter){
 		CCCR_CLEAR_OVF(high_low);
 		rdmsrl(setpmc, high_low);
 		setupCounter(counter, high_low & 0xff, high_low>>8 & 0xff, 0);
-		printk(KERN_INFO "tracking alread stopped?!\n");
 
 
 }
@@ -131,6 +132,7 @@ unsigned long long  prepareReplaySel(struct perfevesel *prep){
 		prep->_OS = 0x0;	//OS detection, TODO: do we want system calls tracked?
 		prep->_USR = 0x1;	//track user level code
 		return preparePERFEVTSEL(prep);
+
 
 }
 
