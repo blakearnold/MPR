@@ -152,6 +152,7 @@ asmlinkage void br_do_nmi(struct pt_regs * regs)
 //uint const cpu = get_cpu();
 //struct op_msrs const * const msrs = &cpu_msrs[cpu];
 //	we can do printk's here!!!
+/*
 		struct br_info *tmp;
 		unsigned long pmcReg, setpmcReg;
 		unsigned long long pmc, setpmc;
@@ -165,8 +166,8 @@ asmlinkage void br_do_nmi(struct pt_regs * regs)
 					rdmsrl(setpmcReg, setpmc);
 					//stop counter
 					if((setpmc>>22 & 0x1ULL) == 0x1ULL){ //vol. 3 30-4,30-10
-					setpmc &=~(0x1ULL<<22);
-					wrmsrl(setpmcReg, setpmc);
+						setpmc &=~(0x1ULL<<22);
+						wrmsrl(setpmcReg, setpmc);
 					}
 
 					pmc = -1*(tmp->rec.branchNum)+1;
@@ -177,7 +178,7 @@ asmlinkage void br_do_nmi(struct pt_regs * regs)
 					
 					kfree(tmp);
 apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
-
+*/
 }
 /**
  *links to sys exit call. used by br_op_nmi.S
