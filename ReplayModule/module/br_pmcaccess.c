@@ -8,20 +8,6 @@
 #define CTR_OVERFLOW_P(ctr) (!((ctr) & 0x80000000))
 #define CCCR_OVF_P(cccr) ((cccr) & (1U << 31))
 #define CCCR_CLEAR_OVF(cccr) ((cccr) &= (~(1ULL << 31)))
-asmlinkage long my_sys_exit(int error_code)
-{
-	do_exit((error_code & 0xff)<<8);
-}
-asmlinkage void br_do_nmi(struct pt_regs * regs)
-{
-//uint const cpu = get_cpu();
-//struct op_msrs const * const msrs = &cpu_msrs[cpu];
-//	we can do printk's here!!!
-int i = 0;
-i++;
-apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
-
-}
 
 void resetCounter(int counter){
 
